@@ -1,23 +1,15 @@
 {
-  "version": "v3.0.0-alpha5.2",
-  "build": "DETAIL COMPLETE 01 · 543 NOW · MEMBER ADMIN · LAYOUT LOCK",
-  "layout_lock": {
-    "app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
-    "expected_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
-    "locked": true
-  },
-  "politician_slots": {
-    "assembly": 300,
-    "metropolitan": 16,
-    "basic": 227,
-    "total": 543,
-    "initial_render_per_large_category": 50
-  },
-  "member_admin": {
-    "list": true,
-    "search": true,
-    "grant_revoke_admin": true,
-    "suspend_restore": true
-  },
-  "v2_runtime_references": 0
+  "version": "v3.0.0-alpha6.0",
+  "build": "CLEAN CORE 01 · STRUCTURE RESET · LAYOUT LOCK",
+  "layout_app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "politician_slots": {"assembly": 300, "metropolitan": 16, "basic": 227, "total": 543},
+  "now_initial_large_category": 50,
+  "now_load_more": 50,
+  "persistent_source": "server-redis-only",
+  "guest_recent_storage": "localStorage-only-by-design",
+  "auth": "unified-member-admin-session",
+  "first_admin": "JCV3_ADMIN_SETUP_KEY",
+  "image_storage": "Vercel Blob URL in Redis",
+  "v2_runtime_references": 0,
+  "final_qa": "PASS"
 }

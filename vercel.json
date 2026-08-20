@@ -1,168 +1,22 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    {
-      "source": "/login",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/join",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/mypage",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/assembly",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/local-leaders",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/local-leaders/metropolitan",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/local-leaders/basic",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/person/:id",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/president",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/now",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/column",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/column/:id",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/community",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/community/:id",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/news",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/news/:id",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/poll",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/academy",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/itsme",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/compare",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/generation-president",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/national-evaluation",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/search",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/mypage/activity",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/mypage/recent",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/community/write",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/itsme/write",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/itsme/:id",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/keywords",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/trending",
-      "destination": "/index.html"
-    }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
   ],
   "headers": [
     {
       "source": "/css/app.css",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
     {
       "source": "/css/pages.css",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        }
-      ]
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }]
     },
     {
       "source": "/src/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, stale-while-revalidate=86400"
-        }
-      ]
-    },
-    {
-      "source": "/api/v3/home",
-      "headers": [
-        {
-          "key": "CDN-Cache-Control",
-          "value": "public, max-age=15, stale-while-revalidate=45"
-        }
-      ]
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }]
     }
   ]
 }

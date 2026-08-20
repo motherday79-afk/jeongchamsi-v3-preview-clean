@@ -1,0 +1,8 @@
+{
+  "name": "jeongchamsi-v3-clean-core",
+  "version": "3.0.0-alpha6.0",
+  "private": true,
+  "dependencies": {
+    "@vercel/blob": "^2.6.1"
+  }
+}

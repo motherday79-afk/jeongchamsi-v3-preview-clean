@@ -10,15 +10,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const result = await createUser(req.body || {});
+    const result = await createUser(req.body || {}, "member");
     if (!result.ok) {
       const status = result.error === "DUPLICATE_ID" ? 409 : 400;
       return res.status(status).json(result);
     }
     setCookie(res, issueSession(result.user.id), req);
-    return res.status(201).json({ ok: true, authenticated: true, user: result.user });
+    return res.status(201).json({ ok: true, user: result.user });
   } catch (error) {
-    if (error?.code === "STORAGE_MISSING") return res.status(503).json({ ok: false, error: "JCV3_STORAGE_NOT_CONFIGURED" });
-    return res.status(503).json({ ok: false, error: "REGISTER_FAILED" });
+    return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "REGISTER_FAILED" });
   }
 };

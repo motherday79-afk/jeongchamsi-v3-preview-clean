@@ -1,4 +1,5 @@
 import { APP_VERSION, BUILD_NAME } from "../version.js";
+import { getUserSession } from "../core/user.js";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -40,19 +41,18 @@ export function siteHeader() {
 }
 
 export function drawer() {
+  const session = getUserSession();
+  const account = session.authenticated
+    ? `<div class="drawer-account"><b>${esc(session.user.nickname || session.user.id)}님</b><span>${session.user.role === "admin" ? "관리자" : "일반회원"}</span><div><a href="/mypage" data-route>마이페이지</a>${session.user.role === "admin" ? `<a href="/admin" data-route>관리자</a>` : ""}</div></div>`
+    : `<div class="drawer-account"><b>정참시에 참여하세요</b><span>로그인 후 글쓰기·투표·즐겨찾기를 사용할 수 있습니다.</span><div><a href="/login" data-route>로그인</a><a href="/join" data-route>회원가입</a></div></div>`;
+
   return `<div class="drawer-backdrop" data-drawer-close hidden></div>
   <aside class="app-drawer" data-drawer hidden aria-label="전체 메뉴">
     <div class="drawer-head"><b>정참시 전체메뉴</b><button type="button" data-drawer-close aria-label="닫기">×</button></div>
-    <div class="drawer-section-label">회원</div>
-    <nav>
-      <a href="/login" data-route>로그인</a>
-      <a href="/join" data-route>회원가입</a>
-      <a href="/mypage" data-route>마이페이지</a>
-      <a href="/mypage/activity" data-route>내 참여 · 배지</a>
-      <a href="/mypage/recent" data-route>최근 본 정치인</a>
-    </nav>
+    ${account}
     <div class="drawer-section-label">정참시</div>
     <nav>
+      <a href="/president" data-route>대통령</a>
       <a href="/now" data-route>NOW Rank · 전체 정치인</a>
       <a href="/column" data-route>COLUMN</a>
       <a href="/community" data-route>정뮤니티</a>
@@ -73,10 +73,7 @@ export function drawer() {
 }
 
 export function footer() {
-  return `<footer class="footer">
-    <div><b>정참시</b><span>정치에 참여할 시간.</span></div>
-    <div>이용안내 · 개인정보처리방침 · 운영정책</div>
-  </footer>`;
+  return `<footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간.</span></div><div>이용안내 · 개인정보처리방침 · 운영정책</div></footer>`;
 }
 
 export function pageShell(content) {

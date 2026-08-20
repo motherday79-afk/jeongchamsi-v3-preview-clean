@@ -1,61 +1,42 @@
-const {
-  config,
-  issueSession,
-  sessionFromRequest,
-  checkCredentials,
-  setCookie,
-  clearCookie
-} = require("../../../lib/v3/user-auth");
-const { getUser, authenticateUser } = require("../../../lib/v3/users");
+const { authenticateUser, getUser } = require("../../../lib/v3/users");
+const { issueSession, sessionFromRequest, setCookie, clearCookie } = require("../../../lib/v3/user-auth");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "GET") {
-    const session = sessionFromRequest(req);
-    if (!session?.id) return res.status(200).json({ authenticated: false, user: null });
     try {
-      const stored = await getUser(session.id);
-      if (stored) {
-        if (stored.status !== "active") {
-          clearCookie(res, req);
-          return res.status(200).json({ authenticated: false, user: null, error: "ACCOUNT_SUSPENDED" });
-        }
-        const { passwordHash: _passwordHash, ...profile } = stored;
-        return res.status(200).json({ authenticated: true, user: profile });
+      const session = sessionFromRequest(req);
+      if (!session?.id) return res.status(200).json({ ok: true, authenticated: false });
+      const user = await getUser(session.id);
+      if (!user || user.status !== "active") {
+        clearCookie(res, req);
+        return res.status(200).json({ ok: true, authenticated: false });
       }
-    } catch {}
-
-    const demo = config();
-    if (session.id === demo.id) {
-      return res.status(200).json({ authenticated: true, user: { id: demo.id, nickname: "정참시 유저", role: "member", status: "active" } });
+      const { passwordHash, ...safe } = user;
+      return res.status(200).json({ ok: true, authenticated: true, user: safe });
+    } catch (error) {
+      return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "SESSION_READ_FAILED" });
     }
-    return res.status(200).json({ authenticated: false, user: null });
   }
 
   if (req.method === "POST") {
-    const id = String(req.body?.id || "").trim();
-    const password = String(req.body?.password || "");
-
     try {
-      const user = await authenticateUser(id, password);
-      if (user) {
-        setCookie(res, issueSession(user.id), req);
-        return res.status(200).json({ authenticated: true, user });
-      }
-    } catch {}
-
-    if (!checkCredentials(id, password)) return res.status(401).json({ authenticated: false, error: "INVALID_CREDENTIALS" });
-    setCookie(res, issueSession(id), req);
-    return res.status(200).json({ authenticated: true, user: { id, nickname: "정참시 유저", role: "member", status: "active" } });
+      const user = await authenticateUser(req.body?.id, req.body?.password);
+      if (!user) return res.status(401).json({ ok: false, error: "INVALID_CREDENTIALS" });
+      setCookie(res, issueSession(user.id), req);
+      return res.status(200).json({ ok: true, authenticated: true, user });
+    } catch (error) {
+      return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "LOGIN_FAILED" });
+    }
   }
 
   if (req.method === "DELETE") {
     clearCookie(res, req);
-    return res.status(200).json({ authenticated: false });
+    return res.status(200).json({ ok: true });
   }
 
   res.setHeader("Allow", "GET, POST, DELETE");
-  return res.status(405).json({ authenticated: false, error: "METHOD_NOT_ALLOWED" });
+  return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
 };
