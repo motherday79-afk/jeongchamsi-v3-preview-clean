@@ -1,2 +1,2 @@
-export const APP_VERSION = "v3.0.0-alpha4.1";
-export const BUILD_NAME = "FUNCTION FOUNDATION 01 · RUNTIME FIX";
+export const APP_VERSION = "v3.0.0-alpha5.0";
+export const BUILD_NAME = "FUNCTION CORE 01 · LAYOUT LOCK · 543 PERSON SLOTS";

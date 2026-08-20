@@ -1,17 +1,60 @@
-// POLITICIAN DATA IS INTENTIONALLY EMPTY.
-// This provider boundary is where the future agreed data source will plug in.
-// UI and routing must not know or care whether the source is public API, DB, or import pipeline.
-
 export const PERSON_PROVIDER_STATUS = "UNDECIDED";
+export const PHOTO_PROVIDER_STATUS = "UNDECIDED";
 
-export async function listAssemblyMembers() {
-  return { totalCapacity: 300, items: [], providerStatus: PERSON_PROVIDER_STATUS };
+export const PERSON_COUNTS = Object.freeze({
+  assembly: 300,
+  metropolitan: 16,
+  basic: 227,
+  total: 543
+});
+
+const TYPES = Object.freeze({
+  assembly: {
+    prefix: "assembly",
+    label: "국회의원",
+    group: "국회",
+    jurisdictionLabel: "선거구"
+  },
+  metropolitan: {
+    prefix: "metropolitan",
+    label: "광역단체장",
+    group: "광역자치단체",
+    jurisdictionLabel: "관할 광역자치단체"
+  },
+  basic: {
+    prefix: "basic",
+    label: "기초단체장",
+    group: "기초자치단체",
+    jurisdictionLabel: "관할 기초자치단체"
+  }
+});
+
+const pad = n => String(n).padStart(3, "0");
+
+function slot(type, index) {
+  const meta = TYPES[type];
+  return Object.freeze({
+    id: `${meta.prefix}-${pad(index)}`,
+    slot: index,
+    type,
+    roleLabel: meta.label,
+    groupLabel: meta.group,
+    jurisdictionLabel: meta.jurisdictionLabel,
+    connected: false
+  });
 }
 
-export async function listLocalLeaders() {
-  return { totalCapacity: 300, items: [], providerStatus: PERSON_PROVIDER_STATUS };
+function make(type, count) {
+  return Array.from({ length: count }, (_, i) => slot(type, i + 1));
 }
 
-export async function getPersonById() {
-  return null;
-}
+const ASSEMBLY = make("assembly", PERSON_COUNTS.assembly);
+const METROPOLITAN = make("metropolitan", PERSON_COUNTS.metropolitan);
+const BASIC = make("basic", PERSON_COUNTS.basic);
+const BY_ID = new Map([...ASSEMBLY, ...METROPOLITAN, ...BASIC].map(x => [x.id, x]));
+
+export const listAssemblyMembers = () => ASSEMBLY;
+export const listMetropolitanLeaders = () => METROPOLITAN;
+export const listBasicLeaders = () => BASIC;
+export const listAllLocalLeaders = () => [...METROPOLITAN, ...BASIC];
+export const getPersonSlotById = id => BY_ID.get(String(id || "")) || null;

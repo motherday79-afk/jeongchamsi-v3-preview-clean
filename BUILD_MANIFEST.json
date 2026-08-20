@@ -1,25 +1,79 @@
 {
-  "version": "v3.0.0-alpha4.1",
-  "build": "FUNCTION FOUNDATION 01 · RUNTIME FIX",
-  "layout_locked": true,
-  "pages_css_locked": true,
-  "js_syntax_ok": true,
-  "home_refresh_unit_test": {
-    "fetchCount": 1,
-    "eventCount": 1
+  "version": "v3.0.0-alpha5.0",
+  "build": "FUNCTION CORE 01 · LAYOUT LOCK · 543 PERSON SLOTS",
+  "layout_lock": {
+    "app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+    "expected_alpha3_1_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+    "matched": true
   },
-  "route_mapping_checked": [
-    "column",
-    "community",
-    "news",
-    "poll",
-    "academy",
-    "admin"
-  ],
-  "politician_provider": "UNDECIDED / 0 real people",
-  "fixed_root_causes": [
-    "HOME SWR infinite re-render loop removed",
-    "background HOME refresh no longer resets scroll",
-    "stale async render cannot overwrite a newer route"
-  ]
+  "person_slots": {
+    "assembly": 300,
+    "metropolitan": 16,
+    "basic": 227,
+    "total": 543,
+    "real_person_records": 0
+  },
+  "person_provider": "UNDECIDED",
+  "photo_provider": "UNDECIDED",
+  "now_rank_engine": "UNDECIDED",
+  "boards": {
+    "columns": [
+      "create",
+      "edit",
+      "delete",
+      "publish",
+      "cover_image",
+      "featured",
+      "public_list",
+      "public_detail",
+      "home_reflection"
+    ],
+    "community": [
+      "create",
+      "edit",
+      "delete",
+      "publish",
+      "public_list",
+      "public_detail",
+      "home_reflection"
+    ],
+    "news": [
+      "create",
+      "edit",
+      "delete",
+      "publish",
+      "cover_image",
+      "public_list",
+      "public_detail",
+      "home_reflection"
+    ]
+  },
+  "admin": {
+    "route": "/admin",
+    "session": "httpOnly cookie with browser preview fallback"
+  },
+  "storage": {
+    "namespace": "jcv3:content:v3:*",
+    "fallback": "browser localStorage for preview"
+  },
+  "qa": {
+    "all_js_syntax_ok": true,
+    "assembly_slots_rendered": 300,
+    "metropolitan_slots_rendered": 16,
+    "basic_slots_rendered": 227,
+    "detail_common_sections_verified": 8,
+    "column_create_to_public_detail_verified": true,
+    "column_cover_verified": true,
+    "community_create_edit_delete_verified": true,
+    "news_create_edit_verified": true,
+    "poll_create_verified": true,
+    "academy_create_verified": true,
+    "admin_default_auth_and_signed_session_verified": true,
+    "home_refresh_loop_test": {
+      "fetches": 1,
+      "unnecessary_update_events": 0
+    },
+    "legacy_runtime_refs": [],
+    "important_css_rules": 0
+  }
 }

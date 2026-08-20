@@ -1,22 +1,67 @@
-import { pageShell } from "./layout.js";
 import { getDomain } from "../core/repository.js";
+import { pageShell, esc } from "./layout.js";
 
-const esc = (v="") => String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-const labels = { columns:"COLUMN", community:"정뮤니티", news:"정참시 NEWS" };
-const routes = { columns:"column", community:"community", news:"news" };
+const CONFIG = Object.freeze({
+  columns: { title: "COLUMN", eyebrow: "COLUMN", route: "column", description: "정치를 조금 더 깊게 읽는 정참시의 칼럼 공간입니다.", image: true },
+  community: { title: "정뮤니티", eyebrow: "COMMUNITY", route: "community", description: "시민들이 정치 이야기를 나누는 정참시 커뮤니티입니다.", image: false },
+  news: { title: "정참시 NEWS", eyebrow: "JEONGCHAMSI NEWS", route: "news", description: "정참시가 모아보는 정치 뉴스와 이슈입니다.", image: true }
+});
 
-export async function renderBoard(domain){
-  const data = await getDomain(domain);
-  const items = (data.items||[]).filter(x=>x.published!==false);
-  const label = labels[domain] || domain;
-  const base = routes[domain] || domain;
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">CONTENT</span><h1>${label}</h1><p>관리자에서 등록한 콘텐츠가 이곳에 표시됩니다.</p></section><section class="content-card">${items.length?`<div class="board-list">${items.map(x=>`<article data-route="/${base}/${encodeURIComponent(x.id)}"><div><span>${esc(x.category||label)}</span><h2>${esc(x.title)}</h2><p>${esc(x.summary||"")}</p></div><small>${esc(x.author||"정참시")}</small></article>`).join("")}</div>`:`<div class="empty-state"><h2>등록된 콘텐츠가 없습니다.</h2><p>가짜 데이터를 넣지 않았습니다. 관리자에서 직접 등록하면 즉시 목록에 표시됩니다.</p></div>`}</section></main>`);
+function safeImage(v = "") {
+  const s = String(v || "");
+  return s.startsWith("data:image/") || s.startsWith("https://") ? s : "";
 }
 
-export async function renderBoardDetail(domain,id){
-  const data = await getDomain(domain);
-  const item = (data.items||[]).find(x=>String(x.id)===String(id));
-  const label = labels[domain] || domain;
-  if(!item) return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><h1>콘텐츠를 찾을 수 없습니다.</h1><p>삭제되었거나 아직 등록되지 않은 콘텐츠입니다.</p><button class="primary-btn" data-route="/${routes[domain]}">목록으로</button></section></main>`);
-  return pageShell(`<main class="subpage"><article class="article-detail content-card"><span class="eyebrow">${esc(item.category||label)}</span><h1>${esc(item.title)}</h1><div class="article-meta">${esc(item.author||"정참시")} · 조회 ${item.views||0} · 좋아요 ${item.likes||0}</div>${item.summary?`<p class="article-lead">${esc(item.summary)}</p>`:""}<div class="article-body">${esc(item.body||"").replace(/\n/g,"<br>")}</div><div class="article-actions"><button>♡ 좋아요</button><button data-route="/${routes[domain]}">목록으로</button></div></article></main>`);
+function formatDate(v) {
+  if (!v) return "";
+  try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(v)); }
+  catch { return ""; }
 }
+
+function published(items = []) {
+  return items.filter(x => x && x.published !== false).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+}
+
+function bodyHtml(body = "") {
+  return String(body || "").split(/\n{2,}|\r?\n/).map(x => x.trim()).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join("") || `<p>본문이 없습니다.</p>`;
+}
+
+export async function renderBoard(domain) {
+  const config = CONFIG[domain] || CONFIG.community;
+  const data = await getDomain(domain);
+  const items = published(data.items || []);
+  return pageShell(`<main class="subpage">
+    <section class="page-hero"><span class="eyebrow">${config.eyebrow}</span><h1>${config.title}</h1><p>${config.description}</p></section>
+    <section class="content-card">
+      <div class="board-toolbar"><p>관리자에서 작성·수정·삭제한 게시물이 이 목록에 바로 연결됩니다.</p><span class="status-pill"><b>POSTS</b>${items.length}개</span></div>
+      ${items.length ? `<div class="board-list">${items.map(item => {
+        const cover = safeImage(item.coverImage);
+        const noThumb = !config.image;
+        return `<article class="${noThumb ? "no-thumb" : ""}">${!noThumb ? `<a class="board-thumb" href="/${config.route}/${esc(item.id)}" data-route ${cover ? `style="background-image:url('${cover}')"` : ""}></a>` : ""}<a href="/${config.route}/${esc(item.id)}" data-route><span class="type">${config.title}</span><h2>${esc(item.title)}</h2><p>${esc(item.summary || item.body || "")}</p></a><small>${esc(item.author || "정참시")} · ${formatDate(item.createdAt)}</small></article>`;
+      }).join("")}</div>` : `<div class="empty-state tall"><div class="empty-icon">＋</div><h2>아직 등록된 글이 없습니다.</h2><p>관리자에서 첫 글을 작성하면 이곳에 목록이 생성됩니다.</p></div>`}
+    </section>
+  </main>`);
+}
+
+export async function renderBoardDetail(domain, id) {
+  const config = CONFIG[domain] || CONFIG.community;
+  const data = await getDomain(domain);
+  const item = (data.items || []).find(x => String(x.id) === String(id) && x.published !== false);
+  if (!item) {
+    return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>게시물을 찾을 수 없습니다.</h2><p>삭제되었거나 아직 공개되지 않은 게시물입니다.</p><div class="inline-actions" style="justify-content:center;margin-top:18px"><button class="primary-btn" type="button" data-go="/${config.route}">${config.title} 목록으로</button></div></section></main>`);
+  }
+  const cover = safeImage(item.coverImage);
+  return pageShell(`<main class="subpage">
+    <article class="content-card article-detail">
+      <span class="eyebrow">${config.eyebrow}</span>
+      <h1>${esc(item.title)}</h1>
+      <div class="article-meta"><span>${esc(item.author || "정참시")}</span><span>${formatDate(item.createdAt)}</span><span>조회 ${Number(item.views || 0)}</span><span>좋아요 ${Number(item.likes || 0)}</span></div>
+      ${cover ? `<div class="article-cover" style="background-image:url('${cover}')"></div>` : ""}
+      ${item.summary ? `<div class="article-lead">${esc(item.summary)}</div>` : ""}
+      <div class="article-body">${bodyHtml(item.body)}</div>
+      <div class="article-actions"><button type="button" class="ghost-btn" disabled>♡ 좋아요</button><button type="button" class="primary-btn" data-go="/${config.route}">${config.title} 목록으로</button></div>
+    </article>
+  </main>`);
+}
+
+export const BOARD_CONFIG = CONFIG;

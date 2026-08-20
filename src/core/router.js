@@ -1,14 +1,26 @@
 const listeners = new Set();
-
-export function route(path, { replace = false } = {}) {
-  const url = new URL(path, location.origin);
-  if (replace) history.replaceState({}, "", url.pathname + url.search + url.hash);
-  else history.pushState({}, "", url.pathname + url.search + url.hash);
-  notify();
-}
+let started = false;
 
 export function currentRoute() {
-  return { pathname: location.pathname, search: location.search, hash: location.hash };
+  return {
+    pathname: location.pathname || "/",
+    search: location.search || "",
+    hash: location.hash || ""
+  };
+}
+
+function emit() {
+  const state = currentRoute();
+  for (const fn of listeners) fn(state);
+}
+
+export function route(to, { replace = false } = {}) {
+  const url = new URL(to, location.origin);
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  const current = `${location.pathname}${location.search}${location.hash}`;
+  if (next === current) return;
+  history[replace ? "replaceState" : "pushState"]({}, "", next);
+  emit();
 }
 
 export function subscribe(fn) {
@@ -16,17 +28,16 @@ export function subscribe(fn) {
   return () => listeners.delete(fn);
 }
 
-function notify() {
-  listeners.forEach(fn => fn(currentRoute()));
-}
-
 export function startRouter() {
-  addEventListener("popstate", notify);
-  document.addEventListener("click", (event) => {
-    const el = event.target.closest("[data-route]");
-    if (!el) return;
-    const href = el.getAttribute("data-route");
-    if (!href) return;
+  if (started) return;
+  started = true;
+  addEventListener("popstate", emit);
+  document.addEventListener("click", event => {
+    const anchor = event.target.closest("a[data-route]");
+    if (!anchor || event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const href = anchor.getAttribute("href");
+    if (!href || href.startsWith("http") || href.startsWith("mailto:")) return;
     event.preventDefault();
     route(href);
   });
