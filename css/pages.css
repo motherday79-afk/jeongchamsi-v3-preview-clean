@@ -163,11 +163,12 @@
 .auth-error{min-height:20px;color:#a13f3f;font-size:13px}
 
 /* ---------- admin ---------- */
-.admin-page{gap:12px}
-.admin-tabs{display:flex;gap:7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
-.admin-tabs::-webkit-scrollbar{display:none}
-.admin-tabs button{flex:0 0 auto;min-height:40px;padding:9px 13px;border:1px solid #dfe7e4;border-radius:999px;background:#fff}
+.admin-page{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}
+.admin-page>.page-hero{grid-column:1/-1}
+.admin-tabs{display:flex;flex-direction:column;gap:7px;position:sticky;top:84px;max-height:calc(100vh - 104px);overflow-y:auto;overflow-x:hidden;padding:2px;scrollbar-width:thin}
+.admin-tabs button{width:100%;flex:0 0 auto;min-height:42px;padding:10px 12px;border:1px solid #dfe7e4;border-radius:10px;background:#fff;text-align:left;white-space:normal;line-height:1.35}
 .admin-tabs button.active{background:var(--green);color:#fff;border-color:var(--green)}
+.admin-panel{min-width:0}
 .admin-panel h2{margin:0 0 14px;font-size:var(--fs-h3)}
 .admin-stat-grid,.people-admin-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
 .people-admin-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -299,8 +300,17 @@
 .activity-inner-stats{margin-top:4px}
 
 
+.footer-view-switch{display:none}
+html.jcv3-force-desktop .footer-view-switch.desktop-return{display:inline-flex;margin-top:10px;min-height:36px;align-items:center;padding:7px 11px;border:1px solid #dfe7e4;border-radius:9px;background:#fff;color:var(--text);font-size:12px;font-weight:850;cursor:pointer}
+
 /* ---------- responsive: single-source ---------- */
 @media(max-width:760px){
+  .admin-page{grid-template-columns:1fr}
+  .admin-page>.page-hero{grid-column:auto}
+  .admin-tabs{position:static;max-height:none;overflow:visible;display:flex;flex-direction:column}
+  .admin-tabs button{width:100%;text-align:left}
+  .footer-view-switch.mobile-pc{display:inline-flex;margin-top:10px;min-height:36px;align-items:center;padding:7px 11px;border:1px solid #dfe7e4;border-radius:9px;background:#fff;color:var(--text);font-size:12px;font-weight:850;cursor:pointer}
+
   .page-hero,.content-card,.admin-panel,.auth-card{padding:17px 15px;border-radius:15px}
   .detail-grid{grid-template-columns:1fr}
   .person-detail-hero{grid-template-columns:82px minmax(0,1fr);gap:14px}

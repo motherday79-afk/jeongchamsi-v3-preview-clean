@@ -183,7 +183,9 @@ module.exports = async function handler(req, res) {
 
     if (action === "user-post-save") {
       const domain = String(payload.domain || "");
-      if (!["community", "itsme"].includes(domain)) return res.status(400).json({ ok: false, error: "INVALID_DOMAIN" });
+      const isAdmin = user.role === "admin";
+      if (!["community", "itsme", "columns", "news"].includes(domain)) return res.status(400).json({ ok: false, error: "INVALID_DOMAIN" });
+      if (["columns", "news"].includes(domain) && !isAdmin) return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
       const title = String(payload.title || "").trim().slice(0, 120);
       const body = String(payload.body || "").trim().slice(0, 50000);
       if (!title || !body) return res.status(400).json({ ok: false, error: "TITLE_BODY_REQUIRED" });
@@ -191,15 +193,17 @@ module.exports = async function handler(req, res) {
       const items = current.items || [];
       const requestedId = String(payload.id || "");
       const old = requestedId ? items.find(x => String(x.id) === requestedId) : null;
-      if (old && String(old.ownerId || "") !== user.id) return res.status(403).json({ ok: false, error: "NOT_OWNER" });
+      if (old && String(old.ownerId || "") !== user.id && !isAdmin) return res.status(403).json({ ok: false, error: "NOT_OWNER" });
       const id = old?.id || `${domain}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
       const now = new Date().toISOString();
       const next = {
         id, title,
         summary: String(payload.summary || "").trim().slice(0, 240),
         category: String(payload.category || "").trim().slice(0, 60),
-        author: String(user.nickname || user.id).slice(0, 40), ownerId: user.id, body,
-        coverImage: "", featured: false, published: true,
+        author: String(old?.author || user.nickname || user.id).slice(0, 40),
+        ownerId: String(old?.ownerId || user.id),
+        body,
+        coverImage: String(old?.coverImage || ""), featured: Boolean(old?.featured || false), published: true,
         createdAt: old?.createdAt || now, updatedAt: now,
         likes: Number(old?.likes || 0), views: Number(old?.views || 0)
       };
@@ -211,11 +215,13 @@ module.exports = async function handler(req, res) {
     if (action === "user-post-delete") {
       const domain = String(payload.domain || "");
       const id = String(payload.id || "");
-      if (!["community", "itsme"].includes(domain) || !id) return res.status(400).json({ ok: false, error: "INVALID_REQUEST" });
+      const isAdmin = user.role === "admin";
+      if (!["community", "itsme", "columns", "news"].includes(domain) || !id) return res.status(400).json({ ok: false, error: "INVALID_REQUEST" });
+      if (["columns", "news"].includes(domain) && !isAdmin) return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
       const current = (await getJSON(domain)) || defaultDomain(domain);
       const old = (current.items || []).find(x => String(x.id) === id);
       if (!old) return res.status(404).json({ ok: false, error: "POST_NOT_FOUND" });
-      if (String(old.ownerId || "") !== user.id) return res.status(403).json({ ok: false, error: "NOT_OWNER" });
+      if (String(old.ownerId || "") !== user.id && !isAdmin) return res.status(403).json({ ok: false, error: "NOT_OWNER" });
       current.items = (current.items || []).filter(x => String(x.id) !== id);
       await setJSON(domain, sanitize(domain, current));
       return res.status(200).json({ ok: true });

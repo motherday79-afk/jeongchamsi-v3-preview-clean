@@ -1,0 +1,24 @@
+{
+  "version": "v3.0.0-alpha6.0.5",
+  "patch": [
+    "Admin can create/edit/delete from public COLUMN, NEWS, COMMUNITY, ITS ME boards",
+    "Admin can edit/delete any member post while preserving original author/owner",
+    "Admin menu is left vertical navigation with no horizontal clipping",
+    "Mobile footer has working PC-version mode and return-to-mobile control"
+  ],
+  "checks": {
+    "column_write_route": true,
+    "news_write_route": true,
+    "admin_manage_board_detail": true,
+    "server_admin_bypass_save": true,
+    "author_preserved_on_admin_edit": true,
+    "admin_vertical_menu": true,
+    "mobile_pc_footer": true,
+    "desktop_viewport_1280": true,
+    "return_mobile_button": true
+  },
+  "vercelFunctionCount": 1,
+  "layoutAppCssLocked": true,
+  "appCssSha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "jsSyntax": "ALL PASS"
+}

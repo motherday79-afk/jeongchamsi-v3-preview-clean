@@ -32,35 +32,39 @@ export async function renderBoard(domain) {
   const data = await getDomain(domain);
   const items = published(data.items || []);
   const session = getUserSession();
-  const writeButton = config.memberWrite
-    ? (session.authenticated ? `<button class="primary-btn" type="button" data-go="/${config.route}/write">글쓰기</button>` : `<button class="primary-btn" type="button" data-go="/login">로그인 후 글쓰기</button>`)
-    : "";
+  const isAdmin = session.authenticated && session.user?.role === "admin";
+  const canWrite = config.memberWrite ? session.authenticated : isAdmin;
+  const writeButton = canWrite
+    ? `<button class="primary-btn" type="button" data-go="/${config.route}/write">${isAdmin && !config.memberWrite ? "관리자 글 등록" : "글쓰기"}</button>`
+    : (config.memberWrite ? `<button class="primary-btn" type="button" data-go="/login">로그인 후 글쓰기</button>` : "");
 
   return pageShell(`<main class="subpage">
     <section class="page-hero"><span class="eyebrow">${config.eyebrow}</span><h1>${config.title}</h1><p>${config.description}</p></section>
     <section class="content-card">
-      <div class="board-toolbar"><p>${config.memberWrite ? "회원이 직접 글을 작성하고 댓글·좋아요로 참여할 수 있습니다." : "관리자에서 작성·수정한 게시물이 목록과 상세페이지에 바로 연결됩니다."}</p><div class="inline-actions"><span class="status-pill"><b>POSTS</b>${items.length}개</span>${writeButton}</div></div>
+      <div class="board-toolbar"><p>${isAdmin ? "관리자 권한으로 이 게시판에서 바로 등록·수정·삭제할 수 있습니다." : (config.memberWrite ? "회원이 직접 글을 작성하고 댓글·좋아요로 참여할 수 있습니다." : "관리자가 등록한 게시물을 확인할 수 있습니다.")}</p><div class="inline-actions"><span class="status-pill"><b>POSTS</b>${items.length}개</span>${writeButton}</div></div>
       ${items.length ? `<div class="board-list">${items.map(item => {
         const cover = safeImage(item.coverImage);
         const noThumb = !config.image;
         return `<article class="${noThumb ? "no-thumb" : ""}">${!noThumb ? `<a class="board-thumb" href="/${config.route}/${esc(item.id)}" data-route ${cover ? `style="background-image:url('${cover}')"` : ""}></a>` : ""}<a href="/${config.route}/${esc(item.id)}" data-route><span class="type">${esc(item.category || config.title)}</span><h2>${esc(item.title)}</h2><p>${esc(item.summary || item.body || "")}</p></a><small>${esc(item.author || "정참시")} · ${formatDate(item.createdAt)} · 좋아요 ${Number(item.likes || 0)}</small></article>`;
-      }).join("")}</div>` : `<div class="empty-state tall"><div class="empty-icon">＋</div><h2>아직 등록된 글이 없습니다.</h2><p>${config.memberWrite ? "로그인 후 첫 게시물을 작성할 수 있습니다." : "관리자에서 첫 글을 작성하면 이곳에 목록이 생성됩니다."}</p>${writeButton}</div>`}
+      }).join("")}</div>` : `<div class="empty-state tall"><div class="empty-icon">＋</div><h2>아직 등록된 글이 없습니다.</h2><p>${isAdmin ? "이 게시판에서 바로 첫 글을 등록할 수 있습니다." : (config.memberWrite ? "로그인 후 첫 게시물을 작성할 수 있습니다." : "아직 등록된 게시물이 없습니다.")}</p>${writeButton}</div>`}
     </section>
   </main>`);
 }
 
 export async function renderBoardWriter(domain, search = "") {
   const config = CONFIG[domain] || CONFIG.community;
-  if (!config.memberWrite) return renderBoard(domain);
   const session = getUserSession();
-  if (!session.authenticated) return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><h2>로그인이 필요합니다.</h2><p>${config.title} 글쓰기는 회원 기능입니다.</p><button class="primary-btn" type="button" data-go="/login">로그인</button></section></main>`);
+  const isAdmin = session.authenticated && session.user?.role === "admin";
+  const canWrite = config.memberWrite ? session.authenticated : isAdmin;
+  if (!canWrite) return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><h2>${session.authenticated ? "관리자 권한이 필요합니다." : "로그인이 필요합니다."}</h2><p>${config.memberWrite ? `${config.title} 글쓰기는 회원 기능입니다.` : `${config.title} 등록은 관리자 기능입니다.`}</p><button class="primary-btn" type="button" data-go="${session.authenticated ? `/${config.route}` : "/login"}">${session.authenticated ? "목록으로" : "로그인"}</button></section></main>`);
 
   const data = await getDomain(domain);
   const id = new URLSearchParams(search || "").get("id") || "";
   const old = id ? (data.items || []).find(x => String(x.id) === String(id)) : null;
-  if (old && String(old.ownerId || "") !== String(session.user.id)) return pageShell(`<main class="subpage"><section class="content-card empty-state"><h2>수정 권한이 없습니다.</h2><button class="primary-btn" type="button" data-go="/${config.route}">목록으로</button></section></main>`);
+  const owns = old && String(old.ownerId || "") === String(session.user.id);
+  if (old && !owns && !isAdmin) return pageShell(`<main class="subpage"><section class="content-card empty-state"><h2>수정 권한이 없습니다.</h2><button class="primary-btn" type="button" data-go="/${config.route}">목록으로</button></section></main>`);
 
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">WRITE · ${config.eyebrow}</span><h1>${old ? `${config.title} 글 수정` : `${config.title} 글쓰기`}</h1><p>작성한 글은 저장 즉시 목록과 상세페이지에서 확인할 수 있습니다.</p></section><section class="content-card"><form class="member-post-form" data-user-post-form="${domain}" data-item-id="${esc(old?.id || "")}"><label>말머리<input name="category" maxlength="60" value="${esc(old?.category || "자유게시판")}" placeholder="예: 자유게시판"></label><label>제목<input name="title" maxlength="120" required value="${esc(old?.title || "")}"></label><label>한 줄 요약<input name="summary" maxlength="240" value="${esc(old?.summary || "")}"></label><label>내용<textarea name="body" rows="14" maxlength="50000" required>${esc(old?.body || "")}</textarea></label><div class="auth-error" data-user-post-error></div><div class="admin-form-actions"><button class="primary-btn" type="submit">${old ? "수정 저장" : "등록"}</button><button class="ghost-btn" type="button" data-go="${old ? `/${config.route}/${esc(old.id)}` : `/${config.route}`}">취소</button></div></form></section></main>`);
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">WRITE · ${config.eyebrow}</span><h1>${old ? `${config.title} 글 수정` : `${config.title} 글쓰기`}</h1><p>${isAdmin ? "관리자 권한으로 게시판에서 직접 등록·수정합니다. 다른 회원의 글을 수정해도 원 작성자 정보는 유지됩니다." : "작성한 글은 저장 즉시 목록과 상세페이지에서 확인할 수 있습니다."}</p></section><section class="content-card"><form class="member-post-form" data-user-post-form="${domain}" data-item-id="${esc(old?.id || "")}"><label>말머리<input name="category" maxlength="60" value="${esc(old?.category || "자유게시판")}" placeholder="예: 자유게시판"></label><label>제목<input name="title" maxlength="120" required value="${esc(old?.title || "")}"></label><label>한 줄 요약<input name="summary" maxlength="240" value="${esc(old?.summary || "")}"></label><label>내용<textarea name="body" rows="14" maxlength="50000" required>${esc(old?.body || "")}</textarea></label><div class="auth-error" data-user-post-error></div><div class="admin-form-actions"><button class="primary-btn" type="submit">${old ? "수정 저장" : "등록"}</button><button class="ghost-btn" type="button" data-go="${old ? `/${config.route}/${esc(old.id)}` : `/${config.route}`}">취소</button></div></form></section></main>`);
 }
 
 export async function renderBoardDetail(domain, id) {
@@ -74,7 +78,9 @@ export async function renderBoardDetail(domain, id) {
   const cover = safeImage(item.coverImage);
   const session = getUserSession();
   const liked = session.authenticated && isPostLiked(domain, id);
+  const isAdmin = session.authenticated && session.user?.role === "admin";
   const mine = config.memberWrite && session.authenticated && String(item.ownerId || "") === String(session.user.id);
+  const canManage = isAdmin || mine;
   const commentData = await getDomain("comments");
   const comments = (commentData.items || []).filter(c => c.published !== false && c.domain === domain && String(c.postId) === String(id)).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
@@ -86,7 +92,7 @@ export async function renderBoardDetail(domain, id) {
       ${cover ? `<div class="article-cover" style="background-image:url('${cover}')"></div>` : ""}
       ${item.summary ? `<div class="article-lead">${esc(item.summary)}</div>` : ""}
       <div class="article-body">${bodyHtml(item.body)}</div>
-      <div class="article-actions"><button type="button" class="ghost-btn ${liked ? "active" : ""}" data-post-like="${esc(domain)}" data-post-id="${esc(id)}">${liked ? "♥ 좋아요 취소" : "♡ 좋아요"}</button>${mine ? `<button type="button" class="ghost-btn" data-go="/${config.route}/write?id=${encodeURIComponent(id)}">수정</button><button type="button" class="danger-btn" data-user-post-delete="${esc(domain)}" data-id="${esc(id)}">삭제</button>` : ""}<button type="button" class="primary-btn" data-go="/${config.route}">${config.title} 목록으로</button></div>
+      <div class="article-actions"><button type="button" class="ghost-btn ${liked ? "active" : ""}" data-post-like="${esc(domain)}" data-post-id="${esc(id)}">${liked ? "♥ 좋아요 취소" : "♡ 좋아요"}</button>${canManage ? `<button type="button" class="ghost-btn" data-go="/${config.route}/write?id=${encodeURIComponent(id)}">수정</button><button type="button" class="danger-btn" data-user-post-delete="${esc(domain)}" data-id="${esc(id)}">삭제</button>` : ""}<button type="button" class="primary-btn" data-go="/${config.route}">${config.title} 목록으로</button></div>
     </article>
     <section class="content-card comment-section"><div class="section-title"><h2>댓글</h2><span>${comments.length}개</span></div>${session.authenticated ? `<form class="comment-form" data-comment-form="${esc(domain)}" data-post-id="${esc(id)}"><textarea name="comment" rows="3" maxlength="1000" placeholder="정치에 대한 의견을 남겨보세요." required></textarea><div class="admin-form-actions"><button class="primary-btn" type="submit">댓글 등록</button><span class="save-state" data-comment-state></span></div></form>` : `<div class="member-login-prompt"><span>댓글과 좋아요는 로그인 후 사용할 수 있습니다.</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>`}${comments.length ? `<div class="comment-list">${comments.map(c => `<article><div><b>${esc(c.author)}</b><span>${formatDate(c.createdAt)}</span></div><p>${esc(c.text)}</p></article>`).join("")}</div>` : `<div class="empty-inline" style="margin-top:12px">아직 작성한 댓글이 없습니다.</div>`}</section>
   </main>`);

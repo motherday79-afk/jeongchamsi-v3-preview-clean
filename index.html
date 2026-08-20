@@ -2,14 +2,22 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" id="jcv3-viewport">
+  <script>
+    try {
+      if (localStorage.getItem("jcv3:view-mode") === "desktop") {
+        document.documentElement.classList.add("jcv3-force-desktop");
+        document.getElementById("jcv3-viewport").setAttribute("content","width=1280,initial-scale=1");
+      }
+    } catch {}
+  </script>
   <meta name="theme-color" content="#0b8f78">
   <title>정참시 v3 Preview</title>
   <link rel="stylesheet" href="/css/app.css?v=alpha3.1-layout-final">
-  <link rel="stylesheet" href="/css/pages.css?v=alpha6.0.2-auth-routing">
+  <link rel="stylesheet" href="/css/pages.css?v=alpha6.0.5-admin-board-pc">
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="/src/app.js?v=alpha6.0.2-auth-routing"></script>
+  <script type="module" src="/src/app.js?v=alpha6.0.5-admin-board-pc"></script>
 </body>
 </html>

@@ -33,9 +33,11 @@ async function resolveView(state) {
   if (p[0] === "person") return renderPersonDetail(p[1] || "");
   if (p[0] === "president") return renderPresident();
   if (p[0] === "now") return renderNow(state.search);
+  if (p[0] === "column" && p[1] === "write") return renderBoardWriter("columns", state.search);
   if (p[0] === "column") return p[1] ? renderBoardDetail("columns", p[1]) : renderBoard("columns");
   if (p[0] === "community" && p[1] === "write") return renderBoardWriter("community", state.search);
   if (p[0] === "community") return p[1] ? renderBoardDetail("community", p[1]) : renderBoard("community");
+  if (p[0] === "news" && p[1] === "write") return renderBoardWriter("news", state.search);
   if (p[0] === "news") return p[1] ? renderBoardDetail("news", p[1]) : renderBoard("news");
   if (p[0] === "poll") return renderPolls();
   if (p[0] === "keywords") return renderKeywords();
@@ -71,6 +73,16 @@ document.addEventListener("click", async event => {
   if (go) { const to = go.dataset.go; if (to && to !== "#") route(to); return; }
   if (event.target.closest("[data-drawer-open]")) return toggleDrawer(true);
   if (event.target.closest("[data-drawer-close]")) return toggleDrawer(false);
+  const viewMode = event.target.closest("[data-view-mode]");
+  if (viewMode) {
+    const mode = viewMode.dataset.viewMode;
+    try {
+      if (mode === "desktop") localStorage.setItem("jcv3:view-mode", "desktop");
+      else localStorage.removeItem("jcv3:view-mode");
+    } catch {}
+    window.location.reload();
+    return;
+  }
   if (event.target.closest("[data-user-logout]")) { await logoutUser(); route("/", { replace: true }); return render(currentRoute()); }
 
   const favorite = event.target.closest("[data-person-favorite]");
@@ -82,7 +94,7 @@ document.addEventListener("click", async event => {
   const vote = event.target.closest("[data-poll-vote]");
   if (vote) { if (!getUserSession().authenticated) return route("/login"); vote.disabled = true; const r = await performAction("poll-vote", { pollId: vote.dataset.pollId, optionId: vote.dataset.optionId }); if (!r.ok) alert(r.error === "ALREADY_VOTED" ? "이미 참여한 설문입니다." : "투표 저장에 실패했습니다."); await rerenderNoScroll(); return; }
   const delUser = event.target.closest("[data-user-post-delete]");
-  if (delUser) { if (!confirm("이 글을 삭제할까요?")) return; const r = await performAction("user-post-delete", { domain: delUser.dataset.userPostDelete, id: delUser.dataset.id }); if (!r.ok) return alert("삭제하지 못했습니다."); clearDomainCache(); route(delUser.dataset.userPostDelete === "itsme" ? "/itsme" : "/community", { replace: true }); return; }
+  if (delUser) { if (!confirm("이 글을 삭제할까요?")) return; const domain = delUser.dataset.userPostDelete; const r = await performAction("user-post-delete", { domain, id: delUser.dataset.id }); if (!r.ok) return alert(`삭제하지 못했습니다. ${r.error || ""}`); clearDomainCache(); const target = { itsme:"/itsme", community:"/community", columns:"/column", news:"/news" }[domain] || "/"; route(target, { replace: true }); return; }
 
   const tab = event.target.closest("[data-admin-tab]"); if (tab) return route(`/admin?tab=${encodeURIComponent(tab.dataset.adminTab)}`);
   const add = event.target.closest("[data-admin-new]"); if (add) return route(`/admin?tab=${encodeURIComponent(add.dataset.adminNew)}&edit=new`);
@@ -110,7 +122,7 @@ document.addEventListener("submit", async event => {
   if (form.matches("[data-user-join]")) { event.preventDefault(); const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) { const e=form.querySelector("[data-user-auth-error]"); if(e)e.textContent="비밀번호 확인이 일치하지 않습니다."; return; } const r = await registerUser(Object.fromEntries(fd.entries())); const e=form.querySelector("[data-user-auth-error]"); if(!r.ok){if(e)e.textContent=r.error||"회원가입 실패";return;} route("/mypage",{replace:true}); return; }
   if (form.matches("[data-user-profile-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await updateMyProfile(Object.fromEntries(fd.entries())); const st=form.querySelector("[data-user-profile-state]"); if(!r.ok){if(st)st.textContent=`저장 실패 · ${r.error||""}`;return;} if(st)st.textContent="저장 완료"; await render(currentRoute(), { resetScroll:false }); return; }
   if (form.matches("[data-first-admin-setup]")) { event.preventDefault(); const r = await submitFirstAdmin(form); const e = form.querySelector("[data-admin-setup-error]"); if (!r.ok) { if (e) e.textContent = r.error || "관리자 생성 실패"; return; } route("/admin", { replace: true }); await render(currentRoute()); return; }
-  if (form.matches("[data-user-post-form]")) { event.preventDefault(); const fd = new FormData(form); const domain = form.dataset.userPostForm; const r = await performAction("user-post-save", { domain, id: form.dataset.itemId || "", title: fd.get("title"), summary: fd.get("summary"), category: fd.get("category"), body: fd.get("body") }); const e=form.querySelector("[data-user-post-error]"); if(!r.ok){if(e)e.textContent=`저장 실패 · ${r.error||""}`;return;} clearDomainCache(); route(`/${domain === "itsme" ? "itsme" : "community"}/${r.item.id}`, { replace: true }); return; }
+  if (form.matches("[data-user-post-form]")) { event.preventDefault(); const fd = new FormData(form); const domain = form.dataset.userPostForm; const r = await performAction("user-post-save", { domain, id: form.dataset.itemId || "", title: fd.get("title"), summary: fd.get("summary"), category: fd.get("category"), body: fd.get("body") }); const e=form.querySelector("[data-user-post-error]"); if(!r.ok){if(e)e.textContent=`저장 실패 · ${r.error||""}`;return;} clearDomainCache(); const base = { itsme:"itsme", community:"community", columns:"column", news:"news" }[domain] || "community"; route(`/${base}/${r.item.id}`, { replace: true }); return; }
   if (form.matches("[data-comment-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("comment-add", { domain: form.dataset.commentForm, postId: form.dataset.postId, text: fd.get("comment") }); const st=form.querySelector("[data-comment-state]"); if(!r.ok){if(st)st.textContent=`등록 실패 · ${r.error||""}`;return;} clearDomainCache("comments"); form.reset(); await render(currentRoute(), { resetScroll: false }); return; }
   if (form.matches("[data-compare-form]")) { event.preventDefault(); const fd = new FormData(form); return route(`/compare?a=${encodeURIComponent(fd.get("a"))}&b=${encodeURIComponent(fd.get("b"))}`); }
   if (form.matches("[data-generation-vote-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("generation-vote", { ageGroup: fd.get("ageGroup"), personId: fd.get("personId") }); const st=form.querySelector("[data-generation-vote-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이 세대 투표에 이미 참여했습니다.":`투표 실패 · ${r.error||""}`;return;} await rerenderNoScroll(); return; }

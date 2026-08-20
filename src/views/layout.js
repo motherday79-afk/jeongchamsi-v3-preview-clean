@@ -73,7 +73,7 @@ export function drawer() {
 }
 
 export function footer() {
-  return `<footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간.</span></div><div>이용안내 · 개인정보처리방침 · 운영정책</div></footer>`;
+  return `<footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간.</span><button type="button" class="footer-view-switch mobile-pc" data-view-mode="desktop">PC버전 보기</button><button type="button" class="footer-view-switch desktop-return" data-view-mode="mobile">모바일버전 보기</button></div><div>이용안내 · 개인정보처리방침 · 운영정책</div></footer>`;
 }
 
 export function pageShell(content) {
