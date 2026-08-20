@@ -52,3 +52,9 @@ Redis 환경변수는 아래 정상 PAIR만 사용합니다.
 배포 후 `/api/v3/health`를 열어
 `{"ok":true,"storage":"ready","session":"ready"}`가 나오면
 회원가입/로그인 기반이 정상입니다.
+
+
+## alpha6.0.4
+Vercel 번들러가 서버 route 모듈을 누락하지 않도록 동적 require를 폐기하고
+모든 route를 literal require loader로 변경했습니다.
+`/api/v3/health`, 로그인, 회원가입, 관리자 setup 모듈 로드 검증을 통과했습니다.

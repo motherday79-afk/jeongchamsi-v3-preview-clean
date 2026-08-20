@@ -1,64 +1,56 @@
 /*
  * 정참시 v3 unified API gateway
- * --------------------------------
- * Hobby-safe architecture: this is the ONLY Vercel Function.
- * Feature handlers live under /server and are loaded lazily so one optional
- * feature dependency cannot break login, signup, or unrelated API routes.
+ * Hobby-safe: exactly ONE Vercel Function.
+ * Literal require() loaders let Vercel bundle every route module correctly.
  */
-
-const routeModules = Object.freeze({
-  "action": "../server/v3/routes/action",
-  "content": "../server/v3/routes/content",
-  "home": "../server/v3/routes/home",
-  "health": "../server/v3/routes/health",
-  "setup": "../server/v3/routes/setup",
-  "upload": "../server/v3/routes/upload",
-  "admin/users": "../server/v3/routes/admin/users",
-  "user/activity": "../server/v3/routes/user/activity",
-  "user/profile": "../server/v3/routes/user/profile",
-  "user/register": "../server/v3/routes/user/register",
-  "user/session": "../server/v3/routes/user/session"
+const routeLoaders = Object.freeze({
+  "action": () => require("../server/v3/routes/action"),
+  "content": () => require("../server/v3/routes/content"),
+  "home": () => require("../server/v3/routes/home"),
+  "health": () => require("../server/v3/routes/health"),
+  "setup": () => require("../server/v3/routes/setup"),
+  "upload": () => require("../server/v3/routes/upload"),
+  "admin/users": () => require("../server/v3/routes/admin/users"),
+  "user/activity": () => require("../server/v3/routes/user/activity"),
+  "user/profile": () => require("../server/v3/routes/user/profile"),
+  "user/register": () => require("../server/v3/routes/user/register"),
+  "user/session": () => require("../server/v3/routes/user/session")
 });
 
 function normalizedPath(req) {
   const rewritten = req.query?.path;
-  const fromRewrite = Array.isArray(rewritten)
-    ? rewritten.join("/")
-    : String(rewritten || "");
-
+  const fromRewrite = Array.isArray(rewritten) ? rewritten.join("/") : String(rewritten || "");
   if (fromRewrite) return fromRewrite.replace(/^\/+|\/+$/g, "");
-
-  const pathname = String(req.url || "").split("?")[0];
-  return pathname
+  return String(req.url || "")
+    .split("?")[0]
     .replace(/^\/api\/v3\/?/, "")
     .replace(/^\/+|\/+$/g, "");
 }
 
 module.exports = async function gateway(req, res) {
   const path = normalizedPath(req);
-  const modulePath = routeModules[path];
-
+  const load = routeLoaders[path];
   res.setHeader("Cache-Control", "no-store");
 
-  if (!modulePath) {
+  if (!load) {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    return res.status(404).json({
-      ok: false,
-      error: "API_ROUTE_NOT_FOUND",
-      path
-    });
+    return res.status(404).json({ ok:false, error:"API_ROUTE_NOT_FOUND", path });
+  }
+
+  let handler;
+  try {
+    handler = load();
+  } catch (error) {
+    console.error("[JCV3_GATEWAY_LOAD]", path, error);
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    return res.status(500).json({ ok:false, error:"API_MODULE_LOAD_FAILED", path });
   }
 
   try {
-    const handler = require(modulePath);
     return await handler(req, res);
   } catch (error) {
-    console.error("[JCV3_GATEWAY]", path, error);
+    console.error("[JCV3_GATEWAY_HANDLER]", path, error);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    return res.status(500).json({
-      ok: false,
-      error: "API_HANDLER_FAILED",
-      path
-    });
+    return res.status(500).json({ ok:false, error:error?.code || "API_HANDLER_FAILED", path });
   }
 };

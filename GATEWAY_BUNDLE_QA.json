@@ -1,0 +1,25 @@
+{
+  "version": "v3.0.0-alpha6.0.4",
+  "rootCause": "Vercel bundler could not statically trace dynamic require(modulePath)",
+  "fix": "literal require() loader for every route",
+  "vercelFunctionCount": 1,
+  "criticalAuthModuleLoad": {
+    "health": true,
+    "user/register": true,
+    "user/session": true,
+    "setup": true,
+    "admin/users": true
+  },
+  "healthGatewayLocalResult": {
+    "status": 503,
+    "body": {
+      "ok": false,
+      "error": "STORAGE_MISSING"
+    }
+  },
+  "uploadDependencyInPackageJson": true,
+  "uploadDependencyVersion": "^2.6.1",
+  "layoutFontLocked": true,
+  "appCssSha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "jsSyntax": "ALL PASS"
+}

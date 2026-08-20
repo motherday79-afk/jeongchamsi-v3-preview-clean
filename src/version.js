@@ -1,2 +1,2 @@
-export const APP_VERSION = "v3.0.0-alpha6.0.3.1";
+export const APP_VERSION = "v3.0.0-alpha6.0.4.1";
 export const BUILD_NAME = "CLEAN CORE · AUTH ROUTING FIX 01 · STRUCTURE RESET · LAYOUT LOCK";
