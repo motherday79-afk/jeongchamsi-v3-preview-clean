@@ -1,0 +1,23 @@
+{
+  "version": "v3.0.0-alpha6.0.8",
+  "rootCause": "app.css kept the old alpha3.1 query string and static source files could remain cached",
+  "fix": [
+    "all top-level CSS/JS cache keys bumped to alpha6.0.8",
+    "index.html, /src/* and /css/* use Cache-Control: no-store during preview",
+    "alpha6.0.7 sidebar/recent-politician visual changes preserved"
+  ],
+  "checks": {
+    "app_css_cache_key_updated": true,
+    "pages_css_cache_key_updated": true,
+    "app_js_cache_key_updated": true,
+    "source_no_store": true,
+    "css_no_store": true,
+    "index_no_store": true,
+    "sidebar_scroll_rule_present": true,
+    "sidebar_top_8_present": true,
+    "recent_circle_row_present": true,
+    "recent_circle_markup_present": true
+  },
+  "vercelFunctionCount": 1,
+  "jsSyntax": "ALL PASS"
+}
