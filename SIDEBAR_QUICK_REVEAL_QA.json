@@ -1,0 +1,13 @@
+{
+  "version": "v3.0.0-alpha6.0.10",
+  "behavior": "Single browser scroll. Sidebar is allowed to travel upward 260px before sticking, revealing lower cards much sooner.",
+  "checks": {
+    "one_browser_scroll": true,
+    "quick_reveal_negative_sticky": true,
+    "no_sidebar_max_height": true,
+    "recent_round_row_preserved": true,
+    "one_vercel_function": true
+  },
+  "vercelFunctionCount": 1,
+  "jsSyntax": "ALL PASS"
+}
