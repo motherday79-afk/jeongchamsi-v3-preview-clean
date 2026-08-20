@@ -1,14 +1,25 @@
-# 정참시 v3.0.0-alpha.1.1 · SPEED FOUNDATION
+# 정참시 v3.0.0-alpha.1.2 · HOME SHELL
 
-v3 독립 Preview의 첫 개발 기준선.
+## 목표
+속도 제1원칙을 유지한 채 정참시 HOME의 실제 정보 구조를 v3에 처음 이관.
 
-## 이번 단계
-- 서버/API 연결 없음: 초기 렌더 차단 API 0개
-- 외부 폰트/외부 JS 없음
-- `?perf=1` 성능 계측기 기본 탑재
-- `PERFORMANCE_BUDGET.md`로 속도 예산 고정
-- 다음 단계부터 모든 기능은 이 예산 안에서만 이관
+## 반영
+- 대통령부터
+- NOW Rank
+- IT’S ME
+- COLUMN
+- 시민들의 선택
+- COMMUNITY
+- 우측 로그인 / 정치키워드 / 정참시 NEWS
+- 통합검색 UI
 
-## 배포
-현재 `jeongchamsi-v3-preview-clean` 저장소에 PATCH 파일을 같은 경로로 업로드해 덮어쓴다.
-Vercel은 GitHub Commit 후 자동 배포한다.
+## 아직 연결하지 않은 것
+- API
+- 실제 정치인/게시글/설문 데이터
+- 실제 사진
+- 로그인
+- 검색
+- 관리자
+
+이 단계에서는 초기 렌더 차단 API가 0개다.
+다음 단계부터 각 모듈을 독립 API와 연결한다.
