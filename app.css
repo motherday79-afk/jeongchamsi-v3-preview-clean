@@ -405,3 +405,131 @@ html,body{
   .rank-list-copy b{font-size:14px}
   .rank-list-copy em{font-size:12px}
 }
+
+
+/* =========================================================
+   alpha2.4 — READABILITY LOCK
+   핵심 원칙: 사용자가 '읽어야 하는 문장'은 작게 만들지 않는다.
+   ========================================================= */
+
+/* 주요 설명문 */
+.module-desc,
+.president-text p{
+  font-size:15px;
+  line-height:1.62;
+  color:#66736f;
+}
+
+/* NOW Rank */
+.rank-top-copy span{
+  font-size:13px;
+  line-height:1.5;
+}
+.rank-list-copy em{
+  font-size:13px;
+  line-height:1.5;
+}
+.rank-list-meta{
+  font-size:12px;
+}
+
+/* IT'S ME */
+.itsme-card p{
+  font-size:13px;
+  line-height:1.55;
+}
+
+/* 설문 설명 */
+.poll-question p{
+  font-size:14px;
+  line-height:1.6;
+}
+.poll-options span{
+  font-size:14px;
+}
+
+/* COMMUNITY */
+.community-highlight p{
+  font-size:13px;
+  line-height:1.55;
+}
+.community-copy em,
+.community-stats{
+  font-size:12px;
+}
+
+/* 비교분석 */
+.compare-person small{
+  font-size:12px;
+}
+.compare-summary span{
+  font-size:13px;
+  line-height:1.6;
+}
+
+/* 전국 평가제 */
+.eval-person small{
+  font-size:12px;
+}
+.eval-question p{
+  font-size:13px;
+  line-height:1.6;
+}
+.eval-score small,
+.eval-score span{
+  font-size:12px;
+}
+
+/* 아카데미 */
+.academy-intro p{
+  font-size:13px;
+  line-height:1.65;
+}
+.schedule-head span{
+  font-size:12px;
+}
+.schedule-row button{
+  font-size:12px;
+}
+
+/* 세대별 대통령 */
+.generation-intro p{
+  font-size:13px;
+  line-height:1.65;
+}
+.generation-card small{
+  font-size:12px;
+}
+
+/* 우측 사이드 설명 */
+.login-card p{
+  font-size:14px;
+  line-height:1.6;
+}
+.side-head span{
+  font-size:12px;
+}
+.side-row span{
+  font-size:12px;
+}
+.participation-main p{
+  font-size:13px;
+  line-height:1.55;
+}
+
+/* Footer */
+.footer{
+  font-size:13px;
+}
+
+@media(max-width:760px){
+  .module-desc,
+  .president-text p{
+    font-size:14px;
+  }
+  .rank-list-copy em,
+  .login-card p,
+  .participation-main p{
+    font-size:13px;
+  }
+}
