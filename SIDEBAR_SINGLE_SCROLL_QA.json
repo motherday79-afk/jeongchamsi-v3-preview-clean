@@ -1,0 +1,13 @@
+{
+  "version": "v3.0.0-alpha6.0.9",
+  "fix": "Right sidebar no longer has independent scrolling. Whole page uses one browser scroll; sidebar uses natural CSS sticky and stops with its container.",
+  "checks": {
+    "single_page_scroll": true,
+    "sidebar_no_max_height": true,
+    "sidebar_sticky": true,
+    "recent_round_layout_preserved": true,
+    "one_vercel_function": true
+  },
+  "vercelFunctionCount": 1,
+  "jsSyntax": "ALL PASS"
+}
