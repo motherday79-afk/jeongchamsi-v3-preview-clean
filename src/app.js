@@ -71,6 +71,31 @@ document.querySelector("#app").innerHTML = `
   <div class="page-wrap">
     <div class="portal-layout">
 
+      <section class="mobile-utility" aria-label="모바일 빠른 정보">
+        <div class="mobile-login">
+          <div>
+            <b>정참시에 로그인하세요</b>
+            <span>즐겨찾기 · 참여 · 배지 · 알림</span>
+          </div>
+          <button type="button">로그인</button>
+        </div>
+
+        <div class="mobile-keywords">
+          <div class="mobile-utility-head">
+            <b>실시간 정치키워드</b>
+            <span>더보기 →</span>
+          </div>
+          <div class="mobile-keyword-track">
+            ${Array.from({length:8},(_,i)=>`<span>${i+1}</span>`).join("")}
+          </div>
+        </div>
+
+        <div class="mobile-mini-tools">
+          <button type="button"><b>내 참여 · 배지</b><span>활동 보기 →</span></button>
+          <button type="button"><b>최근 본 정치인</b><span>다시 보기 →</span></button>
+        </div>
+      </section>
+
       <main class="main-column">
 
         <section class="module president-strip" id="president">
@@ -330,30 +355,30 @@ document.querySelector("#app").innerHTML = `
       </main>
 
       <aside class="side-column">
-        <section class="side-card login-card">
+        <section class="side-card login-card side-login">
           <b>정참시에 로그인하세요</b>
           <p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p>
           <button>로그인</button>
         </section>
 
-        <section class="side-card">
+        <section class="side-card side-keywords">
           <div class="side-head"><b>실시간 정치키워드</b><span>더보기</span></div>
           <div class="keyword-grid">
             ${Array.from({length:10},(_,i)=>`<span>${i+1}</span>`).join("")}
           </div>
         </section>
 
-        <section class="side-card">
+        <section class="side-card side-news">
           <div class="side-head"><b>정참시 NEWS</b><span>전체</span></div>
           ${sideRows(5)}
         </section>
 
-        <section class="side-card">
+        <section class="side-card side-rising">
           <div class="side-head"><b>실시간 급상승</b><span>전체</span></div>
           ${sideRows(5)}
         </section>
 
-        <section class="side-card participation-card">
+        <section class="side-card participation-card side-participation">
           <div class="side-head"><b>내 참여 · 배지</b><span>MY</span></div>
           <div class="participation-main">
             <span class="grade-circle">P</span>
@@ -364,7 +389,7 @@ document.querySelector("#app").innerHTML = `
           </div>
         </section>
 
-        <section class="side-card">
+        <section class="side-card side-recent">
           <div class="side-head"><b>최근 본 정치인</b><span>전체</span></div>
           <div class="recent-row">
             <span></span><span></span><span></span><span></span>
