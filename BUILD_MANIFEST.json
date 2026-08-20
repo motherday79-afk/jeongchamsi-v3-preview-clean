@@ -1,29 +1,25 @@
 {
-  "version": "v3.0.0-alpha4.0",
-  "build": "FUNCTION FOUNDATION 01 · LAYOUT LOCK",
-  "layout_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "version": "v3.0.0-alpha4.1",
+  "build": "FUNCTION FOUNDATION 01 · RUNTIME FIX",
+  "layout_locked": true,
+  "pages_css_locked": true,
   "js_syntax_ok": true,
-  "legacy_runtime_refs": [],
-  "politician_provider": "UNDECIDED / 0 real people",
-  "people_capacity": {
-    "assembly": 300,
-    "local_leaders": 300
+  "home_refresh_unit_test": {
+    "fetchCount": 1,
+    "eventCount": 1
   },
-  "routes": [
-    "/assembly",
-    "/local-leaders",
-    "/person/:id",
-    "/now",
-    "/president",
-    "/column",
-    "/community",
-    "/news",
-    "/poll",
-    "/itsme",
-    "/compare",
-    "/generation-president",
-    "/national-evaluation",
-    "/academy",
-    "/admin"
+  "route_mapping_checked": [
+    "column",
+    "community",
+    "news",
+    "poll",
+    "academy",
+    "admin"
+  ],
+  "politician_provider": "UNDECIDED / 0 real people",
+  "fixed_root_causes": [
+    "HOME SWR infinite re-render loop removed",
+    "background HOME refresh no longer resets scroll",
+    "stale async render cannot overwrite a newer route"
   ]
 }
