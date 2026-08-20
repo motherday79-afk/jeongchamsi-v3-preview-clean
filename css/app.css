@@ -96,3 +96,65 @@ a{color:inherit;text-decoration:none}
 .avatar.managed-image{object-fit:cover}
 .column-image.managed-image{width:100%;height:100%;min-height:220px;object-fit:cover}
 @media(max-width:700px){.column-image.managed-image{min-height:180px}}
+
+
+/* v3 alpha.1.4 — CLS LOCK
+   Geometry must be decided before image bytes arrive. */
+.president-photo.managed-image{
+  width:92px!important;
+  height:92px!important;
+  min-width:92px;
+  min-height:92px;
+  aspect-ratio:1/1!important;
+  flex:none;
+}
+.avatar.managed-image{
+  width:44px!important;
+  height:44px!important;
+  min-width:44px;
+  min-height:44px;
+  aspect-ratio:1/1!important;
+  flex:none;
+}
+
+/* The copy determines the lead-card row height.
+   The image fills that already-reserved row and never changes it after load. */
+.column-feature{
+  position:relative;
+  align-items:stretch;
+  min-height:220px;
+}
+.column-image.managed-image{
+  width:100%!important;
+  height:100%!important;
+  min-width:0;
+  min-height:220px;
+  max-height:none;
+  aspect-ratio:auto!important;
+  align-self:stretch;
+  object-fit:cover;
+}
+
+/* Decorative loading effects must not trigger extra paint/layout work. */
+.managed-image,
+.managed-image.is-loaded,
+.managed-image:not(.is-loaded){
+  transform:none!important;
+}
+
+/* Reserve common sections before content paints. */
+.section-head{min-height:48px}
+.rank-row{min-height:66px}
+.itsme-card{contain:layout paint}
+.survey-item{contain:layout paint}
+
+@media(max-width:700px){
+  .president-photo.managed-image{
+    width:70px!important;
+    height:70px!important;
+    min-width:70px;
+    min-height:70px;
+  }
+  .column-feature{min-height:180px}
+  .column-image.managed-image{min-height:180px}
+}

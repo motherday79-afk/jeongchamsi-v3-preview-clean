@@ -6,7 +6,8 @@ const metrics = {
   requests: 0,
   transferKB: 0,
   imageRequests: 0,
-  imageTransferKB: 0
+  imageTransferKB: 0,
+  shiftSource: "-"
 };
 
 const round = (n) => Math.round(n * 10) / 10;
@@ -46,7 +47,20 @@ function installObservers() {
   try {
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (!entry.hadRecentInput) metrics.cls += entry.value;
+        if (entry.hadRecentInput) continue;
+        metrics.cls += entry.value;
+
+        if (entry.sources?.length) {
+          const node = entry.sources[0].node;
+          if (node) {
+            const name = node.id
+              ? `#${node.id}`
+              : node.className
+                ? `.${String(node.className).trim().split(/\\s+/).slice(0,2).join(".")}`
+                : node.tagName?.toLowerCase();
+            if (name) metrics.shiftSource = name;
+          }
+        }
       }
       metrics.cls = Math.round(metrics.cls * 1000) / 1000;
     }).observe({ type: "layout-shift", buffered: true });
@@ -76,7 +90,8 @@ function renderPanel() {
     `REQ ${metrics.requests}<br>` +
     `TRANSFER ${metrics.transferKB}KB<br>` +
     `IMG REQ ${metrics.imageRequests}<br>` +
-    `IMG ${metrics.imageTransferKB}KB`;
+    `IMG ${metrics.imageTransferKB}KB<br>` +
+    `SHIFT ${metrics.shiftSource}`;
 }
 
 export function startPerformanceMonitor() {
