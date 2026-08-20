@@ -1,3 +1,5 @@
+import { startPerformanceMonitor } from "./performance.js";
+
 const app=document.querySelector('#app');
 app.innerHTML=`
 <header class="header">
@@ -33,9 +35,12 @@ app.innerHTML=`
     </div>
     <aside class="card rail">
       <h2>현재 단계</h2>
-      <p>1단계: Vercel Preview 정상 배포 확인</p>
-      <p style="margin-top:10px">다음: 실제 HOME 1차 이관</p>
-      <div class="version">v3.0.0-alpha.1 · MINIMAL PREVIEW</div>
+      <p>1단계: 속도 기준선 + 성능 계측 고정</p>
+      <p style="margin-top:10px">다음: HOME Shell 초고속 이관</p>
+      <div class="version">v3.0.0-alpha.1.1 · SPEED FOUNDATION</div>
     </aside>
   </div>
 </main>`;
+
+
+startPerformanceMonitor();
