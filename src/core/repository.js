@@ -1,20 +1,44 @@
 const CACHE = new Map();
 const LOCAL_PREFIX = "jcv3:preview:";
-const HOME_CACHE_KEY = "jcv3:home:snapshot:v2";
+const HOME_CACHE_KEY = "jcv3:home:snapshot:v3";
 const HOME_REFRESH_TTL = 20_000;
 
 let homeRefreshInFlight = null;
 let homeLastRefreshAttempt = 0;
 
+const DEFAULT_ITSME_CATEGORIES = [
+  "내가 대통령이라면",
+  "내가 국회의원이라면",
+  "내가 시장이라면",
+  "내가 장관이라면"
+];
+
+const SAMPLE_POLL = {
+  id: "sample-poll-v1",
+  question: "정참시에서 가장 먼저 강화했으면 하는 참여 기능은?",
+  options: [
+    { id: "sample-poll-v1-o1", label: "정책·공약 제안", votes: 0 },
+    { id: "sample-poll-v1-o2", label: "정치인 평가", votes: 0 },
+    { id: "sample-poll-v1-o3", label: "시민 설문", votes: 0 }
+  ],
+  published: true,
+  sample: true,
+  createdAt: "2026-08-21T00:00:00.000Z",
+  updatedAt: "2026-08-21T00:00:00.000Z"
+};
+
 const defaults = Object.freeze({
   columns: { items: [] },
   community: { items: [] },
   news: { items: [] },
-  polls: { items: [] },
+  polls: { items: [SAMPLE_POLL] },
   academy: { slots: [] },
   generation: { enabled: false, candidates: [] },
   nationalEvaluation: { enabled: false, subjectId: null },
-  itsme: { cards: [] }
+  itsme: { categories: DEFAULT_ITSME_CATEGORIES, items: [] },
+  comments: { items: [] },
+  keywords: { items: [] },
+  trending: { items: [] }
 });
 
 function clone(v) { return JSON.parse(JSON.stringify(v)); }
@@ -173,18 +197,23 @@ export async function performAction(action, payload) {
       clearLocalOverride(body.domain);
     }
     localStorage.removeItem(HOME_CACHE_KEY);
-    return { ok: true, mode: body?.storage || "server", data: body?.data || null };
+    return { ok: true, mode: body?.storage || "server", data: body?.data || null, item: body?.item || null };
   } catch (error) {
+    const code = String(error?.message || error);
+    if (["ALREADY_VOTED", "USER_LOGIN_REQUIRED", "NOT_OWNER"].includes(code)) return { ok: false, error: code, requiresLogin: code === "USER_LOGIN_REQUIRED" };
+
     if (action === "poll-vote") {
       const data = await getDomain("polls");
       const poll = (data.items || []).find(x => String(x.id) === String(payload.pollId));
       const option = poll?.options?.find(x => String(x.id) === String(payload.optionId));
-      if (option) option.votes = Number(option.votes || 0) + 1;
+      if (!option) return { ok: false, error: "POLL_NOT_FOUND" };
+      option.votes = Number(option.votes || 0) + 1;
       writeLocalOverride("polls", data);
       CACHE.set("polls", data);
       return { ok: true, mode: "browser-preview", data };
     }
-    if (action === "post-like" && ["columns", "community", "news"].includes(String(payload.domain || ""))) {
+
+    if (action === "post-like" && ["columns", "community", "news", "itsme"].includes(String(payload.domain || ""))) {
       const domain = String(payload.domain);
       const data = await getDomain(domain);
       const item = (data.items || []).find(x => String(x.id) === String(payload.postId));
@@ -194,24 +223,68 @@ export async function performAction(action, payload) {
       CACHE.set(domain, data);
       return { ok: true, mode: "browser-preview", data };
     }
-    if (action === "comment-add" && ["columns", "community", "news"].includes(String(payload.domain || ""))) {
+
+    if (action === "comment-add" && ["columns", "community", "news", "itsme"].includes(String(payload.domain || ""))) {
       const data = await getDomain("comments");
       const item = {
         id: `comment-${Date.now().toString(36)}`,
         domain: String(payload.domain),
         postId: String(payload.postId || ""),
+        ownerId: String(payload.ownerId || "").slice(0, 24),
         author: String(payload.author || "정참시 유저").slice(0, 40),
         text: String(payload.text || "").trim().slice(0, 1000),
         createdAt: new Date().toISOString(),
         published: true
       };
       if (!item.postId || !item.text) return { ok: false, error: "INVALID_COMMENT" };
-      data.items = [item, ...(data.items || [])].slice(0, 2000);
+      data.items = [item, ...(data.items || [])].slice(0, 3000);
       writeLocalOverride("comments", data);
       CACHE.set("comments", data);
       return { ok: true, mode: "browser-preview", data };
     }
-    return { ok: false, error: String(error?.message || error) };
+
+    if (action === "user-post-save" && ["community", "itsme"].includes(String(payload.domain || ""))) {
+      const domain = String(payload.domain);
+      const data = await getDomain(domain);
+      const items = data.items || [];
+      const old = payload.id ? items.find(x => String(x.id) === String(payload.id)) : null;
+      if (old && old.ownerId && String(old.ownerId) !== String(payload.ownerId || "")) return { ok: false, error: "NOT_OWNER" };
+      const id = old?.id || `${domain}-${Date.now().toString(36)}`;
+      const now = new Date().toISOString();
+      const item = {
+        id,
+        title: String(payload.title || "").trim().slice(0, 120),
+        summary: String(payload.summary || "").trim().slice(0, 240),
+        category: String(payload.category || "").trim().slice(0, 60),
+        author: String(payload.author || "정참시 유저").slice(0, 40),
+        ownerId: String(payload.ownerId || "").slice(0, 24),
+        body: String(payload.body || "").trim().slice(0, 50000),
+        published: true,
+        createdAt: old?.createdAt || now,
+        updatedAt: now,
+        likes: Number(old?.likes || 0),
+        views: Number(old?.views || 0)
+      };
+      if (!item.title || !item.body) return { ok: false, error: "TITLE_BODY_REQUIRED" };
+      data.items = old ? items.map(x => String(x.id) === id ? item : x) : [item, ...items];
+      writeLocalOverride(domain, data);
+      CACHE.set(domain, data);
+      return { ok: true, mode: "browser-preview", data, item };
+    }
+
+    if (action === "user-post-delete" && ["community", "itsme"].includes(String(payload.domain || ""))) {
+      const domain = String(payload.domain);
+      const data = await getDomain(domain);
+      const old = (data.items || []).find(x => String(x.id) === String(payload.id));
+      if (!old) return { ok: false, error: "POST_NOT_FOUND" };
+      if (old.ownerId && String(old.ownerId) !== String(payload.ownerId || "")) return { ok: false, error: "NOT_OWNER" };
+      data.items = (data.items || []).filter(x => String(x.id) !== String(payload.id));
+      writeLocalOverride(domain, data);
+      CACHE.set(domain, data);
+      return { ok: true, mode: "browser-preview", data };
+    }
+
+    return { ok: false, error: code };
   }
 }
 
@@ -223,3 +296,5 @@ export function clearDomainCache(domain) {
 export function getStoragePreviewState() {
   return Object.keys(defaults).filter(domain => !!localOverride(domain));
 }
+
+export { DEFAULT_ITSME_CATEGORIES };

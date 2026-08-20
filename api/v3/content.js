@@ -1,6 +1,6 @@
 const { getJSON, setJSON } = require("../../lib/v3/redis");
 const { validDomain, defaultDomain, sanitize } = require("../../lib/v3/schema");
-const { isAdmin } = require("../../lib/v3/auth");
+const { isAdminRequest } = require("../../lib/v3/auth");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    if (!isAdmin(req)) return res.status(401).json({ ok: false, error: "ADMIN_LOGIN_REQUIRED" });
+    if (!(await isAdminRequest(req))) return res.status(401).json({ ok: false, error: "ADMIN_LOGIN_REQUIRED" });
     const domain = String(req.body?.domain || "");
     if (!validDomain(domain)) return res.status(400).json({ ok: false, error: "INVALID_DOMAIN" });
     try {

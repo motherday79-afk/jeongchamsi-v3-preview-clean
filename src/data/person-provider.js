@@ -6,7 +6,7 @@ export const PERSON_COUNTS = Object.freeze({
   metropolitan: 16,
   basic: 227,
   total: 543,
-  nowPreview: 15
+  homeNowPreview: 15
 });
 
 const TYPES = Object.freeze({
@@ -27,12 +27,6 @@ const TYPES = Object.freeze({
     label: "기초단체장",
     group: "기초자치단체",
     jurisdictionLabel: "관할 기초자치단체"
-  },
-  now: {
-    prefix: "now",
-    label: "NOW Rank 정치인",
-    group: "NOW Rank",
-    jurisdictionLabel: "정치인 정보"
   }
 });
 
@@ -58,12 +52,13 @@ function make(type, count) {
 const ASSEMBLY = make("assembly", PERSON_COUNTS.assembly);
 const METROPOLITAN = make("metropolitan", PERSON_COUNTS.metropolitan);
 const BASIC = make("basic", PERSON_COUNTS.basic);
-const NOW = make("now", PERSON_COUNTS.nowPreview);
-const BY_ID = new Map([...ASSEMBLY, ...METROPOLITAN, ...BASIC, ...NOW].map(x => [x.id, x]));
+const ALL = [...ASSEMBLY, ...METROPOLITAN, ...BASIC];
+const BY_ID = new Map(ALL.map(x => [x.id, x]));
 
 export const listAssemblyMembers = () => ASSEMBLY;
 export const listMetropolitanLeaders = () => METROPOLITAN;
 export const listBasicLeaders = () => BASIC;
 export const listAllLocalLeaders = () => [...METROPOLITAN, ...BASIC];
-export const listNowPreviewSlots = () => NOW;
+export const listAllPoliticians = () => ALL;
+export const listHomeNowPreviewSlots = () => ASSEMBLY.slice(0, PERSON_COUNTS.homeNowPreview);
 export const getPersonSlotById = id => BY_ID.get(String(id || "")) || null;

@@ -1,3 +1,5 @@
+import { getUserSession } from "./user.js";
+
 const PREVIEW_SESSION_KEY = "jcv3:preview-admin-session";
 const PREVIEW_ID = "admin";
 const PREVIEW_PASSWORD = "jcv3-2026!";
@@ -24,14 +26,21 @@ async function request(path, options = {}) {
 }
 
 export async function getAdminSession() {
-  const local = sessionStorage.getItem(PREVIEW_SESSION_KEY);
+  const localRoot = sessionStorage.getItem(PREVIEW_SESSION_KEY) === "1";
   try {
     const { response, body } = await request("/api/v3/admin/session");
-    if (response.ok && body.authenticated) return { authenticated: true, user: body.user || { id: PREVIEW_ID }, mode: "server" };
-    if (response.ok && !body.authenticated && local !== "1") return { authenticated: false, user: null, mode: "server" };
+    if (response.ok && body.authenticated) return { authenticated: true, user: body.user || { id: PREVIEW_ID, role: "admin" }, mode: body.user?.root ? "server-root" : "server-member-admin" };
+    if (response.ok && !body.authenticated && !localRoot) {
+      const user = getUserSession();
+      if (user.authenticated && user.user?.role === "admin") return { authenticated: true, user: user.user, mode: "browser-member-admin" };
+      return { authenticated: false, user: null, mode: "server" };
+    }
   } catch {}
 
-  return { authenticated: local === "1", user: local === "1" ? { id: PREVIEW_ID } : null, mode: "preview" };
+  if (localRoot) return { authenticated: true, user: { id: PREVIEW_ID, role: "admin", root: true }, mode: "preview-root" };
+  const user = getUserSession();
+  if (user.authenticated && user.user?.role === "admin") return { authenticated: true, user: user.user, mode: "browser-member-admin" };
+  return { authenticated: false, user: null, mode: "preview" };
 }
 
 export async function loginAdmin(id, password) {

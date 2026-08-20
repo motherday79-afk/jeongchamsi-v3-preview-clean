@@ -1,6 +1,7 @@
-const ACCOUNT_KEY = "jcv3:user:accounts:v1";
-const SESSION_KEY = "jcv3:user:session:v1";
-const ACTIVITY_PREFIX = "jcv3:user:activity:v1:";
+const ACCOUNT_KEY = "jcv3:user:accounts:v2";
+const SESSION_KEY = "jcv3:user:session:v2";
+const ACTIVITY_PREFIX = "jcv3:user:activity:v2:";
+const GUEST_RECENT_KEY = "jcv3:guest:recent-people:v1";
 
 export const PREVIEW_USER_ID = "user";
 export const PREVIEW_USER_PASSWORD = "jcv3-user!";
@@ -39,12 +40,18 @@ function demoProfile() {
     region: "",
     preferredParty: "",
     email: "",
+    role: "member",
+    status: "active",
     createdAt: "preview"
   };
 }
 
 function readAccounts() {
   return readJSON(ACCOUNT_KEY, {});
+}
+
+function writeAccounts(accounts) {
+  writeJSON(ACCOUNT_KEY, accounts || {});
 }
 
 function readSessionRaw() {
@@ -62,21 +69,44 @@ function defaultActivity() {
     likedPosts: [],
     comments: [],
     academyApplications: [],
+    pollVotes: {},
+    authoredPosts: [],
     updatedAt: ""
   };
+}
+
+function mergeGuestRecentIntoUser(userId) {
+  const guest = readJSON(GUEST_RECENT_KEY, []);
+  if (!guest.length) return;
+  const activity = readJSON(activityKey(userId), defaultActivity());
+  activity.recentPeople = [...guest, ...(activity.recentPeople || [])].filter((x, i, a) => a.indexOf(x) === i).slice(0, 20);
+  activity.updatedAt = now();
+  writeJSON(activityKey(userId), activity);
+  localStorage.removeItem(GUEST_RECENT_KEY);
 }
 
 export function getUserSession() {
   const session = readSessionRaw();
   if (!session?.id) return { authenticated: false, user: null, mode: "browser" };
-  if (session.id === PREVIEW_USER_ID) return { authenticated: true, user: demoProfile(), mode: session.mode || "preview" };
+  if (session.id === PREVIEW_USER_ID && !readAccounts()[session.id]) {
+    const profile = { ...demoProfile(), ...(session.profile || {}) };
+    return { authenticated: true, user: profile, mode: session.mode || "preview" };
+  }
 
   const accounts = readAccounts();
   const account = accounts[session.id];
   if (!account && session.profile?.id) {
+    if (session.profile.status === "suspended") {
+      localStorage.removeItem(SESSION_KEY);
+      return { authenticated: false, user: null, mode: "browser" };
+    }
     return { authenticated: true, user: session.profile, mode: session.mode || "server" };
   }
   if (!account) {
+    localStorage.removeItem(SESSION_KEY);
+    return { authenticated: false, user: null, mode: "browser" };
+  }
+  if (account.status === "suspended") {
     localStorage.removeItem(SESSION_KEY);
     return { authenticated: false, user: null, mode: "browser" };
   }
@@ -85,38 +115,55 @@ export function getUserSession() {
   return { authenticated: true, user: profile, mode: session.mode || "browser" };
 }
 
+async function serverLogin(cleanId, cleanPassword) {
+  const response = await fetch("/api/v3/user/session", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify({ id: cleanId, password: cleanPassword })
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.authenticated) return { ok: false, status: response.status, body };
+  return { ok: true, user: body.user || { id: cleanId, nickname: cleanId, role: "member", status: "active" } };
+}
+
 export async function loginUser(id, password) {
   const cleanId = String(id || "").trim();
   const cleanPassword = String(password || "");
   if (!cleanId || !cleanPassword) return { ok: false, error: "아이디와 비밀번호를 입력해 주세요." };
 
-  const accounts = readAccounts();
-  const account = accounts[cleanId];
-  if (account) {
-    const hash = await hashPassword(cleanPassword);
-    if (hash !== account.passwordHash) return { ok: false, error: "아이디 또는 비밀번호가 올바르지 않습니다." };
-    writeJSON(SESSION_KEY, { id: cleanId, mode: "browser", loginAt: now() });
-    return { ok: true, user: clone(account), mode: "browser" };
-  }
-
   try {
-    const response = await fetch("/api/v3/user/session", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ id: cleanId, password: cleanPassword })
-    });
-    const body = await response.json().catch(() => ({}));
-    if (response.ok && body.authenticated) {
-      const profile = body.user || { id: cleanId, nickname: cleanId };
-      writeJSON(SESSION_KEY, { id: profile.id || cleanId, profile, mode: "server", loginAt: now() });
-      return { ok: true, user: profile, mode: "server" };
+    const server = await serverLogin(cleanId, cleanPassword);
+    if (server.ok) {
+      writeJSON(SESSION_KEY, { id: server.user.id || cleanId, profile: server.user, mode: "server", loginAt: now() });
+      mergeGuestRecentIntoUser(server.user.id || cleanId);
+      return { ok: true, user: server.user, mode: "server" };
+    }
+    if (server.status === 401) {
+      const local = readAccounts()[cleanId];
+      if (!local && !(cleanId === PREVIEW_USER_ID && cleanPassword === PREVIEW_USER_PASSWORD)) {
+        return { ok: false, error: "아이디 또는 비밀번호가 올바르지 않습니다." };
+      }
     }
   } catch {}
 
+  const accounts = readAccounts();
+  const account = accounts[cleanId];
+  if (account) {
+    if (account.status === "suspended") return { ok: false, error: "이용이 정지된 계정입니다." };
+    const hash = await hashPassword(cleanPassword);
+    if (hash !== account.passwordHash) return { ok: false, error: "아이디 또는 비밀번호가 올바르지 않습니다." };
+    const { passwordHash, ...profile } = account;
+    writeJSON(SESSION_KEY, { id: cleanId, profile, mode: "browser", loginAt: now() });
+    mergeGuestRecentIntoUser(cleanId);
+    return { ok: true, user: profile, mode: "browser" };
+  }
+
   if (cleanId === PREVIEW_USER_ID && cleanPassword === PREVIEW_USER_PASSWORD) {
-    writeJSON(SESSION_KEY, { id: cleanId, profile: demoProfile(), mode: "preview", loginAt: now() });
-    return { ok: true, user: demoProfile(), mode: "preview" };
+    const profile = demoProfile();
+    writeJSON(SESSION_KEY, { id: cleanId, profile, mode: "preview", loginAt: now() });
+    mergeGuestRecentIntoUser(cleanId);
+    return { ok: true, user: profile, mode: "preview" };
   }
 
   return { ok: false, error: "아이디 또는 비밀번호가 올바르지 않습니다." };
@@ -139,6 +186,25 @@ export async function registerUser(input) {
   if (!region) return { ok: false, error: "지역을 입력해 주세요." };
   if (!preferredParty) return { ok: false, error: "선호정당을 선택해 주세요." };
 
+  try {
+    const response = await fetch("/api/v3/user/register", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ id, password, nickname, phone, region, preferredParty, email })
+    });
+    const body = await response.json().catch(() => ({}));
+    if (response.ok && body.user) {
+      writeJSON(SESSION_KEY, { id: body.user.id, profile: body.user, mode: "server", loginAt: now() });
+      mergeGuestRecentIntoUser(body.user.id);
+      return { ok: true, user: body.user, mode: "server" };
+    }
+    if (response.status === 409) return { ok: false, error: "이미 사용 중인 아이디입니다." };
+    if (response.status >= 400 && response.status < 500 && body.error !== "JCV3_STORAGE_NOT_CONFIGURED") {
+      return { ok: false, error: "회원가입 정보를 다시 확인해 주세요." };
+    }
+  } catch {}
+
   const accounts = readAccounts();
   if (id === PREVIEW_USER_ID || accounts[id]) return { ok: false, error: "이미 사용 중인 아이디입니다." };
 
@@ -150,12 +216,17 @@ export async function registerUser(input) {
     preferredParty,
     email,
     passwordHash: await hashPassword(password),
-    createdAt: now()
+    role: "member",
+    status: "active",
+    createdAt: now(),
+    updatedAt: now()
   };
   accounts[id] = account;
-  writeJSON(ACCOUNT_KEY, accounts);
-  writeJSON(SESSION_KEY, { id, mode: "browser", loginAt: now() });
-  return { ok: true, user: { ...account, passwordHash: undefined }, mode: "browser" };
+  writeAccounts(accounts);
+  const { passwordHash, ...profile } = account;
+  writeJSON(SESSION_KEY, { id, profile, mode: "browser", loginAt: now() });
+  mergeGuestRecentIntoUser(id);
+  return { ok: true, user: profile, mode: "browser" };
 }
 
 export async function logoutUser() {
@@ -195,12 +266,22 @@ export function isFavoritePerson(personId) {
 }
 
 export function recordRecentPerson(personId) {
-  const session = getUserSession();
-  if (!session.authenticated) return;
-  const activity = getUserActivity();
   const id = String(personId || "");
+  if (!id) return;
+  const session = getUserSession();
+  if (!session.authenticated) {
+    const guest = readJSON(GUEST_RECENT_KEY, []);
+    writeJSON(GUEST_RECENT_KEY, [id, ...guest.filter(x => x !== id)].slice(0, 20));
+    return;
+  }
+  const activity = getUserActivity();
   activity.recentPeople = [id, ...activity.recentPeople.filter(x => x !== id)].slice(0, 20);
   saveActivity(activity);
+}
+
+export function getRecentPeople() {
+  const session = getUserSession();
+  return session.authenticated ? getUserActivity().recentPeople : readJSON(GUEST_RECENT_KEY, []);
 }
 
 export function togglePostLike(domain, postId) {
@@ -209,7 +290,7 @@ export function togglePostLike(domain, postId) {
   const activity = getUserActivity();
   const key = `${domain}:${postId}`;
   const exists = activity.likedPosts.includes(key);
-  activity.likedPosts = exists ? activity.likedPosts.filter(x => x !== key) : [key, ...activity.likedPosts].slice(0, 200);
+  activity.likedPosts = exists ? activity.likedPosts.filter(x => x !== key) : [key, ...activity.likedPosts].slice(0, 300);
   saveActivity(activity);
   return { ok: true, active: !exists };
 }
@@ -230,9 +311,10 @@ export function addComment(domain, postId, text) {
     postId: String(postId),
     text: clean.slice(0, 1000),
     author: session.user.nickname || session.user.id,
+    ownerId: session.user.id,
     createdAt: now()
   };
-  activity.comments = [comment, ...activity.comments].slice(0, 300);
+  activity.comments = [comment, ...activity.comments].slice(0, 500);
   saveActivity(activity);
   return { ok: true, comment };
 }
@@ -251,15 +333,73 @@ export function applyAcademy(slotId) {
   return { ok: true };
 }
 
+export function hasVotedPoll(pollId) {
+  return !!getUserActivity().pollVotes?.[String(pollId || "")];
+}
+
+export function recordPollVote(pollId, optionId) {
+  const session = getUserSession();
+  if (!session.authenticated) return false;
+  const activity = getUserActivity();
+  activity.pollVotes = activity.pollVotes || {};
+  activity.pollVotes[String(pollId)] = String(optionId);
+  saveActivity(activity);
+  return true;
+}
+
+export function recordAuthoredPost(domain, postId) {
+  const session = getUserSession();
+  if (!session.authenticated) return;
+  const activity = getUserActivity();
+  const key = `${domain}:${postId}`;
+  activity.authoredPosts = [key, ...(activity.authoredPosts || []).filter(x => x !== key)].slice(0, 300);
+  saveActivity(activity);
+}
+
+export function removeAuthoredPost(domain, postId) {
+  const session = getUserSession();
+  if (!session.authenticated) return;
+  const activity = getUserActivity();
+  const key = `${domain}:${postId}`;
+  activity.authoredPosts = (activity.authoredPosts || []).filter(x => x !== key);
+  saveActivity(activity);
+}
+
 export function getUserSummary() {
   const session = getUserSession();
   const activity = getUserActivity();
+  const recent = getRecentPeople();
   return {
     session,
     favorites: activity.favorites.length,
-    recentPeople: activity.recentPeople.slice(0, 4),
+    recentPeople: recent.slice(0, 4),
+    recentCount: recent.length,
     likedPosts: activity.likedPosts.length,
     comments: activity.comments.length,
-    academyApplications: activity.academyApplications.length
+    academyApplications: activity.academyApplications.length,
+    pollVotes: Object.keys(activity.pollVotes || {}).length,
+    authoredPosts: (activity.authoredPosts || []).length
   };
+}
+
+export function listLocalAccountsForAdmin() {
+  const accounts = readAccounts();
+  return Object.values(accounts).map(({ passwordHash, ...profile }) => profile).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+
+export function updateLocalAccountAccess(id, patch = {}) {
+  const accounts = readAccounts();
+  const account = accounts[String(id || "")];
+  if (!account) return { ok: false, error: "USER_NOT_FOUND" };
+  if (patch.role !== undefined) account.role = patch.role === "admin" ? "admin" : "member";
+  if (patch.status !== undefined) account.status = patch.status === "suspended" ? "suspended" : "active";
+  account.updatedAt = now();
+  accounts[account.id] = account;
+  writeAccounts(accounts);
+  const session = readSessionRaw();
+  if (session?.id === account.id && session.profile) {
+    const { passwordHash, ...profile } = account;
+    writeJSON(SESSION_KEY, { ...session, profile });
+  }
+  return { ok: true };
 }

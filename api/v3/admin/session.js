@@ -1,7 +1,6 @@
 const {
-  credentials,
   issueSession,
-  sessionFromRequest,
+  adminIdentity,
   checkCredentials,
   setSessionCookie,
   clearSessionCookie
@@ -12,17 +11,19 @@ module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "GET") {
-    const session = sessionFromRequest(req);
-    return res.status(200).json({ authenticated: !!session, user: session ? { id: session.id } : null });
+    const identity = await adminIdentity(req);
+    return res.status(200).json({
+      authenticated: !!identity.authenticated,
+      user: identity.authenticated ? { id: identity.id, role: "admin", root: !!identity.root } : null
+    });
   }
 
   if (req.method === "POST") {
     const id = String(req.body?.id || "");
     const password = String(req.body?.password || "");
     if (!checkCredentials(id, password)) return res.status(401).json({ authenticated: false, error: "INVALID_CREDENTIALS" });
-    const token = issueSession(id);
-    setSessionCookie(res, token, req);
-    return res.status(200).json({ authenticated: true, user: { id } });
+    setSessionCookie(res, issueSession(id), req);
+    return res.status(200).json({ authenticated: true, user: { id, role: "admin", root: true } });
   }
 
   if (req.method === "DELETE") {

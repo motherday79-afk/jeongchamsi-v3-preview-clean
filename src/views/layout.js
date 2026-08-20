@@ -23,8 +23,8 @@ export function siteHeader() {
       <button class="header-icon" type="button" aria-label="전체 메뉴" data-drawer-open>☰</button>
       <a class="brand" href="/" data-route>정참시</a>
       <div class="header-gap"></div>
-      <button class="header-icon" type="button" aria-label="알림" data-go="/mypage">○</button>
-      <button class="header-icon" type="button" aria-label="즐겨찾기" data-go="/mypage">☆</button>
+      <button class="header-icon" type="button" aria-label="내 참여" data-go="/mypage/activity">○</button>
+      <button class="header-icon" type="button" aria-label="최근 본 정치인" data-go="/mypage/recent">☆</button>
     </div>
     <div class="search-wrap">
       <form class="main-search" data-search-form>
@@ -48,19 +48,17 @@ export function drawer() {
       <a href="/login" data-route>로그인</a>
       <a href="/join" data-route>회원가입</a>
       <a href="/mypage" data-route>마이페이지</a>
+      <a href="/mypage/activity" data-route>내 참여 · 배지</a>
+      <a href="/mypage/recent" data-route>최근 본 정치인</a>
     </nav>
-    <div class="drawer-section-label">정치인</div>
+    <div class="drawer-section-label">정참시</div>
     <nav>
-      <a href="/assembly" data-route>국회의원 · 300명</a>
-      <a href="/local-leaders/metropolitan" data-route>광역단체장 · 16명</a>
-      <a href="/local-leaders/basic" data-route>기초단체장 · 227명</a>
-    </nav>
-    <div class="drawer-section-label">콘텐츠</div>
-    <nav>
-      <a href="/now" data-route>NOW Rank</a>
+      <a href="/now" data-route>NOW Rank · 전체 정치인</a>
       <a href="/column" data-route>COLUMN</a>
       <a href="/community" data-route>정뮤니티</a>
       <a href="/news" data-route>정참시 NEWS</a>
+      <a href="/keywords" data-route>실시간 정치키워드</a>
+      <a href="/trending" data-route>실시간 급상승</a>
       <a href="/poll" data-route>시민들의 선택</a>
       <a href="/itsme" data-route>IT’S ME</a>
       <a href="/compare" data-route>정치인 비교분석</a>

@@ -1,2 +1,2 @@
-export const APP_VERSION = "v3.0.0-alpha5.1";
-export const BUILD_NAME = "INTEGRATED ROUTES · USER · ADMIN · 543 PERSON · LAYOUT LOCK";
+export const APP_VERSION = "v3.0.0-alpha5.2";
+export const BUILD_NAME = "DETAIL COMPLETE 01 · 543 NOW · MEMBER ADMIN · LAYOUT LOCK";

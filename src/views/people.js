@@ -73,8 +73,8 @@ function basicInfo(person) {
 }
 
 function electionInfo(person) {
-  const second = person.type === "assembly" ? "선수" : person.type === "now" ? "정치 경력" : "연임 / 재선 여부";
-  const third = person.type === "assembly" ? "소속 위원회" : person.type === "now" ? "현 소속" : "소속 지방정부";
+  const second = person.type === "assembly" ? "선수" : "연임 / 재선 여부";
+  const third = person.type === "assembly" ? "소속 위원회" : "소속 지방정부";
   return `<dl class="info-list">
     <div><dt>현 임기</dt><dd>${empty()}</dd></div>
     <div><dt>${second}</dt><dd>${empty()}</dd></div>
@@ -111,17 +111,17 @@ export async function renderBasicDirectory() {
 export async function renderPersonDetail(id) {
   const person = getPersonSlotById(id);
   if (!person) {
-    return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>존재하지 않는 정치인 슬롯입니다.</h2><p>국회의원 300명, 광역단체장 16명, 기초단체장 227명 또는 NOW Rank 15개 검수 슬롯만 사용할 수 있습니다.</p><div class="inline-actions" style="justify-content:center;margin-top:18px"><button class="primary-btn" type="button" data-go="/assembly">국회의원 목록</button><button class="ghost-btn" type="button" data-go="/local-leaders">단체장 목록</button><button class="ghost-btn" type="button" data-go="/now">NOW Rank</button></div></section></main>`);
+    return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>존재하지 않는 정치인 슬롯입니다.</h2><p>국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543개 슬롯만 사용할 수 있습니다.</p><div class="inline-actions" style="justify-content:center;margin-top:18px"><button class="primary-btn" type="button" data-go="/assembly">국회의원 목록</button><button class="ghost-btn" type="button" data-go="/local-leaders">단체장 목록</button><button class="ghost-btn" type="button" data-go="/now">NOW 전체 정치인</button></div></section></main>`);
   }
 
   const session = getUserSession();
-  if (session.authenticated) recordRecentPerson(person.id);
+  recordRecentPerson(person.id);
   const favorite = session.authenticated && isFavoritePerson(person.id);
-  const activityTitle = person.type === "assembly" ? "의정활동" : person.type === "now" ? "정치 활동" : "행정활동";
-  const primaryMetric = person.type === "assembly" ? "대표발의" : person.type === "now" ? "주요 활동" : "핵심 정책";
-  const secondMetric = person.type === "assembly" ? "본회의 출석" : person.type === "now" ? "주요 이슈" : "공약 이행";
-  const thirdMetric = person.type === "assembly" ? "상임위 활동" : person.type === "now" ? "정책 분야" : "지역 현안";
-  const noticeRole = person.type === "now" ? `NOW Rank ${person.slot}위 검수 슬롯` : `${person.roleLabel} 슬롯 ${person.slot}번`;
+  const activityTitle = person.type === "assembly" ? "의정활동" : "행정활동";
+  const primaryMetric = person.type === "assembly" ? "대표발의" : "핵심 정책";
+  const secondMetric = person.type === "assembly" ? "본회의 출석" : "공약 이행";
+  const thirdMetric = person.type === "assembly" ? "상임위 활동" : "지역 현안";
+  const noticeRole = `${person.roleLabel} 슬롯 ${person.slot}번`;
 
   return pageShell(`<main class="subpage">
     <section class="person-detail-hero content-card">
@@ -148,6 +148,6 @@ export async function renderPersonDetail(id) {
 
     <section class="content-card"><div class="section-title"><h2>관련 콘텐츠</h2><span>정참시 내부 연결</span></div><div class="related-grid"><article><b>정참시 NEWS</b><span>관련 뉴스가 여기에 연결됩니다.</span></article><article><b>COLUMN</b><span>관련 칼럼이 여기에 연결됩니다.</span></article><article><b>정뮤니티</b><span>관련 게시물이 여기에 연결됩니다.</span></article><article><b>시민들의 선택</b><span>관련 설문이 여기에 연결됩니다.</span></article></div></section>
 
-    <section class="content-card"><div class="notice-box">현재 상세페이지는 ${esc(noticeRole)}의 공통 정치인 상세 레이아웃입니다. 이름·사진·정당·지역·뉴스·NOW 데이터의 공급방식을 확정하면 이 레이아웃을 바꾸지 않고 데이터만 연결합니다.${session.authenticated ? " 최근 본 정치인 기록도 저장되었습니다." : " 로그인하면 즐겨찾기와 최근 본 정치인 기록을 사용할 수 있습니다."}</div></section>
+    <section class="content-card"><div class="notice-box">현재 상세페이지는 ${esc(noticeRole)}의 공통 정치인 상세 레이아웃입니다. 이름·사진·정당·지역·뉴스·NOW 데이터의 공급방식을 확정하면 이 레이아웃을 바꾸지 않고 데이터만 연결합니다.${session.authenticated ? " 최근 본 정치인 기록도 저장되었습니다." : " 최근 본 정치인은 이 브라우저에 저장되며, 로그인하면 즐겨찾기도 사용할 수 있습니다."}</div></section>
   </main>`);
 }

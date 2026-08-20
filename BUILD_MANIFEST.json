@@ -1,97 +1,23 @@
 {
-  "version": "v3.0.0-alpha5.1",
-  "build": "INTEGRATED ROUTES · USER · ADMIN · 543 PERSON · LAYOUT LOCK",
+  "version": "v3.0.0-alpha5.2",
+  "build": "DETAIL COMPLETE 01 · 543 NOW · MEMBER ADMIN · LAYOUT LOCK",
   "layout_lock": {
     "app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
-    "expected_alpha3_1_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
-    "matched": true
+    "expected_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+    "locked": true
   },
-  "person_slots": {
+  "politician_slots": {
     "assembly": 300,
     "metropolitan": 16,
     "basic": 227,
-    "directory_total": 543,
-    "now_preview": 15,
-    "real_person_records": 0
+    "total": 543,
+    "initial_render_per_large_category": 50
   },
-  "person_provider": "UNDECIDED",
-  "photo_provider": "UNDECIDED",
-  "now_rank_engine": "UNDECIDED",
-  "routes": {
-    "member": [
-      "/login",
-      "/join",
-      "/mypage"
-    ],
-    "politicians": [
-      "/assembly",
-      "/local-leaders/metropolitan",
-      "/local-leaders/basic",
-      "/person/:id"
-    ],
-    "content": [
-      "/president",
-      "/now",
-      "/column",
-      "/community",
-      "/news",
-      "/poll",
-      "/itsme",
-      "/compare",
-      "/generation-president",
-      "/national-evaluation",
-      "/academy"
-    ],
-    "admin": "/admin"
+  "member_admin": {
+    "list": true,
+    "search": true,
+    "grant_revoke_admin": true,
+    "suspend_restore": true
   },
-  "member": {
-    "preview_id": "user",
-    "login": true,
-    "registration_preview": true,
-    "favorites": true,
-    "recent_people": true,
-    "likes": true,
-    "comments": true,
-    "academy_applications": true,
-    "mypage": true,
-    "server_session": "signed HttpOnly cookie for demo member"
-  },
-  "admin": {
-    "preview_id": "admin",
-    "session_api": "/api/v3/admin/session",
-    "signed_cookie": true,
-    "boards": [
-      "columns",
-      "community",
-      "news"
-    ],
-    "cover_image": [
-      "columns",
-      "news"
-    ],
-    "polls": true,
-    "academy": true
-  },
-  "storage": {
-    "namespace": "jcv3:content:v3:*",
-    "fallback": "browser localStorage for preview"
-  },
-  "qa": {
-    "all_js_syntax_ok": true,
-    "important_css_rules": 0,
-    "legacy_runtime_refs": [],
-    "assembly_slots_rendered": 300,
-    "metropolitan_slots_rendered": 16,
-    "basic_slots_rendered": 227,
-    "now_preview_slots_rendered": 15,
-    "common_detail_sections_verified": 8,
-    "independent_service_routes_verified": true,
-    "member_login_verified": true,
-    "member_registration_verified": true,
-    "favorite_verified": true,
-    "comment_verified": true,
-    "admin_signed_session_verified": true,
-    "column_create_to_public_detail_verified": true,
-    "column_cover_verified": true
-  }
+  "v2_runtime_references": 0
 }
