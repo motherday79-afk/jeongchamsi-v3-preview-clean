@@ -20,7 +20,7 @@ const rankList10 = Array.from({length:10}, (_,i) => `
   </div>
 `).join("");
 
-const communityRows = Array.from({length:8}, (_,i) => `
+const communityRows = Array.from({length:5}, (_,i) => `
   <div class="community-row">
     <span class="community-order">${String(i+1).padStart(2,"0")}</span>
     <span class="community-copy"><b>정뮤니티 게시물 제목 영역</b><em>말머리 · 작성자 · 시간</em></span>
@@ -62,6 +62,7 @@ document.querySelector("#app").innerHTML = `
       <a href="#poll">시민들의 선택</a>
       <a href="#community">정뮤니티</a>
       <a href="#compare">비교분석</a>
+      <a href="#generation-president">세대별 대통령</a>
       <a href="#national-eval">전국 평가제</a>
       <a href="#academy">아카데미</a>
     </nav>
@@ -202,22 +203,70 @@ document.querySelector("#app").innerHTML = `
         <section class="module" id="compare">
           <div class="module-header">
             <div>
-              <span class="eyebrow">COMPARE</span>
+              <span class="eyebrow">COMPARE · SAMPLE</span>
               <h2>정치인 비교분석</h2>
-              <p class="module-desc">정치인·정당·정책을 같은 기준으로 비교하는 영역.</p>
+              <p class="module-desc">실제 정치인을 상시 노출하지 않고, 가상후보 예시로 결과 형태를 먼저 보여줍니다.</p>
             </div>
-            <button class="more-btn">비교분석 시작 →</button>
+            <button class="more-btn">내가 직접 비교하기 →</button>
           </div>
 
+          <div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div>
           <div class="compare-layout">
-            <div class="compare-person"><span></span><b>정치인 A</b></div>
-            <div class="compare-metrics">
-              <div><b>활동도</b><i><em style="width:64%"></em></i></div>
-              <div><b>관심도</b><i><em style="width:73%"></em></i></div>
-              <div><b>언급량</b><i><em style="width:48%"></em></i></div>
-              <div><b>참여도</b><i><em style="width:57%"></em></i></div>
+            <div class="compare-person">
+              <span class="compare-avatar sample-a"></span>
+              <b>가상후보 A</b>
+              <small>정책·민생형</small>
             </div>
-            <div class="compare-person"><span></span><b>정치인 B</b></div>
+
+            <div class="compare-metrics">
+              <div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div>
+              <div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div>
+              <div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div>
+              <div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div>
+            </div>
+
+            <div class="compare-person">
+              <span class="compare-avatar sample-b"></span>
+              <b>가상후보 B</b>
+              <small>개혁·소통형</small>
+            </div>
+          </div>
+
+          <div class="compare-summary">
+            <b>비교 결과 예시</b>
+            <span>활동도는 A가 강하고, 관심도·참여도는 세부 지표에서 서로 다른 흐름을 보이는 식으로 분석됩니다.</span>
+          </div>
+        </section>
+
+        <section class="module generation-president" id="generation-president">
+          <div class="module-header">
+            <div>
+              <span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span>
+              <h2>세대가 뽑은 대통령</h2>
+              <p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p>
+            </div>
+            <button class="more-btn">세대별 선택 전체보기 →</button>
+          </div>
+
+          <div class="generation-feature">
+            <div class="generation-intro">
+              <span class="generation-mark">세대별</span>
+              <h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3>
+              <p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p>
+              <button type="button">모의투표 참여 →</button>
+            </div>
+
+            <div class="generation-grid">
+              ${["10대","20대","30대","40대","50대","60대+"].map((age,i)=>`
+                <article class="generation-card ${i===1 ? "focus" : ""}">
+                  <span class="generation-age">${age}</span>
+                  <span class="generation-avatar"></span>
+                  <b>1위 후보 영역</b>
+                  <small>투표 결과 표시</small>
+                  <div class="generation-bar"><i style="width:${[54,68,61,57,63,59][i]}%"></i></div>
+                </article>
+              `).join("")}
+            </div>
           </div>
         </section>
 
