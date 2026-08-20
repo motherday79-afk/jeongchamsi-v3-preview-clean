@@ -533,3 +533,232 @@ html,body{
     font-size:13px;
   }
 }
+
+
+/* =========================================================
+   alpha2.5 — READABILITY STRONG LOCK
+   체감 차이가 나도록 정보성 텍스트를 확실하게 확대하고 대비 강화.
+   ========================================================= */
+
+:root{
+  --readable:#53615c;
+  --readable-strong:#43514c;
+}
+
+/* 핵심 설명문 — 화면에서 반드시 읽혀야 하는 텍스트 */
+.module-desc,
+.president-text p{
+  font-size:17px !important;
+  line-height:1.62 !important;
+  color:var(--readable) !important;
+  font-weight:500;
+}
+
+/* NOW Rank */
+.rank-top-copy b{
+  font-size:15px !important;
+}
+.rank-top-copy span{
+  font-size:14px !important;
+  line-height:1.5 !important;
+  color:var(--readable) !important;
+}
+.rank-list-copy b{
+  font-size:15px !important;
+}
+.rank-list-copy em{
+  font-size:14px !important;
+  line-height:1.5 !important;
+  color:var(--readable) !important;
+}
+.rank-list-meta{
+  font-size:13px !important;
+  color:#65736e !important;
+}
+
+/* IT'S ME */
+.itsme-card b{
+  font-size:15px !important;
+}
+.itsme-card p{
+  font-size:15px !important;
+  line-height:1.55 !important;
+  color:var(--readable) !important;
+}
+
+/* COLUMN 카드의 보조 텍스트 영역 */
+.column-card-copy{
+  font-size:14px;
+}
+
+/* 설문 */
+.poll-question p{
+  font-size:15px !important;
+  line-height:1.6 !important;
+  color:var(--readable) !important;
+}
+.poll-options span{
+  font-size:15px !important;
+}
+.poll-options b{
+  font-size:14px !important;
+}
+
+/* COMMUNITY */
+.community-highlight b{
+  font-size:15px !important;
+}
+.community-highlight p{
+  font-size:14px !important;
+  line-height:1.55 !important;
+  color:var(--readable) !important;
+}
+.community-copy b{
+  font-size:14px !important;
+}
+.community-copy em{
+  font-size:13px !important;
+  color:#65736e !important;
+}
+.community-stats{
+  font-size:13px !important;
+  color:#65736e !important;
+}
+
+/* 비교분석 */
+.compare-person b{
+  font-size:14px !important;
+}
+.compare-person small{
+  font-size:13px !important;
+  color:var(--readable) !important;
+}
+.compare-metrics b{
+  font-size:13px !important;
+}
+.compare-metrics strong{
+  font-size:12px !important;
+}
+.compare-summary b{
+  font-size:13px !important;
+}
+.compare-summary span{
+  font-size:14px !important;
+  line-height:1.6 !important;
+  color:var(--readable) !important;
+}
+
+/* 세대별 대통령 */
+.generation-intro p{
+  font-size:14px !important;
+  line-height:1.65 !important;
+}
+.generation-card b{
+  font-size:14px !important;
+}
+.generation-card small{
+  font-size:13px !important;
+  color:#65736e !important;
+}
+
+/* 전국 평가제 */
+.eval-person small{
+  font-size:13px !important;
+  color:var(--readable) !important;
+}
+.eval-person b{
+  font-size:14px !important;
+}
+.eval-question strong{
+  font-size:16px !important;
+}
+.eval-question p{
+  font-size:14px !important;
+  line-height:1.6 !important;
+  color:var(--readable) !important;
+}
+.eval-score small,
+.eval-score span{
+  font-size:13px !important;
+  color:#65736e !important;
+}
+
+/* 아카데미 */
+.academy-intro p{
+  font-size:14px !important;
+  line-height:1.65 !important;
+}
+.academy-intro button{
+  font-size:13px !important;
+}
+.schedule-head b{
+  font-size:14px !important;
+}
+.schedule-head span{
+  font-size:13px !important;
+}
+.schedule-date{
+  font-size:13px !important;
+}
+.schedule-row button{
+  font-size:13px !important;
+}
+
+/* 우측 사이드 — 작아 보이지 않게 */
+.side-head b{
+  font-size:14px !important;
+}
+.side-head span{
+  font-size:13px !important;
+}
+.login-card b{
+  font-size:16px !important;
+}
+.login-card p{
+  font-size:15px !important;
+  line-height:1.6 !important;
+  color:var(--readable) !important;
+}
+.login-card button{
+  font-size:14px !important;
+}
+.keyword-grid span{
+  font-size:12px !important;
+}
+.side-row span{
+  font-size:13px !important;
+}
+.participation-main b{
+  font-size:14px !important;
+}
+.participation-main p{
+  font-size:14px !important;
+  line-height:1.55 !important;
+  color:var(--readable) !important;
+}
+
+/* Footer */
+.footer{
+  font-size:14px !important;
+  color:#5b6964 !important;
+}
+
+/* 장식용 라벨만 작게 유지 */
+.eyebrow,
+.community-highlight > article > span,
+.compare-sample-badge,
+.generation-mark{
+  letter-spacing:.08em;
+}
+
+@media(max-width:760px){
+  .module-desc,
+  .president-text p{
+    font-size:16px !important;
+  }
+  .rank-list-copy em,
+  .login-card p,
+  .participation-main p{
+    font-size:14px !important;
+  }
+}
