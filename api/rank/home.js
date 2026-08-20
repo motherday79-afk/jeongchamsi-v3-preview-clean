@@ -69,9 +69,34 @@ module.exports = async function handler(req, res) {
       members
     });
   } catch (error) {
+    const urlDetected = Boolean(
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_URL
+    );
+
+    const tokenDetected = Boolean(
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN
+    );
+
+    const message = String(error?.message || "");
+    let code = "REDIS_REQUEST";
+
+    if (!urlDetected || !tokenDetected) {
+      code = "ENV_MISSING";
+    } else if (/401|403|unauthor|forbidden|token|auth/i.test(message)) {
+      code = "REDIS_AUTH";
+    } else if (/fetch|network|ENOTFOUND|ECONN/i.test(message)) {
+      code = "REDIS_NETWORK";
+    }
+
     return res.status(503).json({
       ok: false,
-      error: "rank backend not configured"
+      error: "rank backend unavailable",
+      diagnostic: {
+        code,
+        urlDetected,
+        tokenDetected,
+        runtime: process.env.VERCEL_ENV || "unknown"
+      }
     });
   }
 };
