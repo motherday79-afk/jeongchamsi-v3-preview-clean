@@ -1,0 +1,18 @@
+{
+  "version": "v3.0.0-alpha6.0.6",
+  "changes": [
+    "Right sidebar sticky engagement changed from 14px to 72px for noticeably quicker follow",
+    "Recent politician sidebar now shows category + slot number using existing person IDs"
+  ],
+  "checks": {
+    "sidebar_noticeably_faster": true,
+    "assembly_label": true,
+    "metropolitan_label": true,
+    "basic_label": true,
+    "slot_number": true,
+    "recent_cards": true
+  },
+  "vercelFunctionCount": 1,
+  "jsSyntax": "ALL PASS",
+  "appCssChangeScope": "exactly one rule: .side-column top 14px -> 72px"
+}

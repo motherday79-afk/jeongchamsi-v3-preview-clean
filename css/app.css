@@ -235,7 +235,7 @@ img{display:block;max-width:100%}
 .schedule-row button{padding:7px 5px;border:0;border-radius:7px;background:#eef7f4;color:var(--green);font-size:12px;font-weight:900}
 
 /* SIDEBAR */
-.side-column{display:grid;gap:14px;position:sticky;top:14px}
+.side-column{display:grid;gap:14px;position:sticky;top:72px}
 .side-card{padding:16px}
 .side-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .side-head b{font-size:var(--fs-sub)}
