@@ -2,6 +2,7 @@ import { startPerformanceMonitor } from "./performance.js";
 import { NOW_RANK_BOOTSTRAP, NOW_RANK_BOOTSTRAP_META } from "./data/now-rank.bootstrap.js";
 import { rowsFromSnapshot, startNowRankSync } from "./rank-service.js";
 import { imageMarkup, hydrateManagedImages } from "./image-engine.js";
+import { resolvePersonPhoto, PHOTO_LIBRARY_POLICY } from "./photo-library.js";
 
 const escapeHtml = (value="") => String(value)
   .replaceAll("&","&amp;")
@@ -28,17 +29,15 @@ function rankRowsMarkup(rows) {
   return rows.map((r) => `
     <div class="rank-row">
       <div class="rank-no">${escapeHtml(r.rank)}</div>
-      ${r.photoUrl
-        ? imageMarkup({
-            src: r.photoUrl,
-            alt: `${r.name} 프로필 사진`,
-            width: 160,
-            height: 160,
-            className: "avatar",
-            priority: false,
-            fit: "cover"
-          })
-        : `<div class="avatar-placeholder" aria-hidden="true">${escapeHtml((r.name || "?").slice(0,1))}</div>`}
+      ${imageMarkup({
+        src: resolvePersonPhoto(r),
+        alt: `${r.name} 프로필 이미지`,
+        width: PHOTO_LIBRARY_POLICY.nowWidth,
+        height: PHOTO_LIBRARY_POLICY.nowHeight,
+        className: "avatar",
+        priority: false,
+        fit: "cover"
+      })}
       <div class="rank-copy">
         <b>${escapeHtml(r.name)}</b>
         <small>${escapeHtml(r.party)}${r.constituency || r.region ? ` · ${escapeHtml(r.constituency || r.region)}` : ""}</small>
@@ -166,6 +165,8 @@ document.querySelector("#app").innerHTML = `
     </div>
   </div>
 </div>`;
+
+hydrateManagedImages(document.querySelector("#nowRankRows"));
 
 startNowRankSync({
   onSnapshot(snapshot, meta) {

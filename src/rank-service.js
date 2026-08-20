@@ -46,9 +46,7 @@ export function rowsFromSnapshot(snapshot, limit = 10) {
           ? Number(m.changeOverallRefresh)
           : finite(m.changeRefresh)
             ? Number(m.changeRefresh)
-            : null,
-        photoVersion: String(m.photoVersion || ""),
-        photoUrl: String(m.photoUrl || "")
+            : null
       };
     })
     .filter((m) => finite(m.rank) && m.name)

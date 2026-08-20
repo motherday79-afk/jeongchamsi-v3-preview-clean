@@ -2,8 +2,6 @@ const zlib = require("zlib");
 const { publicSnapshot } = require("../../lib/public_snapshot");
 
 const COMPRESSED_PREFIX = "__JJDD_GZIP_B64_V1__:";
-const PHOTO_MASTER_VERSION = "v260-photo-master-1";
-const PHOTO_INDEX_KEY = `jjdd:photo-master:index:${PHOTO_MASTER_VERSION}`;
 
 function cache(res) {
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=30, must-revalidate");
@@ -56,25 +54,34 @@ async function redisCommand(args) {
   const { url, token } = redisConfig();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2200);
+
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(args),
       signal: controller.signal
     });
+
     const text = await response.text();
     let body = {};
     try { body = JSON.parse(text); } catch {}
+
     if (!response.ok || body?.error) {
       const status = Number(response.status || 0);
       const raw = String(body?.error || text || "");
       const e = new Error("REDIS_REQUEST_FAILED");
       e.code = (
-        status === 401 || status === 403 || /unauthor|forbidden|auth|token/i.test(raw)
+        status === 401 ||
+        status === 403 ||
+        /unauthor|forbidden|auth|token/i.test(raw)
       ) ? "REDIS_AUTH" : `REDIS_HTTP_${status || "ERROR"}`;
       throw e;
     }
+
     return body?.result ?? null;
   } catch (error) {
     if (error?.name === "AbortError") {
@@ -92,11 +99,12 @@ function parseJSONValue(v) {
   if (v == null) return null;
   if (typeof v === "object") return v;
   if (typeof v !== "string") return null;
+
   try {
     if (v.startsWith(COMPRESSED_PREFIX)) {
-      const raw = zlib.gunzipSync(
-        Buffer.from(v.slice(COMPRESSED_PREFIX.length), "base64")
-      ).toString("utf8");
+      const raw = zlib
+        .gunzipSync(Buffer.from(v.slice(COMPRESSED_PREFIX.length), "base64"))
+        .toString("utf8");
       return JSON.parse(raw);
     }
     return JSON.parse(v);
@@ -137,44 +145,12 @@ function compactHomeMember(m = {}) {
   };
 }
 
-async function attachPhotoVersions(members) {
-  const ids = members.map((m) => Number(m.id)).filter(Boolean);
-  if (!ids.length) return members;
-
-  let raw = null;
-  try {
-    raw = await redisCommand(["HMGET", PHOTO_INDEX_KEY, ...ids.map(String)]);
-  } catch {
-    return members;
-  }
-  if (!Array.isArray(raw)) return members;
-
-  const byId = new Map();
-  ids.forEach((id, index) => {
-    const value = raw[index];
-    if (!value) return;
-    try {
-      const stat = typeof value === "string" ? JSON.parse(value) : value;
-      if (!stat?.ok) return;
-      const version = String(stat.sourceFingerprint || stat.generatedAt || "").replace(/[^a-zA-Z0-9._:-]/g, "");
-      if (version) byId.set(id, version);
-    } catch {}
-  });
-
-  return members.map((m) => {
-    const version = byId.get(Number(m.id));
-    return version ? {
-      ...m,
-      photoVersion: version,
-      photoUrl: `/api/person-photo?id=${encodeURIComponent(m.id)}&s=160&v=${encodeURIComponent(version)}`
-    } : m;
-  });
-}
-
 module.exports = async function handler(req, res) {
   cache(res);
+
   try {
     let current = await getJSON("jjdd:current:public");
+
     if (!current || !Array.isArray(current.members)) {
       const full = await getJSON("jjdd:current");
       if (!full) {
@@ -187,23 +163,20 @@ module.exports = async function handler(req, res) {
       current = publicSnapshot(full);
     }
 
-    let members = (Array.isArray(current.members) ? current.members : [])
+    const members = (Array.isArray(current.members) ? current.members : [])
       .filter((m) => m && Number(m.id) !== 300 && String(m.party || "") !== "공석")
       .filter((m) => finite(m.overallRank) || finite(m.rank) || finite(m.categoryRank))
       .sort((a, b) => rankOf(a) - rankOf(b))
       .slice(0, 10)
       .map(compactHomeMember);
 
-    members = await attachPhotoVersions(members);
-
     return res.status(200).json({
       ok: true,
-      schemaVersion: 2,
+      schemaVersion: 3,
       publicationId: current.publicationId || null,
       publishedAt: current.publishedAt || null,
       timestamp: current.timestamp || null,
       rosterVersion: current.rosterVersion || null,
-      photoMasterVersion: PHOTO_MASTER_VERSION,
       members
     });
   } catch (error) {
