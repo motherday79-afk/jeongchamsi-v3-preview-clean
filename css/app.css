@@ -191,3 +191,14 @@ a{color:inherit;text-decoration:none}
   background:#e7efec!important;
   box-shadow:none!important;
 }
+
+
+/* v3 alpha.1.7 — NOW Rank live revalidation */
+.rank-change{display:block;margin-top:2px;font-size:10px;font-weight:900}
+.rank-change.up{color:#078b74}
+.rank-change.down{color:#a05a54}
+.rank-change.same{color:#8a9591}
+#nowRankStatus[data-state="ready"]{background:#edf8f4;color:#4c6e64}
+#nowRankStatus[data-state="checking"]{background:#f6f8f7;color:#74817d}
+#nowRankStatus[data-state="cached"]{background:#f6f8f7;color:#66746f}
+#nowRankStatus[data-state="bootstrap"]{background:#faf8f2;color:#776e57}

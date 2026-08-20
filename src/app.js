@@ -1,5 +1,6 @@
 import { startPerformanceMonitor } from "./performance.js";
 import { NOW_RANK_BOOTSTRAP, NOW_RANK_BOOTSTRAP_META } from "./data/now-rank.bootstrap.js";
+import { rowsFromSnapshot, startNowRankSync } from "./rank-service.js";
 
 const escapeHtml = (value="") => String(value)
   .replaceAll("&","&amp;")
@@ -14,19 +15,42 @@ const emptyState = (message) => `
     <span>${escapeHtml(message)}</span>
   </div>`;
 
-const rankRows = NOW_RANK_BOOTSTRAP.map((r) => `
-  <div class="rank-row">
-    <div class="rank-no">${escapeHtml(r.rank)}</div>
-    <div class="avatar-placeholder" aria-hidden="true">${escapeHtml((r.name || "?").slice(0,1))}</div>
-    <div class="rank-copy">
-      <b>${escapeHtml(r.name)}</b>
-      <small>${escapeHtml(r.party)} · ${escapeHtml(r.constituency || r.region || "")}</small>
-    </div>
-    <div class="rank-score">
-      <span>${Number(r.score || 0).toFixed(1)}</span>
-      <small>기준점수</small>
-    </div>
-  </div>`).join("");
+function rankChangeMarkup(r) {
+  const change = Number(r.change);
+  if (!Number.isFinite(change)) return `<small class="rank-change same">―</small>`;
+  if (change > 0) return `<small class="rank-change up">▲ ${change}</small>`;
+  if (change < 0) return `<small class="rank-change down">▼ ${Math.abs(change)}</small>`;
+  return `<small class="rank-change same">―</small>`;
+}
+
+function rankRowsMarkup(rows) {
+  return rows.map((r) => `
+    <div class="rank-row">
+      <div class="rank-no">${escapeHtml(r.rank)}</div>
+      <div class="avatar-placeholder" aria-hidden="true">${escapeHtml((r.name || "?").slice(0,1))}</div>
+      <div class="rank-copy">
+        <b>${escapeHtml(r.name)}</b>
+        <small>${escapeHtml(r.party)}${r.constituency || r.region ? ` · ${escapeHtml(r.constituency || r.region)}` : ""}</small>
+      </div>
+      <div class="rank-score">
+        <span>${escapeHtml(r.rank)}위</span>
+        ${rankChangeMarkup(r)}
+      </div>
+    </div>`).join("");
+}
+
+function renderNowRankRows(rows) {
+  const box = document.querySelector("#nowRankRows");
+  if (!box || !Array.isArray(rows) || !rows.length) return;
+  box.innerHTML = rankRowsMarkup(rows);
+}
+
+function setNowRankStatus(message, state = "") {
+  const note = document.querySelector("#nowRankStatus");
+  if (!note) return;
+  note.dataset.state = state;
+  note.textContent = message;
+}
 
 document.querySelector("#app").innerHTML = `
 <div class="shell">
@@ -60,16 +84,15 @@ document.querySelector("#app").innerHTML = `
         <section class="card section" id="now">
           <div class="section-head">
             <div>
-              <span>NOW RANK · BASELINE</span>
-              <h2>정치인 기준 랭킹</h2>
+              <span>NOW RANK · CURRENT</span>
+              <h2>현재 NOW Rank</h2>
             </div>
             <button type="button">전체보기 →</button>
           </div>
-          <div class="data-note">
-            최신 v2의 실제 정치인 기준 데이터 ${NOW_RANK_BOOTSTRAP_META.count}명을 즉시 표시합니다.
-            실시간 변화값은 아직 연결하지 않았습니다.
+          <div class="data-note" id="nowRankStatus">
+            현재 확인된 Top ${NOW_RANK_BOOTSTRAP_META.count}를 즉시 표시합니다. 게시 snapshot은 화면 로딩 후 자동 확인합니다.
           </div>
-          <div class="rank-list">${rankRows}</div>
+          <div class="rank-list" id="nowRankRows">${rankRowsMarkup(NOW_RANK_BOOTSTRAP)}</div>
         </section>
 
         <section class="card section" id="itsme">
@@ -124,12 +147,39 @@ document.querySelector("#app").innerHTML = `
 
         <div class="perf-note">
           <b>v3 SPEED FIRST</b><br>
-          NOW Rank는 정적 실데이터 bootstrap으로 즉시 표시됩니다.<br><br>
+          NOW Rank는 bootstrap으로 즉시 표시되고 실제 게시 snapshot은 뒤에서 갱신됩니다.<br><br>
           <b>?perf=1</b>에서 성능 변화를 확인합니다.
         </div>
       </aside>
     </div>
   </div>
 </div>`;
+
+startNowRankSync({
+  onSnapshot(snapshot, meta) {
+    const rows = rowsFromSnapshot(snapshot, 10);
+    if (rows.length) {
+      renderNowRankRows(rows);
+      setNowRankStatus(
+        meta.source === "cache"
+          ? `저장된 실제 게시 snapshot Top ${rows.length}을 즉시 표시했습니다. 최신본을 확인 중입니다.`
+          : `실제 게시 snapshot Top ${rows.length}으로 갱신되었습니다.`,
+        meta.source
+      );
+    }
+  },
+  onStatus(status) {
+    if (status.state === "checking") {
+      setNowRankStatus("현재 게시 snapshot을 백그라운드에서 확인 중입니다.", "checking");
+    } else if (status.state === "ready") {
+      const rows = document.querySelectorAll("#nowRankRows .rank-row").length;
+      setNowRankStatus(`실제 게시 snapshot Top ${rows} · 자동 갱신 정상`, "ready");
+    } else if (status.state === "cached") {
+      setNowRankStatus("저장된 실제 snapshot을 표시 중입니다. 서버 재확인은 다음 접속에서 다시 시도합니다.", "cached");
+    } else if (status.state === "bootstrap") {
+      setNowRankStatus("현재 Top 5 기준값을 표시 중입니다. 게시 snapshot 서버 연결을 확인해주세요.", "bootstrap");
+    }
+  }
+});
 
 startPerformanceMonitor();
