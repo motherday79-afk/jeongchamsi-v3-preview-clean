@@ -4,7 +4,9 @@ const metrics = {
   lcp: null,
   cls: 0,
   requests: 0,
-  transferKB: 0
+  transferKB: 0,
+  imageRequests: 0,
+  imageTransferKB: 0
 };
 
 const round = (n) => Math.round(n * 10) / 10;
@@ -17,6 +19,14 @@ function collectStaticMetrics() {
   metrics.requests = resources.length + 1;
   metrics.transferKB = round(
     resources.reduce((sum, r) => sum + (r.transferSize || 0), 0) / 1024
+  );
+
+  const imageResources = resources.filter(
+    (r) => r.initiatorType === "img" || /\.(avif|webp|png|jpe?g|gif|svg)(\?|$)/i.test(r.name)
+  );
+  metrics.imageRequests = imageResources.length;
+  metrics.imageTransferKB = round(
+    imageResources.reduce((sum, r) => sum + (r.transferSize || 0), 0) / 1024
   );
 
   const paints = performance.getEntriesByType("paint");
@@ -64,7 +74,9 @@ function renderPanel() {
     `LCP ${fmt(metrics.lcp,"ms")}<br>` +
     `CLS ${fmt(metrics.cls)}<br>` +
     `REQ ${metrics.requests}<br>` +
-    `TRANSFER ${metrics.transferKB}KB`;
+    `TRANSFER ${metrics.transferKB}KB<br>` +
+    `IMG REQ ${metrics.imageRequests}<br>` +
+    `IMG ${metrics.imageTransferKB}KB`;
 }
 
 export function startPerformanceMonitor() {

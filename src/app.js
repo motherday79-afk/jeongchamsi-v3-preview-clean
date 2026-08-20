@@ -1,4 +1,5 @@
 import { startPerformanceMonitor } from "./performance.js";
+import { imageMarkup, hydrateManagedImages } from "./image-engine.js";
 
 const rank = [
   ["1","김민석","더불어민주당 · 서울","▲ 2"],
@@ -48,7 +49,7 @@ document.querySelector("#app").innerHTML = `
     <div class="layout">
       <main class="main">
         <section class="card president">
-          <div class="president-photo skeleton-shine" aria-hidden="true"></div>
+          ${imageMarkup({src:"/media/demo/avatar.v1.webp",alt:"대통령 대표 이미지 자리",width:160,height:160,className:"president-photo",priority:true,fit:"cover"})}
           <div>
             <div class="eyebrow">PRESIDENT · OUT OF RANK</div>
             <h1>대통령부터</h1>
@@ -60,7 +61,7 @@ document.querySelector("#app").innerHTML = `
         <section class="card section" id="now">
           <div class="section-head"><div><span>NOW RANK</span><h2>지금 가장 뜨거운 정치인</h2></div><button>전체보기 →</button></div>
           <div class="rank-list">
-            ${rank.map(r=>`<div class="rank-row"><div class="rank-no">${r[0]}</div><div class="avatar skeleton-shine"></div><div class="rank-copy"><b>${r[1]}</b><small>${r[2]}</small></div><div class="delta">${r[3]}</div></div>`).join("")}
+            ${rank.map(r=>`<div class="rank-row"><div class="rank-no">${r[0]}</div>${imageMarkup({src:"/media/demo/avatar.v1.webp",alt:"정치인 대표 이미지 자리",width:160,height:160,className:"avatar",priority:false,fit:"cover"})}<div class="rank-copy"><b>${r[1]}</b><small>${r[2]}</small></div><div class="delta">${r[3]}</div></div>`).join("")}
           </div>
         </section>
 
@@ -74,7 +75,7 @@ document.querySelector("#app").innerHTML = `
         <section class="card section" id="column">
           <div class="section-head"><div><span>TODAY POLITICS</span><h2>오늘 정치에서 봐야 할 COLUMN</h2></div><button>전체 COLUMN 보기 →</button></div>
           <article class="column-feature">
-            <div class="column-image skeleton-shine" aria-label="COLUMN 대표사진 자리"></div>
+            ${imageMarkup({src:"/media/demo/column.v1.webp",alt:"COLUMN 대표사진 자리",width:800,height:450,className:"column-image",priority:false,fit:"cover"})}
             <div class="column-copy">
               <div class="kicker">LEAD COLUMN</div>
               <h3>정책을 뉴스가 아니라 맥락으로 읽는 정참시 COLUMN</h3>
@@ -121,4 +122,5 @@ document.querySelector("#app").innerHTML = `
   </div>
 </div>`;
 
+hydrateManagedImages();
 startPerformanceMonitor();
