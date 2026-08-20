@@ -1,0 +1,29 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/now",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/column",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/community",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/search",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/poll",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/itsme",
+      "destination": "/index.html"
+    }
+  ]
+}
