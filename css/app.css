@@ -158,3 +158,36 @@ a{color:inherit;text-decoration:none}
   .column-feature{min-height:180px}
   .column-image.managed-image{min-height:180px}
 }
+
+
+/* v3 alpha.1.5 — real data bootstrap / no fabricated content */
+.avatar-placeholder{
+  width:44px;height:44px;min-width:44px;border-radius:50%;
+  display:grid;place-items:center;background:#e7efec;color:#4b6860;
+  font-size:15px;font-weight:900;
+}
+.rank-score{
+  min-width:68px;text-align:right;font-variant-numeric:tabular-nums;
+}
+.rank-score span{
+  display:block;font-size:14px;font-weight:900;color:#173c33;
+}
+.rank-score small{
+  display:block;margin-top:2px;font-size:10px;color:#87938f;
+}
+.data-note{
+  margin:-2px 0 12px;padding:9px 11px;border-radius:10px;
+  background:#f3f8f6;color:#64736e;font-size:11px;line-height:1.55;
+}
+.empty-state{
+  min-height:86px;border:1px dashed #dce6e2;border-radius:13px;
+  background:#fafcfb;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  padding:18px;color:#7a8783;
+}
+.empty-state b{font-size:12px;color:#586762;margin-bottom:5px}
+.empty-state span{font-size:11px;line-height:1.55}
+.placeholder-photo{
+  background:#e7efec!important;
+  box-shadow:none!important;
+}
