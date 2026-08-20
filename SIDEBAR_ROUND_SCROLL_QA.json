@@ -1,0 +1,19 @@
+{
+  "version": "v3.0.0-alpha6.0.7",
+  "fixes": [
+    "Recent viewed politicians restored to four circular items in one horizontal row",
+    "Category/slot information kept as compact text beneath each circle and tooltip",
+    "Sidebar now travels with the document longer before sticking (top 72px -> 8px)",
+    "Tall sidebar is viewport-bounded with vertical overflow so lower NEWS/trending content remains reachable"
+  ],
+  "checks": {
+    "recent_four_circle_row": true,
+    "recent_circle_avatar": true,
+    "recent_slot_info_preserved": true,
+    "sidebar_moves_longer_before_sticky": true,
+    "sidebar_lower_content_reachable": true,
+    "single_vercel_function": true
+  },
+  "vercelFunctionCount": 1,
+  "jsSyntax": "ALL PASS"
+}
