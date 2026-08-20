@@ -1,5 +1,6 @@
 import { getDomain } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
+import { getUserSession, isPostLiked } from "../core/user.js";
 
 const CONFIG = Object.freeze({
   columns: { title: "COLUMN", eyebrow: "COLUMN", route: "column", description: "정치를 조금 더 깊게 읽는 정참시의 칼럼 공간입니다.", image: true },
@@ -33,7 +34,7 @@ export async function renderBoard(domain) {
   return pageShell(`<main class="subpage">
     <section class="page-hero"><span class="eyebrow">${config.eyebrow}</span><h1>${config.title}</h1><p>${config.description}</p></section>
     <section class="content-card">
-      <div class="board-toolbar"><p>관리자에서 작성·수정·삭제한 게시물이 이 목록에 바로 연결됩니다.</p><span class="status-pill"><b>POSTS</b>${items.length}개</span></div>
+      <div class="board-toolbar"><p>관리자에서 작성·수정·삭제한 게시물이 이 목록과 상세페이지에 바로 연결됩니다.</p><span class="status-pill"><b>POSTS</b>${items.length}개</span></div>
       ${items.length ? `<div class="board-list">${items.map(item => {
         const cover = safeImage(item.coverImage);
         const noThumb = !config.image;
@@ -50,7 +51,13 @@ export async function renderBoardDetail(domain, id) {
   if (!item) {
     return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>게시물을 찾을 수 없습니다.</h2><p>삭제되었거나 아직 공개되지 않은 게시물입니다.</p><div class="inline-actions" style="justify-content:center;margin-top:18px"><button class="primary-btn" type="button" data-go="/${config.route}">${config.title} 목록으로</button></div></section></main>`);
   }
+
   const cover = safeImage(item.coverImage);
+  const session = getUserSession();
+  const liked = session.authenticated && isPostLiked(domain, id);
+  const commentData = await getDomain("comments");
+  const comments = (commentData.items || []).filter(c => c.published !== false && c.domain === domain && String(c.postId) === String(id)).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
   return pageShell(`<main class="subpage">
     <article class="content-card article-detail">
       <span class="eyebrow">${config.eyebrow}</span>
@@ -59,8 +66,9 @@ export async function renderBoardDetail(domain, id) {
       ${cover ? `<div class="article-cover" style="background-image:url('${cover}')"></div>` : ""}
       ${item.summary ? `<div class="article-lead">${esc(item.summary)}</div>` : ""}
       <div class="article-body">${bodyHtml(item.body)}</div>
-      <div class="article-actions"><button type="button" class="ghost-btn" disabled>♡ 좋아요</button><button type="button" class="primary-btn" data-go="/${config.route}">${config.title} 목록으로</button></div>
+      <div class="article-actions"><button type="button" class="ghost-btn ${liked ? "active" : ""}" data-post-like="${esc(domain)}" data-post-id="${esc(id)}">${liked ? "♥ 좋아요 취소" : "♡ 좋아요"}</button><button type="button" class="primary-btn" data-go="/${config.route}">${config.title} 목록으로</button></div>
     </article>
+    <section class="content-card comment-section"><div class="section-title"><h2>댓글</h2><span>${comments.length}개</span></div>${session.authenticated ? `<form class="comment-form" data-comment-form="${esc(domain)}" data-post-id="${esc(id)}"><textarea name="comment" rows="3" maxlength="1000" placeholder="정치에 대한 의견을 남겨보세요." required></textarea><div class="admin-form-actions"><button class="primary-btn" type="submit">댓글 등록</button><span class="save-state" data-comment-state></span></div></form>` : `<div class="member-login-prompt"><span>댓글과 좋아요는 로그인 후 사용할 수 있습니다.</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>`}${comments.length ? `<div class="comment-list">${comments.map(c => `<article><div><b>${esc(c.author)}</b><span>${formatDate(c.createdAt)}</span></div><p>${esc(c.text)}</p></article>`).join("")}</div>` : `<div class="empty-inline" style="margin-top:12px">아직 작성한 댓글이 없습니다.</div>`}</section>
   </main>`);
 }
 

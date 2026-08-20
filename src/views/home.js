@@ -1,5 +1,6 @@
 import { getHomeSnapshot } from "../core/repository.js";
-import { drawer } from "./layout.js";
+import { drawer, siteHeader, footer } from "./layout.js";
+import { getUserSummary } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -93,6 +94,8 @@ function academyRows(slots = []) {
 
 export async function renderHome() {
   const data = await getHomeSnapshot();
+  const userSummary = getUserSummary();
+  const userSession = userSummary.session;
   const columns = published(data.columns?.items || []);
   const lead = columns.find(x => x.featured) || columns[0] || null;
   const minis = columns.filter(x => x !== lead).slice(0, 4);
@@ -110,22 +113,26 @@ export async function renderHome() {
   const poll = published(data.polls?.items || [])[0] || null;
   const academySlots = (data.academy?.slots || []).filter(x => x.published !== false).slice(0, 4);
 
-  const rankTop5 = Array.from({ length: 5 }, (_, i) => `<article class="rank-top-card"><div class="rank-top-no">${i + 1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>상위 ${i + 1}위</b><span>정치인 카드 영역</span></div></article>`).join("");
-  const rankList10 = Array.from({ length: 10 }, (_, i) => `<div class="rank-list-row"><span class="rank-list-no">${i + 6}</span><span class="rank-list-avatar"></span><span class="rank-list-copy"><b>정치인 영역</b><em>정당 · 지역 · 한 줄 뉴스요약</em></span><span class="rank-list-meta">NOW</span></div>`).join("");
+  const rankTop5 = Array.from({ length: 5 }, (_, i) => `<article class="rank-top-card" role="button" tabindex="0" data-go="/person/now-${String(i + 1).padStart(3, "0")}"><div class="rank-top-no">${i + 1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>상위 ${i + 1}위</b><span>정치인 상세 Shell 보기</span></div></article>`).join("");
+  const rankList10 = Array.from({ length: 10 }, (_, i) => `<div class="rank-list-row" role="button" tabindex="0" data-go="/person/now-${String(i + 6).padStart(3, "0")}"><span class="rank-list-no">${i + 6}</span><span class="rank-list-avatar"></span><span class="rank-list-copy"><b>정치인 영역</b><em>정당 · 지역 · 한 줄 뉴스요약</em></span><span class="rank-list-meta">상세 →</span></div>`).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
+  const loginMobile = userSession.authenticated
+    ? `<div class="mobile-login"><div><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><span>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 댓글 ${userSummary.comments}</span></div><button type="button" data-go="/mypage">MY</button></div>`
+    : `<div class="mobile-login"><div><b>정참시에 로그인하세요</b><span>즐겨찾기 · 참여 · 배지 · 알림</span></div><button type="button" data-go="/login">로그인</button></div>`;
+
+  const loginSide = userSession.authenticated
+    ? `<section class="side-card login-card side-login"><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><p>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 댓글 ${userSummary.comments}</p><button type="button" data-go="/mypage">마이페이지</button></section>`
+    : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button" data-go="/login">로그인</button></section>`;
+
   return `<div class="site-shell">
-    <header class="site-header">
-      <div class="header-line"><button class="header-icon" type="button" aria-label="전체 메뉴" data-drawer-open>☰</button><a class="brand" href="/" data-route>정참시</a><div class="header-gap"></div><button class="header-icon" type="button" aria-label="알림">○</button><button class="header-icon" type="button" aria-label="즐겨찾기">☆</button></div>
-      <div class="search-wrap"><form class="main-search" data-search-form><strong>정</strong><input name="q" aria-label="통합검색" placeholder="정치인, 정당, 정책, COLUMN, 정뮤니티 검색"><button type="submit">검색</button></form></div>
-      <nav class="service-nav"><a href="#president">대통령</a><a href="#now">NOW Rank</a><a href="#itsme">IT’S ME</a><a href="#column">COLUMN</a><a href="#poll">시민들의 선택</a><a href="#community">정뮤니티</a><a href="#compare">비교분석</a><a href="#generation-president">세대별 대통령</a><a href="#national-eval">전국 평가제</a><a href="#academy">아카데미</a></nav>
-    </header>
+    ${siteHeader()}
 
     <div class="page-wrap"><div class="portal-layout">
       <section class="mobile-utility" aria-label="모바일 빠른 정보">
-        <div class="mobile-login"><div><b>정참시에 로그인하세요</b><span>즐겨찾기 · 참여 · 배지 · 알림</span></div><button type="button">로그인</button></div>
+        ${loginMobile}
         <div class="mobile-keywords"><div class="mobile-utility-head"><b>실시간 정치키워드</b><span>더보기 →</span></div><div class="mobile-keyword-track">${Array.from({ length: 8 }, (_, i) => `<span>${i + 1}</span>`).join("")}</div></div>
-        <div class="mobile-mini-tools"><button type="button"><b>내 참여 · 배지</b><span>활동 보기 →</span></button><button type="button"><b>최근 본 정치인</b><span>다시 보기 →</span></button></div>
+        <div class="mobile-mini-tools"><button type="button" data-go="/mypage"><b>내 참여 · 배지</b><span>활동 보기 →</span></button><button type="button" data-go="/mypage"><b>최근 본 정치인</b><span>다시 보기 →</span></button></div>
       </section>
 
       <main class="main-column">
@@ -150,9 +157,9 @@ export async function renderHome() {
         <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">JEONGCHAMSI ACADEMY</span><h2>정참시 아카데미</h2><p class="module-desc">정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.</p></div><button class="more-btn" type="button" data-go="/academy">아카데미 일정 보기 →</button></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>정치의 꿈을 실제 준비로.</h3><p>과정과 강사진은 추후 설계. 메인에서는 아카데미의 성격과 예약 가능한 스케줄 진입점을 명확하게 보여줍니다.</p><button type="button" data-go="/academy">수강 가능 일정 확인 →</button></div><div class="academy-schedule"><div class="schedule-head"><b>이번 달 수강 가능 일정</b><span>월간보기</span></div>${academyRows(academySlots)}</div></div></section>
       </main>
 
-      <aside class="side-column"><section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button">로그인</button></section><section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span>더보기</span></div><div class="keyword-grid">${Array.from({ length: 10 }, (_, i) => `<span>${i + 1}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span role="button" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승</b><span>전체</span></div>${sideRows(5)}</section><section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span>MY</span></div><div class="participation-main"><span class="grade-circle">P</span><div><b>대표 배지</b><p>로그인 후 내 활동과 등급 표시</p></div></div><div class="badge-mini-row"><span></span><span></span><span></span><span></span></div></section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span>전체</span></div><div class="recent-row"><span></span><span></span><span></span><span></span></div></section></aside>
+      <aside class="side-column">${loginSide}<section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span>더보기</span></div><div class="keyword-grid">${Array.from({ length: 10 }, (_, i) => `<span>${i + 1}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span role="button" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승</b><span>전체</span></div>${sideRows(5)}</section><section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span role="button" data-go="/mypage">MY</span></div><div class="participation-main"><span class="grade-circle">P</span><div><b>${userSession.authenticated ? "내 참여" : "대표 배지"}</b><p>${userSession.authenticated ? `좋아요 ${userSummary.likedPosts} · 댓글 ${userSummary.comments}` : "로그인 후 내 활동과 등급 표시"}</p></div></div><div class="badge-mini-row"><span></span><span></span><span></span><span></span></div></section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span role="button" data-go="/mypage">전체</span></div><div class="recent-row"><span></span><span></span><span></span><span></span></div></section></aside>
     </div></div>
-    <footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간.</span></div><div>이용안내 · 개인정보처리방침 · 운영정책</div></footer>
+    ${footer()}
     ${drawer()}
   </div>`;
 }

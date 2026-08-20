@@ -1,5 +1,7 @@
 import { getDomain } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
+import { listNowPreviewSlots } from "../data/person-provider.js";
+import { getUserSession, getUserActivity } from "../core/user.js";
 
 function pct(option, options) {
   const total = (options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
@@ -11,8 +13,8 @@ export async function renderPresident() {
 }
 
 export async function renderNow() {
-  const rows = Array.from({ length: 15 }, (_, i) => `<article class="person-slot-card"><span class="slot-no">#${String(i + 1).padStart(2, "0")}</span><div class="person-photo-placeholder"></div><div class="slot-lines"><span class="slot-line name"></span><span class="slot-line meta"></span><span class="slot-line short"></span></div><span class="slot-state">순위 데이터 연결 전</span></article>`).join("");
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NOW RANK</span><h1>NOW Rank</h1><p>정치인 실데이터와 순위 산식은 아직 연결하지 않습니다. 순위 엔진을 협의한 뒤 동일한 정치인 ID를 사용합니다.</p></section><section class="content-card"><div class="section-title"><h2>1–15위 표시 영역</h2><span>EMPTY PROVIDER</span></div><div class="person-grid">${rows}</div><div class="notice-box">v2 순위 데이터나 Redis snapshot을 읽지 않습니다. v3 Rank Engine은 별도로 설계합니다.</div></section></main>`);
+  const rows = listNowPreviewSlots().map(person => `<a class="person-slot-card" href="/person/${esc(person.id)}" data-route aria-label="NOW Rank ${person.slot}위 정치인 상세페이지"><span class="slot-no">#${String(person.slot).padStart(2, "0")}</span><div class="person-photo-placeholder"></div><div class="slot-lines"><span class="slot-line name"></span><span class="slot-line meta"></span><span class="slot-line short"></span></div><span class="slot-state">상세 Shell 보기 →</span></a>`).join("");
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NOW RANK</span><h1>NOW Rank</h1><p>실제 정치인과 순위 산식은 아직 연결하지 않습니다. 대신 1–15위 슬롯 전체를 클릭해 공통 정치인 상세페이지 구조를 검수할 수 있습니다.</p></section><section class="content-card"><div class="section-title"><h2>1–15위</h2><span>15개 상세페이지 연결 완료</span></div><div class="person-grid">${rows}</div><div class="notice-box">현재 15개는 순위 UI·상세페이지 연결을 검수하기 위한 빈 슬롯입니다. 나중에 v3 Rank Engine이 발행한 실제 정치인 ID로 이 연결만 교체합니다.</div></section></main>`);
 }
 
 export async function renderPolls() {
@@ -24,7 +26,9 @@ export async function renderPolls() {
 export async function renderAcademy() {
   const data = await getDomain("academy");
   const slots = (data.slots || []).filter(x => x.published !== false);
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">JEONGCHAMSI ACADEMY</span><h1>정참시 아카데미</h1><p>정치를 꿈꾸는 사람이 수강 가능한 일정을 확인하는 공간입니다.</p></section><section class="content-card"><div class="section-title"><h2>수강 가능 일정</h2><span>${slots.length}개</span></div>${slots.length ? `<div class="academy-slot-list">${slots.map(s => `<article><div><b>${esc(s.date || "날짜 미정")}</b><span>${esc(s.title || "정참시 아카데미")} · ${esc(s.description || "")}</span></div><button type="button" ${s.closed ? "disabled" : ""}>${s.closed ? "마감" : "수강신청"}</button></article>`).join("")}</div>` : `<div class="empty-state"><h2>등록된 일정이 없습니다.</h2><p>관리자에서 일정을 등록하면 이곳에 표시됩니다.</p></div>`}</section></main>`);
+  const session = getUserSession();
+  const activity = getUserActivity();
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">JEONGCHAMSI ACADEMY</span><h1>정참시 아카데미</h1><p>정치를 꿈꾸는 사람이 수강 가능한 일정을 확인하고 신청하는 공간입니다.</p></section><section class="content-card"><div class="section-title"><h2>수강 가능 일정</h2><span>${slots.length}개</span></div>${slots.length ? `<div class="academy-slot-list">${slots.map(s => { const applied = activity.academyApplications.includes(String(s.id)); return `<article><div><b>${esc(s.date || "날짜 미정")}</b><span>${esc(s.title || "정참시 아카데미")} · ${esc(s.description || "")}</span></div><button type="button" data-academy-apply="${esc(s.id)}" ${s.closed || applied ? "disabled" : ""}>${s.closed ? "마감" : applied ? "신청완료" : session.authenticated ? "수강신청" : "로그인 후 신청"}</button></article>`; }).join("")}</div>` : `<div class="empty-state"><h2>등록된 일정이 없습니다.</h2><p>관리자에서 일정을 등록하면 이곳에 표시됩니다.</p></div>`}</section></main>`);
 }
 
 export async function renderItsme() {

@@ -1,6 +1,6 @@
 /* =========================================================
    JEONGCHAMSI v3 INTERNAL PAGES / FUNCTION UI
-   alpha5.0 — HOME LAYOUT & TYPOGRAPHY REMAIN LOCKED IN app.css
+   alpha5.1 — HOME LAYOUT & TYPOGRAPHY REMAIN LOCKED IN app.css
    ========================================================= */
 
 /* ---------- shared subpage shell ---------- */
@@ -258,4 +258,45 @@
   .compare-demo-bars{grid-column:1}
   .person-detail-hero{grid-template-columns:1fr}
   .info-list div{grid-template-columns:92px minmax(0,1fr)}
+}
+
+/* ---------- alpha5.1 member / activity UI ---------- */
+.member-auth-card,.member-join-card{max-width:720px;margin-inline:auto}
+.member-join-card h1{margin:0;font-size:var(--fs-h1);line-height:1.3;letter-spacing:-.8px}
+.member-join-card>p{margin:7px 0 20px;color:var(--text-2);font-size:var(--fs-body);line-height:var(--lh-body)}
+.member-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.member-stat-grid article{min-height:112px}
+.member-stat-grid small{display:block;color:var(--text-3);font-size:12px}
+.member-stat-grid strong{display:inline-block;margin:11px 4px 0 0;font-size:26px;letter-spacing:-1px}
+.member-stat-grid span{font-size:13px;color:var(--green);font-weight:850}
+.member-link-list{display:grid;gap:8px}
+.member-link-list button{width:100%;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border:1px solid #e2e9e6;border-radius:10px;background:#fff;text-align:left}
+.member-link-list button:hover{border-color:#bcd9d1;background:#fbfdfc}
+.member-link-list b{font-size:14px}
+.member-link-list span{color:var(--green);font-size:12px;font-weight:850}
+.member-activity-lines{display:flex;gap:8px;flex-wrap:wrap}
+.member-activity-lines p{margin:0;padding:9px 11px;border-radius:999px;background:#f1f6f4;color:var(--text-2);font-size:13px;font-weight:750}
+.ghost-btn.active{border-color:#9ccfc2;background:var(--green-soft);color:var(--green)}
+.comment-section{display:grid;gap:12px}
+.comment-form{display:grid;gap:9px}
+.comment-form textarea{width:100%;resize:vertical;border:1px solid #dfe7e4;border-radius:10px;padding:12px;background:#fff;color:var(--text);font:inherit;line-height:1.6}
+.comment-form textarea:focus{outline:2px solid #c8e5dd;outline-offset:1px}
+.comment-list{display:grid;margin-top:4px}
+.comment-list article{padding:14px 2px;border-top:1px solid #edf1ef}
+.comment-list article>div{display:flex;gap:10px;align-items:center}
+.comment-list b{font-size:13px}
+.comment-list span{color:var(--text-3);font-size:11px}
+.comment-list p{margin:7px 0 0;color:var(--text-2);font-size:14px;line-height:1.7;white-space:pre-wrap}
+.member-login-prompt{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-radius:11px;background:#f4f7f6}
+.member-login-prompt span{font-size:13px;color:var(--text-2)}
+.rank-top-card[role="button"],.rank-list-row[role="button"]{cursor:pointer}
+.rank-top-card[role="button"]:hover,.rank-list-row[role="button"]:hover{background:#fbfdfc}
+
+@media(max-width:760px){
+  .member-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .member-login-prompt{align-items:flex-start;flex-direction:column}
+}
+
+@media(max-width:340px){
+  .member-stat-grid{grid-template-columns:1fr}
 }

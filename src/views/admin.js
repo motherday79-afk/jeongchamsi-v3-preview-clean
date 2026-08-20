@@ -28,7 +28,7 @@ function adminTabs(active) {
 }
 
 function loginView() {
-  return pageShell(`<main class="subpage"><div class="auth-wrap"><section class="auth-card"><span class="eyebrow">ADMIN LOGIN</span><h1>정참시 관리자</h1><p>콘텐츠 작성·수정·삭제와 운영 상태를 관리합니다.</p><form class="auth-form" data-admin-login><label>아이디<input name="id" autocomplete="username" required></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" required></label><button class="primary-btn" type="submit">관리자 로그인</button><div class="auth-error" data-auth-error></div></form><div class="preview-credential-note">초기 Preview 계정은 배포 파일 전달내용과 README에 기록되어 있습니다. 실제 운영 전에는 Vercel 환경변수로 반드시 변경하세요.</div></section></div></main>`);
+  return pageShell(`<main class="subpage"><div class="auth-wrap"><section class="auth-card"><span class="eyebrow">ADMIN LOGIN</span><h1>정참시 관리자</h1><p>콘텐츠 작성·수정·삭제와 운영 상태를 관리합니다.</p><form class="auth-form" data-admin-login><label>아이디<input name="id" autocomplete="username" required></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" required></label><button class="primary-btn" type="submit">관리자 로그인</button><div class="auth-error" data-auth-error></div></form><div class="preview-credential-note">Preview 관리자: <b>admin</b> / <b>jcv3-2026!</b><br>실제 운영 전에는 Vercel 환경변수로 반드시 변경하세요.</div></section></div></main>`);
 }
 
 async function dashboardPanel(session) {

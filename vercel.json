@@ -1,6 +1,10 @@
 {
   "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/join", "destination": "/index.html" },
+    { "source": "/mypage", "destination": "/index.html" },
     { "source": "/assembly", "destination": "/index.html" },
     { "source": "/local-leaders", "destination": "/index.html" },
     { "source": "/local-leaders/metropolitan", "destination": "/index.html" },

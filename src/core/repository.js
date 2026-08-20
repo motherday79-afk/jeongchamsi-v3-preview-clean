@@ -184,6 +184,33 @@ export async function performAction(action, payload) {
       CACHE.set("polls", data);
       return { ok: true, mode: "browser-preview", data };
     }
+    if (action === "post-like" && ["columns", "community", "news"].includes(String(payload.domain || ""))) {
+      const domain = String(payload.domain);
+      const data = await getDomain(domain);
+      const item = (data.items || []).find(x => String(x.id) === String(payload.postId));
+      if (!item) return { ok: false, error: "POST_NOT_FOUND" };
+      item.likes = Math.max(0, Number(item.likes || 0) + (Number(payload.delta || 0) > 0 ? 1 : -1));
+      writeLocalOverride(domain, data);
+      CACHE.set(domain, data);
+      return { ok: true, mode: "browser-preview", data };
+    }
+    if (action === "comment-add" && ["columns", "community", "news"].includes(String(payload.domain || ""))) {
+      const data = await getDomain("comments");
+      const item = {
+        id: `comment-${Date.now().toString(36)}`,
+        domain: String(payload.domain),
+        postId: String(payload.postId || ""),
+        author: String(payload.author || "정참시 유저").slice(0, 40),
+        text: String(payload.text || "").trim().slice(0, 1000),
+        createdAt: new Date().toISOString(),
+        published: true
+      };
+      if (!item.postId || !item.text) return { ok: false, error: "INVALID_COMMENT" };
+      data.items = [item, ...(data.items || [])].slice(0, 2000);
+      writeLocalOverride("comments", data);
+      CACHE.set("comments", data);
+      return { ok: true, mode: "browser-preview", data };
+    }
     return { ok: false, error: String(error?.message || error) };
   }
 }

@@ -4,14 +4,27 @@ export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 }[c]));
 
+const NAV = Object.freeze([
+  ["대통령", "/president"],
+  ["NOW Rank", "/now"],
+  ["IT’S ME", "/itsme"],
+  ["COLUMN", "/column"],
+  ["시민들의 선택", "/poll"],
+  ["정뮤니티", "/community"],
+  ["비교분석", "/compare"],
+  ["세대별 대통령", "/generation-president"],
+  ["전국 평가제", "/national-evaluation"],
+  ["아카데미", "/academy"]
+]);
+
 export function siteHeader() {
   return `<header class="site-header">
     <div class="header-line">
       <button class="header-icon" type="button" aria-label="전체 메뉴" data-drawer-open>☰</button>
       <a class="brand" href="/" data-route>정참시</a>
       <div class="header-gap"></div>
-      <button class="header-icon" type="button" aria-label="알림">○</button>
-      <button class="header-icon" type="button" aria-label="즐겨찾기">☆</button>
+      <button class="header-icon" type="button" aria-label="알림" data-go="/mypage">○</button>
+      <button class="header-icon" type="button" aria-label="즐겨찾기" data-go="/mypage">☆</button>
     </div>
     <div class="search-wrap">
       <form class="main-search" data-search-form>
@@ -21,16 +34,7 @@ export function siteHeader() {
       </form>
     </div>
     <nav class="service-nav">
-      <a href="/#president">대통령</a>
-      <a href="/#now">NOW Rank</a>
-      <a href="/#itsme">IT’S ME</a>
-      <a href="/#column">COLUMN</a>
-      <a href="/#poll">시민들의 선택</a>
-      <a href="/#community">정뮤니티</a>
-      <a href="/#compare">비교분석</a>
-      <a href="/#generation-president">세대별 대통령</a>
-      <a href="/#national-eval">전국 평가제</a>
-      <a href="/#academy">아카데미</a>
+      ${NAV.map(([label, href]) => `<a href="${href}" data-route>${label}</a>`).join("")}
     </nav>
   </header>`;
 }
@@ -39,6 +43,12 @@ export function drawer() {
   return `<div class="drawer-backdrop" data-drawer-close hidden></div>
   <aside class="app-drawer" data-drawer hidden aria-label="전체 메뉴">
     <div class="drawer-head"><b>정참시 전체메뉴</b><button type="button" data-drawer-close aria-label="닫기">×</button></div>
+    <div class="drawer-section-label">회원</div>
+    <nav>
+      <a href="/login" data-route>로그인</a>
+      <a href="/join" data-route>회원가입</a>
+      <a href="/mypage" data-route>마이페이지</a>
+    </nav>
     <div class="drawer-section-label">정치인</div>
     <nav>
       <a href="/assembly" data-route>국회의원 · 300명</a>
