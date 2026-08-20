@@ -1,0 +1,29 @@
+{
+  "version": "v3.0.0-alpha4.0",
+  "build": "FUNCTION FOUNDATION 01 · LAYOUT LOCK",
+  "layout_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "js_syntax_ok": true,
+  "legacy_runtime_refs": [],
+  "politician_provider": "UNDECIDED / 0 real people",
+  "people_capacity": {
+    "assembly": 300,
+    "local_leaders": 300
+  },
+  "routes": [
+    "/assembly",
+    "/local-leaders",
+    "/person/:id",
+    "/now",
+    "/president",
+    "/column",
+    "/community",
+    "/news",
+    "/poll",
+    "/itsme",
+    "/compare",
+    "/generation-president",
+    "/national-evaluation",
+    "/academy",
+    "/admin"
+  ]
+}

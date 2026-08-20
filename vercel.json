@@ -2,6 +2,22 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/assembly",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/local-leaders",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/person/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/president",
+      "destination": "/index.html"
+    },
+    {
       "source": "/now",
       "destination": "/index.html"
     },
@@ -10,11 +26,23 @@
       "destination": "/index.html"
     },
     {
+      "source": "/column/:id",
+      "destination": "/index.html"
+    },
+    {
       "source": "/community",
       "destination": "/index.html"
     },
     {
-      "source": "/search",
+      "source": "/community/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/news",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/news/:id",
       "destination": "/index.html"
     },
     {
@@ -24,41 +52,57 @@
     {
       "source": "/itsme",
       "destination": "/index.html"
+    },
+    {
+      "source": "/compare",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/generation-president",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/national-evaluation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/academy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/search",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/media/people/(.*)",
+      "source": "/css/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
     },
     {
-      "source": "/media/(.*)",
+      "source": "/src/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
         }
       ]
     },
     {
-      "source": "/api/rank/home",
+      "source": "/api/v3/home",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, s-maxage=30, must-revalidate"
-        },
         {
           "key": "CDN-Cache-Control",
-          "value": "public, max-age=30"
-        },
-        {
-          "key": "Vercel-CDN-Cache-Control",
-          "value": "public, max-age=30"
+          "value": "public, max-age=20, stale-while-revalidate=60"
         }
       ]
     }
