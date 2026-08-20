@@ -1,0 +1,43 @@
+const { put } = require("@vercel/blob");
+const { requireAdmin } = require("../../../lib/v3/access");
+
+function safePrefix(v) {
+  return String(v || "content").toLowerCase().replace(/[^a-z0-9/_-]+/g, "-").replace(/^\/+|\/+$/g, "").slice(0, 80) || "content";
+}
+function decodeDataUrl(value) {
+  const match = String(value || "").match(/^data:(image\/(?:webp|jpeg|png));base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) return null;
+  const buffer = Buffer.from(match[2], "base64");
+  if (!buffer.length || buffer.length > 900 * 1024) return null;
+  return { contentType: match[1], buffer };
+}
+
+module.exports = async function handler(req, res) {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
+  }
+
+  try {
+    const admin = await requireAdmin(req);
+    if (!admin) return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
+    if (!String(process.env.BLOB_READ_WRITE_TOKEN || "").trim()) return res.status(503).json({ ok: false, error: "BLOB_STORAGE_NOT_CONFIGURED" });
+
+    const image = decodeDataUrl(req.body?.dataUrl);
+    if (!image) return res.status(400).json({ ok: false, error: "INVALID_IMAGE_PAYLOAD" });
+    const ext = image.contentType === "image/webp" ? "webp" : image.contentType === "image/png" ? "png" : "jpg";
+    const prefix = safePrefix(req.body?.prefix);
+    const path = `jcv3/${prefix}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const blob = await put(path, image.buffer, {
+      access: "public",
+      contentType: image.contentType,
+      addRandomSuffix: true,
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    });
+    return res.status(201).json({ ok: true, url: blob.url, pathname: blob.pathname });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error?.message || "IMAGE_UPLOAD_FAILED" });
+  }
+};

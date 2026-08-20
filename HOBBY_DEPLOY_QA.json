@@ -1,0 +1,26 @@
+{
+  "version": "v3.0.0-alpha6.0.1",
+  "architecture": "ONE_VERCEL_FUNCTION_GATEWAY",
+  "vercel_function_count_in_clean_package": 1,
+  "vercel_functions": [
+    "api/gateway.js"
+  ],
+  "gateway_routes": [
+    "action",
+    "admin/users",
+    "content",
+    "home",
+    "setup",
+    "upload",
+    "user/activity",
+    "user/profile",
+    "user/register",
+    "user/session"
+  ],
+  "old_api_v3_directory_present": false,
+  "vercelignore_stale_api_guard": true,
+  "layout_font_locked": true,
+  "app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "js_syntax": "ALL PASS",
+  "vercel_json": "VALID"
+}
