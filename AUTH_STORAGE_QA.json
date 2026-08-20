@@ -1,0 +1,21 @@
+{
+  "version": "v3.0.0-alpha6.0.3",
+  "vercelFunctions": 1,
+  "apiFunctionFiles": [
+    "api/gateway.js"
+  ],
+  "canonicalRedisPairs": [
+    "JCV3_REDIS_REST_URL + JCV3_REDIS_REST_TOKEN",
+    "KV_REST_API_URL + KV_REST_API_TOKEN",
+    "UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN"
+  ],
+  "legacyMalformedRedisVariablesIgnored": true,
+  "envPrecedenceTest": {
+    "source": "VERCEL_KV",
+    "url": "https://valid.example.upstash.io"
+  },
+  "healthEndpoint": "/api/v3/health",
+  "layoutFontLocked": true,
+  "appCssSha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "jsSyntax": "ALL PASS"
+}

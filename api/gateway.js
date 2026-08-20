@@ -10,6 +10,7 @@ const routeModules = Object.freeze({
   "action": "../server/v3/routes/action",
   "content": "../server/v3/routes/content",
   "home": "../server/v3/routes/home",
+  "health": "../server/v3/routes/health",
   "setup": "../server/v3/routes/setup",
   "upload": "../server/v3/routes/upload",
   "admin/users": "../server/v3/routes/admin/users",

@@ -18,6 +18,10 @@ module.exports = async function handler(req, res) {
     setCookie(res, issueSession(result.user.id), req);
     return res.status(201).json({ ok: true, user: result.user });
   } catch (error) {
-    return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "REGISTER_FAILED" });
+    {
+      const code = error?.code || "REGISTER_FAILED";
+      const status = ["STORAGE_MISSING","SESSION_SECRET_MISSING"].includes(code) ? 503 : 500;
+      return res.status(status).json({ ok: false, error: code });
+    }
   }
 };

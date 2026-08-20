@@ -39,3 +39,16 @@ Vercel 배포 대상에서 제외하고 `api/gateway.js`만 포함하도록 구�
 - `.vercelignore`는 오직 예전 `api/v3/**`만 제외.
 - 서버 저장소 환경변수는 `JCV3_REDIS_REST_URL` + `JCV3_REDIS_REST_TOKEN` 또는 호환 Upstash/KV 이름을 사용합니다.
 - 세션 secret은 `JCV3_SESSION_SECRET` 권장.
+
+
+## alpha6.0.3 인증/저장소 수정
+Redis 환경변수는 아래 정상 PAIR만 사용합니다.
+1. `JCV3_REDIS_REST_URL` + `JCV3_REDIS_REST_TOKEN`
+2. `KV_REST_API_URL` + `KV_REST_API_TOKEN`
+3. `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+
+과거 잘못 생성된 `UPSTASH_REDIS_REST_KV_REST_API_*` 변수는 코드에서 완전히 무시합니다.
+
+배포 후 `/api/v3/health`를 열어
+`{"ok":true,"storage":"ready","session":"ready"}`가 나오면
+회원가입/로그인 기반이 정상입니다.

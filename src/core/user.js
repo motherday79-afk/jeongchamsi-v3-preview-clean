@@ -31,6 +31,10 @@ function authErrorMessage(error, fallback) {
     STORAGE_MISSING: "회원 저장소가 연결되지 않았습니다. 관리자에게 문의해 주세요.",
     JCV3_STORAGE_NOT_CONFIGURED: "회원 저장소가 연결되지 않았습니다. 관리자에게 문의해 주세요.",
     SESSION_SECRET_MISSING: "로그인 세션 설정이 완료되지 않았습니다.",
+    STORAGE_AUTH: "회원 저장소 인증정보가 올바르지 않습니다. 관리자에게 문의해 주세요.",
+    STORAGE_NETWORK: "회원 저장소에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    STORAGE_REQUEST: "회원 저장소 요청 처리에 실패했습니다. 관리자에게 문의해 주세요.",
+    API_HANDLER_FAILED: "서버 인증 기능 실행 중 오류가 발생했습니다.",
     JCV3_SESSION_SECRET_NOT_CONFIGURED: "로그인 세션 설정이 완료되지 않았습니다.",
     NETWORK_ERROR: "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     HTTP_404: "서버 API 연결 경로를 찾지 못했습니다."

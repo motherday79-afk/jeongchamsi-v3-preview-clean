@@ -17,7 +17,11 @@ module.exports = async function handler(req, res) {
       const { passwordHash, ...safe } = user;
       return res.status(200).json({ ok: true, authenticated: true, user: safe });
     } catch (error) {
-      return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "SESSION_READ_FAILED" });
+      {
+      const code = error?.code || "SESSION_READ_FAILED";
+      const status = ["STORAGE_MISSING","SESSION_SECRET_MISSING"].includes(code) ? 503 : 500;
+      return res.status(status).json({ ok: false, error: code });
+    }
     }
   }
 
@@ -28,7 +32,11 @@ module.exports = async function handler(req, res) {
       setCookie(res, issueSession(user.id), req);
       return res.status(200).json({ ok: true, authenticated: true, user });
     } catch (error) {
-      return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "LOGIN_FAILED" });
+      {
+      const code = error?.code || "LOGIN_FAILED";
+      const status = ["STORAGE_MISSING","SESSION_SECRET_MISSING"].includes(code) ? 503 : 500;
+      return res.status(status).json({ ok: false, error: code });
+    }
     }
   }
 
