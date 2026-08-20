@@ -1,10 +1,113 @@
-const store = require("../../lib/store");
+const zlib = require("zlib");
+const crypto = require("crypto");
 const { publicSnapshot } = require("../../lib/public_snapshot");
+
+const COMPRESSED_PREFIX = "__JJDD_GZIP_B64_V1__:";
+const PHOTO_MASTER_VERSION = "v260-photo-master-1";
+const PHOTO_INDEX_KEY = `jjdd:photo-master:index:${PHOTO_MASTER_VERSION}`;
 
 function cache(res) {
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=30, must-revalidate");
   res.setHeader("CDN-Cache-Control", "public, max-age=30");
   res.setHeader("Vercel-CDN-Cache-Control", "public, max-age=30");
+}
+
+function cleanEnv(value) {
+  let v = String(value || "").trim();
+  if (!v) return "";
+  const eq = v.indexOf("=");
+  if (eq > 0 && /^[A-Z0-9_]+=/.test(v)) v = v.slice(eq + 1).trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v;
+}
+
+function redisConfig() {
+  const url = cleanEnv(
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_KV_REST_API_URL ||
+    process.env.STORAGE_KV_REST_API_URL ||
+    process.env.UPSTASH_KV_REST_API_URL
+  ).replace(/\/+$/, "");
+
+  const token = cleanEnv(
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN ||
+    process.env.STORAGE_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_KV_REST_API_TOKEN
+  );
+
+  if (!url || !token) {
+    const e = new Error("ENV_MISSING");
+    e.code = "ENV_MISSING";
+    throw e;
+  }
+  if (!/^https:\/\//i.test(url)) {
+    const e = new Error("REDIS_URL_INVALID");
+    e.code = "REDIS_URL_INVALID";
+    throw e;
+  }
+  return { url, token };
+}
+
+async function redisCommand(args) {
+  const { url, token } = redisConfig();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2200);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(args),
+      signal: controller.signal
+    });
+    const text = await response.text();
+    let body = {};
+    try { body = JSON.parse(text); } catch {}
+    if (!response.ok || body?.error) {
+      const status = Number(response.status || 0);
+      const raw = String(body?.error || text || "");
+      const e = new Error("REDIS_REQUEST_FAILED");
+      e.code = (
+        status === 401 || status === 403 || /unauthor|forbidden|auth|token/i.test(raw)
+      ) ? "REDIS_AUTH" : `REDIS_HTTP_${status || "ERROR"}`;
+      throw e;
+    }
+    return body?.result ?? null;
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const e = new Error("REDIS_TIMEOUT");
+      e.code = "REDIS_TIMEOUT";
+      throw e;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function parseJSONValue(v) {
+  if (v == null) return null;
+  if (typeof v === "object") return v;
+  if (typeof v !== "string") return null;
+  try {
+    if (v.startsWith(COMPRESSED_PREFIX)) {
+      const raw = zlib.gunzipSync(
+        Buffer.from(v.slice(COMPRESSED_PREFIX.length), "base64")
+      ).toString("utf8");
+      return JSON.parse(raw);
+    }
+    return JSON.parse(v);
+  } catch {
+    return null;
+  }
+}
+
+async function getJSON(key) {
+  return parseJSONValue(await redisCommand(["GET", key]));
 }
 
 function finite(v) {
@@ -35,81 +138,126 @@ function compactHomeMember(m = {}) {
   };
 }
 
-module.exports = async function handler(req, res) {
-  cache(res);
+function fingerprint(value) {
+  return crypto.createHash("sha1").update(String(value || "")).digest("hex").slice(0, 16);
+}
 
+async function attachPhotoVersions(members) {
+  const ids = members.map((m) => Number(m.id)).filter(Boolean);
+  if (!ids.length) return members;
+
+  const masterKeys = ids.map(
+    (id) => `jjdd:photo-master:${PHOTO_MASTER_VERSION}:${id}:160`
+  );
+
+  let masterRaw = [];
   try {
-    let current = await store.getJSON("jjdd:current:public");
+    masterRaw = await redisCommand(["MGET", ...masterKeys]);
+  } catch {
+    masterRaw = [];
+  }
+  if (!Array.isArray(masterRaw)) masterRaw = [];
 
-    if (!current || Number(current.schemaVersion || 0) < 4 || !current.rosterVersion) {
-      const full = await store.getJSON("jjdd:current");
-      if (!full) {
-        return res.status(404).json({ ok: false, error: "published snapshot not found" });
-      }
-      current = publicSnapshot(full);
-      if (current.rosterVersion) {
-        store.setJSON("jjdd:current:public", current).catch(() => {});
-      }
+  const masterById = new Map();
+  ids.forEach((id, index) => {
+    const rec = parseJSONValue(masterRaw[index]);
+    if (!rec?.data) return;
+    const version = String(
+      rec.sourceFingerprint || rec.generatedAt || fingerprint(rec.data.slice(0, 256))
+    ).replace(/[^a-zA-Z0-9._:-]/g, "");
+    masterById.set(id, { version, kind: "master" });
+  });
+
+  const missingIds = ids.filter((id) => !masterById.has(id));
+  const fallbackById = new Map();
+
+  if (missingIds.length) {
+    const fallbackKeys = [];
+    for (const id of missingIds) {
+      fallbackKeys.push(
+        `jjdd:local-photo:override:${id}`,
+        `jjdd:local-photo:resolved:${id}:v5-hq-web-search`,
+        `jjdd:local-photo:last-good:${id}:v1`
+      );
     }
 
-    const members = (Array.isArray(current.members) ? current.members : [])
+    let fallbackRaw = [];
+    try {
+      fallbackRaw = await redisCommand(["MGET", ...fallbackKeys]);
+    } catch {
+      fallbackRaw = [];
+    }
+    if (!Array.isArray(fallbackRaw)) fallbackRaw = [];
+
+    missingIds.forEach((id, idx) => {
+      const base = idx * 3;
+      const candidates = [
+        parseJSONValue(fallbackRaw[base]),
+        parseJSONValue(fallbackRaw[base + 1]),
+        parseJSONValue(fallbackRaw[base + 2])
+      ];
+      const rec = candidates.find((x) => x?.url && /^https?:\/\//i.test(String(x.url)));
+      if (!rec) return;
+      const version = fingerprint(
+        `${rec.url}|${rec.source || ""}|${rec.profileUrl || ""}|${rec.resolvedAt || ""}`
+      );
+      fallbackById.set(id, { version, kind: "lkg" });
+    });
+  }
+
+  return members.map((m) => {
+    const id = Number(m.id);
+    const meta = masterById.get(id) || fallbackById.get(id);
+    if (!meta) return m;
+    return {
+      ...m,
+      photoVersion: `${meta.kind}-${meta.version}`,
+      photoUrl: `/api/person-photo?id=${encodeURIComponent(id)}&s=160&v=${encodeURIComponent(`${meta.kind}-${meta.version}`)}`
+    };
+  });
+}
+
+module.exports = async function handler(req, res) {
+  cache(res);
+  try {
+    let current = await getJSON("jjdd:current:public");
+    if (!current || !Array.isArray(current.members)) {
+      const full = await getJSON("jjdd:current");
+      if (!full) {
+        return res.status(404).json({
+          ok: false,
+          error: "published snapshot not found",
+          diagnostic: { code: "SNAPSHOT_MISSING" }
+        });
+      }
+      current = publicSnapshot(full);
+    }
+
+    let members = (Array.isArray(current.members) ? current.members : [])
       .filter((m) => m && Number(m.id) !== 300 && String(m.party || "") !== "공석")
       .filter((m) => finite(m.overallRank) || finite(m.rank) || finite(m.categoryRank))
       .sort((a, b) => rankOf(a) - rankOf(b))
       .slice(0, 10)
       .map(compactHomeMember);
 
+    members = await attachPhotoVersions(members);
+
     return res.status(200).json({
       ok: true,
-      schemaVersion: 1,
+      schemaVersion: 2,
       publicationId: current.publicationId || null,
       publishedAt: current.publishedAt || null,
       timestamp: current.timestamp || null,
       rosterVersion: current.rosterVersion || null,
+      photoMasterVersion: PHOTO_MASTER_VERSION,
       members
     });
   } catch (error) {
-    const urlCandidates = [
-      ["UPSTASH_REDIS_REST_URL", process.env.UPSTASH_REDIS_REST_URL],
-      ["KV_REST_API_URL", process.env.KV_REST_API_URL],
-      ["UPSTASH_REDIS_REST_KV_REST_API_URL", process.env.UPSTASH_REDIS_REST_KV_REST_API_URL],
-      ["STORAGE_KV_REST_API_URL", process.env.STORAGE_KV_REST_API_URL],
-      ["UPSTASH_KV_REST_API_URL", process.env.UPSTASH_KV_REST_API_URL]
-    ];
-    const tokenCandidates = [
-      ["UPSTASH_REDIS_REST_TOKEN", process.env.UPSTASH_REDIS_REST_TOKEN],
-      ["KV_REST_API_TOKEN", process.env.KV_REST_API_TOKEN],
-      ["UPSTASH_REDIS_REST_KV_REST_API_TOKEN", process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN],
-      ["STORAGE_KV_REST_API_TOKEN", process.env.STORAGE_KV_REST_API_TOKEN],
-      ["UPSTASH_KV_REST_API_TOKEN", process.env.UPSTASH_KV_REST_API_TOKEN]
-    ];
-
-    const urlEntry = urlCandidates.find(([, value]) => String(value || "").trim());
-    const tokenEntry = tokenCandidates.find(([, value]) => String(value || "").trim());
-
-    let code = "REDIS_REQUEST";
-    const raw = String(error?.message || error || "");
-
-    if (!urlEntry || !tokenEntry) {
-      code = "ENV_MISSING";
-    } else if (/unauthor|forbidden|invalid.*token|auth|401|403/i.test(raw)) {
-      code = "REDIS_AUTH";
-    } else if (/not configured|environment variables were not found/i.test(raw)) {
-      code = "ENV_MISSING";
-    }
-
-    // Never return secret values or the Redis URL itself.
     return res.status(503).json({
       ok: false,
       error: "rank backend unavailable",
       diagnostic: {
-        code,
-        urlDetected: Boolean(urlEntry),
-        tokenDetected: Boolean(tokenEntry),
-        urlKey: urlEntry?.[0] || null,
-        tokenKey: tokenEntry?.[0] || null,
-        urlHasWrappingQuotes: Boolean(urlEntry && /^["']|["']$/.test(String(urlEntry[1]).trim())),
-        tokenHasWrappingQuotes: Boolean(tokenEntry && /^["']|["']$/.test(String(tokenEntry[1]).trim())),
+        code: String(error?.code || error?.message || "REDIS_REQUEST"),
         runtime: process.env.VERCEL_ENV || "unknown"
       }
     });
