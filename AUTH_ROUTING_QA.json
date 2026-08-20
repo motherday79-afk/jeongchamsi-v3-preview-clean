@@ -1,0 +1,8 @@
+{
+  "register": 201,
+  "signup_session_cookie": true,
+  "session_get_authenticated": true,
+  "logout": true,
+  "login": true,
+  "unknown_api_route": 404
+}

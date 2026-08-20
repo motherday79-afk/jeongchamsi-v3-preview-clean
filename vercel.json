@@ -1,22 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/v3/(?<path>.*)",
-      "dest": "/api/gateway.js?path=$path"
+      "source": "/api/v3/:path*",
+      "destination": "/api/gateway?path=:path*"
     },
     {
-      "src": "/api/v3",
-      "dest": "/api/gateway.js?path="
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [

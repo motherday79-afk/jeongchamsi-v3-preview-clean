@@ -1,15 +1,26 @@
 {
-  "version": "v3.0.0-alpha6.0",
-  "build": "CLEAN CORE 01 · STRUCTURE RESET · LAYOUT LOCK",
-  "layout_app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
-  "politician_slots": {"assembly": 300, "metropolitan": 16, "basic": 227, "total": 543},
-  "now_initial_large_category": 50,
-  "now_load_more": 50,
-  "persistent_source": "server-redis-only",
-  "guest_recent_storage": "localStorage-only-by-design",
-  "auth": "unified-member-admin-session",
-  "first_admin": "JCV3_ADMIN_SETUP_KEY",
-  "image_storage": "Vercel Blob URL in Redis",
-  "v2_runtime_references": 0,
-  "final_qa": "PASS"
+  "version": "v3.0.0-alpha6.0.2",
+  "build": "CLEAN CORE · AUTH ROUTING FIX · SINGLE FUNCTION",
+  "vercel_function_count": 1,
+  "vercel_function": [
+    "api/gateway.js"
+  ],
+  "routing": {
+    "api": "/api/v3/:path* -> /api/gateway?path=:path*",
+    "spa": "/(.*) -> /index.html",
+    "configuration": "higher-level rewrites"
+  },
+  "gateway": "lazy route modules",
+  "auth_qa": {
+    "register": 201,
+    "signup_session_cookie": true,
+    "session_get_authenticated": true,
+    "logout": true,
+    "login": true,
+    "unknown_api_route": 404
+  },
+  "layout_font_locked": true,
+  "app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "politician_slots": 543,
+  "v2_runtime_references": 0
 }
