@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.29-search-hotfix";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.30-search-home-restore";
 
 const DOCS = Object.freeze({
   guide: {

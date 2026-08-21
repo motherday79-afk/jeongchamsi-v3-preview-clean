@@ -1,24 +1,32 @@
-정참시 v3 alpha6.0.29 · SEARCH GRID HOTFIX
-기준: alpha6.0.28
+정참시 v3 alpha6.0.30 · SEARCH HOME RESTORE
+기준: alpha6.0.29
 형식: PATCH ONLY
 
-원인
-- alpha6.0.28에서 검색창의 '정' 브랜드 칸을 마크업에서 제거했지만,
-  css/app.css의 기존 .main-search grid-template-columns: 40px 1fr 66px 규칙이 남아 있었습니다.
-- 결과적으로 존재하지 않는 첫 번째 40px 컬럼이 계속 예약되어 input/button 정렬이 무너졌습니다.
-- 모바일도 34px + input + 58px의 3열 구조가 남아 같은 문제가 발생했습니다.
-
 수정
-- clean search 전용 2열 구조로 명시:
-  PC: input + 66px 검색버튼
-  Mobile: input + 58px 검색버튼
-- 좌측 불필요한 빈 컬럼 완전 제거
-- input 폭/placeholder/패딩 정상화
-- 검색 기능과 후원 URL 등 다른 기능 변경 없음
+- 검색창 왼쪽 '정' 홈버튼 복구
+- 클릭 시 기존대로 정참시 메인(/) 이동
+- '정치에 참여할 시간' 검색창 오버레이는 복구하지 않음
+- 가운데 placeholder:
+  정치인·정당·정책·NEWS·COLUMN 통합검색
+- 검색창 구조:
+  PC 40px 홈버튼 + 검색입력 + 66px 검색버튼
+  Mobile 34px 홈버튼 + 검색입력 + 58px 검색버튼
+
+원인
+- alpha6.0.28에서 검색 브랜드 오버레이 제거 범위를 넓게 잡아
+  기능 버튼인 '정' 홈컨트롤까지 함께 제거한 것이 잘못이었습니다.
+- alpha6.0.29는 그 잘못된 2열 상태를 정렬만 바로잡은 패치였습니다.
+- alpha6.0.30에서 원래 기능 의도대로 3열 구조를 정확히 복구합니다.
+
+보존
+- 후원 URL 직결 유지
+- 검색 브랜드 문구 제거 상태 유지
+- 검색 기능 유지
+- 그 외 메인 기능 변경 없음
 - !important 0
 
 QA
 - 전체 JS node --check PASS
-- PC 2-column selector 확인
-- Mobile 2-column selector 확인
-- 검색창 내 브랜드 마크/오버레이 없음 확인
+- '정' data-go='/' 홈 기능 확인
+- PC/Mobile 3열 구조 확인
+- search-brand-hint 미존재 확인

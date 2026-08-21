@@ -86,6 +86,7 @@ export function siteHeader() {
     </div>
     <div class="search-wrap">
       <form class="main-search main-search-clean" data-search-form>
+        <button class="search-home-mark" type="button" aria-label="정참시 홈" title="홈으로" data-go="/">정</button>
         <input name="q" aria-label="통합검색" placeholder="정치인·정당·정책·NEWS·COLUMN 통합검색">
         <button type="submit">검색</button>
       </form>

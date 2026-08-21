@@ -1,13 +1,13 @@
 {
-  "version": "v3.0.0-alpha6.0.29",
-  "base": "v3.0.0-alpha6.0.28",
+  "version": "v3.0.0-alpha6.0.30",
+  "base": "v3.0.0-alpha6.0.29",
   "patch_only": true,
-  "root_cause": "base CSS kept 3-column grid after brand column markup was removed",
   "checks": {
-    "two_column_desktop": true,
-    "two_column_mobile": true,
-    "plain_input_markup": true,
-    "placeholder_ok": true,
+    "home_mark_restored": true,
+    "brand_overlay_absent": true,
+    "functional_placeholder": true,
+    "desktop_three_columns": true,
+    "mobile_three_columns": true,
     "important_zero": true
   },
   "changed_files": [
@@ -22,6 +22,7 @@
     "src/views/admin.js",
     "src/views/home.js",
     "src/views/brand.js",
+    "src/views/layout.js",
     "src/views/boards.js",
     "src/views/people.js"
   ]
