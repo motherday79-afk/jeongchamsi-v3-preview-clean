@@ -2,7 +2,6 @@ const { getJSON, setJSON, command } = require("../../../lib/v3/redis");
 const { defaultDomain, sanitize } = require("../../../lib/v3/schema");
 const { currentUser } = require("../../../lib/v3/access");
 const { getActivity, setActivity } = require("../../../lib/v3/activity");
-const { syncAssemblyPeople } = require("../../../lib/v3/people");
 
 function toggle(list, value, max = 300) {
   const id = String(value || "");
@@ -39,12 +38,6 @@ module.exports = async function handler(req, res) {
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ ok: false, error: "USER_LOGIN_REQUIRED" });
     let activity = await getActivity(user.id);
-
-    if (action === "people-sync-assembly") {
-      if (user.role !== "admin") return res.status(403).json({ ok:false, error:"ADMIN_REQUIRED" });
-      const result = await syncAssemblyPeople();
-      return res.status(200).json({ ok:true, connected:result.connected, updatedAt:result.index.updatedAt, counts:result.index.counts });
-    }
 
     if (action === "favorite-toggle") {
       const t = toggle(activity.favorites || [], payload.personId, 100);
