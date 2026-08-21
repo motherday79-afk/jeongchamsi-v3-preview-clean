@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.24-stability";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.25-brand-hero";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
@@ -6,7 +6,7 @@ import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPo
 import { APP_VERSION, BUILD_NAME } from "../version.js";
 
 const TABS = [
-  ["dashboard", "대시보드"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],
+  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],
   ["columns", "COLUMN"], ["community", "정뮤니티"], ["itsme", "IT’S ME"], ["news", "정참시 NEWS"],
   ["polls", "시민들의 선택"], ["keywords", "정치키워드"], ["trending", "실시간 급상승"],
   ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["system", "시스템"]
@@ -144,6 +144,58 @@ async function academyPanel() {
     </form>` : ""}
   </section>`;
 }
+async function brandPanel() {
+  const data = await getDomain("brand");
+  const hero = {
+    kicker:"정참시 — 정치에 참여할 시간",
+    headline:"바라볼 때가 아닌, 행동할 때 정치가 시작됩니다.",
+    subline1:"알고, 비교하고, 선택하고, 평가하는 것.",
+    subline2:"한 사람의 작은 행동이 정치의 방향을 만듭니다.",
+    learnLabel:"정참시 더 알아보기",
+    supportLabel:"정참시 후원하기",
+    artImage:"",
+    ...(data.hero || {})
+  };
+  const about = {
+    title:"왜 정참시인가",
+    intro:"정치는 선거일 하루에만 존재하지 않습니다. 우리의 일상과 선택, 지역과 미래를 매일 움직입니다.",
+    body:"",
+    ...(data.about || {})
+  };
+  const support = {
+    title:"정참시 후원하기",
+    intro:"정치에 참여할 수 있는 더 나은 공간을 함께 만들어 주세요.",
+    body:"",
+    note:"현재 후원 방법은 준비 중입니다.",
+    ...(data.support || {})
+  };
+  const art = hero.artImage || "/assets/brand/hero-art.webp";
+  return `<section class="admin-panel">
+    <div class="admin-panel-head"><div><h2>메인 최상단 · 정참시 브랜드 타이틀</h2><span class="status-pill"><b>HERO</b>금싸라기 영역</span></div><div class="inline-actions"><button class="ghost-btn" type="button" data-go="/">메인 보기</button><button class="ghost-btn" type="button" data-go="/about">더 알아보기 페이지</button></div></div>
+    <div class="notice-box">기존 대통령 영역을 정참시 브랜드 선언 영역으로 교체했습니다. 대통령 페이지는 더보기 메뉴에서 그대로 유지됩니다.</div>
+    <form class="admin-form brand-admin-form" data-admin-form="brand-settings">
+      <div class="section-title"><h2>메인 타이틀 수정</h2><span>저장 즉시 메인 반영</span></div>
+      <label>상단 문구<input name="kicker" maxlength="100" value="${esc(hero.kicker)}"></label>
+      <label>메인 문구<textarea name="headline" rows="3" maxlength="180" required>${esc(hero.headline)}</textarea></label>
+      <label>서브 1<input name="subline1" maxlength="180" value="${esc(hero.subline1)}"></label>
+      <label>서브 2<input name="subline2" maxlength="180" value="${esc(hero.subline2)}"></label>
+      <div class="admin-form-row"><label>더 알아보기 버튼<input name="learnLabel" maxlength="60" value="${esc(hero.learnLabel)}"></label><label>후원 버튼<input name="supportLabel" maxlength="60" value="${esc(hero.supportLabel)}"></label></div>
+      <label>히어로 비주얼 교체<input type="file" accept="image/*" data-cover-input></label>
+      <div class="image-uploader"><div class="image-preview brand-art-preview" data-cover-preview ${art ? `style="background-image:url('${esc(art)}')"` : ""} data-cover-data="${esc(hero.artImage || "")}"></div><div class="image-help"><b>현재 확정 디자인 비주얼 사용 중</b><span>교체하지 않으면 기본 비주얼이 계속 사용됩니다. 업로드 시 Blob 이미지로 교체됩니다.</span></div></div>
+      <div class="section-title top-gap"><h2>정참시 더 알아보기</h2><span>/about</span></div>
+      <label>페이지 제목<input name="aboutTitle" maxlength="100" value="${esc(about.title)}"></label>
+      <label>도입문<textarea name="aboutIntro" rows="3" maxlength="600">${esc(about.intro)}</textarea></label>
+      <label>본문<textarea name="aboutBody" rows="12" maxlength="12000">${esc(about.body)}</textarea></label>
+      <div class="section-title top-gap"><h2>정참시 후원하기</h2><span>/support</span></div>
+      <label>페이지 제목<input name="supportTitle" maxlength="100" value="${esc(support.title)}"></label>
+      <label>도입문<textarea name="supportIntro" rows="3" maxlength="600">${esc(support.intro)}</textarea></label>
+      <label>본문<textarea name="supportBody" rows="10" maxlength="12000">${esc(support.body)}</textarea></label>
+      <label>후원 안내/준비 상태<textarea name="supportNote" rows="3" maxlength="1000">${esc(support.note)}</textarea></label>
+      <div class="admin-form-actions"><button class="primary-btn" type="submit">메인·상세페이지 저장</button><span class="save-state" data-save-state></span></div>
+    </form>
+  </section>`;
+}
+
 async function presidentPanel() {
   const data = await getDomain("president"); const p = data.profile || {};
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>대통령 정보 구조</h2><span class="status-pill"><b>STRUCTURE</b>입력 준비 완료</span></div><button class="ghost-btn" data-go="/president">외부 페이지</button></div><div class="notice-box">실제 정보 입력은 나중에 해도 됩니다. 아래 필드가 대통령 전용 데이터 저장구조의 기준입니다.</div><form class="admin-form" data-admin-form="president"><div class="admin-cover-layout"><div><label>대통령 프로필 사진<input type="file" accept="image/*" data-profile-input></label><p class="image-help">프로필 사진 권장: 세로형 3:4 · 900×1200px 내외. 업로드 시 브라우저에서 자동 최적화합니다.</p></div><div class="cover-preview profile-preview" data-profile-preview ${p.photo ? `style="background-image:url('${esc(p.photo)}')" data-profile-data="${esc(p.photo)}"` : ""}>${p.photo ? "" : "프로필 사진 미리보기"}</div></div><div class="admin-form-row"><label>이름<input name="name" value="${esc(p.name || "")}"></label><label>정당<input name="party" value="${esc(p.party || "")}"></label></div><div class="admin-form-row"><label>출생<input name="birth" value="${esc(p.birth || "")}"></label><label>최종학력<input name="education" value="${esc(p.education || "")}"></label></div><div class="admin-form-row"><label>취임일<input name="inauguratedAt" value="${esc(p.inauguratedAt || "")}"></label><label>임기<input name="term" value="${esc(p.term || "")}"></label></div><label>주요 경력 · 한 줄씩<textarea name="career" rows="6">${esc((data.career || []).join("\n"))}</textarea></label><label>선거 이력 · 한 줄씩<textarea name="elections" rows="5">${esc((data.elections || []).join("\n"))}</textarea></label><label>국정 비전<textarea name="vision" rows="5">${esc(data.vision || "")}</textarea></label><label>주요 정책 · 한 줄씩<textarea name="policies" rows="6">${esc((data.policies || []).join("\n"))}</textarea></label><label>핵심 공약 · 한 줄씩<textarea name="pledges" rows="6">${esc((data.pledges || []).join("\n"))}</textarea></label><label>국정과제 · 한 줄씩<textarea name="nationalTasks" rows="6">${esc((data.nationalTasks || []).join("\n"))}</textarea></label><label>공식 채널 · 한 줄씩<textarea name="channels" rows="4">${esc((data.channels || []).join("\n"))}</textarea></label>${formButtons("president")}</form></section>`;
@@ -175,7 +227,8 @@ export async function renderAdmin() {
   }
   const { tab, edit } = params();
   let panel;
-  if (tab === "members") panel = await membersPanel();
+  if (tab === "brand") panel = await brandPanel();
+  else if (tab === "members") panel = await membersPanel();
   else if (tab === "people") panel = peoplePanel();
   else if (tab === "president") panel = await presidentPanel();
   else if (["columns", "community", "news"].includes(tab)) panel = await boardPanel(tab, edit);
@@ -208,6 +261,35 @@ export async function saveAdminForm(form) {
   if (domain === "keywords-list") { const lines = splitLines(fd.get("lines")).slice(0, 15); return saveDomain("keywords", { items: lines.map((line, i) => { const [label, delta = ""] = line.split("|").map(x => x.trim()); return { id: `keyword-${i + 1}`, rank: i + 1, label, delta, published: true }; }) }); }
   if (domain === "trending-list") { const lines = splitLines(fd.get("lines")).slice(0, 10); return saveDomain("trending", { items: lines.map((line, i) => { const [title, href = ""] = line.split("|").map(x => x.trim()); return { id: `trending-${i + 1}`, rank: i + 1, title, href, published: true }; }) }); }
   if (domain === "president") { const current = await getDomain("president"); const photo = form.querySelector("[data-profile-preview]")?.dataset.profileData || current.profile?.photo || ""; const next = { ...current, profile: { ...current.profile, photo, name: fd.get("name"), party: fd.get("party"), birth: fd.get("birth"), education: fd.get("education"), inauguratedAt: fd.get("inauguratedAt"), term: fd.get("term") }, career: splitLines(fd.get("career")), elections: splitLines(fd.get("elections")), vision: String(fd.get("vision") || ""), policies: splitLines(fd.get("policies")), pledges: splitLines(fd.get("pledges")), nationalTasks: splitLines(fd.get("nationalTasks")), channels: splitLines(fd.get("channels")), updatedAt: now }; return saveDomain("president", next); }
+  if (domain === "brand-settings") {
+    const current = await getDomain("brand");
+    const artImage = form.querySelector("[data-cover-preview]")?.dataset.coverData || current.hero?.artImage || "";
+    const next = {
+      ...current,
+      hero: {
+        kicker:String(fd.get("kicker") || "").trim(),
+        headline:String(fd.get("headline") || "").trim(),
+        subline1:String(fd.get("subline1") || "").trim(),
+        subline2:String(fd.get("subline2") || "").trim(),
+        learnLabel:String(fd.get("learnLabel") || "").trim(),
+        supportLabel:String(fd.get("supportLabel") || "").trim(),
+        artImage
+      },
+      about: {
+        title:String(fd.get("aboutTitle") || "").trim(),
+        intro:String(fd.get("aboutIntro") || "").trim(),
+        body:String(fd.get("aboutBody") || "")
+      },
+      support: {
+        title:String(fd.get("supportTitle") || "").trim(),
+        intro:String(fd.get("supportIntro") || "").trim(),
+        body:String(fd.get("supportBody") || ""),
+        note:String(fd.get("supportNote") || "")
+      },
+      updatedAt:now
+    };
+    return saveDomain("brand", next);
+  }
   if (domain === "academy-settings") {
     const data = await getDomain("academy");
     data.config = {

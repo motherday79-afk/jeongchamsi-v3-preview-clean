@@ -1,26 +1,28 @@
 {
-  "version": "v3.0.0-alpha6.0.24",
-  "base": "alpha6.0.23",
+  "version": "v3.0.0-alpha6.0.25",
+  "base": "v3.0.0-alpha6.0.24",
   "patch_only": true,
-  "checks": {
-    "now_scroll_preserve": true,
-    "member_edit_fields": true,
-    "column_hover": true,
-    "column_contain": true,
-    "detail_cover_reduced": true,
-    "rising_politicians": true,
-    "academy_single_source": true,
-    "no_important": true
+  "scope": {
+    "main_president_slot_replaced_with_brand_hero": true,
+    "president_page_preserved_in_more_menu": true,
+    "brand_admin_editable": true,
+    "about_page": "/about",
+    "support_page": "/support",
+    "hero_visual_asset": "assets/brand/hero-art.webp",
+    "hero_visual_bytes": 14302
   },
-  "js_syntax": "ALL PASS",
-  "vercel_functions": 1,
-  "runtime_member_test": "PASS",
-  "runtime_now_home_test": "PASS",
-  "academy_skeleton_rules_remaining": 0,
+  "checks": {
+    "js_syntax": "ALL PASS",
+    "brand_schema_runtime": "PASS",
+    "home_brand_runtime": "PASS",
+    "about_runtime": "PASS",
+    "support_runtime": "PASS",
+    "important_count": 0,
+    "vercel_function_count": 1
+  },
   "changed_files": [
     "package.json",
     "index.html",
-    "css/app.css",
     "css/pages.css",
     "src/app.js",
     "src/version.js",
@@ -29,11 +31,12 @@
     "src/views/legal.js",
     "src/views/admin.js",
     "src/views/home.js",
+    "src/views/brand.js",
     "src/views/boards.js",
     "src/views/people.js",
-    "src/core/user.js",
-    "lib/v3/users.js",
-    "server/v3/routes/admin/users.js",
-    "server/v3/routes/user/session.js"
+    "src/core/repository.js",
+    "lib/v3/schema.js",
+    "assets/brand/hero-art.webp",
+    "server/v3/routes/home.js"
   ]
 }

@@ -1,7 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
-import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.24-stability";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.25-brand-hero";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -52,6 +51,33 @@ function dateLabel(v) {
 
 function published(items = []) {
   return items.filter(x => x && x.published !== false);
+}
+
+function brandHero(data = {}) {
+  const hero = {
+    kicker:"정참시 — 정치에 참여할 시간",
+    headline:"바라볼 때가 아닌, 행동할 때 정치가 시작됩니다.",
+    subline1:"알고, 비교하고, 선택하고, 평가하는 것.",
+    subline2:"한 사람의 작은 행동이 정치의 방향을 만듭니다.",
+    learnLabel:"정참시 더 알아보기",
+    supportLabel:"정참시 후원하기",
+    artImage:"",
+    ...(data.hero || {})
+  };
+  const art = safeImage(hero.artImage) || "/assets/brand/hero-art.webp";
+  const headline = esc(hero.headline).replace("행동할 때", '<strong>행동할 때</strong>');
+  return `<section class="brand-hero module" id="brand-hero">
+    <div class="brand-hero-copy">
+      <span class="brand-kicker">${esc(hero.kicker)}</span>
+      <h1>${headline}</h1>
+      <div class="brand-subcopy"><p>${esc(hero.subline1)}</p><p>${esc(hero.subline2)}</p></div>
+      <div class="brand-hero-actions">
+        <button class="brand-primary" type="button" data-go="/about">${esc(hero.learnLabel)} <span>→</span></button>
+        <button class="brand-secondary" type="button" data-go="/support">${esc(hero.supportLabel)} <span>♡</span></button>
+      </div>
+    </div>
+    <div class="brand-hero-art" aria-hidden="true" style="background-image:url('${esc(art)}')"></div>
+  </section>`;
 }
 
 function columnLead(item) {
@@ -249,7 +275,7 @@ export async function renderHome() {
       </section>
 
       <main class="main-column">
-        <section class="module president-strip" id="president"><div class="president-photo"></div><div class="president-text"><span class="eyebrow">PRESIDENT · OUT OF RANK</span><h1>${esc(GOVERNMENT_SEED.profile.name)} 대통령</h1><p>${esc(GOVERNMENT_SEED.profile.office)} · ${esc(GOVERNMENT_SEED.profile.term)}</p></div><button class="more-btn" type="button" data-go="/president">대통령·정부 인사 보기</button></section>
+        ${brandHero(data.brand)}
 
         <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow">NOW RANK</span><h2>지금 가장 주목받는 정치인</h2><p class="module-desc">상위 5명은 한눈에, 6~15위는 흐름을 읽기 쉽게.</p></div><button class="more-btn" type="button" data-go="/now">NOW Rank 전체보기</button></div><div class="rank-top-grid">${rankTop5}</div><div class="rank-divider"><span>6–15위</span><i></i></div><div class="rank-list">${rankList10}</div></section>
 

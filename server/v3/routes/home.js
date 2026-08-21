@@ -1,7 +1,7 @@
 const { mgetJSON } = require("../../../lib/v3/redis");
 const { defaultDomain } = require("../../../lib/v3/schema");
 
-const DOMAINS = ["columns", "community", "news", "polls", "academy", "generation", "nationalEvaluation", "itsme", "keywords", "trending", "president"];
+const DOMAINS = ["columns", "community", "news", "polls", "academy", "generation", "nationalEvaluation", "itsme", "keywords", "trending", "president", "brand"];
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");

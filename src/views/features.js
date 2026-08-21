@@ -1,5 +1,5 @@
 import { getDomain } from "../core/repository.js";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.24-stability";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.25-brand-hero";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
   listAssemblyMembers,
