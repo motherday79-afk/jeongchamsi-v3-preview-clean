@@ -21,11 +21,17 @@ const NAV = Object.freeze([
 export function siteHeader() {
   return `<header class="site-header">
     <div class="header-line">
-      <button class="header-icon" type="button" aria-label="전체 메뉴" data-drawer-open>☰</button>
+      <button class="header-icon header-menu-icon" type="button" aria-label="전체 메뉴" title="전체 메뉴" data-drawer-open>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
       <a class="brand" href="/" data-route>정참시</a>
       <div class="header-gap"></div>
-      <button class="header-icon" type="button" aria-label="내 참여" data-go="/mypage/activity">○</button>
-      <button class="header-icon" type="button" aria-label="최근 본 정치인" data-go="/mypage/recent">☆</button>
+      <button class="header-icon header-bell-icon" type="button" aria-label="내 참여" title="내 참여" data-go="/mypage/activity">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+      </button>
+      <button class="header-icon header-star-icon" type="button" aria-label="최근 본 정치인" title="최근 본 정치인" data-go="/mypage/recent">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
+      </button>
     </div>
     <div class="search-wrap">
       <form class="main-search" data-search-form>

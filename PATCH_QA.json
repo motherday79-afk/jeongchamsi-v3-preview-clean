@@ -1,42 +1,18 @@
 {
-  "version": "v3.0.0-alpha6.0.14",
-  "base": "alpha6.0.13",
+  "version": "v3.0.0-alpha6.0.15",
+  "base": "alpha6.0.14",
   "patch_only": true,
-  "changed_file_count": 17,
   "changed_files": [
     "index.html",
     "package.json",
     "css/pages.css",
     "src/version.js",
-    "src/app.js",
-    "lib/v3/schema.js",
-    "lib/v3/blob.js",
-    "src/core/repository.js",
-    "src/core/image.js",
-    "src/views/admin.js",
-    "src/views/home.js",
-    "src/views/features.js",
-    "src/views/layout.js",
-    "server/v3/routes/upload.js",
-    "server/v3/routes/home.js",
-    "server/v3/routes/action.js",
-    "server/v3/routes/health.js"
+    "src/views/layout.js"
   ],
+  "app_css_unchanged": true,
+  "font_size_changed": false,
+  "layout_geometry_changed": false,
   "important_count": 0,
   "vercel_function_count": 1,
-  "vercel_functions": [
-    "api/gateway.js"
-  ],
-  "app_css_unchanged_from_alpha6_0_13": true,
-  "pages_css_bytes_before": 38421,
-  "pages_css_bytes_after": 37858,
-  "estimated_gzip_css_bytes": 12462,
-  "estimated_gzip_initial_home_js_bytes": 16540,
-  "direct_poll_vote_controls": 0,
-  "js_syntax": "ALL PASS",
-  "footer_legacy_rules": 0,
-  "blob_health_exposed": true,
-  "itsme_limits_server": true,
-  "poll_confirm_flow": true,
-  "route_lazy_loading": true
+  "js_syntax": "ALL PASS"
 }

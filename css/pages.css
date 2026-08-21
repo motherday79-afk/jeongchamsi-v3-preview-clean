@@ -420,3 +420,239 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .badge-preview-row b{font-size:12px;line-height:1.35}.badge-preview-row small{margin-top:4px;color:var(--green);font-size:9px;font-weight:900}
 @media(max-width:760px){.badge-preview-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .compare-demo-bars label{grid-template-columns:76px minmax(0,1fr) 64px}
+
+/* ---------- alpha6.0.15 GLOBAL INTERACTION POLISH ---------- */
+:root{
+  --ui-motion-fast:140ms;
+  --ui-motion-normal:180ms;
+  --ui-ease:cubic-bezier(.2,.7,.2,1);
+  --ui-hover-bg:rgba(11,143,120,.075);
+  --ui-focus-ring:0 0 0 3px rgba(11,143,120,.15);
+  --ui-soft-shadow:0 8px 22px rgba(23,42,36,.08);
+}
+
+/* Header controls: identical hit area, stroke language, no layout shift */
+.header-icon{
+  display:inline-grid;
+  place-items:center;
+  cursor:pointer;
+  color:#53645e;
+  transition:
+    background-color var(--ui-motion-fast) var(--ui-ease),
+    color var(--ui-motion-fast) var(--ui-ease),
+    box-shadow var(--ui-motion-fast) var(--ui-ease),
+    transform var(--ui-motion-fast) var(--ui-ease);
+}
+.header-icon svg{
+  width:20px;
+  height:20px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  pointer-events:none;
+}
+.header-icon:hover{
+  background:var(--ui-hover-bg);
+  color:var(--green);
+  transform:translateY(-1px);
+}
+.header-icon:active{
+  transform:scale(.94);
+}
+.header-icon:focus-visible{
+  outline:0;
+  box-shadow:var(--ui-focus-ring);
+}
+.header-menu-icon:hover svg path{
+  stroke-width:2.15;
+}
+.header-star-icon:hover svg{
+  transform:rotate(-5deg) scale(1.04);
+}
+.header-bell-icon:hover svg{
+  animation:jcv3-bell-nudge 360ms var(--ui-ease) 1;
+}
+@keyframes jcv3-bell-nudge{
+  0%,100%{transform:rotate(0)}
+  30%{transform:rotate(-7deg)}
+  65%{transform:rotate(6deg)}
+}
+
+/* Global button feedback — visual only, dimensions unchanged */
+.more-btn,
+.primary-btn,
+.ghost-btn,
+.danger-btn,
+.load-more-btn,
+.service-nav a,
+.admin-tabs button,
+.now-category-tabs button,
+.itsme-category-tabs button,
+.my-post-tabs button,
+.mypage-menu-grid button,
+.recent-person-list button{
+  transition:
+    background-color var(--ui-motion-fast) var(--ui-ease),
+    border-color var(--ui-motion-fast) var(--ui-ease),
+    color var(--ui-motion-fast) var(--ui-ease),
+    box-shadow var(--ui-motion-fast) var(--ui-ease),
+    opacity var(--ui-motion-fast) var(--ui-ease),
+    transform var(--ui-motion-fast) var(--ui-ease);
+}
+.more-btn:hover{
+  color:var(--green);
+  transform:translateX(2px);
+}
+.primary-btn:hover:not(:disabled){
+  filter:brightness(.97);
+  box-shadow:0 6px 16px rgba(11,143,120,.16);
+}
+.ghost-btn:hover:not(:disabled){
+  border-color:#b7d9d0;
+  background:#f5fbf9;
+  color:var(--green);
+}
+.danger-btn:hover:not(:disabled){
+  filter:brightness(.97);
+}
+.primary-btn:active:not(:disabled),
+.ghost-btn:active:not(:disabled),
+.danger-btn:active:not(:disabled),
+.load-more-btn:active:not(:disabled),
+.admin-tabs button:active,
+.now-category-tabs button:active,
+.itsme-category-tabs button:active,
+.my-post-tabs button:active{
+  transform:scale(.975);
+}
+.primary-btn:focus-visible,
+.ghost-btn:focus-visible,
+.danger-btn:focus-visible,
+.load-more-btn:focus-visible,
+.more-btn:focus-visible,
+.admin-tabs button:focus-visible,
+.now-category-tabs button:focus-visible,
+.itsme-category-tabs button:focus-visible,
+.my-post-tabs button:focus-visible,
+.mypage-menu-grid button:focus-visible,
+.recent-person-list button:focus-visible,
+.service-nav a:focus-visible{
+  outline:0;
+  box-shadow:var(--ui-focus-ring);
+}
+
+/* Card/row hover: shadow and color only; geometry stays fixed */
+.itsme-card,
+.column-card,
+.community-row,
+.person-slot-card,
+.side-card,
+.badge-detail-grid article,
+.mypage-menu-grid button,
+.recent-person-list button{
+  transition:
+    background-color var(--ui-motion-normal) var(--ui-ease),
+    border-color var(--ui-motion-normal) var(--ui-ease),
+    box-shadow var(--ui-motion-normal) var(--ui-ease),
+    transform var(--ui-motion-normal) var(--ui-ease);
+}
+.itsme-card[role="button"]:hover,
+.column-card[role="button"]:hover,
+.community-row[role="button"]:hover,
+.person-slot-card:hover,
+.mypage-menu-grid button:hover,
+.recent-person-list button:hover{
+  border-color:#cfe3dd;
+  box-shadow:var(--ui-soft-shadow);
+  transform:translateY(-2px);
+}
+.itsme-card[role="button"]:active,
+.column-card[role="button"]:active,
+.community-row[role="button"]:active,
+.person-slot-card:active{
+  transform:translateY(0) scale(.99);
+}
+
+/* Likes / votes: immediate tactile feedback */
+[data-like],
+[data-post-like],
+[data-poll-option],
+[data-poll-vote],
+.evaluation-vote-form label{
+  transition:
+    background-color var(--ui-motion-fast) var(--ui-ease),
+    border-color var(--ui-motion-fast) var(--ui-ease),
+    color var(--ui-motion-fast) var(--ui-ease),
+    box-shadow var(--ui-motion-fast) var(--ui-ease),
+    transform var(--ui-motion-fast) var(--ui-ease);
+}
+[data-like]:hover,
+[data-post-like]:hover,
+[data-poll-option]:hover,
+[data-poll-vote]:hover,
+.evaluation-vote-form label:hover{
+  border-color:#b7d9d0;
+  background:#f6fbfa;
+}
+[data-like]:active,
+[data-post-like]:active,
+[data-poll-option]:active,
+[data-poll-vote]:active{
+  transform:scale(.97);
+}
+
+/* Drawer close and clickable utility affordance */
+.drawer-head button,
+.side-action{
+  transition:
+    background-color var(--ui-motion-fast) var(--ui-ease),
+    color var(--ui-motion-fast) var(--ui-ease),
+    transform var(--ui-motion-fast) var(--ui-ease);
+}
+.drawer-head button:hover,
+.side-action:hover{
+  color:var(--green);
+  background:var(--ui-hover-bg);
+}
+.drawer-head button:active,
+.side-action:active{
+  transform:scale(.95);
+}
+
+/* Motion accessibility */
+@media(prefers-reduced-motion:reduce){
+  .header-icon,
+  .header-icon svg,
+  .more-btn,
+  .primary-btn,
+  .ghost-btn,
+  .danger-btn,
+  .load-more-btn,
+  .service-nav a,
+  .admin-tabs button,
+  .now-category-tabs button,
+  .itsme-category-tabs button,
+  .my-post-tabs button,
+  .mypage-menu-grid button,
+  .recent-person-list button,
+  .itsme-card,
+  .column-card,
+  .community-row,
+  .person-slot-card,
+  .side-card,
+  .badge-detail-grid article,
+  [data-like],
+  [data-post-like],
+  [data-poll-option],
+  [data-poll-vote],
+  .evaluation-vote-form label,
+  .drawer-head button,
+  .side-action{
+    animation:none;
+    transition:none;
+    transform:none;
+  }
+}
+
