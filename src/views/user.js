@@ -2,6 +2,7 @@ import { pageShell, esc } from "./layout.js";
 import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
 import { getPersonSlotById } from "../data/person-provider.js";
+import { REGION_DATA } from "../data/regions.js";
 
 function authHero(title, description) {
   return `<section class="page-hero"><span class="eyebrow">MEMBER</span><h1>${esc(title)}</h1><p>${esc(description)}</p></section>`;
@@ -15,15 +16,47 @@ function formatDate(v) {
   try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(v)); }
   catch { return ""; }
 }
-function badgeList(activity, authoredCount, commentCount) {
-  return [
-    { name: "첫 참여", earned: Object.keys(activity.pollVotes || {}).length + commentCount + authoredCount > 0, desc: "첫 설문·댓글·글쓰기 참여" },
-    { name: "의견 작성자", earned: commentCount > 0, desc: "댓글을 한 번 이상 작성" },
-    { name: "정책 제안자", earned: authoredCount > 0, desc: "IT’S ME 또는 정뮤니티 글 작성" },
-    { name: "관심 정치", earned: (activity.favorites || []).length > 0, desc: "정치인 즐겨찾기 등록" },
-    { name: "시민 선택", earned: Object.keys(activity.pollVotes || {}).length > 0, desc: "시민들의 선택 설문 참여" }
-  ];
+const BADGE_CATALOG = Object.freeze([
+  { tier: "STANDARD", name: "도시락알리미", mission: "정오(12시) 시간대에 정참시 방문", kind: "시간 미션" },
+  { tier: "STANDARD", name: "신데렐라", mission: "자정(00시) 시간대에 정참시 방문", kind: "시간 미션" },
+  { tier: "STANDARD", name: "위크맨", mission: "7일 연속 출석", kind: "연속 출석" },
+  { tier: "STANDARD", name: "슈퍼히어로", mission: "한 달 개근", kind: "월간 출석" },
+  { tier: "STANDARD", name: "첫 참여", mission: "설문·댓글·글쓰기 중 첫 참여", kind: "참여" },
+  { tier: "STANDARD", name: "시민 선택", mission: "시민들의 선택 설문에 참여", kind: "투표" },
+  { tier: "GOLD", name: "퍼스트팽귄", mission: "초기 COLUMN 작가·선도 참여자에게 운영진 부여", kind: "역할형" },
+  { tier: "GOLD", name: "인플루언서", mission: "팔로워·영향력 기준을 충족한 회원에게 부여", kind: "역할형" },
+  { tier: "GOLD", name: "정책 제안자", mission: "IT’S ME 정책 제안 작성", kind: "IT’S ME" },
+  { tier: "GOLD", name: "의견 리더", mission: "정뮤니티·댓글 활동 상위 참여", kind: "COMMUNITY" },
+  { tier: "PLATINUM", name: "TOP 1% · 정뮤니티", mission: "정뮤니티 활동 상위 1% 시즌 배지", kind: "시즌" },
+  { tier: "PLATINUM", name: "TOP 1% · IT’S ME", mission: "IT’S ME 활동 상위 1% 시즌 배지", kind: "시즌" }
+]);
+
+function badgeList(activity, authoredCount, commentCount, itsmeCount = 0) {
+  const pollCount = Object.keys(activity.pollVotes || {}).length;
+  const earned = new Set();
+  if (pollCount + commentCount + authoredCount > 0) earned.add("첫 참여");
+  if (pollCount > 0) earned.add("시민 선택");
+  if (itsmeCount > 0) earned.add("정책 제안자");
+  return BADGE_CATALOG.map(x => ({ ...x, earned: earned.has(x.name) }));
 }
+
+function currentAge(birthYear) {
+  const year = Number(birthYear || 0);
+  const now = new Date().getFullYear();
+  return Number.isInteger(year) && year >= 1900 && year <= now ? now - year : null;
+}
+
+function provinceOptions(selected = "") {
+  return `<option value="">도/광역시 선택</option>${Object.keys(REGION_DATA).map(x => `<option value="${esc(x)}" ${x === selected ? "selected" : ""}>${esc(x)}</option>`).join("")}`;
+}
+
+function regionFields(user = {}, required = true) {
+  const province = user.regionProvince || "";
+  const city = user.regionCity || "";
+  const district = user.regionDistrict || "";
+  return `<div class="region-select-grid" data-region-group data-selected-province="${esc(province)}" data-selected-city="${esc(city)}" data-selected-district="${esc(district)}"><label>도/광역시<select name="regionProvince" data-region-province ${required ? "required" : ""}>${provinceOptions(province)}</select></label><label>시/군<select name="regionCity" data-region-city ${required ? "required" : ""}><option value="">시/군 선택</option></select></label><label>구/군 · 해당 시<select name="regionDistrict" data-region-district><option value="">구/군 없음</option></select></label></div>`;
+}
+
 async function myContentCounts(userId) {
   const [community, itsme, comments] = await Promise.all([getDomain("community"), getDomain("itsme"), getDomain("comments")]);
   const communityPosts = (community.items || []).filter(x => String(x.ownerId || "") === String(userId));
@@ -50,7 +83,7 @@ export async function renderLogin() {
 export async function renderJoin() {
   const session = getUserSession();
   if (session.authenticated) return renderMyPage();
-  return pageShell(`<main class="subpage"><section class="content-card member-join-card"><span class="eyebrow">JOIN</span><h1>정참시 회원가입</h1><p>가입 회원은 관리자 회원관리에서 확인할 수 있고, 관리자가 일반회원/관리자 권한과 이용상태를 변경할 수 있습니다.</p><form class="admin-form member-join-form" data-user-join><div class="admin-form-row"><label>아이디<input name="id" required placeholder="영문·숫자 4~24자"></label><label>닉네임<input name="nickname" placeholder="비워두면 아이디 사용"></label></div><div class="admin-form-row"><label>비밀번호<input type="password" name="password" required minlength="8"></label><label>비밀번호 확인<input type="password" name="passwordConfirm" required minlength="8"></label></div><div class="admin-form-row"><label>전화번호<input name="phone" required placeholder="010-0000-0000"></label><label>이메일 · 선택<input type="email" name="email"></label></div><div class="admin-form-row"><label>지역<input name="region" required placeholder="예: 경기 화성시"></label><label>출생연도 · 선택<input name="birthYear" inputmode="numeric" maxlength="4" placeholder="예: 1990"></label></div><label>선호정당<select name="preferredParty" required><option value="">선택</option><option>더불어민주당</option><option>국민의힘</option><option>조국혁신당</option><option>개혁신당</option><option>진보당</option><option>기타/무당층</option></select></label><div class="auth-error" data-user-auth-error></div><div class="admin-form-actions"><button class="primary-btn" type="submit">가입하고 시작</button><button class="ghost-btn" type="button" data-go="/login">로그인으로</button></div></form></section></main>`);
+  return pageShell(`<main class="subpage"><section class="content-card member-join-card"><span class="eyebrow">JOIN</span><h1>정참시 회원가입</h1><p>이름·지역·출생연도를 기준으로 개인화된 참여 기능을 제공합니다. 출생연도는 매년 자동으로 나이를 다시 계산하므로 나이를 따로 수정할 필요가 없습니다.</p><form class="admin-form member-join-form" data-user-join><div class="admin-form-row"><label>아이디<input name="id" required placeholder="영문·숫자 4~24자"></label><label>이름<input name="name" required maxlength="40" placeholder="실명 입력"></label></div><div class="admin-form-row"><label>닉네임 · 선택<input name="nickname" placeholder="비워두면 아이디 사용"></label><label>전화번호<input name="phone" required placeholder="010-0000-0000"></label></div><div class="admin-form-row"><label>비밀번호<input type="password" name="password" required minlength="8"></label><label>비밀번호 확인<input type="password" name="passwordConfirm" required minlength="8"></label></div><label>이메일 · 선택<input type="email" name="email"></label>${regionFields({}, true)}<div class="admin-form-row"><label>출생연도<input name="birthYear" inputmode="numeric" maxlength="4" required placeholder="예: 1990"><small class="field-help">출생연도 기준 나이는 매년 자동으로 1살씩 올라갑니다.</small></label><label>선호정당<select name="preferredParty" required><option value="">선택</option><option>더불어민주당</option><option>국민의힘</option><option>조국혁신당</option><option>개혁신당</option><option>진보당</option><option>기타/무당층</option></select></label></div><div class="auth-error" data-user-auth-error></div><div class="admin-form-actions"><button class="primary-btn" type="submit">가입하고 시작</button><button class="ghost-btn" type="button" data-go="/login">로그인으로</button></div></form></section></main>`);
 }
 
 export async function renderMyPage() {
@@ -59,7 +92,7 @@ export async function renderMyPage() {
   const activity = getUserActivity();
   const counts = await myContentCounts(session.user.id);
   const user = session.user;
-  return pageShell(`<main class="subpage"><section class="page-hero member-profile-hero"><span class="eyebrow">MY JEONGCHAMSI</span><h1>${esc(user.nickname || user.id)}님</h1><p>${esc(user.region || "지역 미설정")} · ${esc(user.preferredParty || "선호정당 미설정")} · ${user.role === "admin" ? "관리자" : "일반회원"}</p><div class="inline-actions top-gap">${user.role === "admin" ? `<button class="primary-btn" type="button" data-go="/admin">관리자 페이지</button>` : ""}<button class="ghost-btn" type="button" data-user-logout>로그아웃</button></div></section><section class="member-stat-grid"><article class="content-card"><small>내가 쓴 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article class="content-card"><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article class="content-card"><small>즐겨찾기</small><strong>${(activity.favorites || []).length}</strong><span>명</span></article><article class="content-card"><small>설문 참여</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></section><section class="mypage-menu-grid"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글</b><span>게시판별로 모아보기 →</span></button><button type="button" data-go="/mypage/activity"><b>내 참여 · 배지</b><span>좋아요·설문·즐겨찾기·배지 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>최근 열어본 정치인 →</span></button><button type="button" data-go="/mypage/profile"><b>회원정보</b><span>내 프로필 수정 →</span></button></section><section class="content-card"><div class="section-title"><h2>즐겨찾기 정치인</h2><span>${(activity.favorites || []).length}명</span></div>${(activity.favorites || []).length ? `<div class="member-link-list">${activity.favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">정치인 상세페이지에서 ‘즐겨찾기’를 눌러보세요.</div>`}</section></main>`);
+  return pageShell(`<main class="subpage"><section class="page-hero member-profile-hero"><span class="eyebrow">MY JEONGCHAMSI</span><h1>${esc(user.name || user.nickname || user.id)}님</h1><p>${esc(user.region || "지역 미설정")} · ${currentAge(user.birthYear) !== null ? `${currentAge(user.birthYear)}세` : "출생연도 미설정"} · ${esc(user.preferredParty || "선호정당 미설정")} · ${user.role === "admin" ? "관리자" : "일반회원"}</p><div class="inline-actions top-gap">${user.role === "admin" ? `<button class="primary-btn" type="button" data-go="/admin">관리자 페이지</button>` : ""}<button class="ghost-btn" type="button" data-user-logout>로그아웃</button></div></section><section class="member-stat-grid"><article class="content-card"><small>내가 쓴 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article class="content-card"><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article class="content-card"><small>즐겨찾기</small><strong>${(activity.favorites || []).length}</strong><span>명</span></article><article class="content-card"><small>설문 참여</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></section><section class="mypage-menu-grid"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글</b><span>게시판별로 모아보기 →</span></button><button type="button" data-go="/mypage/activity"><b>내 참여 · 배지</b><span>좋아요·설문·즐겨찾기·배지 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>최근 열어본 정치인 →</span></button><button type="button" data-go="/mypage/profile"><b>회원정보</b><span>내 프로필 수정 →</span></button></section><section class="content-card"><div class="section-title"><h2>획득 가능한 배지</h2><button class="text-link" type="button" data-go="/mypage/activity?tab=badges">전체 배지 보기</button></div><div class="badge-preview-row">${BADGE_CATALOG.slice(0, 6).map(x => `<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span>`).join("")}</div></section><section class="content-card"><div class="section-title"><h2>즐겨찾기 정치인</h2><span>${(activity.favorites || []).length}명</span></div>${(activity.favorites || []).length ? `<div class="member-link-list">${activity.favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">정치인 상세페이지에서 ‘즐겨찾기’를 눌러보세요.</div>`}</section></main>`);
 }
 
 export async function renderMyActivity(search = "") {
@@ -68,7 +101,7 @@ export async function renderMyActivity(search = "") {
   const tab = new URLSearchParams(search || "").get("tab") || "summary";
   const activity = getUserActivity();
   const counts = await myContentCounts(session.user.id);
-  const badges = badgeList(activity, counts.authoredCount, counts.myComments.length);
+  const badges = badgeList(activity, counts.authoredCount, counts.myComments.length, counts.itsmePosts.length);
   let detail = "";
 
   if (tab === "likes") {
@@ -84,7 +117,7 @@ export async function renderMyActivity(search = "") {
     const favorites = activity.favorites || [];
     detail = `<div class="section-title"><h2>즐겨찾기 정치인</h2><span>${favorites.length}명</span></div>${favorites.length ? `<div class="member-link-list">${favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">즐겨찾기한 정치인이 없습니다.</div>`}`;
   } else if (tab === "badges") {
-    detail = `<div class="section-title"><h2>내 배지</h2><span>${badges.filter(x => x.earned).length}개 획득</span></div><div class="badge-detail-grid">${badges.map(x => `<article class="${x.earned ? "earned" : ""}"><span>${x.earned ? "✓" : "○"}</span><div><b>${esc(x.name)}</b><p>${esc(x.desc)}</p></div></article>`).join("")}</div>`;
+    detail = `<div class="section-title"><h2>획득 가능한 배지</h2><span>${badges.filter(x => x.earned).length}개 획득 · 총 ${badges.length}종</span></div><p class="badge-catalog-note">v2에서 기획한 시간미션·출석·역할형·게시판 시즌 배지를 v3 기준으로 정리했습니다. 일부 히든/역할형 배지는 운영 기준이 확정되면 자동판정 또는 관리자 부여로 연결됩니다.</p><div class="badge-detail-grid">${badges.map(x => `<article class="${x.earned ? "earned" : ""}"><span>${x.earned ? "✓" : x.tier === "PLATINUM" ? "P" : x.tier === "GOLD" ? "G" : "S"}</span><div><small>${esc(x.tier)} · ${esc(x.kind)}</small><b>${esc(x.name)}</b><p>${esc(x.mission)}</p></div></article>`).join("")}</div>`;
   } else {
     detail = `<div class="section-title"><h2>활동 요약</h2><span>내 기록</span></div><div class="member-stat-grid activity-inner-stats"><article><small>작성 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article><small>좋아요</small><strong>${(activity.likedPosts || []).length}</strong><span>개</span></article><article><small>설문</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></div><div class="member-link-list top-gap"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글·댓글</b><span>${counts.authoredCount + counts.myComments.length}개 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>${getRecentPeople().length}명 →</span></button></div>`;
   }
@@ -114,6 +147,7 @@ export async function renderMyProfile() {
   const session = getUserSession();
   if (!session.authenticated) return renderLogin();
   const user = session.user;
+  const age = currentAge(user.birthYear);
   const parties = ["더불어민주당", "국민의힘", "조국혁신당", "개혁신당", "진보당", "기타/무당층"];
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">MY PROFILE</span><h1>회원정보</h1><p>내 프로필 정보는 서버의 회원 원본 데이터에 저장됩니다.</p></section><section class="content-card"><form class="admin-form" data-user-profile-form><div class="admin-form-row"><label>아이디<input value="${esc(user.id)}" disabled></label><label>권한<input value="${user.role === "admin" ? "관리자" : "일반회원"}" disabled></label></div><div class="admin-form-row"><label>닉네임<input name="nickname" value="${esc(user.nickname || "")}" maxlength="40" required></label><label>전화번호<input name="phone" value="${esc(user.phone || "")}" maxlength="40"></label></div><div class="admin-form-row"><label>이메일<input type="email" name="email" value="${esc(user.email || "")}"></label><label>지역<input name="region" value="${esc(user.region || "")}" maxlength="80"></label></div><div class="admin-form-row"><label>출생연도<input name="birthYear" value="${esc(user.birthYear || "")}" maxlength="4" inputmode="numeric"></label><label>선호정당<select name="preferredParty"><option value="">선택 안 함</option>${parties.map(x => `<option ${x === user.preferredParty ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><div class="admin-form-actions"><button class="primary-btn" type="submit">회원정보 저장</button><button class="ghost-btn" type="button" data-go="/mypage">마이페이지로</button><span class="save-state" data-user-profile-state></span></div></form></section></main>`);
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">MY PROFILE</span><h1>회원정보</h1><p>출생연도만 저장하고 현재 나이는 매년 자동 계산합니다.${age !== null ? ` 현재 출생연도 기준 ${age}세입니다.` : ""}</p></section><section class="content-card"><form class="admin-form" data-user-profile-form><div class="admin-form-row"><label>아이디<input value="${esc(user.id)}" disabled></label><label>권한<input value="${user.role === "admin" ? "관리자" : "일반회원"}" disabled></label></div><div class="admin-form-row"><label>이름<input name="name" value="${esc(user.name || "")}" maxlength="40" required></label><label>닉네임<input name="nickname" value="${esc(user.nickname || "")}" maxlength="40" required></label></div><div class="admin-form-row"><label>전화번호<input name="phone" value="${esc(user.phone || "")}" maxlength="40"></label><label>이메일<input type="email" name="email" value="${esc(user.email || "")}"></label></div>${regionFields(user, true)}<div class="admin-form-row"><label>출생연도<input name="birthYear" value="${esc(user.birthYear || "")}" maxlength="4" inputmode="numeric" required><small class="field-help">${age !== null ? `현재 ${age}세 · 매년 자동 갱신` : "예: 1990"}</small></label><label>선호정당<select name="preferredParty"><option value="">선택 안 함</option>${parties.map(x => `<option ${x === user.preferredParty ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><div class="admin-form-actions"><button class="primary-btn" type="submit">회원정보 저장</button><button class="ghost-btn" type="button" data-go="/mypage">마이페이지로</button><span class="save-state" data-user-profile-state></span></div></form></section></main>`);
 }

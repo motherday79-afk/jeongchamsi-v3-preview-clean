@@ -1,0 +1,29 @@
+{
+  "version": "v3.0.0-alpha6.0.13",
+  "base": "alpha6.0.12",
+  "patch_only": true,
+  "changed_file_count": 17,
+  "changed_files": [
+    "index.html",
+    "package.json",
+    "css/pages.css",
+    "src/version.js",
+    "src/app.js",
+    "lib/v3/users.js",
+    "lib/v3/schema.js",
+    "src/core/user.js",
+    "src/core/repository.js",
+    "src/data/regions.js",
+    "src/views/user.js",
+    "src/views/boards.js",
+    "src/views/admin.js",
+    "src/views/home.js",
+    "src/views/features.js",
+    "src/views/layout.js",
+    "server/v3/routes/action.js"
+  ],
+  "js_syntax": "ALL PASS",
+  "important_count": 0,
+  "vercel_function_count": 1,
+  "app_css_unchanged": true
+}

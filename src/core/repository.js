@@ -29,7 +29,7 @@ const defaults = {
   }] },
   academy: { slots: [] },
   generation: { enabled: true, candidates: [], results: {} },
-  nationalEvaluation: { enabled: false, subjectId: null, results: {} },
+  nationalEvaluation: { enabled: false, subjectId: null, results: {}, history: [] },
   itsme: { categories: DEFAULT_ITSME_CATEGORIES, items: [] },
   comments: { items: [] },
   keywords: { items: [] },

@@ -90,7 +90,7 @@ export async function registerUser(input) {
     body: JSON.stringify(input || {})
   });
   if (!body.ok) {
-    const map = { DUPLICATE_ID: "이미 사용 중인 아이디입니다.", INVALID_ID: "아이디는 영문·숫자 기준 4~24자로 입력해 주세요.", WEAK_PASSWORD: "비밀번호는 8자 이상 입력해 주세요." };
+    const map = { DUPLICATE_ID: "이미 사용 중인 아이디입니다.", INVALID_ID: "아이디는 영문·숫자 기준 4~24자로 입력해 주세요.", WEAK_PASSWORD: "비밀번호는 8자 이상 입력해 주세요.", NAME_REQUIRED: "이름을 입력해 주세요.", REGION_REQUIRED: "도/광역시와 시/군을 선택해 주세요.", INVALID_BIRTH_YEAR: "출생연도를 올바르게 입력해 주세요." };
     return { ok: false, error: map[body.error] || authErrorMessage(body.error, "회원가입에 실패했습니다.") };
   }
   session = { authenticated: true, user: body.user };

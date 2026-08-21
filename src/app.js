@@ -15,6 +15,7 @@ import {
 } from "./views/features.js";
 import { renderLogin, renderJoin, renderMyPage, renderMyActivity, renderMyRecent, renderMyPosts, renderMyProfile } from "./views/user.js";
 import { renderAdmin, prepareCoverPreview, prepareProfilePreview, saveAdminForm, deleteAdminItem, updateMemberAccess, submitFirstAdmin } from "./views/admin.js";
+import { hydrateRegionSelectors, handleRegionChange } from "./data/regions.js";
 
 const app = document.querySelector("#app");
 let renderEpoch = 0;
@@ -57,6 +58,7 @@ async function render(state = currentRoute(), { resetScroll = true } = {}) {
   const html = await resolveView(state);
   if (epoch !== renderEpoch) return;
   app.innerHTML = html;
+  hydrateRegionSelectors(app);
   document.body.classList.remove("drawer-open");
   if (resetScroll) window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
@@ -88,7 +90,21 @@ document.addEventListener("click", async event => {
   const favorite = event.target.closest("[data-person-favorite]");
   if (favorite) { const r = await toggleFavoritePerson(favorite.dataset.personFavorite); if (r.requiresLogin) return route("/login"); if (!r.ok) alert("즐겨찾기 저장에 실패했습니다."); else await render(currentRoute(), { resetScroll: false }); return; }
   const like = event.target.closest("[data-post-like]");
-  if (like) { const r = await togglePostLike(like.dataset.postLike, like.dataset.postId); if (r.requiresLogin) return route("/login"); if (!r.ok) alert("좋아요 저장에 실패했습니다."); else await rerenderNoScroll(); return; }
+  if (like) {
+    if (!getUserSession().authenticated) return route("/login");
+    const wasActive = like.classList.contains("active");
+    like.classList.toggle("active", !wasActive);
+    like.textContent = wasActive ? "♡ 좋아요" : "♥ 좋아요 취소";
+    like.disabled = true;
+    const r = await togglePostLike(like.dataset.postLike, like.dataset.postId);
+    if (!r.ok) {
+      like.classList.toggle("active", wasActive);
+      like.textContent = wasActive ? "♥ 좋아요 취소" : "♡ 좋아요";
+      like.disabled = false;
+      alert("좋아요 저장에 실패했습니다.");
+    } else await rerenderNoScroll();
+    return;
+  }
   const academy = event.target.closest("[data-academy-apply]");
   if (academy) { if (!getUserSession().authenticated) return route("/login"); const r = await applyAcademy(academy.dataset.academyApply); if (!r.ok) alert("신청 저장에 실패했습니다."); else await render(currentRoute(), { resetScroll: false }); return; }
   const vote = event.target.closest("[data-poll-vote]");
@@ -109,10 +125,25 @@ document.addEventListener("click", async event => {
 document.addEventListener("input", async event => {
   const search = event.target.closest("[data-member-search]");
   if (search) { const q = String(search.value || "").trim().toLowerCase(); document.querySelectorAll("[data-member-row]").forEach(row => row.hidden = !!q && !String(row.dataset.memberSearchText || "").includes(q)); }
+  const personFilter = event.target.closest("[data-person-select-filter]");
+  if (personFilter) {
+    const select = document.querySelector(personFilter.dataset.personSelectFilter || "");
+    if (select) {
+      const q = String(personFilter.value || "").trim().toLowerCase();
+      Array.from(select.options).forEach((opt, i) => { if (i) opt.hidden = !!q && !String(opt.textContent || "").toLowerCase().includes(q) && !String(opt.value || "").toLowerCase().includes(q); });
+      const first = Array.from(select.options).find((opt, i) => i && !opt.hidden);
+      if (q && first && !select.value) first.scrollIntoView?.({ block: "nearest" });
+    }
+  }
   const cover = event.target.closest("[data-cover-input]");
   if (cover?.files?.[0]) { try { await prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
   const profile = event.target.closest("[data-profile-input]");
   if (profile?.files?.[0]) { try { await prepareProfilePreview(profile.files[0], profile.closest("form")?.querySelector("[data-profile-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); profile.value = ""; } }
+});
+
+document.addEventListener("change", event => {
+  const region = event.target.closest("[data-region-province],[data-region-city]");
+  if (region) handleRegionChange(region);
 });
 
 document.addEventListener("submit", async event => {
@@ -122,7 +153,7 @@ document.addEventListener("submit", async event => {
   if (form.matches("[data-user-join]")) { event.preventDefault(); const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) { const e=form.querySelector("[data-user-auth-error]"); if(e)e.textContent="비밀번호 확인이 일치하지 않습니다."; return; } const r = await registerUser(Object.fromEntries(fd.entries())); const e=form.querySelector("[data-user-auth-error]"); if(!r.ok){if(e)e.textContent=r.error||"회원가입 실패";return;} route("/mypage",{replace:true}); return; }
   if (form.matches("[data-user-profile-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await updateMyProfile(Object.fromEntries(fd.entries())); const st=form.querySelector("[data-user-profile-state]"); if(!r.ok){if(st)st.textContent=`저장 실패 · ${r.error||""}`;return;} if(st)st.textContent="저장 완료"; await render(currentRoute(), { resetScroll:false }); return; }
   if (form.matches("[data-first-admin-setup]")) { event.preventDefault(); const r = await submitFirstAdmin(form); const e = form.querySelector("[data-admin-setup-error]"); if (!r.ok) { if (e) e.textContent = r.error || "관리자 생성 실패"; return; } route("/admin", { replace: true }); await render(currentRoute()); return; }
-  if (form.matches("[data-user-post-form]")) { event.preventDefault(); const fd = new FormData(form); const domain = form.dataset.userPostForm; const r = await performAction("user-post-save", { domain, id: form.dataset.itemId || "", title: fd.get("title"), summary: fd.get("summary"), category: fd.get("category"), body: fd.get("body") }); const e=form.querySelector("[data-user-post-error]"); if(!r.ok){if(e)e.textContent=`저장 실패 · ${r.error||""}`;return;} clearDomainCache(); const base = { itsme:"itsme", community:"community", columns:"column", news:"news" }[domain] || "community"; route(`/${base}/${r.item.id}`, { replace: true }); return; }
+  if (form.matches("[data-user-post-form]")) { event.preventDefault(); const fd = new FormData(form); const domain = form.dataset.userPostForm; const coverImage = form.querySelector("[data-cover-preview]")?.dataset.coverData || ""; const r = await performAction("user-post-save", { domain, id: form.dataset.itemId || "", title: fd.get("title"), summary: fd.get("summary"), category: fd.get("category"), body: fd.get("body"), coverImage }); const e=form.querySelector("[data-user-post-error]"); if(!r.ok){if(e)e.textContent=`저장 실패 · ${r.error||""}`;return;} clearDomainCache(); const base = { itsme:"itsme", community:"community", columns:"column", news:"news" }[domain] || "community"; route(`/${base}/${r.item.id}`, { replace: true }); return; }
   if (form.matches("[data-comment-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("comment-add", { domain: form.dataset.commentForm, postId: form.dataset.postId, text: fd.get("comment") }); const st=form.querySelector("[data-comment-state]"); if(!r.ok){if(st)st.textContent=`등록 실패 · ${r.error||""}`;return;} clearDomainCache("comments"); form.reset(); await render(currentRoute(), { resetScroll: false }); return; }
   if (form.matches("[data-compare-form]")) { event.preventDefault(); const fd = new FormData(form); return route(`/compare?a=${encodeURIComponent(fd.get("a"))}&b=${encodeURIComponent(fd.get("b"))}`); }
   if (form.matches("[data-generation-vote-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("generation-vote", { ageGroup: fd.get("ageGroup"), personId: fd.get("personId") }); const st=form.querySelector("[data-generation-vote-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이 세대 투표에 이미 참여했습니다.":`투표 실패 · ${r.error||""}`;return;} await rerenderNoScroll(); return; }

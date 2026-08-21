@@ -203,7 +203,7 @@ module.exports = async function handler(req, res) {
         author: String(old?.author || user.nickname || user.id).slice(0, 40),
         ownerId: String(old?.ownerId || user.id),
         body,
-        coverImage: String(old?.coverImage || ""), featured: Boolean(old?.featured || false), published: true,
+        coverImage: String(payload.coverImage || old?.coverImage || "").slice(0, 1200), featured: Boolean(old?.featured || false), published: true,
         createdAt: old?.createdAt || now, updatedAt: now,
         likes: Number(old?.likes || 0), views: Number(old?.views || 0)
       };
