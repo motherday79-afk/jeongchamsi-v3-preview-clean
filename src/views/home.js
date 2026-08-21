@@ -1,4 +1,4 @@
-import { listHomeNowPreviewSlots, getPersonSlotById } from "../data/person-provider.js";
+import { listHomeNowPreviewSlots, getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.17.1-whitefix";
 import { getHomeSnapshot } from "../core/repository.js";
 import { drawer, siteHeader, footer } from "./layout.js";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";

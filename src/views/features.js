@@ -7,7 +7,7 @@ import {
   listAllPoliticians,
   getPersonSlotById,
   PERSON_COUNTS
-} from "../data/person-provider.js";
+} from "../data/person-provider.js?v=alpha6.0.17.1-whitefix";
 import {
   getUserSession,
   getUserActivity,
