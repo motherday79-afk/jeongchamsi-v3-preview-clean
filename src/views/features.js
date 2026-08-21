@@ -7,7 +7,7 @@ import {
   listAllPoliticians,
   getPersonSlotById,
   PERSON_COUNTS
-} from "../data/person-provider.js?v=alpha6.0.17.1-whitefix";
+} from "../data/person-provider.js?v=alpha6.0.17.2-surface-fill";
 import {
   getUserSession,
   getUserActivity,
@@ -81,7 +81,12 @@ const NOW_TYPES = Object.freeze({
   basic: { label: "기초단체장", count: PERSON_COUNTS.basic, get: listBasicLeaders }
 });
 function nowCard(person) {
-  return `<a class="person-slot-card" href="/person/${esc(person.id)}" data-route aria-label="${esc(person.roleLabel)} ${person.slot}번 상세페이지"><span class="slot-no">#${String(person.slot).padStart(3, "0")}</span><div class="person-photo-placeholder"></div><div class="slot-lines"><span class="slot-line name"></span><span class="slot-line meta"></span><span class="slot-line short"></span></div><span class="slot-state">상세페이지 보기 →</span></a>`;
+  const title = person?.name || `${person.roleLabel} ${String(person.slot).padStart(3, "0")}`;
+  const meta = [person?.party, person?.jurisdiction].filter(Boolean).join(" · ");
+  const short = person?.type === "assembly"
+    ? [person?.terms, person?.committee].filter(Boolean).join(" · ")
+    : [person?.office, person?.terms].filter(Boolean).join(" · ");
+  return `<a class="person-slot-card data-connected" href="/person/${esc(person.id)}" data-route aria-label="${esc(title)} 상세페이지"><span class="slot-no">#${String(person.slot).padStart(3, "0")}</span><div class="person-photo-placeholder"></div><div class="slot-lines"><b class="slot-data-name">${esc(title)}</b><span class="slot-data-meta">${esc(meta)}</span><span class="slot-data-short">${esc(short)}</span></div><span class="slot-state">상세페이지 보기 →</span></a>`;
 }
 export async function renderNow(search = "") {
   const params = new URLSearchParams(search || "");
@@ -93,7 +98,7 @@ export async function renderNow(search = "") {
   const shown = all.slice(0, limit);
   const remaining = Math.max(0, meta.count - shown.length);
   const nextLimit = Math.min(meta.count, shown.length + 50);
-  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>NOW Rank 전체 정치인</h1><p>메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다.</p><div class="capacity-line"><span>실제 인물정보 연결 전 · 상세페이지 구조 완료</span><b>총 543명</b></div></section><nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key, x]) => `<button type="button" class="${type === key ? "active" : ""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav><section class="content-card directory-section"><div class="section-title"><h2>${meta.label}</h2><span>${shown.length} / ${meta.count}명 표시</span></div><div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-go="/now?type=${type}&limit=${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${meta.label} ${meta.count}명 전체를 불러왔습니다.</div>`}</section></main>`);
+  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>NOW Rank 전체 정치인</h1><p>메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다.</p><div class="capacity-line"><span>543명 텍스트 기본정보 연결 완료 · 사진은 1차 데이터에서 제외</span><b>총 543명</b></div></section><nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key, x]) => `<button type="button" class="${type === key ? "active" : ""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav><section class="content-card directory-section"><div class="section-title"><h2>${meta.label}</h2><span>${shown.length} / ${meta.count}명 표시</span></div><div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-go="/now?type=${type}&limit=${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${meta.label} ${meta.count}명 전체를 불러왔습니다.</div>`}</section></main>`);
 }
 
 export async function renderPolls() {

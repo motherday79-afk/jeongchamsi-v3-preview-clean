@@ -1,7 +1,7 @@
 import { pageShell, esc } from "./layout.js";
 import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
-import { getPersonSlotById } from "../data/person-provider.js";
+import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.17.2-surface-fill";
 import { REGION_DATA } from "../data/regions.js";
 
 function authHero(title, description) {
@@ -9,7 +9,9 @@ function authHero(title, description) {
 }
 function personLabel(id) {
   const p = getPersonSlotById(id);
-  return p ? `${p.roleLabel} #${String(p.slot).padStart(3, "0")}` : id;
+  if (!p) return id;
+  if (p.connected && p.name) return [p.name, p.party, p.jurisdiction].filter(Boolean).join(" · ");
+  return `${p.roleLabel} #${String(p.slot).padStart(3, "0")}`;
 }
 function formatDate(v) {
   if (!v) return "";

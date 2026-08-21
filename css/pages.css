@@ -793,3 +793,42 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   }
 }
 
+/* ---------- alpha6.0.17.2 POLITICIAN DATA SURFACE FILL ---------- */
+.person-slot-card.data-connected .slot-lines{
+  min-width:0;
+}
+.slot-data-name,
+.slot-data-meta,
+.slot-data-short{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.slot-data-name{
+  margin-top:1px;
+  font-size:14px;
+  line-height:1.35;
+  color:var(--text);
+  font-weight:900;
+}
+.slot-data-meta{
+  margin-top:5px;
+  font-size:12px;
+  line-height:1.35;
+  color:#60716b;
+}
+.slot-data-short{
+  margin-top:4px;
+  font-size:11px;
+  line-height:1.35;
+  color:#82908b;
+}
+.recent-circle-btn small{
+  max-width:58px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+

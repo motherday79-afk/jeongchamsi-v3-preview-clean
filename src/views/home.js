@@ -1,4 +1,4 @@
-import { listHomeNowPreviewSlots, getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.17.1-whitefix";
+import { listHomeNowPreviewSlots, getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.17.2-surface-fill";
 import { getHomeSnapshot } from "../core/repository.js";
 import { drawer, siteHeader, footer } from "./layout.js";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
@@ -8,14 +8,21 @@ const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
 }[c]));
 
 function recentPersonSlotLabel(id = "") {
+  const person = getPersonSlotById(id);
+  if (person?.connected && person?.name) {
+    return {
+      group: person.roleLabel,
+      number: String(person.slot),
+      name: person.name,
+      short: [person.name, person.party, person.jurisdiction].filter(Boolean).join(" · ")
+    };
+  }
   const raw = String(id || "");
   const match = raw.match(/^(assembly|metropolitan|basic)-(\d{3})$/);
-  if (!match) return { group: "정치인", number: "", short: "정치인" };
-  const group = match[1] === "assembly"
-    ? "국회의원"
-    : (match[1] === "metropolitan" ? "광역단체장" : "기초단체장");
+  if (!match) return { group:"정치인", number:"", name:"정치인", short:"정치인" };
+  const group = match[1] === "assembly" ? "국회의원" : (match[1] === "metropolitan" ? "광역단체장" : "기초단체장");
   const number = String(Number(match[2]));
-  return { group, number, short: `${group} ${number}` };
+  return { group, number, name:`${group} ${number}`, short:`${group} ${number}` };
 }
 
 function safeImage(v = "") {
@@ -196,7 +203,7 @@ export async function renderHome() {
           const id = recentPeople[i];
           if (!id) return `<span class="recent-circle-empty"></span>`;
           const info = recentPersonSlotLabel(id);
-          return `<button type="button" class="recent-circle-btn" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar"></span><small>${esc(info.group === "국회의원" ? "국회" : (info.group === "광역단체장" ? "광역" : (info.group === "기초단체장" ? "기초" : "인물")))} ${esc(info.number)}</small></button>`;
+          return `<button type="button" class="recent-circle-btn" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar"></span><small>${esc(info.name || `${info.group} ${info.number}`)}</small></button>`;
         }).join("")}</div></section><section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승</b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live" role="button" tabindex="0" data-go="${esc(x.href || `/search?q=${encodeURIComponent(x.title || "")}`)}"><span>${i + 1}</span><i>${esc(x.title)}</i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}</section></aside>
     </div></div>
     ${footer()}
