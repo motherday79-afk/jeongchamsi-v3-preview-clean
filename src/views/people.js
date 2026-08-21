@@ -1,5 +1,60 @@
-import {pageShell,esc} from "./layout.js";import {getPersonSlotById,getPersonDetailData} from "../data/person-provider.js";import {getUserSession,isFavoritePerson,recordRecentPerson} from "../core/user.js";
-const empty=()=>`<span class="info-empty" aria-label="정보 없음"></span>`,val=v=>v?esc(v):empty(),rows=(a=[],n=4)=>{const x=a.filter(Boolean);return x.length?x.map((v,i)=>`<div class="timeline-row live"><span class="timeline-year">${String(i+1).padStart(2,"0")}</span><div class="timeline-copy"><b>${esc(v)}</b></div></div>`).join(""):Array.from({length:n},()=>`<div class="timeline-row"><span class="timeline-year"></span><div class="timeline-copy"><i></i><i></i></div></div>`).join("")},age=d=>{const y=Number(String(d||"").slice(0,4));return y?`${d} · ${new Date().getFullYear()-y}세`:""};
-function basic(p,d){return `<dl class="info-list"><div><dt>이름</dt><dd>${val(d?.name)}</dd></div><div><dt>직책</dt><dd>${esc(p.roleLabel)}</dd></div><div><dt>정당</dt><dd>${val(d?.party)}</dd></div><div><dt>${esc(p.jurisdictionLabel)}</dt><dd>${val(d?.jurisdiction)}</dd></div><div><dt>출생 / 나이</dt><dd>${val(age(d?.birthDate))}</dd></div><div><dt>성별</dt><dd>${val(d?.gender)}</dd></div><div><dt>학력</dt><dd>${val(d?.education)}</dd></div><div><dt>공식 채널</dt><dd>${val(d?.contact?.homepage||d?.contact?.email)}</dd></div></dl>`}
-function election(p,d){const term=d?.term?`${d.term.start||""} ~ ${d.term.end||""}`:"";return `<dl class="info-list"><div><dt>현 임기</dt><dd>${val(term)}</dd></div><div><dt>${p.type==="assembly"?"선수":"연임 / 재선 여부"}</dt><dd>${val(d?.seniority)}</dd></div><div><dt>최근 당선</dt><dd>${val(d?.election?.electedType||d?.electionType)}</dd></div><div><dt>득표율</dt><dd>${d?.election?.voteRate!=null?`${Number(d.election.voteRate).toFixed(1)}%`:empty()}</dd></div><div><dt>${p.type==="assembly"?"소속 위원회":"소속 지방정부"}</dt><dd>${val((d?.committees||[]).join(", "))}</dd></div><div><dt>선거 이력</dt><dd>${val((d?.election?.history||[]).join(" · "))}</dd></div></dl>`}
-export async function renderPersonDetail(id){const p=getPersonSlotById(id);if(!p)return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><h2>존재하지 않는 정치인 슬롯입니다.</h2><button class="primary-btn" type="button" data-go="/now">NOW 전체 정치인</button></section></main>`);const d=p.connected?(await getPersonDetailData(p.id)||p):p,s=getUserSession();recordRecentPerson(p.id);const fav=s.authenticated&&isFavoritePerson(p.id),connected=!!(d?.connected||p.connected),activity=p.type==="assembly"?"의정활동":"행정활동";return pageShell(`<main class="subpage"><section class="person-detail-hero content-card"><div class="person-detail-photo"></div><div class="person-detail-title"><span class="eyebrow">${esc(p.roleLabel)} · OFFICIAL DATA</span><h1>${connected?esc(d.name):`${esc(p.roleLabel)} ${String(p.slot).padStart(3,"0")}`}</h1><p>${connected?`${esc(d.party||"")} · ${esc(d.jurisdiction||"")}`:"인물정보 연결 전"}</p><div class="person-detail-badges"><span>${esc(p.roleLabel)}</span><span>슬롯 #${String(p.slot).padStart(3,"0")}</span><span>${connected?"기본정보 연결":"연결 전"}</span></div></div><div class="detail-action-bar"><button type="button" class="ghost-btn ${fav?"active":""}" data-person-favorite="${esc(p.id)}">${fav?"★ 즐겨찾기됨":"☆ 즐겨찾기"}</button><button type="button" class="ghost-btn" data-go="/compare?a=${esc(p.id)}">비교하기</button></div></section><div class="detail-grid"><section class="content-card"><div class="section-title"><h2>기본정보</h2><span>${connected?"공식 데이터":"연결 전"}</span></div>${basic(p,d)}</section><section class="content-card"><div class="section-title"><h2>임기 · 선거정보</h2><span>${esc(p.groupLabel)}</span></div>${election(p,d)}</section></div><section class="content-card"><div class="section-title"><h2>경력 · 주요 이력</h2><span>${connected?"공식 약력":"연결 전"}</span></div><div class="timeline-shell">${rows(d?.career,6)}</div></section><div class="detail-grid"><section class="content-card"><div class="section-title"><h2>${activity}</h2><span>주요 활동</span></div><dl class="info-list"><div><dt>소속 위원회</dt><dd>${val((d?.activities?.committees||d?.committees||[]).join(", "))}</dd></div><div><dt>대표발의</dt><dd>${d?.activities?.representativeBills?.length?`${d.activities.representativeBills.length}건`:empty()}</dd></div><div><dt>본회의 출석</dt><dd>${d?.activities?.plenaryAttendance!=null?`${d.activities.plenaryAttendance}%`:empty()}</dd></div><div><dt>주요 성과</dt><dd>${val((d?.activities?.achievements||[]).join(" · "))}</dd></div></dl></section><section class="content-card"><div class="section-title"><h2>공약 · 정책</h2><span>정책 아카이브</span></div><div class="timeline-shell">${rows([...(d?.pledges||[]),...(d?.policies||[])],4)}</div></section></div><section class="content-card"><div class="notice-box">${connected?`출처: ${esc(d?.source?.provider||"공식 공공데이터")} · 사진은 1차 원칙에 따라 불러오지 않습니다.`:"아직 공식 인물 데이터가 연결되지 않은 슬롯입니다."}</div></section></main>`) }
+import { pageShell, esc } from "./layout.js";
+import { getPersonSlotById } from "../data/person-provider.js";
+import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
+
+const empty=()=>`<span class="info-empty" aria-label="추가 데이터 준비중"></span>`;
+const v=x=>x?esc(x):empty();
+function basicInfo(p){
+  return `<dl class="info-list">
+    <div><dt>이름</dt><dd>${v(p.name)}</dd></div>
+    <div><dt>직책</dt><dd>${v(p.office||p.roleLabel)}</dd></div>
+    <div><dt>정당</dt><dd>${v(p.party)}</dd></div>
+    <div><dt>${esc(p.jurisdictionLabel)}</dt><dd>${v(p.jurisdiction)}</dd></div>
+    <div><dt>구분</dt><dd>${v(p.terms)}</dd></div>
+    <div><dt>사진</dt><dd>1차 데이터에서 제외</dd></div>
+  </dl>`;
+}
+function electionInfo(p){
+  const term=(p.termStart||p.termEnd)?`${p.termStart||"—"} ~ ${p.termEnd||"—"}`:"";
+  return `<dl class="info-list">
+    <div><dt>현 임기</dt><dd>${v(term)}</dd></div>
+    <div><dt>${p.type==="assembly"?"선수":"민선"}</dt><dd>${v(p.terms)}</dd></div>
+    <div><dt>최근 선거</dt><dd>${v(p.electionLabel)}</dd></div>
+    <div><dt>정당</dt><dd>${v(p.party)}</dd></div>
+    <div><dt>${p.type==="assembly"?"소속 위원회":"관할 지역"}</dt><dd>${v(p.type==="assembly"?p.committee:p.jurisdiction)}</dd></div>
+  </dl>`;
+}
+function timeline(p){
+  const items=[];
+  if(p.electionLabel)items.push([p.type==="assembly"?"2024":"2026",p.electionLabel,p.jurisdiction]);
+  if(p.type==="assembly"&&p.terms)items.push(["현재",p.terms,"국회의원 당선 횟수 기준"]);
+  if(p.type==="assembly"&&p.committee)items.push(["현재",p.committee,"국회 공개정보 기반"]);
+  if(p.type!=="assembly")items.push(["2026.07.01","민선 9기 임기 시작",p.office||p.roleLabel]);
+  return items.map(([y,t,s])=>`<div class="timeline-row live"><span class="timeline-year">${esc(y)}</span><div class="timeline-copy"><b>${esc(t)}</b><span>${esc(s)}</span></div></div>`).join("") || `<div class="timeline-row"><span class="timeline-year"></span><div class="timeline-copy"><i></i><i></i></div></div>`;
+}
+
+export async function renderPersonDetail(id){
+  const p=getPersonSlotById(id);
+  if(!p)return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>존재하지 않는 정치인입니다.</h2><button class="primary-btn" type="button" data-go="/now">전체 정치인</button></section></main>`);
+  const session=getUserSession(); recordRecentPerson(p.id);
+  const favorite=session.authenticated&&isFavoritePerson(p.id);
+  const activityTitle=p.type==="assembly"?"의정활동":"행정활동";
+  return pageShell(`<main class="subpage">
+    <section class="person-detail-hero content-card">
+      <div class="person-detail-photo"></div>
+      <div class="person-detail-title"><span class="eyebrow">${esc(p.roleLabel)} · TEXT DATA CONNECTED</span><h1>${esc(p.name)}</h1><p>${esc(p.party)} · ${esc(p.jurisdiction)}</p><div class="person-detail-badges"><span>${esc(p.roleLabel)}</span><span>${esc(p.terms||"기본정보")}</span><span>사진 제외</span></div></div>
+      <div class="detail-action-bar"><button type="button" class="ghost-btn ${favorite?"active":""}" data-person-favorite="${esc(p.id)}">${favorite?"★ 즐겨찾기됨":"☆ 즐겨찾기"}</button><button type="button" class="ghost-btn" data-go="/compare?a=${esc(p.id)}">비교하기</button></div>
+    </section>
+    <div class="detail-grid">
+      <section class="content-card"><div class="section-title"><h2>기본정보</h2><span>1차 텍스트 데이터</span></div>${basicInfo(p)}</section>
+      <section class="content-card"><div class="section-title"><h2>임기 · 선거정보</h2><span>${esc(p.groupLabel)}</span></div>${electionInfo(p)}</section>
+    </div>
+    <section class="content-card"><div class="section-title"><h2>경력 · 주요 이력</h2><span>기본 이력부터 연결</span></div><div class="timeline-shell">${timeline(p)}</div></section>
+    <div class="detail-grid">
+      <section class="content-card"><div class="section-title"><h2>${activityTitle}</h2><span>상세 공식데이터 후속</span></div><dl class="info-list"><div><dt>${p.type==="assembly"?"소속 위원회":"관할 지역"}</dt><dd>${v(p.type==="assembly"?p.committee:p.jurisdiction)}</dd></div><div><dt>주요 활동</dt><dd>${empty()}</dd></div><div><dt>주요 성과</dt><dd>${empty()}</dd></div></dl></section>
+      <section class="content-card"><div class="section-title"><h2>공약 · 정책</h2><span>선관위 공식자료 후속</span></div><div class="timeline-shell"><div class="empty-inline">공약·정책 원문은 다음 데이터 단계에서 공식자료로 연결합니다.</div></div></section>
+    </div>
+    <section class="content-card"><div class="section-title"><h2>정참시 데이터</h2><span>뉴스·키워드·NOW는 후속</span></div><div class="metric-shell"><article><small>NOW Rank</small><strong>—</strong><span>후속</span></article><article><small>관심도</small><strong>—</strong><span>후속</span></article><article><small>언급량</small><strong>—</strong><span>후속</span></article><article><small>전국 평가</small><strong>—</strong><span>참여 데이터</span></article></div></section>
+    <section class="content-card"><div class="notice-box">출처: ${esc(p.source)} · 사진과 실시간 뉴스는 이번 1차 데이터에서 불러오지 않습니다.</div></section>
+  </main>`);
+}

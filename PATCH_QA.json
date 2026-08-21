@@ -1,22 +1,25 @@
 {
   "version": "v3.0.0-alpha6.0.17",
-  "phase": "DATA_PHASE_1_ASSEMBLY",
+  "assembly": 300,
+  "metropolitan": 16,
+  "basic": 227,
+  "total": 543,
   "photo_import": false,
-  "user_runtime_external_api_calls": false,
-  "vercel_function_count": 1,
+  "external_person_api_on_user_request": false,
+  "seed_raw_bytes": 91415,
   "js_syntax": "ALL PASS",
+  "vercel_function_count": 1,
+  "app_css_unchanged": true,
+  "important_count": 0,
   "changed_files": [
     "package.json",
     "index.html",
-    "api/gateway.js",
-    "src/app.js",
     "src/version.js",
     "src/data/person-provider.js",
+    "src/data/person-seed.js",
+    "src/views/home.js",
     "src/views/admin.js",
     "src/views/people.js",
-    "src/views/features.js",
-    "server/v3/routes/people.js",
-    "server/v3/routes/action.js",
-    "lib/v3/people.js"
+    "src/views/features.js"
   ]
 }

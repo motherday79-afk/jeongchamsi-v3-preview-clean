@@ -1,8 +1,59 @@
-export const PERSON_PROVIDER_STATUS="OPEN_ASSEMBLY_PHASE1";export const PHOTO_PROVIDER_STATUS="DISABLED_PHASE1";export const PERSON_COUNTS=Object.freeze({assembly:300,metropolitan:16,basic:227,total:543,homeNowPreview:15});
-const TYPES={assembly:{prefix:"assembly",label:"국회의원",group:"국회",jurisdictionLabel:"선거구"},metropolitan:{prefix:"metropolitan",label:"광역단체장",group:"광역자치단체",jurisdictionLabel:"관할 광역자치단체"},basic:{prefix:"basic",label:"기초단체장",group:"기초자치단체",jurisdictionLabel:"관할 기초자치단체"}},pad=n=>String(n).padStart(3,"0");
-function slot(type,index){const m=TYPES[type];return{id:`${m.prefix}-${pad(index)}`,slot:index,type,roleLabel:m.label,groupLabel:m.group,jurisdictionLabel:m.jurisdictionLabel,connected:false,name:"",party:"",jurisdiction:"",officialCode:""}}function make(t,c){return Array.from({length:c},(_,i)=>slot(t,i+1))}
-let ASSEMBLY=make("assembly",300),METROPOLITAN=make("metropolitan",16),BASIC=make("basic",227),ALL=[...ASSEMBLY,...METROPOLITAN,...BASIC],BY_ID=new Map(ALL.map(x=>[x.id,x])),loaded=false,loadPromise=null;
-function rebuild(items=[]){const m=new Map(items.map(x=>[String(x.id||""),x])),merge=list=>list.map(x=>Object.freeze({...x,...(m.get(x.id)||{})}));ASSEMBLY=merge(make("assembly",300));METROPOLITAN=merge(make("metropolitan",16));BASIC=merge(make("basic",227));ALL=[...ASSEMBLY,...METROPOLITAN,...BASIC];BY_ID=new Map(ALL.map(x=>[x.id,x]))}
-export async function ensurePeopleIndex({fresh=false}={}){if(loaded&&!fresh)return ALL;if(loadPromise&&!fresh)return loadPromise;loadPromise=(async()=>{try{const r=await fetch(`/api/v3/people${fresh?`?r=${Date.now()}`:""}`,{credentials:"same-origin",headers:{Accept:"application/json"}}),b=await r.json().catch(()=>({}));if(r.ok)rebuild(b?.data?.items||[])}catch{}loaded=true;return ALL})();try{return await loadPromise}finally{loadPromise=null}}
-export async function getPersonDetailData(id,{fresh=false}={}){try{const q=new URLSearchParams({id:String(id||"")});if(fresh)q.set("r",String(Date.now()));const r=await fetch(`/api/v3/people?${q}`,{credentials:"same-origin",headers:{Accept:"application/json"}}),b=await r.json().catch(()=>({}));return r.ok?b.person||null:null}catch{return null}}
-export function resetPeopleIndex(){loaded=false;loadPromise=null;rebuild([])}export const listAssemblyMembers=()=>ASSEMBLY;export const listMetropolitanLeaders=()=>METROPOLITAN;export const listBasicLeaders=()=>BASIC;export const listAllLocalLeaders=()=>[...METROPOLITAN,...BASIC];export const listAllPoliticians=()=>ALL;export const listHomeNowPreviewSlots=()=>ASSEMBLY.slice(0,15);export const getPersonSlotById=id=>BY_ID.get(String(id||""))||null;
+import { ASSEMBLY_SEED, METROPOLITAN_SEED, BASIC_SEED } from "./person-seed.js";
+
+export const PERSON_PROVIDER_STATUS = "STATIC_TEXT_SEED_2026_08";
+export const PHOTO_PROVIDER_STATUS = "DISABLED";
+
+export const PERSON_COUNTS = Object.freeze({
+  assembly: 300,
+  metropolitan: 16,
+  basic: 227,
+  total: 543,
+  homeNowPreview: 15
+});
+
+const TYPES = Object.freeze({
+  assembly: { prefix:"assembly", label:"국회의원", group:"국회", jurisdictionLabel:"선거구" },
+  metropolitan: { prefix:"metropolitan", label:"광역단체장", group:"광역자치단체", jurisdictionLabel:"관할 광역자치단체" },
+  basic: { prefix:"basic", label:"기초단체장", group:"기초자치단체", jurisdictionLabel:"관할 기초자치단체" }
+});
+const pad=n=>String(n).padStart(3,"0");
+
+function build(type, rows) {
+  const meta=TYPES[type];
+  return rows.map((r,i)=>Object.freeze({
+    id:`${meta.prefix}-${pad(i+1)}`,
+    slot:i+1,
+    type,
+    roleLabel:meta.label,
+    groupLabel:meta.group,
+    jurisdictionLabel:meta.jurisdictionLabel,
+    connected:true,
+    name:r[0]||"",
+    party:r[1]||"",
+    region:r[2]||"",
+    jurisdiction:r[3]||"",
+    terms:r[4]||"",
+    committee:r[5]||"",
+    termStart:r[6]||"",
+    termEnd:r[7]||"",
+    office:r[8]||meta.label,
+    electionLabel:r[9]||"",
+    photo:"",
+    source:type==="assembly"
+      ? "국회 공개정보 기반 정참시 현역 스냅샷"
+      : "2026 제9회 전국동시지방선거 당선인 결과"
+  }));
+}
+const ASSEMBLY=build("assembly",ASSEMBLY_SEED);
+const METROPOLITAN=build("metropolitan",METROPOLITAN_SEED);
+const BASIC=build("basic",BASIC_SEED);
+const ALL=Object.freeze([...ASSEMBLY,...METROPOLITAN,...BASIC]);
+const BY_ID=new Map(ALL.map(x=>[x.id,x]));
+
+export const listAssemblyMembers=()=>ASSEMBLY;
+export const listMetropolitanLeaders=()=>METROPOLITAN;
+export const listBasicLeaders=()=>BASIC;
+export const listAllLocalLeaders=()=>[...METROPOLITAN,...BASIC];
+export const listAllPoliticians=()=>ALL;
+export const listHomeNowPreviewSlots=()=>ASSEMBLY.slice(0,PERSON_COUNTS.homeNowPreview);
+export const getPersonSlotById=id=>BY_ID.get(String(id||""))||null;

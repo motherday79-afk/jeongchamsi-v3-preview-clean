@@ -1,3 +1,4 @@
+import { listHomeNowPreviewSlots, getPersonSlotById } from "../data/person-provider.js";
 import { getHomeSnapshot } from "../core/repository.js";
 import { drawer, siteHeader, footer } from "./layout.js";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
@@ -91,7 +92,7 @@ function nationalEvaluationHomeMarkup(data = {}) {
   const votes = { positive: 0, neutral: 0, negative: 0, ...(data.results?.[subjectId] || {}) };
   const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
   const positiveShare = total ? Math.round(Number(votes.positive || 0) * 100 / total) : 0;
-  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>국회의원 ${String(slot).padStart(3, "0")}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
+  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>${esc((getPersonSlotById(subjectId)?.name)||`국회의원 ${String(slot).padStart(3, "0")}`)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
 }
 
 function pollMarkup(poll, voted = false) {
@@ -146,8 +147,9 @@ export async function renderHome() {
   const trending = manualTrending.length ? manualTrending.map(x => ({ ...x, href: x.href || `/search?q=${encodeURIComponent(x.title || "")}` })) : derivedTrending;
   const recentPeople = userSummary.recentPeople || [];
 
-  const rankTop5 = Array.from({ length: 5 }, (_, i) => `<article class="rank-top-card" role="button" tabindex="0" data-go="/person/assembly-${String(i + 1).padStart(3, "0")}"><div class="rank-top-no">${i + 1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>상위 ${i + 1}위</b><span>정치인 상세 Shell 보기</span></div></article>`).join("");
-  const rankList10 = Array.from({ length: 10 }, (_, i) => `<div class="rank-list-row" role="button" tabindex="0" data-go="/person/assembly-${String(i + 6).padStart(3, "0")}"><span class="rank-list-no">${i + 6}</span><span class="rank-list-avatar"></span><span class="rank-list-copy"><b>정치인 영역</b><em>정당 · 지역 · 한 줄 뉴스요약</em></span><span class="rank-list-meta">상세</span></div>`).join("");
+  const nowPeople = listHomeNowPreviewSlots();
+  const rankTop5 = nowPeople.slice(0,5).map((p,i)=>`<article class="rank-top-card" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
+  const rankList10 = nowPeople.slice(5,15).map((p,i)=>`<div class="rank-list-row" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-list-no">${i+6}</span><span class="rank-list-avatar"></span><span class="rank-list-copy"><b>${esc(p.name)}</b><em>${esc(p.party)} · ${esc(p.jurisdiction)}</em></span><span class="rank-list-meta">상세</span></div>`).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
   const loginMobile = userSession.authenticated
