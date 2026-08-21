@@ -1,7 +1,7 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.21-header-drawer";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.22-detail-polish";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -129,13 +129,19 @@ function pollMarkup(poll) {
 function academyRows(slots = []) {
   const rows = slots.slice(0,4);
   while (rows.length < 4) rows.push(null);
-  return rows.map((slot,i) => {
-    if (!slot) return `<div class="schedule-row empty"><span class="schedule-date">일정 준비중</span><span class="schedule-line"><i></i><em>새 교육 일정이 등록되면 표시됩니다.</em></span><button type="button" disabled>예정</button></div>`;
-    const date = esc(slot.date || "날짜 미정");
+  return rows.map(slot => {
+    if (!slot) return `<div class="schedule-row empty"><span class="schedule-date">—</span><span class="schedule-line"><em>일정 준비중</em></span><button type="button" disabled>예정</button></div>`;
+    const rawDate = String(slot.date || "");
+    let dateLabel = rawDate || "날짜 미정";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+      const [y,m,d] = rawDate.split("-");
+      const day = ["일","월","화","수","목","금","토"][new Date(Number(y),Number(m)-1,Number(d)).getDay()];
+      dateLabel = `${m}.${d} ${day}`;
+    }
     const time = [slot.startTime, slot.endTime].filter(Boolean).join("–");
     const status = slot.status || (slot.closed ? "closed" : "open");
     const statusLabel = status === "closed" ? "마감" : status === "scheduled" ? "예정" : "신청가능";
-    return `<div class="schedule-row"><span class="schedule-date">${date}${time ? `<small>${esc(time)}</small>` : ""}</span><span class="schedule-line"><i></i><em>${esc(slot.title || "정참시 아카데미")}</em></span><button type="button" data-go="/academy" ${status === "closed" ? "disabled" : ""}>${statusLabel}</button></div>`;
+    return `<div class="schedule-row"><span class="schedule-date">${esc(dateLabel)}${time ? `<small>${esc(time)}</small>` : ""}</span><span class="schedule-line"><em>${esc(slot.title || "정참시 아카데미")}</em></span><button type="button" data-go="/academy" ${status === "closed" ? "disabled" : ""}>${statusLabel}</button></div>`;
   }).join("");
 }
 
@@ -203,6 +209,15 @@ export async function renderHome() {
       ? `<section class="side-card login-card side-login"><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><p>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</p><button type="button" data-go="/mypage">마이페이지</button></section>`
       : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button" data-go="/login">로그인</button></section>`;
 
+  const homeBadges = [];
+  if (userSession.authenticated && userSummary.pollVotes > 0) {
+    homeBadges.push({ mark:"✓", name:"첫 참여", tier:"STANDARD" });
+    homeBadges.push({ mark:"V", name:"시민 선택", tier:"STANDARD" });
+  }
+  const badgePreview = homeBadges.length
+    ? `<div class="badge-home-preview">${homeBadges.slice(0,3).map(x => `<button type="button" data-go="/mypage/activity?tab=badges"><span>${esc(x.mark)}</span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></button>`).join("")}<button type="button" class="badge-more-card" data-go="/mypage/activity?tab=badges"><span>+</span><b>배지함</b><small>전체보기</small></button></div>`
+    : `<button type="button" class="badge-empty-cta" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}"><span class="badge-empty-icon">B</span><span><b>${userSession.authenticated ? "첫 배지를 획득해보세요" : "로그인하고 배지를 모아보세요"}</b><small>설문·글쓰기·참여 활동으로 시작</small></span><em>›</em></button>`;
+
   return `<div class="site-shell">
     ${siteHeader()}
 
@@ -235,7 +250,7 @@ export async function renderHome() {
         <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">${esc(academyConfig.eyebrow)}</span><h2>${esc(academyConfig.title)}</h2><p class="module-desc">${esc(academyConfig.description)}</p></div><div class="inline-actions">${userSession.authenticated && userSession.user?.role === "admin" ? `<button class="ghost-btn academy-admin-edit" type="button" data-go="/admin?tab=academy">메인 아카데미 편집</button>` : ""}<button class="more-btn" type="button" data-go="/academy">아카데미 일정 보기</button></div></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>${esc(academyConfig.headline)}</h3><p>${esc(academyConfig.description)}</p><button type="button" data-go="/academy">${esc(academyConfig.cta)}</button></div><div class="academy-schedule"><div class="schedule-head"><b>예정 교육 일정</b><span>${academySlots.length}개</span></div>${academyRows(academySlots)}</div></div></section>
       </main>
 
-      <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div><div class="participation-main" role="button" tabindex="0" data-go="/mypage/activity"><span class="grade-circle">P</span><div><b>${userSession.authenticated ? "내 참여" : "대표 배지"}</b><p>${userSession.authenticated ? `즐겨찾기 ${userSummary.favorites} · 설문 ${userSummary.pollVotes} · 좋아요 ${userSummary.likedPosts}` : "로그인 후 내 활동과 배지 표시"}</p></div></div><div class="badge-mini-row"><span></span><span></span><span></span><span></span></div></section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {
+      <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div><div class="participation-main" role="button" tabindex="0" data-go="/mypage/activity"><span class="grade-circle">P</span><div><b>${userSession.authenticated ? "내 참여" : "대표 배지"}</b><p>${userSession.authenticated ? `즐겨찾기 ${userSummary.favorites} · 설문 ${userSummary.pollVotes} · 좋아요 ${userSummary.likedPosts}` : "로그인 후 내 활동과 배지 표시"}</p></div></div>${badgePreview}</section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {
           const id = recentPeople[i];
           if (!id) return `<span class="recent-visual-empty"><span class="recent-circle-empty"></span><b>최근 본 인물</b><small>기록 없음</small></span>`;
           const info = recentPersonSlotLabel(id, getPerson);

@@ -1,71 +1,65 @@
-정참시 v3 alpha6.0.21 · HEADER / DRAWER DESIGN DETAIL
-기준: alpha6.0.20 FUNCTION DETAIL 1 적용 상태
+정참시 v3 alpha6.0.22 · DETAIL POLISH
+기준: alpha6.0.21 HEADER/DRAWER DETAIL 적용 상태
 형식: PATCH ONLY
 
-이번 수정 범위는 요청한 3가지만 적용
+이번 승인 범위
+1. 헤더 아이콘 확대
+- 삼선바 / 내 참여(알림) / 최근 본 정치인(즐겨찾기) 버튼과 SVG를 한 단계 확대
+- 헤더 전체 구조와 위치는 유지
+- PC 42px hit area / 모바일 44px hit area
+- SVG 23~24px
 
-1. 상단 ··· 메뉴 닫힘 UX
-- ··· 클릭 → 기존처럼 열림
-- 메뉴 밖 빈 여백 클릭 → 즉시 닫힘
-- ESC → 닫힘
-- ··· 재클릭 → 닫힘
-- 메뉴 내부 링크 클릭 → 라우팅되며 닫힘
-- 삼선바 drawer도 기존 backdrop 바깥클릭 + ESC 닫힘 유지
+2. 메인 아카데미 정돈
+- 긴 YYYY-MM-DD 세로 줄바꿈 제거
+- 날짜 표시: MM.DD 요일
+- 시간: HH:MM–HH:MM
+- 교육명: 한 줄 ellipsis
+- 상태: 우측 신청가능/예정/마감 pill
+- 기존 회색 skeleton처럼 보이던 선 제거
+- 최대 4개 노출 구조는 그대로 유지
+- 관리자 날짜/시간/문구 편집 기능 유지
 
-2. 메인/공통 상단 퀵메뉴 디자인
-- 검색창 아래 텍스트-only 메뉴를 '아이콘 + 설명' 방식으로 전환
-- 직접 노출 7개 유지:
-  NOW Rank / IT’S ME / COLUMN / 정참시 NEWS / 시민들의 선택 / 정뮤니티 / 비교분석
-- 더보기는 별도 아이콘 타일 + '더보기' 라벨
-- 더보기 내부:
-  대통령 / 세대별 대통령 / 전국 평가제 / 아카데미
-- 모든 아이콘은 inline SVG
-- 외부 아이콘 CDN/이미지 요청 0
-- PC: 가운데 정렬 아이콘 행
-- 모바일/Fold: 동일 아이콘 구조 + 가로 스크롤
-- hover/active 터치 피드백 추가
+3. 오른쪽 '내 참여 · 배지' 빈 원 제거
+- 의미 없는 빈 동그라미 4개 완전 제거
+- 실제 확인 가능한 기존 배지 상태만 프리뷰
+  * 설문 참여가 있으면 '첫 참여', '시민 선택'
+- 배지가 아직 없으면 empty state:
+  * 로그인 사용자: '첫 배지를 획득해보세요'
+  * 비로그인: '로그인하고 배지를 모아보세요'
+- 배지함으로 바로 이동
+- v3 전체 40~50종 + 히든미션 시스템은 다음 별도 기능 패치에서 설계/구현
 
-3. 삼선바 전체메뉴 전면 디자인 개선
-- 단순 링크 나열 제거
-- 참고자료처럼 '서비스 패널' 구조로 변경
-- 로그인/회원 상태 카드
-- 바로가기 4x2 아이콘 그리드
-- 참여·분석 기능 리스트
-- 내 참여·배지 / 최근 본 정치인
-- 이용안내 / 개인정보처리방침 / 운영정책
-- 관리자 권한일 때만 관리자 진입
-- drawer 내부만 스크롤, 페이지 body scroll lock
-- 바깥 backdrop 클릭 닫기
-- ESC 닫기
-- 180ms 가벼운 open/close motion
+4. 검색창 브랜드 인지
+- 기존 '정치인·정당·정책...' placeholder 제거
+- 검색창 첫 문구: '정치에 참여할 시간'
+- 정 / 참 / 시 세 글자만 브랜드 그린 포인트
+- input 자체 placeholder가 아니라 overlay hint 방식
+- 검색창 focus 또는 실제 입력 시 자동으로 사라짐
+- 빈 상태로 돌아오면 다시 표시
+- 검색 기능/라우팅 변경 없음
 
-성능 보호
-- 정치인 543명 로딩/Seed 구조 변경 없음
-- Redis/API/게시판/검색/투표/아카데미 기능 변경 없음
-- 외부 이미지·아이콘 요청 추가 0
+보존
+- alpha6.0.21 상단 아이콘 퀵메뉴/삼선바 drawer 유지
+- ··· 바깥클릭/ESC 닫기 유지
+- 정치인 543명 lazy 구조 유지
+- Redis/API 구조 변경 없음
+- 외부 이미지/아이콘 요청 추가 0
 - !important 0
-- 홈 초기 경로 gzip 증가량 로컬 비교:
-  pages.css +2.2KB
-  app.js +0.18KB
-  layout.js +1.42KB
-  home.js cache-key change 수준 +0.01KB
-- 총 약 +3.8KB 수준
-- alpha6.0.20 성능 기준 TRANSFER 63.7KB 대비 소폭 증가 예상
 
 QA
 - 전체 JS node --check PASS
-- 상단 primary quick item 7개 PASS
-- drawer quick item 8개 PASS
-- more 바깥클릭 닫기 PASS
-- ESC more/drawer 닫기 PASS
-- drawer backdrop 닫기 PASS
-- external icon/image request 0 PASS
-- !important 0 PASS
+- runtime home mock PASS:
+  * 2026-08-24 → 08.24 월
+  * 14:00–17:00
+  * 교육명 한 줄 데이터 유지
+  * 구 badge-mini-row 제거
+  * 비로그인 badge empty state 노출
+  * 검색 브랜드 문구 렌더
+- 초기경로 gzip 증감(로컬):
+  pages.css +906 bytes
+  layout.js +42 bytes
+  home.js +417 bytes
+  app.js +1 bytes
 
-배포 후 확인
-1. PC 상단 아이콘+라벨
-2. ··· 열고 빈 여백 클릭 → 닫힘
-3. 삼선바 → 새 서비스 drawer
-4. drawer 바깥 클릭 → 닫힘
-5. 모바일 상단 아이콘 가로 스크롤
-6. /?perf=1 재측정
+배포 후
+- 화면 확인 후 /?perf=1 재측정 권장

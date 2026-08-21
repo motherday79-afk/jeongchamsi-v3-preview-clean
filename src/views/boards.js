@@ -1,5 +1,5 @@
 import { getDomain } from "../core/repository.js";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.21-header-drawer";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.22-detail-polish";
 import { getUserSession, isPostLiked } from "../core/user.js";
 
 const CONFIG = Object.freeze({

@@ -1,25 +1,33 @@
 {
-  "version": "v3.0.0-alpha6.0.21",
-  "base": "alpha6.0.20",
+  "version": "v3.0.0-alpha6.0.22",
+  "base": "alpha6.0.21",
   "patch_only": true,
-  "scope": [
-    "more outside-click close",
-    "icon quick navigation",
-    "full hamburger drawer redesign"
-  ],
   "checks": {
     "js_syntax": "ALL PASS",
-    "top_quick_primary_count": 7,
-    "drawer_quick_count": 8,
-    "more_outside_click_close": true,
-    "escape_close": true,
-    "drawer_backdrop_close": true,
-    "external_icon_requests": 0,
-    "important_count": 0
+    "header_icons_larger": true,
+    "academy_compact_rows": true,
+    "empty_badge_circles_removed": true,
+    "badge_empty_state": true,
+    "search_brand_hint": true,
+    "search_brand_points": [
+      "정",
+      "참",
+      "시"
+    ],
+    "important_count": 0,
+    "external_requests_added": 0
   },
-  "performance": {
-    "approx_home_path_gzip_delta_kb": 3.8,
-    "alpha20_transfer_baseline_kb": 63.7
+  "runtime": {
+    "academy_date_2026_08_24": "08.24 월",
+    "academy_time": "14:00–17:00",
+    "badge_old_empty_circles": false,
+    "search_brand_render": true
+  },
+  "gzip_delta_bytes": {
+    "css/pages.css": 906,
+    "src/views/layout.js": 42,
+    "src/views/home.js": 417,
+    "src/app.js": 1
   },
   "changed_files": [
     "package.json",

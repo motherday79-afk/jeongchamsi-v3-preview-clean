@@ -1711,3 +1711,261 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   font-size:24px;
 }
 
+/* =========================================================
+   alpha6.0.22 · DETAIL POLISH
+   ========================================================= */
+
+/* Header utility icons: slightly larger without changing header geometry */
+.header-icon{
+  width:42px;
+  height:42px;
+}
+.header-icon svg{
+  width:23px;
+  height:23px;
+}
+.header-menu-icon svg{
+  width:24px;
+  height:24px;
+}
+
+/* Search brand sentence: 정 / 참 / 시 are the visual identity */
+.search-input-shell{
+  position:relative;
+  flex:1 1 auto;
+  min-width:0;
+  height:100%;
+  display:flex;
+  align-items:center;
+}
+.search-input-shell input{
+  width:100%;
+  height:100%;
+  min-width:0;
+  background:transparent;
+}
+.search-brand-hint{
+  position:absolute;
+  left:0;
+  top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+  color:#7a8883;
+  font-size:13px;
+  font-weight:650;
+  letter-spacing:-.25px;
+  white-space:nowrap;
+  opacity:1;
+  transition:opacity 120ms ease;
+}
+.search-brand-hint b{
+  color:var(--green);
+  font-size:15px;
+  font-weight:950;
+}
+.search-input-shell:focus-within .search-brand-hint,
+.search-input-shell input:not(:placeholder-shown)+.search-brand-hint{
+  opacity:0;
+}
+
+/* Academy main card: same clean list language as the rest of the portal */
+.academy-schedule{
+  min-width:0;
+}
+.academy-schedule .schedule-head{
+  padding-bottom:10px;
+  margin-bottom:0;
+  border-bottom:1px solid #e8efec;
+}
+.academy-schedule .schedule-row{
+  min-height:49px;
+  display:grid;
+  grid-template-columns:92px minmax(0,1fr) 72px;
+  align-items:center;
+  gap:12px;
+  padding:8px 0;
+  border-top:1px solid #edf2f0;
+}
+.academy-schedule .schedule-row:first-of-type{
+  border-top:0;
+}
+.academy-schedule .schedule-date{
+  display:block;
+  color:#233a33;
+  font-size:12px;
+  line-height:1.2;
+  font-weight:900;
+  letter-spacing:-.2px;
+}
+.academy-schedule .schedule-date small{
+  display:block;
+  margin-top:4px;
+  color:#87938f;
+  font-size:9px;
+  font-weight:750;
+  letter-spacing:0;
+}
+.academy-schedule .schedule-line{
+  min-width:0;
+  display:block;
+}
+.academy-schedule .schedule-line i{
+  display:none;
+}
+.academy-schedule .schedule-line em{
+  display:block;
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#344942;
+  font-size:12px;
+  line-height:1.4;
+  font-style:normal;
+  font-weight:750;
+}
+.academy-schedule .schedule-row button{
+  min-width:68px;
+  min-height:34px;
+  padding:7px 9px;
+  border:0;
+  border-radius:9px;
+  background:#edf7f3;
+  color:var(--green);
+  font-size:10px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.academy-schedule .schedule-row button:disabled{
+  background:#f2f4f3;
+  color:#9aa5a1;
+}
+.academy-schedule .schedule-row.empty{
+  opacity:.72;
+}
+
+/* Sidebar badge preview: never show unexplained empty circles */
+.badge-home-preview{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+}
+.badge-home-preview button{
+  min-width:0;
+  min-height:72px;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:3px;
+  padding:8px 5px;
+  border:1px solid #e1eae7;
+  border-radius:11px;
+  background:#fbfdfc;
+  cursor:pointer;
+}
+.badge-home-preview button>span{
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#eaf7f2;
+  color:var(--green);
+  font-size:11px;
+  font-weight:950;
+}
+.badge-home-preview button>b{
+  width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#31443e;
+  font-size:10px;
+}
+.badge-home-preview button>small{
+  color:#8c9894;
+  font-size:8px;
+  font-weight:800;
+}
+.badge-home-preview button:hover{
+  border-color:#b9dcd2;
+  background:#f4fbf8;
+}
+.badge-home-preview .badge-more-card>span{
+  background:#f1f4f3;
+  color:#72817c;
+}
+.badge-empty-cta{
+  width:100%;
+  min-height:66px;
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) 16px;
+  align-items:center;
+  gap:9px;
+  padding:9px 10px;
+  border:1px dashed #cfddd8;
+  border-radius:11px;
+  background:#fafcfb;
+  text-align:left;
+  cursor:pointer;
+}
+.badge-empty-icon{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#eaf6f2;
+  color:var(--green);
+  font-size:11px;
+  font-weight:950;
+}
+.badge-empty-cta>span:nth-child(2){
+  min-width:0;
+}
+.badge-empty-cta b,
+.badge-empty-cta small{
+  display:block;
+}
+.badge-empty-cta b{
+  color:#354841;
+  font-size:10px;
+}
+.badge-empty-cta small{
+  margin-top:3px;
+  color:#8a9792;
+  font-size:8px;
+}
+.badge-empty-cta em{
+  color:#98a49f;
+  font-size:18px;
+  font-style:normal;
+}
+.badge-empty-cta:hover{
+  border-color:#a9d2c7;
+  background:#f3faf7;
+}
+
+@media(max-width:900px){
+  .header-icon{
+    width:44px;
+    height:44px;
+  }
+  .header-icon svg{
+    width:24px;
+    height:24px;
+  }
+  .search-brand-hint{
+    font-size:12px;
+  }
+  .search-brand-hint b{
+    font-size:14px;
+  }
+  .academy-schedule .schedule-row{
+    grid-template-columns:78px minmax(0,1fr) 66px;
+    gap:8px;
+  }
+}
+
