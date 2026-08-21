@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.31-visual-system";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.30-search-home-restore";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";

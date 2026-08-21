@@ -5,9 +5,9 @@
 
 /* ---------- shared subpage shell ---------- */
 .subpage{display:grid;gap:16px;min-width:0}
-.page-hero{background:transparent;border:0;border-radius:0;box-shadow:none;padding:30px 4px 18px;min-width:0}.content-card{background:var(--surface);border:1px solid #e9edeb;border-radius:15px;box-shadow:none;padding:24px;min-width:0}.admin-panel,.auth-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:none;padding:22px;min-width:0}
-.page-hero h1,.content-card h1,.auth-card h1{margin:0;font-size:var(--fs-h1);line-height:1.24;letter-spacing:-1.1px}
-.page-hero p,.auth-card p{margin:9px 0 0;color:#687670;font-size:14px;line-height:1.7}
+.page-hero,.content-card,.admin-panel,.auth-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:22px;min-width:0}
+.page-hero h1,.content-card h1,.auth-card h1{margin:0;font-size:var(--fs-h1);line-height:1.3;letter-spacing:-.8px}
+.page-hero p,.auth-card p{margin:7px 0 0;color:var(--text-2);font-size:var(--fs-body);line-height:var(--lh-body)}
 .subpage .eyebrow{margin-bottom:5px}
 .section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
 .section-title h2{margin:0;font-size:var(--fs-h3);letter-spacing:-.55px}
@@ -1870,16 +1870,17 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
    ========================================================= */
 .brand-hero{
   position:relative;
-  min-height:226px;
+  min-height:220px;
   overflow:hidden;
   display:grid;
   grid-template-columns:minmax(0,1.08fr) minmax(250px,.92fr);
   align-items:stretch;
-  padding:28px 30px;
-  border:0;
-  border-radius:17px;
-  background:linear-gradient(112deg,#ffffff 0%,#ffffff 52%,#f0f8f5 100%);
-  box-shadow:0 16px 42px rgba(22,52,44,.06);
+  padding:24px 28px;
+  border:1px solid #e4ece9;
+  border-radius:16px;
+  background:
+    linear-gradient(115deg,#fff 0%,#fff 50%,#f8fcfa 100%);
+  box-shadow:0 10px 28px rgba(29,54,46,.055);
 }
 .brand-hero-copy{
   position:relative;
@@ -1900,8 +1901,8 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .brand-hero h1{
   max-width:670px;
   margin:0;
-  color:#152a23;
-  font-size:clamp(26px,2.55vw,39px);
+  color:#172b25;
+  font-size:clamp(24px,2.35vw,36px);
   line-height:1.14;
   letter-spacing:-1.3px;
   font-weight:950;
@@ -2134,52 +2135,4 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   align-items:center;
   justify-content:center;
   text-decoration:none;
-}
-
-/* =========================================================
-   alpha6.0.31 · VISUAL SYSTEM 1.0 — ART DIRECTION
-   One coherent visual layer for interaction polish only.
-   ========================================================= */
-body{background-image:linear-gradient(180deg,#fbfcfb 0,#f8f9f8 420px,#f8f9f8 100%)}
-.main-column>.module:last-child{border-bottom:0}
-.main-column>.brand-hero{margin-bottom:6px}
-.main-column>#itsme{padding-top:46px}
-.main-column>#itsme .module-header h2,
-.main-column>#poll .module-header h2{font-size:30px}
-.main-column>#itsme .eyebrow,
-.main-column>#poll .eyebrow{color:#087863}
-.rank-top-card,
-.itsme-card,
-.community-highlight article,
-.column-card,
-.generation-card,
-.poll-options button{
-  transition:transform var(--ui-motion-fast) var(--ui-ease),box-shadow var(--ui-motion-fast) var(--ui-ease),background-color var(--ui-motion-fast) var(--ui-ease);
-}
-.rank-top-card:hover,
-.itsme-card:hover,
-.community-highlight article:hover,
-.column-card:hover,
-.generation-card:hover{
-  transform:translateY(-2px);
-  box-shadow:0 10px 24px rgba(24,48,41,.055);
-}
-.module-header .more-btn:hover{color:var(--green)}
-.side-card:hover{border-color:#dfe6e2}
-.service-nav a,.service-nav button{letter-spacing:-.15px}
-@media(max-width:980px){
-  .portal-layout{gap:20px}
-  .module{padding-top:32px;padding-bottom:36px}
-}
-@media(max-width:560px){
-  .page-wrap{margin-top:14px}
-  .main-column{gap:0}
-  .module{padding:30px 2px 34px}
-  .module-header{align-items:flex-start;margin-bottom:19px}
-  .module h2{font-size:23px}
-  .main-column>#itsme .module-header h2,
-  .main-column>#poll .module-header h2{font-size:25px}
-  .module-desc{font-size:13px;line-height:1.6}
-  .itsme-card{min-height:132px;padding:17px}
-  .poll-main{padding:20px 18px}
 }
