@@ -1,4 +1,4 @@
-import { listHomeNowPreviewSlots, getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.18-consolidated";
+import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.19-perf";
 import { getHomeSnapshot } from "../core/repository.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
 import { drawer, siteHeader, footer } from "./layout.js";
@@ -8,8 +8,21 @@ const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 }[c]));
 
-function recentPersonSlotLabel(id = "") {
-  const person = getPersonSlotById(id);
+let initialHomeSnapshot = null;
+let initialHomeSnapshotReuse = 0;
+async function getInitialHomeSnapshot() {
+  if (initialHomeSnapshot && initialHomeSnapshotReuse > 0) {
+    initialHomeSnapshotReuse -= 1;
+    return initialHomeSnapshot;
+  }
+  const data = await getInitialHomeSnapshot();
+  initialHomeSnapshot = data;
+  initialHomeSnapshotReuse = 1;
+  return data;
+}
+
+function recentPersonSlotLabel(id = "", getPerson = null) {
+  const person = typeof getPerson === "function" ? getPerson(id) : null;
   if (person?.connected && person?.name) {
     return {
       group: person.roleLabel,
@@ -90,7 +103,7 @@ function itsmeHomeCard(item, index) {
   return `<article class="itsme-card" role="button" tabindex="0" data-go="/itsme/${esc(item.id)}"><span>${String(index + 1).padStart(2, "0")}</span><b>${esc(item.title || "정책 제안")}</b><p>${esc(item.summary || item.body || "")}</p></article>`;
 }
 
-function nationalEvaluationHomeMarkup(data = {}) {
+function nationalEvaluationHomeMarkup(data = {}, getPerson = null) {
   const subjectId = String(data.subjectId || "");
   const match = subjectId.match(/^assembly-(\d{3})$/);
   if (!match) {
@@ -100,7 +113,7 @@ function nationalEvaluationHomeMarkup(data = {}) {
   const votes = { positive: 0, neutral: 0, negative: 0, ...(data.results?.[subjectId] || {}) };
   const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
   const positiveShare = total ? Math.round(Number(votes.positive || 0) * 100 / total) : 0;
-  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>${esc((getPersonSlotById(subjectId)?.name)||`국회의원 ${String(slot).padStart(3, "0")}`)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
+  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>${esc((typeof getPerson === "function" ? getPerson(subjectId)?.name : "")||`국회의원 ${String(slot).padStart(3, "0")}`)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
 }
 
 function pollMarkup(poll, voted = false) {
@@ -127,6 +140,13 @@ export async function renderHome() {
   const data = await getHomeSnapshot();
   const userSummary = getUserSummary();
   const userSession = userSummary.session;
+  const userReady = !document.documentElement.classList.contains("jcv3-user-pending");
+  let getPerson = null;
+  const needsPersonLookup = userReady && ((userSummary.recentPeople || []).length || data.nationalEvaluation?.subjectId);
+  if (needsPersonLookup) {
+    const provider = await import("../data/person-provider.js?v=alpha6.0.19-perf");
+    getPerson = provider.getPersonSlotById;
+  }
   const columns = published(data.columns?.items || []);
   const lead = columns.find(x => x.featured) || columns[0] || null;
   const minis = columns.filter(x => x !== lead).slice(0, 4);
@@ -155,18 +175,22 @@ export async function renderHome() {
   const trending = manualTrending.length ? manualTrending.map(x => ({ ...x, href: x.href || `/search?q=${encodeURIComponent(x.title || "")}` })) : derivedTrending;
   const recentPeople = userSummary.recentPeople || [];
 
-  const nowPeople = listHomeNowPreviewSlots();
+  const nowPeople = HOME_NOW_PREVIEW;
   const rankTop5 = nowPeople.slice(0,5).map((p,i)=>`<article class="rank-top-card" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
   const rankList10 = nowPeople.slice(5,15).map((p,i)=>`<div class="rank-list-row" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-list-no">${i+6}</span><span class="rank-list-avatar"></span><span class="rank-list-copy"><b>${esc(p.name)}</b><em>${esc(p.party)} · ${esc(p.jurisdiction)}</em></span><span class="rank-list-meta">상세</span></div>`).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
-  const loginMobile = userSession.authenticated
-    ? `<div class="mobile-login"><div><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><span>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</span></div><button type="button" data-go="/mypage">MY</button></div>`
-    : `<div class="mobile-login"><div><b>정참시에 로그인하세요</b><span>즐겨찾기 · 참여 · 배지 · 알림</span></div><button type="button" data-go="/login">로그인</button></div>`;
+  const loginMobile = !userReady
+    ? `<div class="mobile-login"><div><b>회원정보 확인 중</b><span>메인 콘텐츠를 먼저 표시하고 있습니다.</span></div><button type="button" disabled aria-label="회원정보 확인 중">···</button></div>`
+    : userSession.authenticated
+      ? `<div class="mobile-login"><div><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><span>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</span></div><button type="button" data-go="/mypage">MY</button></div>`
+      : `<div class="mobile-login"><div><b>정참시에 로그인하세요</b><span>즐겨찾기 · 참여 · 배지 · 알림</span></div><button type="button" data-go="/login">로그인</button></div>`;
 
-  const loginSide = userSession.authenticated
-    ? `<section class="side-card login-card side-login"><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><p>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</p><button type="button" data-go="/mypage">마이페이지</button></section>`
-    : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button" data-go="/login">로그인</button></section>`;
+  const loginSide = !userReady
+    ? `<section class="side-card login-card side-login session-pending"><b>회원정보 확인 중</b><p>정치 콘텐츠는 기다리지 않고 먼저 표시합니다.</p><button type="button" disabled aria-label="회원정보 확인 중">확인 중</button></section>`
+    : userSession.authenticated
+      ? `<section class="side-card login-card side-login"><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><p>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</p><button type="button" data-go="/mypage">마이페이지</button></section>`
+      : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button" data-go="/login">로그인</button></section>`;
 
   return `<div class="site-shell">
     ${siteHeader()}
@@ -195,7 +219,7 @@ export async function renderHome() {
 
         <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대가 뽑은 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p></div><button class="more-btn" type="button" data-go="/generation-president">세대별 선택 전체보기</button></div><div class="generation-feature"><div class="generation-intro"><span class="generation-mark">세대별</span><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p><button type="button" data-go="/generation-president">모의투표 참여</button></div><div class="generation-grid">${["10대", "20대", "30대", "40대", "50대", "60대+"].map((age, i) => `<article class="generation-card ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>1위 후보 영역</b><small>투표 결과 표시</small><div class="generation-bar"><i style="width:${[54,68,61,57,63,59][i]}%"></i></div></article>`).join("")}</div></div></section>
 
-        <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전국 평가제 보기</button></div>${nationalEvaluationHomeMarkup(nationalEvaluation)}</section>
+        <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전국 평가제 보기</button></div>${nationalEvaluationHomeMarkup(nationalEvaluation, getPerson)}</section>
 
         <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">JEONGCHAMSI ACADEMY</span><h2>정참시 아카데미</h2><p class="module-desc">정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.</p></div><button class="more-btn" type="button" data-go="/academy">아카데미 일정 보기</button></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>정치의 꿈을 실제 준비로.</h3><p>과정과 강사진은 추후 설계. 메인에서는 아카데미의 성격과 예약 가능한 스케줄 진입점을 명확하게 보여줍니다.</p><button type="button" data-go="/academy">수강 가능 일정 확인</button></div><div class="academy-schedule"><div class="schedule-head"><b>이번 달 수강 가능 일정</b><span>월간보기</span></div>${academyRows(academySlots)}</div></div></section>
       </main>
@@ -203,8 +227,8 @@ export async function renderHome() {
       <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div><div class="participation-main" role="button" tabindex="0" data-go="/mypage/activity"><span class="grade-circle">P</span><div><b>${userSession.authenticated ? "내 참여" : "대표 배지"}</b><p>${userSession.authenticated ? `즐겨찾기 ${userSummary.favorites} · 설문 ${userSummary.pollVotes} · 좋아요 ${userSummary.likedPosts}` : "로그인 후 내 활동과 배지 표시"}</p></div></div><div class="badge-mini-row"><span></span><span></span><span></span><span></span></div></section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {
           const id = recentPeople[i];
           if (!id) return `<span class="recent-visual-empty"><span class="recent-circle-empty"></span><b>최근 본 인물</b><small>기록 없음</small></span>`;
-          const info = recentPersonSlotLabel(id);
-          const person = getPersonSlotById(id);
+          const info = recentPersonSlotLabel(id, getPerson);
+          const person = typeof getPerson === "function" ? getPerson(id) : null;
           return `<button type="button" class="recent-visual-card" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar"></span><b>${esc(info.name || `${info.group} ${info.number}`)}</b><small>${esc(person?.party || info.group)}</small></button>`;
         }).join("")}</div></section><section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승</b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live" role="button" tabindex="0" data-go="${esc(x.href || `/search?q=${encodeURIComponent(x.title || "")}`)}"><span>${i + 1}</span><i>${esc(x.title)}</i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}</section></aside>
     </div></div>

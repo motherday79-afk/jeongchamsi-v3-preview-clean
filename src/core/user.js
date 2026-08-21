@@ -3,6 +3,7 @@ import { performAction } from "./repository.js";
 const GUEST_RECENT_KEY = "jcv3:guest-recent:v1";
 let session = { authenticated: false, user: null };
 let activity = emptyActivity();
+let initialized = false;
 
 function emptyActivity() {
   return { favorites: [], recentPeople: [], likedPosts: [], pollVotes: {}, generationVotes: {}, nationalEvaluationVotes: {}, academyApplications: [], updatedAt: null };
@@ -43,24 +44,29 @@ function authErrorMessage(error, fallback) {
 }
 
 export async function initializeUserState() {
-  const auth = await apiJSON("/api/v3/user/session");
-  if (auth.ok && auth.authenticated && auth.user) {
-    session = { authenticated: true, user: auth.user };
-    const act = await apiJSON("/api/v3/user/activity");
-    activity = act.ok && act.activity ? { ...emptyActivity(), ...act.activity } : emptyActivity();
-    const guest = readGuestRecent();
-    if (guest.length) {
-      const merged = await performAction("recent-merge", { personIds: guest });
-      if (merged.ok && merged.activity) activity = { ...emptyActivity(), ...merged.activity };
-      writeGuestRecent([]);
+  try {
+    const auth = await apiJSON("/api/v3/user/session");
+    if (auth.ok && auth.authenticated && auth.user) {
+      session = { authenticated: true, user: auth.user };
+      const act = await apiJSON("/api/v3/user/activity");
+      activity = act.ok && act.activity ? { ...emptyActivity(), ...act.activity } : emptyActivity();
+      const guest = readGuestRecent();
+      if (guest.length) {
+        const merged = await performAction("recent-merge", { personIds: guest });
+        if (merged.ok && merged.activity) activity = { ...emptyActivity(), ...merged.activity };
+        writeGuestRecent([]);
+      }
+    } else {
+      session = { authenticated: false, user: null };
+      activity = emptyActivity();
     }
-  } else {
-    session = { authenticated: false, user: null };
-    activity = emptyActivity();
+    return getUserSession();
+  } finally {
+    initialized = true;
   }
-  return getUserSession();
 }
 
+export function isUserStateInitialized() { return initialized; }
 export function getUserSession() { return { authenticated: session.authenticated, user: session.user ? { ...session.user } : null }; }
 export function getUserActivity() { return JSON.parse(JSON.stringify(activity)); }
 

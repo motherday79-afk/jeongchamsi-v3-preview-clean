@@ -1,5 +1,5 @@
 import { pageShell, esc } from "./layout.js";
-import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.18-consolidated";
+import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.19-perf";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
 
 const empty=()=>`<span class="info-empty" aria-label="추가 데이터 준비중"></span>`;

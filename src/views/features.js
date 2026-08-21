@@ -1,6 +1,6 @@
 import { getDomain } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
-import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
+import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.19-perf";
 import {
   listAssemblyMembers,
   listMetropolitanLeaders,
@@ -8,7 +8,7 @@ import {
   listAllPoliticians,
   getPersonSlotById,
   PERSON_COUNTS
-} from "../data/person-provider.js?v=alpha6.0.18-consolidated";
+} from "../data/person-provider.js?v=alpha6.0.19-perf";
 import {
   getUserSession,
   getUserActivity,

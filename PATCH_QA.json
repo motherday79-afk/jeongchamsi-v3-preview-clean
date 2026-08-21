@@ -1,36 +1,44 @@
 {
-  "version": "v3.0.0-alpha6.0.18",
-  "base": "alpha6.0.17.2",
+  "version": "v3.0.0-alpha6.0.19",
+  "base": "alpha6.0.18",
   "patch_only": true,
-  "requested_fixes": 12,
   "js_syntax": "ALL PASS",
-  "party_alias_runtime_tests": {
-    "민주당/더불어 민주당/더불어민주당": "294 results + full view PASS",
-    "국힘/국민의 힘/국민의힘": "208 results + full view PASS"
+  "politician_integrity": {
+    "total": 543,
+    "unique": 543,
+    "first": "assembly-001",
+    "fifteenth": "assembly-015",
+    "sixteenth": "assembly-016",
+    "last": "basic-227",
+    "home": 15
   },
-  "post_fresh_retry_runtime": "PASS",
-  "government_render_runtime": "PASS",
-  "app_css_unchanged": true,
-  "important_count": 0,
-  "vercel_function_count": 1,
-  "external_person_image_requests": 0,
-  "government_seed_verified_at": "2026-08-21",
+  "baseline": {
+    "ttfb_ms": 55.5,
+    "fcp_ms": 2332,
+    "lcp_ms": 2332,
+    "cls": 0,
+    "requests": 22,
+    "transfer_kb": 57.8,
+    "image_kb": 0
+  },
+  "perf_structure": {
+    "home_preview_raw": 5689,
+    "home_preview_gzip": 1023,
+    "full_person_provider_raw": 91472,
+    "full_person_provider_gzip": 10123
+  },
   "changed_files": [
     "package.json",
     "index.html",
-    "css/pages.css",
-    "src/app.js",
     "src/version.js",
-    "src/core/repository.js",
-    "src/data/government-seed.js",
-    "src/views/home.js",
+    "src/app.js",
     "src/views/admin.js",
+    "src/views/home.js",
+    "src/views/user.js",
     "src/views/people.js",
     "src/views/features.js",
-    "src/views/layout.js",
-    "src/views/user.js",
-    "src/views/boards.js",
-    "src/views/legal.js",
-    "server/v3/routes/content.js"
+    "src/core/user.js",
+    "src/data/home-person-preview.js",
+    "src/data/person-provider.js"
   ]
 }

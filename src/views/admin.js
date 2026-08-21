@@ -2,7 +2,7 @@ import { pageShell, esc } from "./layout.js";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
-import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.18-consolidated";
+import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.19-perf";
 import { APP_VERSION, BUILD_NAME } from "../version.js";
 
 const TABS = [
