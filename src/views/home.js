@@ -1,7 +1,7 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.22-detail-polish";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.23-generation-home";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -151,7 +151,8 @@ export async function renderHome() {
   const userSession = userSummary.session;
   const userReady = !document.documentElement.classList.contains("jcv3-user-pending");
   let getPerson = null;
-  const needsPersonLookup = userReady && ((userSummary.recentPeople || []).length || data.nationalEvaluation?.subjectId);
+  const generationHasVotes = Object.values(data.generation?.results || {}).some(votes => Object.values(votes || {}).some(v => Number(v || 0) > 0));
+  const needsPersonLookup = userReady && ((userSummary.recentPeople || []).length || data.nationalEvaluation?.subjectId || generationHasVotes);
   if (needsPersonLookup) {
     const provider = await import("../data/person-provider.js?v=alpha6.0.20-function-detail");
     getPerson = provider.getPersonSlotById;
@@ -209,6 +210,22 @@ export async function renderHome() {
       ? `<section class="side-card login-card side-login"><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><p>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</p><button type="button" data-go="/mypage">마이페이지</button></section>`
       : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button" data-go="/login">로그인</button></section>`;
 
+  const generationAges = ["10대", "20대", "30대", "40대", "50대", "60대+"];
+  const generationResults = data.generation?.results || {};
+  const generationHomeCards = generationAges.map((age, i) => {
+    const votes = generationResults[age] || {};
+    const sorted = Object.entries(votes).filter(([,count]) => Number(count || 0) > 0).sort((a,b) => Number(b[1]) - Number(a[1]));
+    const total = sorted.reduce((sum,[,count]) => sum + Number(count || 0), 0);
+    const top = sorted[0];
+    if (!top || !total) {
+      return `<article class="generation-card generation-empty ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>아직 투표가 이뤄지지 않았습니다</b><small>첫 투표를 기다리는 중</small><div class="generation-bar"><i style="width:0%"></i></div></article>`;
+    }
+    const person = typeof getPerson === "function" ? getPerson(top[0]) : null;
+    const name = person?.name || "집계 중";
+    const share = Math.round(Number(top[1]) * 100 / total);
+    return `<article class="generation-card ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>${esc(name)}</b><small>1위 · ${Number(top[1]).toLocaleString("ko-KR")}표 · ${share}% · 총 ${total.toLocaleString("ko-KR")}명</small><div class="generation-bar"><i style="width:${share}%"></i></div></article>`;
+  }).join("");
+
   const homeBadges = [];
   if (userSession.authenticated && userSummary.pollVotes > 0) {
     homeBadges.push({ mark:"✓", name:"첫 참여", tier:"STANDARD" });
@@ -243,7 +260,7 @@ export async function renderHome() {
 
         <section class="module" id="compare"><div class="module-header"><div><span class="eyebrow">COMPARE · SAMPLE</span><h2>정치인 비교분석</h2><p class="module-desc">실제 정치인을 상시 노출하지 않고, 가상후보 예시로 결과 형태를 먼저 보여줍니다.</p></div><button class="more-btn" type="button" data-go="/compare">내가 직접 비교하기</button></div><div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div><div class="compare-layout"><div class="compare-person"><span class="compare-avatar sample-a"></span><b>가상후보 A</b><small>정책·민생형</small></div><div class="compare-metrics"><div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div><div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div><div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div><div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div></div><div class="compare-person"><span class="compare-avatar sample-b"></span><b>가상후보 B</b><small>개혁·소통형</small></div></div><div class="compare-summary"><b>비교 결과 예시</b><span>활동도는 A가 강하고, 관심도·참여도는 세부 지표에서 서로 다른 흐름을 보이는 식으로 분석됩니다.</span></div></section>
 
-        <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대가 뽑은 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p></div><button class="more-btn" type="button" data-go="/generation-president">세대별 선택 전체보기</button></div><div class="generation-feature"><div class="generation-intro"><span class="generation-mark">세대별</span><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p><button type="button" data-go="/generation-president">모의투표 참여</button></div><div class="generation-grid">${["10대", "20대", "30대", "40대", "50대", "60대+"].map((age, i) => `<article class="generation-card ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>1위 후보 영역</b><small>투표 결과 표시</small><div class="generation-bar"><i style="width:${[54,68,61,57,63,59][i]}%"></i></div></article>`).join("")}</div></div></section>
+        <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대가 뽑은 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p></div><button class="more-btn" type="button" data-go="/generation-president">세대별 선택 전체보기</button></div><div class="generation-feature"><div class="generation-intro"><span class="generation-mark">세대별</span><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p><button type="button" data-go="/generation-president">모의투표 참여</button></div><div class="generation-grid">${generationHomeCards}</div></div></section>
 
         <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전국 평가제 보기</button></div>${nationalEvaluationHomeMarkup(nationalEvaluation, getPerson)}</section>
 

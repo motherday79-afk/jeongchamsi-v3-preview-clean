@@ -1,44 +1,23 @@
 {
-  "version": "v3.0.0-alpha6.0.22",
-  "base": "alpha6.0.21",
+  "version": "v3.0.0-alpha6.0.23",
+  "base": "alpha6.0.22",
   "patch_only": true,
   "checks": {
     "js_syntax": "ALL PASS",
-    "header_icons_larger": true,
-    "academy_compact_rows": true,
-    "empty_badge_circles_removed": true,
-    "badge_empty_state": true,
-    "search_brand_hint": true,
-    "search_brand_points": [
-      "정",
-      "참",
-      "시"
-    ],
-    "important_count": 0,
-    "external_requests_added": 0
-  },
-  "runtime": {
-    "academy_date_2026_08_24": "08.24 월",
-    "academy_time": "14:00–17:00",
-    "badge_old_empty_circles": false,
-    "search_brand_render": true
-  },
-  "gzip_delta_bytes": {
-    "css/pages.css": 906,
-    "src/views/layout.js": 42,
-    "src/views/home.js": 417,
-    "src/app.js": 1
+    "generation_home_real_results": true,
+    "empty_generation_state": true,
+    "placeholder_removed": true,
+    "css_changed": false,
+    "redis_changed": false
   },
   "changed_files": [
     "package.json",
     "index.html",
     "src/version.js",
     "src/app.js",
-    "css/pages.css",
     "src/views/boards.js",
     "src/views/admin.js",
     "src/views/legal.js",
-    "src/views/layout.js",
     "src/views/home.js",
     "src/views/user.js",
     "src/views/people.js",
