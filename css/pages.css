@@ -832,3 +832,286 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   white-space:nowrap;
 }
 
+/* ---------- alpha6.0.18 CONSOLIDATED DATA / SEARCH / UX ---------- */
+:root{
+  --politician-vector:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='48' r='47' fill='%23edf5f2'/%3E%3Ccircle cx='48' cy='34' r='18' fill='%239fcbbf'/%3E%3Cpath d='M18 88c3-22 15-33 30-33s27 11 30 33' fill='%23bddbd3'/%3E%3Cpath d='M29 75c6 5 12 7 19 7s14-2 19-7' fill='none' stroke='%2389baad' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* Header: text brand removed; search mark is now the home control */
+.main-search .search-home-mark{
+  width:32px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:var(--green);
+  font-size:24px;
+  line-height:1;
+  font-weight:950;
+  cursor:pointer;
+  transition:background-color var(--ui-motion-fast) var(--ui-ease),transform var(--ui-motion-fast) var(--ui-ease);
+}
+.main-search .search-home-mark:hover{background:var(--ui-hover-bg)}
+.main-search .search-home-mark:active{transform:scale(.93)}
+.main-search .search-home-mark:focus-visible{outline:0;box-shadow:var(--ui-focus-ring)}
+
+/* One zero-request vector avatar shared by every politician surface */
+.person-photo-placeholder,
+.person-detail-photo:not(.has-photo),
+.rank-top-avatar,
+.rank-list-avatar,
+.recent-circle-avatar,
+.recent-person-avatar,
+.search-person-avatar,
+.government-avatar,
+.president-photo,
+.eval-avatar,
+.generation-avatar,
+.fake-avatar.a,
+.fake-avatar.b,
+.compare-avatar{
+  background-color:#edf5f2;
+  background-image:var(--politician-vector);
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:cover;
+}
+.person-detail-photo:not(.has-photo),
+.president-photo{border:1px solid #d8e7e2}
+
+/* Community top two are clearly interactive */
+.community-highlight article.live{
+  cursor:pointer;
+  transition:border-color var(--ui-motion-fast) var(--ui-ease),
+             background-color var(--ui-motion-fast) var(--ui-ease),
+             box-shadow var(--ui-motion-fast) var(--ui-ease),
+             transform var(--ui-motion-fast) var(--ui-ease);
+}
+.community-highlight article.live:hover{
+  border-color:#bddbd2;
+  background:#fbfdfc;
+  box-shadow:var(--ui-soft-shadow);
+  transform:translateY(-2px);
+}
+.community-highlight article.live:active{transform:scale(.985)}
+
+/* Larger, readable recent politicians in the right sidebar */
+.recent-visual-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.recent-visual-card,
+.recent-visual-empty{
+  min-height:112px;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:5px;
+  padding:10px 6px;
+  border:1px solid #e2eae7;
+  border-radius:12px;
+  background:#fff;
+  text-align:center;
+  overflow:hidden;
+}
+.recent-visual-card{
+  cursor:pointer;
+  transition:border-color var(--ui-motion-fast) var(--ui-ease),
+             background-color var(--ui-motion-fast) var(--ui-ease),
+             box-shadow var(--ui-motion-fast) var(--ui-ease),
+             transform var(--ui-motion-fast) var(--ui-ease);
+}
+.recent-visual-card:hover{
+  border-color:#afd4ca;
+  background:#f8fcfb;
+  box-shadow:0 7px 18px rgba(23,42,36,.07);
+  transform:translateY(-2px);
+}
+.recent-visual-card .recent-circle-avatar,
+.recent-visual-empty .recent-circle-empty{
+  width:54px;
+  height:54px;
+}
+.recent-visual-card .recent-circle-avatar{
+  display:block;
+  border-radius:50%;
+  border:1px solid #d5e5df;
+}
+.recent-visual-card b,
+.recent-visual-empty b{
+  width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:12px;
+  line-height:1.3;
+}
+.recent-visual-card small,
+.recent-visual-empty small{
+  width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--text-3);
+  font-size:10px;
+}
+.recent-visual-empty{opacity:.55}
+
+/* Government page */
+.government-lead-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:9px;
+}
+.government-lead-grid article{
+  min-height:158px;
+  display:grid;
+  justify-items:center;
+  align-content:start;
+  gap:8px;
+  padding:14px 10px;
+  border:1px solid #e2e9e6;
+  border-radius:12px;
+  text-align:center;
+}
+.government-avatar{
+  width:52px;
+  height:52px;
+  display:block;
+  border-radius:50%;
+}
+.government-lead-grid small{color:var(--green);font-size:11px;font-weight:900}
+.government-lead-grid b{font-size:16px}
+.government-lead-grid p{margin:0;color:var(--text-2);font-size:12px;line-height:1.4}
+.government-lead-grid em{font-style:normal;color:var(--text-3);font-size:10px}
+.cabinet-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.cabinet-grid article{
+  min-height:108px;
+  padding:13px;
+  border:1px solid #e2e9e6;
+  border-radius:11px;
+  background:#fff;
+}
+.cabinet-grid article>span{display:block;color:var(--green);font-size:11px;font-weight:900}
+.cabinet-grid b{display:inline-block;margin-top:7px;font-size:16px}
+.cabinet-grid small{margin-left:6px;color:var(--text-3);font-size:11px}
+.cabinet-grid p{margin:6px 0 0;color:var(--text-2);font-size:12px;line-height:1.45}
+.related-grid article[role="button"]{cursor:pointer}
+.related-grid article[role="button"]:hover{border-color:#bcd9d1;background:#fbfdfc}
+
+/* Integrated search */
+.search-party-counts{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-bottom:12px;
+}
+.search-party-counts span{
+  padding:10px 12px;
+  border:1px solid #e3eae7;
+  border-radius:10px;
+  color:var(--text-2);
+  font-size:12px;
+}
+.search-party-counts b{float:right;color:var(--green);font-size:15px}
+.search-person-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.search-person-grid button,
+.search-president-result>button{
+  width:100%;
+  min-height:70px;
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr);
+  align-items:center;
+  gap:10px;
+  padding:9px 11px;
+  border:1px solid #e2e9e6;
+  border-radius:11px;
+  background:#fff;
+  text-align:left;
+  transition:border-color var(--ui-motion-fast) var(--ui-ease),background-color var(--ui-motion-fast) var(--ui-ease),transform var(--ui-motion-fast) var(--ui-ease);
+}
+.search-person-grid button:hover,
+.search-president-result>button:hover{border-color:#bcd9d1;background:#fbfdfc;transform:translateY(-1px)}
+.search-person-avatar{
+  width:42px;
+  height:42px;
+  display:block;
+  border-radius:50%;
+  border:1px solid #d7e6e1;
+}
+.search-person-grid b,
+.search-president-result b{display:block;font-size:13px}
+.search-person-grid small,
+.search-president-result small{display:block;margin-top:4px;color:var(--text-3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-president-result>button{grid-template-columns:48px minmax(0,1fr) auto}
+.search-president-result>button em{font-style:normal;color:var(--green);font-size:11px;font-weight:850}
+.search-all-people{display:flex;justify-content:flex-end;margin-top:12px}
+.search-board-group .board-list{margin-top:0}
+.directory-filter-actions{display:flex;gap:8px;justify-content:flex-end;margin:0 0 12px;flex-wrap:wrap}
+
+/* Footer documents */
+.footer-links{
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.footer-links a{transition:color var(--ui-motion-fast) var(--ui-ease)}
+.footer-links a:hover{color:var(--green)}
+.legal-document{display:grid;gap:0}
+.legal-document>section{
+  display:grid;
+  grid-template-columns:40px minmax(0,1fr);
+  gap:14px;
+  padding:20px 0;
+  border-top:1px solid #edf1ef;
+}
+.legal-document>section:first-child{border-top:0;padding-top:0}
+.legal-document>section>span{color:var(--green);font-size:12px;font-weight:950}
+.legal-document h2{margin:0;font-size:18px}
+.legal-document p{margin:7px 0 0;color:var(--text-2);font-size:14px;line-height:1.75}
+
+/* Search/footer/mobile */
+@media(max-width:900px){
+  .government-lead-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cabinet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .search-person-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  .main-search .search-home-mark{font-size:21px}
+  .recent-visual-card,.recent-visual-empty{min-height:104px}
+  .search-party-counts{grid-template-columns:1fr}
+  .search-person-grid{grid-template-columns:1fr}
+  .cabinet-grid{grid-template-columns:1fr}
+  .government-lead-grid{grid-template-columns:1fr 1fr}
+  .footer{align-items:flex-start}
+  .footer-links{gap:10px 14px}
+  .legal-document>section{grid-template-columns:30px minmax(0,1fr)}
+}
+@media(hover:none) and (pointer:coarse){
+  .community-highlight article.live:active,
+  .recent-visual-card:active,
+  .search-person-grid button:active,
+  .search-president-result>button:active{transform:scale(.98)}
+}
+.cabinet-grid article em{
+  display:block;
+  margin-top:5px;
+  color:#7b8984;
+  font-size:11px;
+  line-height:1.4;
+  font-style:normal;
+}
+

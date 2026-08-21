@@ -60,7 +60,8 @@ async function requestJSON(url, options = {}) {
 export async function getDomain(domain, { fresh = false } = {}) {
   if (!fresh && CACHE.has(domain)) return clone(CACHE.get(domain));
   try {
-    const body = await requestJSON(`/api/v3/content?domain=${encodeURIComponent(domain)}`);
+    const bust = fresh ? `&r=${Date.now()}` : "";
+    const body = await requestJSON(`/api/v3/content?domain=${encodeURIComponent(domain)}${bust}`);
     const data = body?.data || defaultDomain(domain);
     CACHE.set(domain, data);
     storageState = { available: true, error: "" };

@@ -1,5 +1,6 @@
 import { getDomain } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
+import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
 import {
   listAssemblyMembers,
   listMetropolitanLeaders,
@@ -7,7 +8,7 @@ import {
   listAllPoliticians,
   getPersonSlotById,
   PERSON_COUNTS
-} from "../data/person-provider.js?v=alpha6.0.17.2-surface-fill";
+} from "../data/person-provider.js?v=alpha6.0.18-consolidated";
 import {
   getUserSession,
   getUserActivity,
@@ -33,6 +34,40 @@ function formatDate(v) {
 function slotLabel(person) {
   if (person?.connected && person?.name) return `${person.name}${person.party ? ` · ${person.party}` : ""}${person.jurisdiction ? ` · ${person.jurisdiction}` : ""}`;
   return `${person.roleLabel} ${String(person.slot).padStart(3, "0")}`;
+}
+const PARTY_ALIASES = Object.freeze([
+  { canonical:"더불어민주당", aliases:["더불어민주당","더불어 민주당","민주당","더민주"] },
+  { canonical:"국민의힘", aliases:["국민의힘","국민의 힘","국힘"] },
+  { canonical:"조국혁신당", aliases:["조국혁신당","조국 혁신당","혁신당","조국당"] },
+  { canonical:"개혁신당", aliases:["개혁신당","개혁 신당"] },
+  { canonical:"진보당", aliases:["진보당","진보 당"] },
+  { canonical:"기본소득당", aliases:["기본소득당","기본 소득당"] },
+  { canonical:"사회민주당", aliases:["사회민주당","사회 민주당"] }
+]);
+function searchNorm(v="") {
+  return String(v || "").toLowerCase().replace(/[\s·._\-()'"]/g, "");
+}
+function resolvePartyAlias(query="") {
+  const q=searchNorm(query);
+  if (!q) return null;
+  return PARTY_ALIASES.find(x => x.aliases.some(a => searchNorm(a) === q)) || null;
+}
+function searchTerms(query="") {
+  const raw=String(query||"").trim();
+  const party=resolvePartyAlias(raw);
+  const terms=new Set([searchNorm(raw)]);
+  if (party) {
+    terms.add(searchNorm(party.canonical));
+    party.aliases.forEach(x=>terms.add(searchNorm(x)));
+  }
+  return { party, terms:[...terms].filter(Boolean) };
+}
+function textMatches(text="", terms=[]) {
+  const hay=searchNorm(text);
+  return terms.some(t => t && hay.includes(t));
+}
+function personSearchText(p) {
+  return [p?.name,p?.party,p?.region,p?.jurisdiction,p?.office,p?.terms,p?.committee,p?.roleLabel,p?.id].filter(Boolean).join(" ");
 }
 function memberAgeGroup(birthYear) {
   const year = Number(birthYear || 0);
@@ -60,18 +95,40 @@ function textItems(items, emptyCount = 4) {
 }
 
 export async function renderPresident() {
-  const data = await getDomain("president");
-  const p = data.profile || {};
-  return pageShell(`<main class="subpage">
-    <section class="page-hero"><span class="eyebrow">PRESIDENT · OUT OF RANK</span><h1>대통령</h1><p>NOW Rank와 분리된 대통령 전용 정치정보 허브입니다. 실제 데이터 입력 전에도 어떤 정보를 저장하고 보여줄지 전체 구조를 고정합니다.</p></section>
-    <section class="person-detail-hero content-card"><div class="person-detail-photo ${p.photo ? "has-photo" : ""}" ${p.photo ? `style="background-image:url('${esc(p.photo)}')"` : ""}></div><div class="person-detail-title"><span class="eyebrow">PRESIDENT PROFILE</span>${p.name ? `<h1>${esc(p.name)}</h1><p>${esc(p.party || "")} · ${esc(p.term || "")}</p>` : `<span class="slot-line name"></span><span class="slot-line meta"></span><span class="slot-line short"></span>`}<div class="person-detail-badges"><span>대통령</span><span>독립 정보 허브</span><span>${p.name ? "정보 입력됨" : "정보 입력 전"}</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/news">관련 NEWS</button></div></section>
-    <div class="detail-grid"><section class="content-card"><div class="section-title"><h2>기본정보</h2><span>대통령 프로필</span></div><dl class="info-list">${p.name ? `<div><dt>이름</dt><dd>${esc(p.name)}</dd></div>` : emptyLine("이름")}${p.party ? `<div><dt>정당</dt><dd>${esc(p.party)}</dd></div>` : emptyLine("정당")}${p.birth ? `<div><dt>출생</dt><dd>${esc(p.birth)}</dd></div>` : emptyLine("출생")}${p.education ? `<div><dt>학력</dt><dd>${esc(p.education)}</dd></div>` : emptyLine("학력")}</dl></section><section class="content-card"><div class="section-title"><h2>취임 · 임기</h2><span>대통령 재임정보</span></div><dl class="info-list">${p.inauguratedAt ? `<div><dt>취임일</dt><dd>${esc(p.inauguratedAt)}</dd></div>` : emptyLine("취임일")}${p.term ? `<div><dt>임기</dt><dd>${esc(p.term)}</dd></div>` : emptyLine("임기")}${emptyLine("선거 이력")}${emptyLine("공식 채널")}</dl></section></div>
-    <section class="content-card"><div class="section-title"><h2>주요 경력</h2><span>정치 · 사회 경력</span></div>${textItems(data.career, 6)}</section>
-    <section class="content-card"><div class="section-title"><h2>선거 이력</h2><span>대통령 선거</span></div>${textItems(data.elections, 4)}</section>
-    <div class="detail-grid"><section class="content-card"><div class="section-title"><h2>국정 비전</h2><span>국정 방향</span></div>${data.vision ? `<div class="article-body"><p>${esc(data.vision)}</p></div>` : `<div class="empty-inline">국정 비전 입력 전</div>`}</section><section class="content-card"><div class="section-title"><h2>주요 정책</h2><span>정책 아카이브</span></div>${textItems(data.policies, 4)}</section></div>
-    <div class="detail-grid"><section class="content-card"><div class="section-title"><h2>핵심 공약</h2><span>공약 아카이브</span></div>${textItems(data.pledges, 4)}</section><section class="content-card"><div class="section-title"><h2>국정과제</h2><span>핵심 과제</span></div>${textItems(data.nationalTasks, 4)}</section></div>
-    <section class="content-card"><div class="section-title"><h2>정참시 데이터</h2><span>추후 연결</span></div><div class="metric-shell"><article><small>관심도</small><strong>—</strong><span>연결 전</span></article><article><small>언급량</small><strong>—</strong><span>연결 전</span></article><article><small>관련 설문</small><strong>—</strong><span>연결 전</span></article><article><small>세대별 평가</small><strong>—</strong><span>연결 전</span></article></div></section>
-    <section class="content-card"><div class="section-title"><h2>관련 콘텐츠</h2><span>정참시 내부 연결</span></div><div class="related-grid"><article><b>정참시 NEWS</b><span>대통령 관련 뉴스</span></article><article><b>COLUMN</b><span>관련 칼럼</span></article><article><b>정뮤니티</b><span>관련 시민 의견</span></article><article><b>시민들의 선택</b><span>관련 설문</span></article></div></section>
+  const stored = await getDomain("president");
+  const sp = GOVERNMENT_SEED.profile;
+  const rp = stored.profile || {};
+  const p = {
+    ...sp,
+    ...Object.fromEntries(Object.entries(rp).filter(([,v]) => String(v || "").trim()))
+  };
+  const chooseList = (storedList, seedList) => Array.isArray(storedList) && storedList.length ? storedList : seedList;
+  const career = chooseList(stored.career, GOVERNMENT_SEED.career);
+  const elections = chooseList(stored.elections, GOVERNMENT_SEED.elections);
+  const policies = chooseList(stored.policies, GOVERNMENT_SEED.policies);
+  const pledges = chooseList(stored.pledges, GOVERNMENT_SEED.pledges);
+  const nationalTasks = chooseList(stored.nationalTasks, GOVERNMENT_SEED.nationalTasks);
+  const vision = String(stored.vision || "").trim() || GOVERNMENT_SEED.vision;
+  const leadership = GOVERNMENT_SEED.leadership;
+  const cabinet = GOVERNMENT_SEED.cabinet;
+
+  return pageShell(`<main class="subpage president-page">
+    <section class="page-hero"><span class="eyebrow">PRESIDENT · GOVERNMENT</span><h1>대통령 · 정부 주요 인사</h1><p>대통령 기본정보와 국정 방향, 주요 행정인사를 한 페이지에서 확인합니다. 인사정보는 ${esc(GOVERNMENT_SEED.verifiedAt)} 기준 공식 공개자료를 바탕으로 정리했습니다.</p></section>
+    <section class="person-detail-hero content-card"><div class="person-detail-photo ${rp.photo ? "has-photo" : ""}" ${rp.photo ? `style="background-image:url('${esc(rp.photo)}')"` : ""}></div><div class="person-detail-title"><span class="eyebrow">PRESIDENT PROFILE</span><h1>${esc(p.name)}</h1><p>${esc(p.office || "대한민국 대통령")} · ${esc(p.term)}</p><div class="person-detail-badges"><span>제21대 대통령</span><span>${esc(p.party)}</span><span>2025.06.04 취임</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/search?q=${encodeURIComponent(p.name)}">통합검색</button><button class="ghost-btn" type="button" data-go="/news">관련 NEWS</button></div></section>
+
+    <div class="detail-grid"><section class="content-card"><div class="section-title"><h2>기본정보</h2><span>대통령 프로필</span></div><dl class="info-list"><div><dt>이름</dt><dd>${esc(p.name)}</dd></div><div><dt>직책</dt><dd>${esc(p.office)}</dd></div><div><dt>정치 경력</dt><dd>${esc(p.party)}</dd></div><div><dt>출생</dt><dd>${esc(p.birth)}</dd></div><div><dt>학력</dt><dd>${esc(p.education)}</dd></div></dl></section><section class="content-card"><div class="section-title"><h2>취임 · 임기</h2><span>대통령 재임정보</span></div><dl class="info-list"><div><dt>취임일</dt><dd>${esc(p.inauguratedAt)}</dd></div><div><dt>임기</dt><dd>${esc(p.term)}</dd></div><div><dt>최근 선거</dt><dd>2025년 제21대 대통령선거 당선</dd></div><div><dt>정부</dt><dd>국민주권정부</dd></div></dl></section></div>
+
+    <section class="content-card"><div class="section-title"><h2>주요 경력</h2><span>정치 · 행정 경력</span></div>${textItems(career,6)}</section>
+    <section class="content-card"><div class="section-title"><h2>선거 이력</h2><span>주요 당선 이력</span></div>${textItems(elections,6)}</section>
+    <div class="detail-grid"><section class="content-card"><div class="section-title"><h2>국정 비전</h2><span>국정 방향</span></div><div class="article-body"><p>${esc(vision)}</p></div></section><section class="content-card"><div class="section-title"><h2>주요 정책</h2><span>정부 핵심 방향</span></div>${textItems(policies,6)}</section></div>
+    <div class="detail-grid"><section class="content-card"><div class="section-title"><h2>핵심 약속</h2><span>국정 운영 원칙</span></div>${textItems(pledges,5)}</section><section class="content-card"><div class="section-title"><h2>5대 국정 방향</h2><span>청와대 공개 국정 방향</span></div>${textItems(nationalTasks,5)}</section></div>
+
+    <section class="content-card government-section"><div class="section-title"><h2>국정 지휘부</h2><span>${esc(GOVERNMENT_SEED.verifiedAt)} 기준</span></div><div class="government-lead-grid">${leadership.map(x=>`<article><span class="government-avatar"></span><div><small>${esc(x.role)}</small><b>${esc(x.name)}</b><p>${esc(x.area)}</p><em>${esc(x.note)}</em></div></article>`).join("")}</div></section>
+
+    <section class="content-card government-section"><div class="section-title"><h2>주요 부처 장관</h2><span>현재 주요 행정인사</span></div><div class="cabinet-grid">${cabinet.map(x=>`<article><span>${esc(x.office)}</span><b>${esc(x.name)}</b><small>${esc(x.title)}</small><p>${esc(x.area)}</p>${x.note ? `<em>${esc(x.note)}</em>` : ""}</article>`).join("")}</div><div class="notice-box">장관·고위공직자 인사는 변동 가능성이 있어 기준일을 함께 표시합니다. ${esc(GOVERNMENT_SEED.sourceLabel)}.</div></section>
+
+    <section class="content-card"><div class="section-title"><h2>정참시 데이터</h2><span>실시간 지표는 후속</span></div><div class="metric-shell"><article><small>관심도</small><strong>—</strong><span>후속 연결</span></article><article><small>언급량</small><strong>—</strong><span>후속 연결</span></article><article><small>관련 설문</small><strong>—</strong><span>참여 데이터</span></article><article><small>세대별 평가</small><strong>—</strong><span>참여 데이터</span></article></div></section>
+    <section class="content-card"><div class="section-title"><h2>관련 콘텐츠</h2><span>정참시 내부 연결</span></div><div class="related-grid"><article role="button" tabindex="0" data-go="/news"><b>정참시 NEWS</b><span>대통령·정부 관련 뉴스</span></article><article role="button" tabindex="0" data-go="/column"><b>COLUMN</b><span>관련 칼럼</span></article><article role="button" tabindex="0" data-go="/community"><b>정뮤니티</b><span>관련 시민 의견</span></article><article role="button" tabindex="0" data-go="/poll"><b>시민들의 선택</b><span>관련 설문</span></article></div></section>
   </main>`);
 }
 
@@ -90,15 +147,49 @@ function nowCard(person) {
 }
 export async function renderNow(search = "") {
   const params = new URLSearchParams(search || "");
+  const partyParam = String(params.get("party") || "").trim();
+  const searchParam = String(params.get("search") || "").trim();
   const type = NOW_TYPES[params.get("type")] ? params.get("type") : "assembly";
-  const meta = NOW_TYPES[type];
-  const all = meta.get();
   const requested = Number(params.get("limit") || 50);
-  const limit = type === "metropolitan" ? meta.count : Math.min(meta.count, Math.max(50, Math.ceil(requested / 50) * 50));
+
+  let all, label, total, nextBase, filterDescription;
+  if (partyParam) {
+    const party = resolvePartyAlias(partyParam)?.canonical || partyParam;
+    all = listAllPoliticians().filter(p => searchNorm(p.party) === searchNorm(party));
+    label = `${party} 정치인`;
+    total = all.length;
+    nextBase = `/now?party=${encodeURIComponent(party)}&limit=`;
+    const counts = {
+      assembly: all.filter(x=>x.type==="assembly").length,
+      metropolitan: all.filter(x=>x.type==="metropolitan").length,
+      basic: all.filter(x=>x.type==="basic").length
+    };
+    filterDescription = `국회의원 ${counts.assembly}명 · 광역단체장 ${counts.metropolitan}명 · 기초단체장 ${counts.basic}명`;
+  } else if (searchParam) {
+    const {terms}=searchTerms(searchParam);
+    all = listAllPoliticians().filter(p => textMatches(personSearchText(p), terms));
+    label = `‘${searchParam}’ 정치인`;
+    total = all.length;
+    nextBase = `/now?search=${encodeURIComponent(searchParam)}&limit=`;
+    filterDescription = `이름·정당·지역·직책 기준 검색 결과`;
+  } else {
+    const meta = NOW_TYPES[type];
+    all = meta.get();
+    label = meta.label;
+    total = meta.count;
+    nextBase = `/now?type=${type}&limit=`;
+    filterDescription = `543명 텍스트 기본정보 연결 완료 · 사진은 경량 벡터 아바타로 표시`;
+  }
+
+  const limit = (!partyParam && !searchParam && type === "metropolitan")
+    ? total
+    : Math.min(total, Math.max(50, Math.ceil(requested / 50) * 50));
   const shown = all.slice(0, limit);
-  const remaining = Math.max(0, meta.count - shown.length);
-  const nextLimit = Math.min(meta.count, shown.length + 50);
-  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>NOW Rank 전체 정치인</h1><p>메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다.</p><div class="capacity-line"><span>543명 텍스트 기본정보 연결 완료 · 사진은 1차 데이터에서 제외</span><b>총 543명</b></div></section><nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key, x]) => `<button type="button" class="${type === key ? "active" : ""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav><section class="content-card directory-section"><div class="section-title"><h2>${meta.label}</h2><span>${shown.length} / ${meta.count}명 표시</span></div><div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-go="/now?type=${type}&limit=${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${meta.label} ${meta.count}명 전체를 불러왔습니다.</div>`}</section></main>`);
+  const remaining = Math.max(0, total - shown.length);
+  const nextLimit = Math.min(total, shown.length + 50);
+  const title = partyParam ? `${label} 전체보기` : searchParam ? `${label} 전체보기` : "NOW Rank 전체 정치인";
+
+  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>${esc(title)}</h1><p>${partyParam || searchParam ? esc(filterDescription) : "메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다."}</p><div class="capacity-line"><span>${esc(filterDescription)}</span><b>총 ${total}명</b></div></section>${!partyParam && !searchParam ? `<nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key,x])=>`<button type="button" class="${type===key?"active":""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav>` : `<div class="directory-filter-actions"><button class="ghost-btn" type="button" data-go="/now">전체 정치인 분류로 돌아가기</button><button class="ghost-btn" type="button" data-go="/search?q=${encodeURIComponent(partyParam||searchParam)}">통합검색 결과</button></div>`}<section class="content-card directory-section"><div class="section-title"><h2>${esc(label)}</h2><span>${shown.length} / ${total}명 표시</span></div>${shown.length ? `<div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-go="${nextBase}${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${esc(label)} ${total}명 전체를 불러왔습니다.</div>`}` : `<div class="empty-state"><h2>해당 정치인이 없습니다.</h2><p>검색어나 정당명을 다시 확인해 주세요.</p></div>`}</section></main>`);
 }
 
 export async function renderPolls() {
@@ -158,8 +249,12 @@ export async function renderItsmeWrite(search = "") {
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">WRITE · IT’S ME</span><h1>${old ? "IT’S ME 제안 수정" : "IT’S ME 제안 작성"}</h1><p>말머리를 선택하고 내가 그 역할이라면 추진하고 싶은 정책이나 아이디어를 작성하세요.</p></section><section class="content-card"><form class="member-post-form" data-user-post-form="itsme" data-item-id="${esc(old?.id || "")}"><label>말머리<select name="category" required>${(data.categories || []).map(c => `<option ${old?.category === c ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label><label>제목<input name="title" maxlength="30" required value="${esc(old?.title || "")}" placeholder="제안의 핵심을 제목으로 작성하세요"><span class="field-help">최대 30자</span></label><label>한 줄 요약<input name="summary" maxlength="15" value="${esc(old?.summary || "")}" placeholder="목록용 짧은 요약"><span class="field-help">최대 15자</span></label><label>내용<textarea name="body" rows="14" maxlength="3000" required placeholder="정책·아이디어와 이유를 자유롭게 작성하세요.">${esc(old?.body || "")}</textarea><span class="field-help">최대 3,000자</span></label><div class="auth-error" data-user-post-error></div><div class="admin-form-actions"><button class="primary-btn" type="submit">${old ? "수정 저장" : "등록"}</button><button class="ghost-btn" type="button" data-go="${old ? `/itsme/${esc(old.id)}` : "/itsme"}">취소</button></div></form></section></main>`);
 }
 export async function renderItsmeDetail(id) {
-  const data = await getDomain("itsme");
-  const item = (data.items || []).find(x => String(x.id) === String(id) && x.published !== false);
+  let data = await getDomain("itsme");
+  let item = (data.items || []).find(x => String(x.id) === String(id) && x.published !== false);
+  if (!item) {
+    data = await getDomain("itsme", { fresh:true });
+    item = (data.items || []).find(x => String(x.id) === String(id) && x.published !== false);
+  }
   if (!item) return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><h2>IT’S ME 게시물을 찾을 수 없습니다.</h2><button class="primary-btn" type="button" data-go="/itsme">목록으로</button></section></main>`);
   const session = getUserSession();
   const liked = session.authenticated && isPostLiked("itsme", id);
@@ -256,13 +351,55 @@ export async function renderNationalEvaluation() {
 }
 
 export async function renderSearch(query = "") {
-  const q = String(query || "").trim().toLowerCase();
-  const [columns, community, news, itsme] = await Promise.all([getDomain("columns"), getDomain("community"), getDomain("news"), getDomain("itsme")]);
-  const groups = [["COLUMN", "column", columns.items || []], ["정뮤니티", "community", community.items || []], ["정참시 NEWS", "news", news.items || []], ["IT’S ME", "itsme", itsme.items || []]];
-  const contentMatches = q ? groups.flatMap(([label, route, items]) => items.filter(x => x.published !== false && `${x.title || ""} ${x.summary || ""} ${x.body || ""}`.toLowerCase().includes(q)).map(x => ({ ...x, label, route }))) : [];
-  const peopleMatches = q ? listAllPoliticians().filter(p => `${slotLabel(p)} ${p.id}`.toLowerCase().includes(q)).slice(0, 30) : [];
-  const hasResults = contentMatches.length || peopleMatches.length;
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">SEARCH</span><h1>통합검색</h1><p>검색어: <b>${esc(query || "—")}</b></p></section>${peopleMatches.length ? `<section class="content-card"><div class="section-title"><h2>정치인 Slot</h2><span>${peopleMatches.length}명</span></div><div class="member-link-list">${peopleMatches.map(p => `<button type="button" data-go="/person/${esc(p.id)}"><b>${esc(slotLabel(p))}</b><span>상세보기 →</span></button>`).join("")}</div></section>` : ""}<section class="content-card">${contentMatches.length ? `<div class="board-list">${contentMatches.map(x => `<article class="no-thumb"><a href="/${x.route}/${esc(x.id)}" data-route><span class="type">${esc(x.label)}</span><h2>${esc(x.title)}</h2><p>${esc(x.summary || x.body || "")}</p></a><small>${esc(x.author || "정참시")}</small></article>`).join("")}</div>` : `<div class="empty-state tall"><h2>${q && !hasResults ? "검색 결과가 없습니다." : q ? "게시판 검색 결과가 없습니다." : "검색어를 입력해 주세요."}</h2><p>이름·정당·지역으로 정치인을 검색할 수 있습니다.</p></div>`}</section></main>`);
+  const rawQ = String(query || "").trim();
+  const { party, terms } = searchTerms(rawQ);
+  const [columns, community, news, itsme] = await Promise.all([
+    getDomain("columns"), getDomain("community"), getDomain("news"), getDomain("itsme")
+  ]);
+
+  const sourceGroups = [
+    { label:"정참시 NEWS", route:"news", items:news.items || [] },
+    { label:"COLUMN", route:"column", items:columns.items || [] },
+    { label:"IT’S ME", route:"itsme", items:itsme.items || [] },
+    { label:"정뮤니티", route:"community", items:community.items || [] }
+  ];
+  const contentGroups = rawQ ? sourceGroups.map(g => ({
+    ...g,
+    matches:g.items.filter(x => x.published !== false && textMatches(`${x.title||""} ${x.summary||""} ${x.body||""} ${x.author||""} ${x.category||""}`,terms))
+  })).filter(g=>g.matches.length) : [];
+
+  const allPeople = rawQ ? listAllPoliticians().filter(p => {
+    if (party) return searchNorm(p.party) === searchNorm(party.canonical);
+    return textMatches(personSearchText(p),terms);
+  }) : [];
+  const peoplePreview = allPeople.slice(0,12);
+
+  const governmentSearchText = [
+    GOVERNMENT_SEED.profile.name,
+    GOVERNMENT_SEED.profile.office,
+    GOVERNMENT_SEED.profile.party,
+    GOVERNMENT_SEED.vision,
+    ...GOVERNMENT_SEED.leadership.flatMap(x => [x.name,x.role,x.area]),
+    ...GOVERNMENT_SEED.cabinet.flatMap(x => [x.name,x.office,x.title,x.area])
+  ].filter(Boolean).join(" ");
+  const presidentText = governmentSearchText;
+  const presidentMatch = rawQ && textMatches(presidentText,terms);
+
+  const hasResults = allPeople.length || contentGroups.length || presidentMatch;
+  const partyLabel = party?.canonical || "";
+  const partyCounts = party ? {
+    assembly:allPeople.filter(x=>x.type==="assembly").length,
+    metropolitan:allPeople.filter(x=>x.type==="metropolitan").length,
+    basic:allPeople.filter(x=>x.type==="basic").length
+  } : null;
+
+  const peopleSection = allPeople.length ? `<section class="content-card search-people-section"><div class="section-title"><h2>${party ? `${esc(partyLabel)} 정치인` : "정치인"}</h2><span>총 ${allPeople.length}명</span></div>${partyCounts ? `<div class="search-party-counts"><span>국회의원 <b>${partyCounts.assembly}</b></span><span>광역단체장 <b>${partyCounts.metropolitan}</b></span><span>기초단체장 <b>${partyCounts.basic}</b></span></div>` : ""}<div class="search-person-grid">${peoplePreview.map(p=>`<button type="button" data-go="/person/${esc(p.id)}"><span class="search-person-avatar"></span><div><b>${esc(p.name)}</b><small>${esc(p.party)} · ${esc(p.jurisdiction)}</small></div></button>`).join("")}</div>${allPeople.length > peoplePreview.length || party ? `<div class="search-all-people"><button class="primary-btn" type="button" data-go="${party ? `/now?party=${encodeURIComponent(partyLabel)}&limit=50` : `/now?search=${encodeURIComponent(rawQ)}&limit=50`}">${party ? `${esc(partyLabel)} 정치인 전체보기` : `정치인 ${allPeople.length}명 전체보기`} →</button></div>` : ""}</section>` : "";
+
+  const presidentSection = presidentMatch ? `<section class="content-card search-president-result"><div class="section-title"><h2>대통령 · 정부</h2><span>1건</span></div><button type="button" data-go="/president"><span class="search-person-avatar president"></span><div><b>${esc(GOVERNMENT_SEED.profile.name)} 대통령</b><small>${esc(GOVERNMENT_SEED.profile.office)} · 대통령·총리·장관·주요 행정인사</small></div><em>대통령 페이지 →</em></button></section>` : "";
+
+  const contentMarkup = contentGroups.map(g=>`<section class="content-card search-board-group"><div class="section-title"><h2>${esc(g.label)}</h2><span>${g.matches.length}건</span></div><div class="board-list">${g.matches.map(x=>`<article class="no-thumb"><a href="/${g.route}/${esc(x.id)}" data-route><span class="type">${esc(g.label)}</span><h2>${esc(x.title)}</h2><p>${esc(x.summary||x.body||"")}</p></a><small>${esc(x.author||"정참시")} · ${formatDate(x.createdAt)}</small></article>`).join("")}</div></section>`).join("");
+
+  return pageShell(`<main class="subpage search-page"><section class="page-hero"><span class="eyebrow">SEARCH · INTEGRATED</span><h1>통합검색</h1><p>검색어: <b>${esc(rawQ || "—")}</b>${party ? ` · <span>${esc(partyLabel)}로 정규화해 검색했습니다.</span>` : ""}</p></section>${peopleSection}${presidentSection}${contentMarkup}${!rawQ ? `<section class="content-card"><div class="empty-state tall"><h2>검색어를 입력해 주세요.</h2><p>정치인 이름·정당 별칭·지역·정책·게시글을 한 번에 검색할 수 있습니다.</p></div></section>` : !hasResults ? `<section class="content-card"><div class="empty-state tall"><h2>검색 결과가 없습니다.</h2><p>띄어쓰기와 정당 별칭도 함께 처리하지만 다른 검색어를 시도해 보세요.</p></div></section>` : ""}</main>`);
 }
 
 export { trendingItems };

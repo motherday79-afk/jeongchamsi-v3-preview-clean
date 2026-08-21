@@ -1,2 +1,2 @@
-export const APP_VERSION = "v3.0.0-alpha6.0.17.2";
+export const APP_VERSION = "v3.0.0-alpha6.0.18";
 export const BUILD_NAME = "CLEANUP PASS · STORAGE/PERF/PERMISSION CONFIRM · LAYOUT LOCK";

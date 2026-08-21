@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
     if (!validDomain(domain)) return res.status(400).json({ ok: false, error: "INVALID_DOMAIN" });
     try {
       const data = await getJSON(domain);
-      res.setHeader("Cache-Control", "public, max-age=0, s-maxage=15, stale-while-revalidate=45");
+      res.setHeader("Cache-Control", "private, no-store, max-age=0");
       return res.status(200).json({ ok: true, domain, data: data || defaultDomain(domain) });
     } catch (error) {
       return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "CONTENT_READ_FAILED", data: defaultDomain(domain) });

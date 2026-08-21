@@ -10,6 +10,7 @@ const NAV = Object.freeze([
   ["NOW Rank", "/now"],
   ["IT’S ME", "/itsme"],
   ["COLUMN", "/column"],
+  ["정참시 NEWS", "/news"],
   ["시민들의 선택", "/poll"],
   ["정뮤니티", "/community"],
   ["비교분석", "/compare"],
@@ -24,7 +25,6 @@ export function siteHeader() {
       <button class="header-icon header-menu-icon" type="button" aria-label="전체 메뉴" title="전체 메뉴" data-drawer-open>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
-      <a class="brand" href="/" data-route>정참시</a>
       <div class="header-gap"></div>
       <button class="header-icon header-bell-icon" type="button" aria-label="내 참여" title="내 참여" data-go="/mypage/activity">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
@@ -35,8 +35,8 @@ export function siteHeader() {
     </div>
     <div class="search-wrap">
       <form class="main-search" data-search-form>
-        <strong>정</strong>
-        <input name="q" aria-label="통합검색" placeholder="정치인, 정당, 정책, COLUMN, 정뮤니티 검색">
+        <button class="search-home-mark" type="button" aria-label="정참시 홈" title="홈으로" data-go="/">정</button>
+        <input name="q" aria-label="통합검색" placeholder="정치인·정당·정책·NEWS·COLUMN 통합검색">
         <button type="submit">검색</button>
       </form>
     </div>
@@ -84,7 +84,7 @@ export function footer() {
   const viewToggle = touchUi
     ? `<button type="button" class="footer-view-switch mobile-toggle" data-view-mode="${desktopMode ? "mobile" : "desktop"}">${desktopMode ? "모바일버전 보기" : "PC버전 보기"}</button>`
     : "";
-  return `<footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간</span></div><div>이용안내 · 개인정보처리방침 · 운영정책</div>${viewToggle}</footer>`;
+  return `<footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간</span></div><nav class="footer-links" aria-label="정참시 운영 안내"><a href="/guide" data-route>이용안내</a><a href="/privacy" data-route>개인정보처리방침</a><a href="/policy" data-route>운영정책</a></nav>${viewToggle}</footer>`;
 }
 
 export function pageShell(content) {

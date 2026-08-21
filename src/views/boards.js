@@ -74,8 +74,12 @@ export async function renderBoardWriter(domain, search = "") {
 
 export async function renderBoardDetail(domain, id) {
   const config = CONFIG[domain] || CONFIG.community;
-  const data = await getDomain(domain);
-  const item = (data.items || []).find(x => String(x.id) === String(id) && x.published !== false);
+  let data = await getDomain(domain);
+  let item = (data.items || []).find(x => String(x.id) === String(id) && x.published !== false);
+  if (!item) {
+    data = await getDomain(domain, { fresh:true });
+    item = (data.items || []).find(x => String(x.id) === String(id) && x.published !== false);
+  }
   if (!item) {
     return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>게시물을 찾을 수 없습니다.</h2><p>삭제되었거나 아직 공개되지 않은 게시물입니다.</p><button class="primary-btn" type="button" data-go="/${config.route}">${config.title} 목록으로</button></section></main>`);
   }
