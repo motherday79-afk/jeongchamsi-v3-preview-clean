@@ -1,6 +1,6 @@
 import { getDomain } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
-import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.19-perf";
+import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
   listAssemblyMembers,
   listMetropolitanLeaders,
@@ -8,7 +8,7 @@ import {
   listAllPoliticians,
   getPersonSlotById,
   PERSON_COUNTS
-} from "../data/person-provider.js?v=alpha6.0.19-perf";
+} from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import {
   getUserSession,
   getUserActivity,
@@ -192,16 +192,24 @@ export async function renderNow(search = "") {
   return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>${esc(title)}</h1><p>${partyParam || searchParam ? esc(filterDescription) : "메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다."}</p><div class="capacity-line"><span>${esc(filterDescription)}</span><b>총 ${total}명</b></div></section>${!partyParam && !searchParam ? `<nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key,x])=>`<button type="button" class="${type===key?"active":""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav>` : `<div class="directory-filter-actions"><button class="ghost-btn" type="button" data-go="/now">전체 정치인 분류로 돌아가기</button><button class="ghost-btn" type="button" data-go="/search?q=${encodeURIComponent(partyParam||searchParam)}">통합검색 결과</button></div>`}<section class="content-card directory-section"><div class="section-title"><h2>${esc(label)}</h2><span>${shown.length} / ${total}명 표시</span></div>${shown.length ? `<div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-go="${nextBase}${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${esc(label)} ${total}명 전체를 불러왔습니다.</div>`}` : `<div class="empty-state"><h2>해당 정치인이 없습니다.</h2><p>검색어나 정당명을 다시 확인해 주세요.</p></div>`}</section></main>`);
 }
 
-export async function renderPolls() {
+export async function renderPolls(search = "") {
+  const params = new URLSearchParams(search || "");
+  const focusPollId = String(params.get("pollId") || "");
+  const preselectedOptionId = String(params.get("option") || "");
   const data = await getDomain("polls");
-  const items = (data.items || []).filter(x => x.published !== false);
+  const allItems = (data.items || []).filter(x => x.published !== false);
+  const items = focusPollId ? allItems.filter(x => String(x.id) === focusPollId) : allItems;
   const session = getUserSession();
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">CITIZENS’ CHOICE</span><h1>시민들의 선택</h1><p>선택지를 고른 뒤 확인 버튼을 눌러야 투표가 완료됩니다.</p></section><section class="content-card">${items.length ? `<div class="poll-page-list">${items.map(poll => {
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">CITIZENS’ CHOICE</span><h1>시민들의 선택</h1><p>${focusPollId ? "메인에서 고른 설문의 전체 선택지를 확인한 뒤 최종 투표하세요." : "선택지를 고른 뒤 확인 버튼을 눌러야 투표가 완료됩니다."}</p></section><section class="content-card">${items.length ? `<div class="poll-page-list">${items.map(poll => {
     const voted = session.authenticated && hasVotedPoll(poll.id);
     const total = (poll.options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
-    const choices = (poll.options || []).map(opt => `<button type="button" ${voted ? "disabled" : `data-poll-select data-option-id="${esc(opt.id)}"`} aria-pressed="false"><span>${esc(opt.label)}</span><i><em style="width:${pct(opt, poll.options)}%"></em></i><b>${pct(opt, poll.options)}%</b></button>`).join("");
-    return `<article class="poll-live-card" data-poll-scope data-poll-id="${esc(poll.id)}"><span class="status-pill"><b>POLL</b>${voted ? "참여완료" : "진행중"}</span><h2>${esc(poll.question)}</h2><p>${esc(poll.description || "정참시 참여자 기반 설문")} · ${total.toLocaleString("ko-KR")}명 참여</p><div class="poll-choice-list">${choices}</div>${voted ? `<small>이 설문에 이미 참여했습니다.</small>` : `<div class="poll-confirm-row"><span data-poll-select-state>선택지를 선택해 주세요.</span><button class="primary-btn" type="button" data-poll-confirm disabled>투표 확인</button></div>`}</article>`;
-  }).join("")}</div>` : `<div class="empty-state tall"><h2>등록된 설문이 없습니다.</h2><p>관리자에서 설문을 만들면 이곳과 메인에 동시에 표시됩니다.</p></div>`}</section></main>`);
+    const preselected = !voted && String(poll.id) === focusPollId && (poll.options || []).some(x => String(x.id) === preselectedOptionId) ? preselectedOptionId : "";
+    const choices = (poll.options || []).map(opt => {
+      const selected = preselected && String(opt.id) === String(preselected);
+      return `<button type="button" ${voted ? "disabled" : `data-poll-select data-option-id="${esc(opt.id)}"`} class="${selected ? "selected" : ""}" aria-pressed="${selected ? "true" : "false"}"><span>${esc(opt.label)}</span><i><em style="width:${pct(opt, poll.options)}%"></em></i><b>${pct(opt, poll.options)}%</b></button>`;
+    }).join("");
+    return `<article class="poll-live-card" data-poll-scope data-poll-id="${esc(poll.id)}" ${preselected ? `data-selected-option="${esc(preselected)}"` : ""}><span class="status-pill"><b>POLL</b>${voted ? "참여완료" : "진행중"}</span><h2>${esc(poll.question)}</h2><p>${esc(poll.description || "정참시 참여자 기반 설문")} · ${total.toLocaleString("ko-KR")}명 참여</p><div class="poll-choice-list">${choices}</div>${voted ? `<small>이 설문에 이미 참여했습니다.</small>` : `<div class="poll-confirm-row"><span data-poll-select-state>${preselected ? "메인에서 선택한 항목입니다. 전체 선택지를 확인해 주세요." : "선택지를 선택해 주세요."}</span><button class="primary-btn" type="button" data-poll-confirm ${preselected ? "" : "disabled"}>투표 확인</button></div>`}</article>`;
+  }).join("")}</div>${focusPollId ? `<div class="inline-actions top-gap"><button class="ghost-btn" type="button" data-go="/poll">전체 설문 보기</button></div>` : ""}` : `<div class="empty-state tall"><h2>${focusPollId ? "해당 설문을 찾을 수 없습니다." : "등록된 설문이 없습니다."}</h2><p>${focusPollId ? "설문이 종료되었거나 비공개 상태일 수 있습니다." : "관리자에서 설문을 만들면 이곳과 메인에 동시에 표시됩니다."}</p></div>`}</section></main>`);
 }
 
 export async function renderKeywords() {
@@ -224,18 +232,36 @@ export async function renderTrending() {
 
 export async function renderAcademy() {
   const data = await getDomain("academy");
-  const slots = (data.slots || []).filter(x => x.published !== false);
   const session = getUserSession();
   const activity = getUserActivity();
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">JEONGCHAMSI ACADEMY</span><h1>정참시 아카데미</h1><p>정치를 꿈꾸는 사람이 수강 가능한 일정을 확인하고 신청하는 공간입니다.</p></section><section class="content-card"><div class="section-title"><h2>수강 가능 일정</h2><span>${slots.length}개</span></div>${slots.length ? `<div class="academy-slot-list">${slots.map(s => { const applied = (activity.academyApplications || []).includes(String(s.id)); return `<article><div><b>${esc(s.date || "날짜 미정")}</b><span>${esc(s.title || "정참시 아카데미")} · ${esc(s.description || "")}</span></div><button type="button" data-academy-apply="${esc(s.id)}" ${s.closed || applied ? "disabled" : ""}>${s.closed ? "마감" : applied ? "신청완료" : session.authenticated ? "수강신청" : "로그인 후 신청"}</button></article>`; }).join("")}</div>` : `<div class="empty-state"><h2>등록된 일정이 없습니다.</h2><p>관리자에서 일정을 등록하면 이곳에 표시됩니다.</p></div>`}</section></main>`);
+  const config = {
+    eyebrow:"JEONGCHAMSI ACADEMY",
+    title:"정참시 아카데미",
+    headline:"정치의 꿈을 실제 준비로.",
+    description:"정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.",
+    cta:"수강 가능 일정 확인",
+    ...(data.config || {})
+  };
+  const slots = (data.slots || []).filter(x => x.published !== false).slice().sort((a,b)=>`${a.date||""} ${a.startTime||""}`.localeCompare(`${b.date||""} ${b.startTime||""}`));
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">${esc(config.eyebrow)}</span><h1>${esc(config.title)}</h1><p>${esc(config.description)}</p>${session.authenticated && session.user?.role === "admin" ? `<div class="inline-actions top-gap"><button class="ghost-btn" type="button" data-go="/admin?tab=academy">아카데미 편집</button></div>` : ""}</section><section class="content-card academy-detail-intro"><h2>${esc(config.headline)}</h2><p>${esc(config.description)}</p></section><section class="content-card"><div class="section-title"><h2>수강 가능 일정</h2><span>${slots.length}개</span></div>${slots.length ? `<div class="academy-slot-list">${slots.map(s => {
+    const applied = (activity.academyApplications || []).includes(String(s.id));
+    const status = s.status || (s.closed ? "closed" : "open");
+    const time = [s.startTime,s.endTime].filter(Boolean).join("–");
+    const unavailable = status === "closed" || status === "scheduled";
+    const label = status === "closed" ? "마감" : status === "scheduled" ? "예정" : applied ? "신청완료" : session.authenticated ? "수강신청" : "로그인 후 신청";
+    return `<article><div><b>${esc(s.date || "날짜 미정")}${time ? ` · ${esc(time)}` : ""}</b><span>${esc(s.title || "정참시 아카데미")} · ${esc(s.description || "")}</span></div><button type="button" data-academy-apply="${esc(s.id)}" ${unavailable || applied ? "disabled" : ""}>${label}</button></article>`;
+  }).join("")}</div>` : `<div class="empty-state"><h2>등록된 일정이 없습니다.</h2><p>관리자에서 날짜와 시간을 지정해 일정을 등록하면 메인과 이곳에 동시에 표시됩니다.</p></div>`}</section></main>`);
 }
 
 function publishedItsme(data) { return (data.items || []).filter(x => x.published !== false).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)); }
 export async function renderItsme(search = "") {
   const data = await getDomain("itsme");
   const session = getUserSession();
-  const category = new URLSearchParams(search || "").get("category") || "";
-  const items = publishedItsme(data).filter(x => !category || x.category === category);
+  const searchParams = new URLSearchParams(search || "");
+  const category = searchParams.get("category") || "";
+  const q = String(searchParams.get("q") || "").trim();
+  const qNorm = q.toLowerCase().replace(/\s+/g,"");
+  const items = publishedItsme(data).filter(x => (!category || x.category === category) && (!q || `${x.title||""} ${x.summary||""} ${x.body||""} ${x.category||""} ${x.author||""}`.toLowerCase().replace(/\s+/g,"").includes(qNorm)));
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">IT’S ME · POLICY PROPOSAL</span><h1>IT’S ME</h1><p>“내가 대통령이라면, 내가 국회의원이라면, 내가 시장이라면, 내가 장관이라면”을 말머리로 정책과 아이디어를 직접 제안하는 참여 게시판입니다.</p></section><section class="content-card"><div class="board-toolbar"><div class="itsme-category-tabs"><button type="button" class="${!category ? "active" : ""}" data-go="/itsme">전체</button>${(data.categories || []).map(c => `<button type="button" class="${category === c ? "active" : ""}" data-go="/itsme?category=${encodeURIComponent(c)}">${esc(c)}</button>`).join("")}</div>${session.authenticated ? `<button class="primary-btn" type="button" data-go="/itsme/write">IT’S ME 글쓰기</button>` : `<button class="primary-btn" type="button" data-go="/login">로그인 후 글쓰기</button>`}</div>${items.length ? `<div class="board-list itsme-board-list">${items.map(item => `<article class="no-thumb"><a href="/itsme/${esc(item.id)}" data-route><span class="type">${esc(item.category || "IT’S ME")}</span><h2>${esc(item.title)}</h2><p>${esc(item.summary || item.body || "")}</p></a><small>${esc(item.author || "정참시 회원")} · ${formatDate(item.createdAt)} · 좋아요 ${Number(item.likes || 0)}</small></article>`).join("")}</div>` : `<div class="empty-state tall"><div class="empty-icon">ME</div><h2>아직 등록된 제안이 없습니다.</h2><p>로그인 후 첫 정책 제안을 작성할 수 있습니다.</p></div>`}</section></main>`);
 }
 export async function renderItsmeWrite(search = "") {
@@ -320,7 +346,7 @@ export async function renderGeneration() {
     if (data.enabled === false) voteArea = `<div class="empty-inline">현재 세대별 모의투표가 일시 중지되어 있습니다.</div>`;
     else if (!ageGroup) voteArea = `<div class="member-login-prompt"><span>정확한 세대별 집계를 위해 회원정보에 출생연도를 먼저 등록해 주세요.</span><button class="primary-btn" type="button" data-go="/mypage/profile">출생연도 등록</button></div>`;
     else if (hasGenerationVote(ageGroup)) voteArea = `<div class="empty-inline">${esc(ageGroup)} 투표에 이미 참여했습니다. 선택: ${esc(slotLabel(getPersonSlotById(generationVoteFor(ageGroup)) || { roleLabel: "정치인", slot: 0 }))}</div>`;
-    else voteArea = `<form class="generation-vote-form generation-vote-fixed generation-vote-searchable" data-generation-vote-form><input type="hidden" name="ageGroup" value="${esc(ageGroup)}"><label>내 세대<input value="${esc(ageGroup)}" disabled></label><label>대통령 후보 검색<input type="search" placeholder="이름·직위·슬롯 검색" data-person-select-filter="#generation-person"><select id="generation-person" name="personId" required><option value="">정치인 선택</option>${personOptions("", data.candidates || [])}</select></label><button class="primary-btn" type="submit">투표하기</button><div class="save-state" data-generation-vote-state></div></form>`;
+    else voteArea = `<form class="generation-vote-form generation-vote-fixed generation-vote-searchable" data-generation-vote-form><input type="hidden" name="ageGroup" value="${esc(ageGroup)}"><label>내 세대<input value="${esc(ageGroup)}" disabled></label><label class="person-quick-picker">대통령 후보 검색<input type="search" placeholder="이름·정당·지역 검색" autocomplete="off" id="generation-person-search" data-person-quick-search="#generation-person" data-person-quick-results="#generation-quick-results"><div class="person-quick-results" id="generation-quick-results" hidden></div><select id="generation-person" name="personId" required><option value="">정치인 선택</option>${personOptions("", data.candidates || [])}</select></label><button class="primary-btn" type="submit">투표하기</button><div class="save-state" data-generation-vote-state></div></form>`;
   }
 
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h1>세대가 뽑은 대통령</h1><p>회원가입 때 입력한 출생연도로 내 세대는 자동 고정됩니다. 후보는 543명 목록을 직접 내리지 않고 검색해서 선택할 수 있습니다.</p></section><section class="content-card"><div class="generation-page-grid">${cards}</div></section><section class="content-card"><div class="section-title"><h2>모의투표 참여</h2><span>${session.authenticated ? "회원 출생연도 기준 세대 자동 적용" : "로그인 필요"}</span></div>${voteArea}</section></main>`);
@@ -366,7 +392,16 @@ export async function renderSearch(query = "") {
   const contentGroups = rawQ ? sourceGroups.map(g => ({
     ...g,
     matches:g.items.filter(x => x.published !== false && textMatches(`${x.title||""} ${x.summary||""} ${x.body||""} ${x.author||""} ${x.category||""}`,terms))
-  })).filter(g=>g.matches.length) : [];
+  })) : [];
+
+  const evaluationData = rawQ ? await getDomain("nationalEvaluation") : { results:{}, history:[] };
+  const evaluationPeople = rawQ ? [evaluationData.subjectId, ...(evaluationData.history || []).map(x=>x.subjectId), ...Object.keys(evaluationData.results || {})]
+    .filter(Boolean)
+    .filter((id,i,arr)=>arr.indexOf(id)===i)
+    .map(id=>getPersonSlotById(id))
+    .filter(Boolean)
+    .filter(person => party ? searchNorm(person.party) === searchNorm(party.canonical) : textMatches(personSearchText(person),terms)) : [];
+
 
   const allPeople = rawQ ? listAllPoliticians().filter(p => {
     if (party) return searchNorm(p.party) === searchNorm(party.canonical);
@@ -385,7 +420,7 @@ export async function renderSearch(query = "") {
   const presidentText = governmentSearchText;
   const presidentMatch = rawQ && textMatches(presidentText,terms);
 
-  const hasResults = allPeople.length || contentGroups.length || presidentMatch;
+  const hasResults = allPeople.length || contentGroups.some(g=>g.matches.length) || evaluationPeople.length || presidentMatch;
   const partyLabel = party?.canonical || "";
   const partyCounts = party ? {
     assembly:allPeople.filter(x=>x.type==="assembly").length,
@@ -397,9 +432,17 @@ export async function renderSearch(query = "") {
 
   const presidentSection = presidentMatch ? `<section class="content-card search-president-result"><div class="section-title"><h2>대통령 · 정부</h2><span>1건</span></div><button type="button" data-go="/president"><span class="search-person-avatar president"></span><div><b>${esc(GOVERNMENT_SEED.profile.name)} 대통령</b><small>${esc(GOVERNMENT_SEED.profile.office)} · 대통령·총리·장관·주요 행정인사</small></div><em>대통령 페이지 →</em></button></section>` : "";
 
-  const contentMarkup = contentGroups.map(g=>`<section class="content-card search-board-group"><div class="section-title"><h2>${esc(g.label)}</h2><span>${g.matches.length}건</span></div><div class="board-list">${g.matches.map(x=>`<article class="no-thumb"><a href="/${g.route}/${esc(x.id)}" data-route><span class="type">${esc(g.label)}</span><h2>${esc(x.title)}</h2><p>${esc(x.summary||x.body||"")}</p></a><small>${esc(x.author||"정참시")} · ${formatDate(x.createdAt)}</small></article>`).join("")}</div></section>`).join("");
+  const exampleCopy = (label) => ({
+    "정참시 NEWS":"관련 정치 뉴스 제목 · 주요 이슈 요약 · 등록일",
+    "COLUMN":"관련 칼럼 제목 · 필자 · 핵심 관점",
+    "IT’S ME":"관련 시민 정책제안 · 카테고리 · 참여정보",
+    "정뮤니티":"관련 시민 게시글 · 작성자 · 반응"
+  }[label] || "관련 콘텐츠가 등록되면 이곳에 표시됩니다.");
 
-  return pageShell(`<main class="subpage search-page"><section class="page-hero"><span class="eyebrow">SEARCH · INTEGRATED</span><h1>통합검색</h1><p>검색어: <b>${esc(rawQ || "—")}</b>${party ? ` · <span>${esc(partyLabel)}로 정규화해 검색했습니다.</span>` : ""}</p></section>${peopleSection}${presidentSection}${contentMarkup}${!rawQ ? `<section class="content-card"><div class="empty-state tall"><h2>검색어를 입력해 주세요.</h2><p>정치인 이름·정당 별칭·지역·정책·게시글을 한 번에 검색할 수 있습니다.</p></div></section>` : !hasResults ? `<section class="content-card"><div class="empty-state tall"><h2>검색 결과가 없습니다.</h2><p>띄어쓰기와 정당 별칭도 함께 처리하지만 다른 검색어를 시도해 보세요.</p></div></section>` : ""}</main>`);
+  const contentMarkup = contentGroups.map(g=>`<section class="content-card search-board-group"><div class="section-title"><h2>${esc(g.label)}</h2><span>${g.matches.length}건</span></div>${g.matches.length ? `<div class="board-list">${g.matches.slice(0,5).map(x=>`<article class="no-thumb"><a href="/${g.route}/${esc(x.id)}" data-route><span class="type">${esc(g.label)}</span><h2>${esc(x.title)}</h2><p>${esc(x.summary||x.body||"")}</p></a><small>${esc(x.author||"정참시")} · ${formatDate(x.createdAt)}</small></article>`).join("")}</div>${g.matches.length>5?`<div class="search-group-more"><button class="ghost-btn" type="button" data-go="/${g.route}?q=${encodeURIComponent(rawQ)}">관련 ${esc(g.label)} 전체보기 →</button></div>`:""}` : `<div class="search-empty-example"><b>아직 ‘${esc(rawQ)}’ 관련 ${esc(g.label)}가 없습니다.</b><p>향후 관련 콘텐츠가 등록되면 이 카테고리에 자동으로 표시됩니다.</p><article><span>노출 예시</span><strong>${esc(exampleCopy(g.label))}</strong></article></div>`}</section>`).join("");
+  const evaluationMarkup = `<section class="content-card search-board-group"><div class="section-title"><h2>전국평가제</h2><span>${evaluationPeople.length}건</span></div>${evaluationPeople.length ? `<div class="search-evaluation-list">${evaluationPeople.slice(0,5).map(p=>`<button type="button" data-go="/national-evaluation"><span class="search-person-avatar"></span><div><b>${esc(p.name)}</b><small>${esc(p.party)} · ${esc(p.jurisdiction)}</small></div><em>평가 보기 →</em></button>`).join("")}</div>` : `<div class="search-empty-example"><b>아직 ‘${esc(rawQ)}’ 관련 전국평가 데이터가 없습니다.</b><p>해당 정치인이 전국평가 대상으로 등록되면 이곳에 표시됩니다.</p><article><span>노출 예시</span><strong>정치인 이름 · 긍정/보통/부정 평가 · 참여자 수</strong></article></div>`}</section>`;
+
+  return pageShell(`<main class="subpage search-page"><section class="page-hero"><span class="eyebrow">SEARCH · INTEGRATED</span><h1>통합검색</h1><p>검색어: <b>${esc(rawQ || "—")}</b>${party ? ` · <span>${esc(partyLabel)}로 정규화해 검색했습니다.</span>` : ""}</p></section>${peopleSection}${presidentSection}${contentMarkup}${rawQ ? evaluationMarkup : ""}${!rawQ ? `<section class="content-card"><div class="empty-state tall"><h2>검색어를 입력해 주세요.</h2><p>정치인 이름·정당 별칭·지역·정책·게시글을 한 번에 검색할 수 있습니다.</p></div></section>` : !hasResults ? `<section class="content-card"><div class="empty-state tall"><h2>검색 결과가 없습니다.</h2><p>띄어쓰기와 정당 별칭도 함께 처리하지만 다른 검색어를 시도해 보세요.</p></div></section>` : ""}</main>`);
 }
 
 export { trendingItems };

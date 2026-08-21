@@ -12,9 +12,9 @@ let renderEpoch = 0;
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=alpha6.0.19-perf")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=alpha6.0.20-function-detail")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
-    const view = await import("./views/user.js?v=alpha6.0.19-perf");
+    const view = await import("./views/user.js?v=alpha6.0.20-function-detail");
     if (p[0] === "login") return view.renderLogin();
     if (p[0] === "join") return view.renderJoin();
     if (p[1] === "activity") return view.renderMyActivity(state.search);
@@ -23,19 +23,19 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js?v=alpha6.0.19-perf")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=alpha6.0.20-function-detail")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
-    const view = await import("./views/boards.js?v=alpha6.0.19-perf");
+    const view = await import("./views/boards.js?v=alpha6.0.20-function-detail");
     const domain = p[0] === "column" ? "columns" : p[0];
     if (p[1] === "write") return view.renderBoardWriter(domain, state.search);
-    return p[1] ? view.renderBoardDetail(domain, p[1]) : view.renderBoard(domain);
+    return p[1] ? view.renderBoardDetail(domain, p[1]) : view.renderBoard(domain, state.search);
   }
-  if (p[0] === "admin") return (await import("./views/admin.js?v=alpha6.0.19-perf")).renderAdmin();
-  if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js?v=alpha6.0.19-perf")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=alpha6.0.19-perf");
+  if (p[0] === "admin") return (await import("./views/admin.js?v=alpha6.0.20-function-detail")).renderAdmin();
+  if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js?v=alpha6.0.20-function-detail")).renderLegal(p[0]);
+  const view = await import("./views/features.js?v=alpha6.0.20-function-detail");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
-  if (p[0] === "poll") return view.renderPolls();
+  if (p[0] === "poll") return view.renderPolls(state.search);
   if (p[0] === "keywords") return view.renderKeywords();
   if (p[0] === "trending") return view.renderTrending();
   if (p[0] === "academy") return view.renderAcademy();
@@ -45,7 +45,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration();
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=alpha6.0.19-perf")).renderHome();
+  return (await import("./views/home.js?v=alpha6.0.20-function-detail")).renderHome();
 }
 
 async function render(state = currentRoute(), { resetScroll = true } = {}) {
@@ -66,6 +66,16 @@ function toggleDrawer(open) {
 async function rerenderNoScroll() { clearDomainCache(); await refreshUserActivity(); await render(currentRoute(), { resetScroll: false }); }
 
 document.addEventListener("click", async event => {
+  const quickSelect = event.target.closest("[data-person-quick-option]");
+  if (quickSelect) {
+    const select = document.querySelector(quickSelect.dataset.selectTarget || "");
+    const input = document.querySelector(quickSelect.dataset.inputTarget || "");
+    const results = quickSelect.closest(".person-quick-results");
+    if (select) { select.value = quickSelect.dataset.personQuickOption || ""; select.dispatchEvent(new Event("change", { bubbles:true })); }
+    if (input) input.value = quickSelect.dataset.label || quickSelect.textContent.trim();
+    if (results) results.hidden = true;
+    return;
+  }
   const go = event.target.closest("[data-go]");
   if (go) { const to = go.dataset.go; if (to && to !== "#") route(to); return; }
   if (event.target.closest("[data-drawer-open]")) return toggleDrawer(true);
@@ -143,14 +153,26 @@ document.addEventListener("click", async event => {
   const edit = event.target.closest("[data-admin-edit]"); if (edit) return route(`/admin?tab=${encodeURIComponent(edit.dataset.adminEdit)}&edit=${encodeURIComponent(edit.dataset.id)}`);
   const cancel = event.target.closest("[data-admin-cancel]"); if (cancel) return route(`/admin?tab=${encodeURIComponent(cancel.dataset.domain)}`);
   const del = event.target.closest("[data-admin-delete]");
-  if (del) { if (!confirm("이 항목을 삭제할까요?")) return; const r = await (await import("./views/admin.js?v=alpha6.0.19-perf")).deleteAdminItem(del.dataset.adminDelete, del.dataset.id); if (!r.ok) alert(`삭제 실패: ${r.error || "저장소 오류"}`); else { clearDomainCache(); await render(currentRoute(), { resetScroll: false }); } return; }
+  if (del) { if (!confirm("이 항목을 삭제할까요?")) return; const r = await (await import("./views/admin.js?v=alpha6.0.20-function-detail")).deleteAdminItem(del.dataset.adminDelete, del.dataset.id); if (!r.ok) alert(`삭제 실패: ${r.error || "저장소 오류"}`); else { clearDomainCache(); await render(currentRoute(), { resetScroll: false }); } return; }
   const member = event.target.closest("[data-member-access]");
-  if (member) { const id = member.dataset.memberAccess; const role = document.querySelector(`[data-member-role="${CSS.escape(id)}"]`)?.value || "member"; const status = document.querySelector(`[data-member-status="${CSS.escape(id)}"]`)?.value || "active"; const r = await (await import("./views/admin.js?v=alpha6.0.19-perf")).updateMemberAccess(id, role, status); const st = document.querySelector("[data-member-save-state]"); if (st) st.textContent = r.ok ? "저장 완료" : `저장 실패 · ${r.error || ""}`; if (r.ok) await initializeUserState(); return; }
+  if (member) { const id = member.dataset.memberAccess; const role = document.querySelector(`[data-member-role="${CSS.escape(id)}"]`)?.value || "member"; const status = document.querySelector(`[data-member-status="${CSS.escape(id)}"]`)?.value || "active"; const r = await (await import("./views/admin.js?v=alpha6.0.20-function-detail")).updateMemberAccess(id, role, status); const st = document.querySelector("[data-member-save-state]"); if (st) st.textContent = r.ok ? "저장 완료" : `저장 실패 · ${r.error || ""}`; if (r.ok) await initializeUserState(); return; }
 });
 
 document.addEventListener("input", async event => {
   const search = event.target.closest("[data-member-search]");
   if (search) { const q = String(search.value || "").trim().toLowerCase(); document.querySelectorAll("[data-member-row]").forEach(row => row.hidden = !!q && !String(row.dataset.memberSearchText || "").includes(q)); }
+  const quickSearch = event.target.closest("[data-person-quick-search]");
+  if (quickSearch) {
+    const select = document.querySelector(quickSearch.dataset.personQuickSearch || "");
+    const results = document.querySelector(quickSearch.dataset.personQuickResults || "");
+    if (select && results) {
+      const q = String(quickSearch.value || "").trim().toLowerCase().replace(/\s+/g,"");
+      const options = Array.from(select.options).slice(1);
+      const matches = q ? options.filter(opt => `${opt.textContent || ""} ${opt.value || ""}`.toLowerCase().replace(/\s+/g,"").includes(q)).slice(0,6) : [];
+      results.innerHTML = matches.map(opt => `<button type="button" data-person-quick-option="${String(opt.value).replace(/"/g,"&quot;")}" data-label="${String(opt.textContent||"").replace(/"/g,"&quot;")}" data-select-target="${quickSearch.dataset.personQuickSearch}" data-input-target="#${quickSearch.id}"><b>${opt.textContent}</b><span>바로 선택</span></button>`).join("");
+      results.hidden = !matches.length;
+    }
+  }
   const personFilter = event.target.closest("[data-person-select-filter]");
   if (personFilter) {
     const select = document.querySelector(personFilter.dataset.personSelectFilter || "");
@@ -162,9 +184,9 @@ document.addEventListener("input", async event => {
     }
   }
   const cover = event.target.closest("[data-cover-input]");
-  if (cover?.files?.[0]) { try { await (await import("./views/admin.js?v=alpha6.0.19-perf")).prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
+  if (cover?.files?.[0]) { try { await (await import("./views/admin.js?v=alpha6.0.20-function-detail")).prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
   const profile = event.target.closest("[data-profile-input]");
-  if (profile?.files?.[0]) { try { await (await import("./views/admin.js?v=alpha6.0.19-perf")).prepareProfilePreview(profile.files[0], profile.closest("form")?.querySelector("[data-profile-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); profile.value = ""; } }
+  if (profile?.files?.[0]) { try { await (await import("./views/admin.js?v=alpha6.0.20-function-detail")).prepareProfilePreview(profile.files[0], profile.closest("form")?.querySelector("[data-profile-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); profile.value = ""; } }
 });
 
 document.addEventListener("change", async event => {
@@ -178,13 +200,13 @@ document.addEventListener("submit", async event => {
   if (form.matches("[data-user-login]")) { event.preventDefault(); const fd = new FormData(form); const r = await loginUser(fd.get("id"), fd.get("password")); const e = form.querySelector("[data-user-auth-error]"); if (!r.ok) { if (e) e.textContent = r.error || "로그인 실패"; return; } route("/mypage", { replace: true }); return; }
   if (form.matches("[data-user-join]")) { event.preventDefault(); const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) { const e=form.querySelector("[data-user-auth-error]"); if(e)e.textContent="비밀번호 확인이 일치하지 않습니다."; return; } const r = await registerUser(Object.fromEntries(fd.entries())); const e=form.querySelector("[data-user-auth-error]"); if(!r.ok){if(e)e.textContent=r.error||"회원가입 실패";return;} route("/mypage",{replace:true}); return; }
   if (form.matches("[data-user-profile-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await updateMyProfile(Object.fromEntries(fd.entries())); const st=form.querySelector("[data-user-profile-state]"); if(!r.ok){if(st)st.textContent=`저장 실패 · ${r.error||""}`;return;} if(st)st.textContent="저장 완료"; await render(currentRoute(), { resetScroll:false }); return; }
-  if (form.matches("[data-first-admin-setup]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=alpha6.0.19-perf")).submitFirstAdmin(form); const e = form.querySelector("[data-admin-setup-error]"); if (!r.ok) { if (e) e.textContent = r.error || "관리자 생성 실패"; return; } route("/admin", { replace: true }); await render(currentRoute()); return; }
+  if (form.matches("[data-first-admin-setup]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=alpha6.0.20-function-detail")).submitFirstAdmin(form); const e = form.querySelector("[data-admin-setup-error]"); if (!r.ok) { if (e) e.textContent = r.error || "관리자 생성 실패"; return; } route("/admin", { replace: true }); await render(currentRoute()); return; }
   if (form.matches("[data-user-post-form]")) { event.preventDefault(); const fd = new FormData(form); const domain = form.dataset.userPostForm; const coverImage = form.querySelector("[data-cover-preview]")?.dataset.coverData || ""; const r = await performAction("user-post-save", { domain, id: form.dataset.itemId || "", title: fd.get("title"), summary: fd.get("summary"), category: fd.get("category"), body: fd.get("body"), coverImage }); const e=form.querySelector("[data-user-post-error]"); if(!r.ok){ const messages={ ITSME_TITLE_TOO_LONG:"IT’S ME 제목은 30자까지 입력할 수 있습니다.", ITSME_SUMMARY_TOO_LONG:"IT’S ME 요약은 15자까지 입력할 수 있습니다.", ITSME_BODY_TOO_LONG:"IT’S ME 내용은 3,000자까지 입력할 수 있습니다." }; if(e)e.textContent=messages[r.error]||`저장 실패 · ${r.error||""}`;return;} clearDomainCache(); const base = { itsme:"itsme", community:"community", columns:"column", news:"news" }[domain] || "community"; route(`/${base}/${r.item.id}`, { replace: true }); return; }
   if (form.matches("[data-comment-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("comment-add", { domain: form.dataset.commentForm, postId: form.dataset.postId, text: fd.get("comment") }); const st=form.querySelector("[data-comment-state]"); if(!r.ok){if(st)st.textContent=`등록 실패 · ${r.error||""}`;return;} clearDomainCache("comments"); form.reset(); await render(currentRoute(), { resetScroll: false }); return; }
   if (form.matches("[data-compare-form]")) { event.preventDefault(); const fd = new FormData(form); return route(`/compare?a=${encodeURIComponent(fd.get("a"))}&b=${encodeURIComponent(fd.get("b"))}`); }
   if (form.matches("[data-generation-vote-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("generation-vote", { ageGroup: fd.get("ageGroup"), personId: fd.get("personId") }); const st=form.querySelector("[data-generation-vote-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이 세대 투표에 이미 참여했습니다.":`투표 실패 · ${r.error||""}`;return;} await rerenderNoScroll(); return; }
   if (form.matches("[data-national-evaluation-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("national-evaluation-vote", { personId: form.dataset.personId, rating: fd.get("rating") }); const st=form.querySelector("[data-national-evaluation-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이미 이 평가에 참여했습니다.":`평가 저장 실패 · ${r.error||""}`;return;} await rerenderNoScroll(); return; }
-  if (form.matches("[data-admin-form]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=alpha6.0.19-perf")).saveAdminForm(form); const st=form.querySelector("[data-save-state]"); if (!r.ok) { if(st) st.textContent=`저장 실패 · ${r.error || "서버 저장소 오류"}`; return; } if(st)st.textContent="저장 완료"; clearDomainCache(); const rawTab=form.dataset.adminForm.replace(/-(settings|list)$/,''); const targetTab=rawTab==="nationalEvaluation"?"national":rawTab; setTimeout(()=>route(`/admin?tab=${encodeURIComponent(targetTab)}`,{replace:true}),150); return; }
+  if (form.matches("[data-admin-form]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=alpha6.0.20-function-detail")).saveAdminForm(form); const st=form.querySelector("[data-save-state]"); if (!r.ok) { if(st) st.textContent=`저장 실패 · ${r.error || "서버 저장소 오류"}`; return; } if(st)st.textContent="저장 완료"; clearDomainCache(); const rawTab=form.dataset.adminForm.replace(/-(settings|list)$/,''); const targetTab=rawTab==="nationalEvaluation"?"national":rawTab==="academy"?"academy":rawTab; setTimeout(()=>route(`/admin?tab=${encodeURIComponent(targetTab)}`,{replace:true}),150); return; }
 });
 
 document.addEventListener("keydown", event => {

@@ -1,4 +1,4 @@
-import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.19-perf";
+import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
 import { drawer, siteHeader, footer } from "./layout.js";
@@ -116,23 +116,26 @@ function nationalEvaluationHomeMarkup(data = {}, getPerson = null) {
   return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>${esc((typeof getPerson === "function" ? getPerson(subjectId)?.name : "")||`국회의원 ${String(slot).padStart(3, "0")}`)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
 }
 
-function pollMarkup(poll, voted = false) {
-  if (!poll) return `<div class="poll-main"><div class="poll-question"><span class="poll-status">진행중</span><h3>설문 질문이 이 영역에 표시됩니다.</h3><p>관리자에서 설문을 등록하면 메인에 바로 반영됩니다.</p></div><div class="poll-vote-panel"><div class="poll-options"><button type="button" disabled><span>선택지 1</span><i><em style="width:0%"></em></i><b>0%</b></button><button type="button" disabled><span>선택지 2</span><i><em style="width:0%"></em></i><b>0%</b></button><button type="button" disabled><span>선택지 3</span><i><em style="width:0%"></em></i><b>0%</b></button></div></div></div>`;
-
-  const options = (poll.options || []).slice(0, 3);
-  const total = Math.max(0, options.reduce((sum, x) => sum + Number(x.votes || 0), 0));
-  const optionMarkup = options.map(opt => {
+function pollMarkup(poll) {
+  if (!poll) return `<div class="poll-main"><div class="poll-question"><span class="poll-status">준비중</span><h3>시민들의 선택 설문 영역</h3><p>관리자가 설문을 등록하면 최대 3개 선택지를 미리 보여줍니다.</p></div><div class="poll-vote-panel"><div class="poll-options">${Array.from({length:3},()=>`<button type="button" disabled><span>선택지</span><i><em style="width:0%"></em></i><b>—</b></button>`).join("")}</div></div></div>`;
+  const total = (poll.options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
+  const optionMarkup = (poll.options || []).slice(0,3).map(opt => {
     const pct = total ? Math.round(Number(opt.votes || 0) * 100 / total) : 0;
-    return `<button type="button" ${voted ? "disabled" : `data-poll-select data-option-id="${esc(opt.id)}"`} aria-pressed="false"><span>${esc(opt.label)}</span><i><em style="width:${pct}%"></em></i><b>${pct}%</b></button>`;
+    return `<button type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}&option=${encodeURIComponent(opt.id)}" aria-label="${esc(opt.label)} 선택 후 전체 설문 보기"><span>${esc(opt.label)}</span><i><em style="width:${pct}%"></em></i><b>${pct}%</b></button>`;
   }).join("");
-  return `<div class="poll-main"><div class="poll-question"><span class="poll-status">${voted ? "참여완료" : "진행중"}</span><h3>${esc(poll.question)}</h3><p>${poll.sample ? "검수용 예시 설문" : "정참시 참여자 기반 설문"} · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-vote-panel" data-poll-scope data-poll-id="${esc(poll.id)}"><div class="poll-options">${optionMarkup}</div>${voted ? `<div class="poll-confirm-row"><span>이 설문에 이미 참여했습니다.</span></div>` : `<div class="poll-confirm-row"><span data-poll-select-state>선택지를 선택해 주세요.</span><button class="primary-btn" type="button" data-poll-confirm disabled>투표 확인</button></div>`}</div></div>`;
+  return `<div class="poll-main"><div class="poll-question"><span class="poll-status">설문 미리보기</span><h3>${esc(poll.question)}</h3><p>메인에서는 최대 3개만 표시 · 전체 선택지는 설문페이지에서 투표 · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-vote-panel"><div class="poll-options">${optionMarkup}</div><div class="poll-confirm-row"><span>항목을 누르면 전체 설문으로 이동합니다.</span><button class="ghost-btn" type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}">전체 선택지 보기</button></div></div></div>`;
 }
 
 function academyRows(slots = []) {
-  return Array.from({ length: 4 }, (_, i) => {
-    const slot = slots[i];
-    if (!slot) return `<div class="schedule-row"><span class="schedule-date">${i + 1}주차</span><span class="schedule-line"><i></i><em></em></span><button type="button">신청가능</button></div>`;
-    return `<div class="schedule-row"><span class="schedule-date">${esc(slot.date || "일정")}</span><span class="schedule-line"><i></i><em>${esc(slot.title || "")}</em></span><button type="button" data-go="/academy">${slot.closed ? "마감" : "신청가능"}</button></div>`;
+  const rows = slots.slice(0,4);
+  while (rows.length < 4) rows.push(null);
+  return rows.map((slot,i) => {
+    if (!slot) return `<div class="schedule-row empty"><span class="schedule-date">일정 준비중</span><span class="schedule-line"><i></i><em>새 교육 일정이 등록되면 표시됩니다.</em></span><button type="button" disabled>예정</button></div>`;
+    const date = esc(slot.date || "날짜 미정");
+    const time = [slot.startTime, slot.endTime].filter(Boolean).join("–");
+    const status = slot.status || (slot.closed ? "closed" : "open");
+    const statusLabel = status === "closed" ? "마감" : status === "scheduled" ? "예정" : "신청가능";
+    return `<div class="schedule-row"><span class="schedule-date">${date}${time ? `<small>${esc(time)}</small>` : ""}</span><span class="schedule-line"><i></i><em>${esc(slot.title || "정참시 아카데미")}</em></span><button type="button" data-go="/academy" ${status === "closed" ? "disabled" : ""}>${statusLabel}</button></div>`;
   }).join("");
 }
 
@@ -144,7 +147,7 @@ export async function renderHome() {
   let getPerson = null;
   const needsPersonLookup = userReady && ((userSummary.recentPeople || []).length || data.nationalEvaluation?.subjectId);
   if (needsPersonLookup) {
-    const provider = await import("../data/person-provider.js?v=alpha6.0.19-perf");
+    const provider = await import("../data/person-provider.js?v=alpha6.0.20-function-detail");
     getPerson = provider.getPersonSlotById;
   }
   const columns = published(data.columns?.items || []);
@@ -167,7 +170,15 @@ export async function renderHome() {
     .slice(0, 6);
   while (itsmeHomeItems.length < 6) itsmeHomeItems.push(null);
   const nationalEvaluation = data.nationalEvaluation || {};
-  const academySlots = (data.academy?.slots || []).filter(x => x.published !== false).slice(0, 4);
+  const academyConfig = {
+    eyebrow:"JEONGCHAMSI ACADEMY",
+    title:"정참시 아카데미",
+    headline:"정치의 꿈을 실제 준비로.",
+    description:"정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.",
+    cta:"수강 가능 일정 확인",
+    ...(data.academy?.config || {})
+  };
+  const academySlots = (data.academy?.slots || []).filter(x => x.published !== false).sort((a,b)=>`${a.date||""} ${a.startTime||""}`.localeCompare(`${b.date||""} ${b.startTime||""}`)).slice(0, 4);
 
   const keywords = (data.keywords?.items || []).filter(x => x.published !== false).slice(0, 8);
   const manualTrending = (data.trending?.items || []).filter(x => x.published !== false).slice(0, 5);
@@ -221,7 +232,7 @@ export async function renderHome() {
 
         <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전국 평가제 보기</button></div>${nationalEvaluationHomeMarkup(nationalEvaluation, getPerson)}</section>
 
-        <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">JEONGCHAMSI ACADEMY</span><h2>정참시 아카데미</h2><p class="module-desc">정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.</p></div><button class="more-btn" type="button" data-go="/academy">아카데미 일정 보기</button></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>정치의 꿈을 실제 준비로.</h3><p>과정과 강사진은 추후 설계. 메인에서는 아카데미의 성격과 예약 가능한 스케줄 진입점을 명확하게 보여줍니다.</p><button type="button" data-go="/academy">수강 가능 일정 확인</button></div><div class="academy-schedule"><div class="schedule-head"><b>이번 달 수강 가능 일정</b><span>월간보기</span></div>${academyRows(academySlots)}</div></div></section>
+        <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">${esc(academyConfig.eyebrow)}</span><h2>${esc(academyConfig.title)}</h2><p class="module-desc">${esc(academyConfig.description)}</p></div><div class="inline-actions">${userSession.authenticated && userSession.user?.role === "admin" ? `<button class="ghost-btn academy-admin-edit" type="button" data-go="/admin?tab=academy">메인 아카데미 편집</button>` : ""}<button class="more-btn" type="button" data-go="/academy">아카데미 일정 보기</button></div></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>${esc(academyConfig.headline)}</h3><p>${esc(academyConfig.description)}</p><button type="button" data-go="/academy">${esc(academyConfig.cta)}</button></div><div class="academy-schedule"><div class="schedule-head"><b>예정 교육 일정</b><span>${academySlots.length}개</span></div>${academyRows(academySlots)}</div></div></section>
       </main>
 
       <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div><div class="participation-main" role="button" tabindex="0" data-go="/mypage/activity"><span class="grade-circle">P</span><div><b>${userSession.authenticated ? "내 참여" : "대표 배지"}</b><p>${userSession.authenticated ? `즐겨찾기 ${userSummary.favorites} · 설문 ${userSummary.pollVotes} · 좋아요 ${userSummary.likedPosts}` : "로그인 후 내 활동과 배지 표시"}</p></div></div><div class="badge-mini-row"><span></span><span></span><span></span><span></span></div></section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {

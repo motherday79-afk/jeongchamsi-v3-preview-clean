@@ -6,14 +6,16 @@ export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
 }[c]));
 
 const NAV = Object.freeze([
-  ["대통령", "/president"],
   ["NOW Rank", "/now"],
   ["IT’S ME", "/itsme"],
   ["COLUMN", "/column"],
   ["정참시 NEWS", "/news"],
   ["시민들의 선택", "/poll"],
   ["정뮤니티", "/community"],
-  ["비교분석", "/compare"],
+  ["비교분석", "/compare"]
+]);
+const MORE_NAV = Object.freeze([
+  ["대통령", "/president"],
   ["세대별 대통령", "/generation-president"],
   ["전국 평가제", "/national-evaluation"],
   ["아카데미", "/academy"]
@@ -42,6 +44,10 @@ export function siteHeader() {
     </div>
     <nav class="service-nav">
       ${NAV.map(([label, href]) => `<a href="${href}" data-route>${label}</a>`).join("")}
+      <details class="service-more">
+        <summary aria-label="메뉴 더보기" title="메뉴 더보기">···</summary>
+        <div class="service-more-menu">${MORE_NAV.map(([label, href]) => `<a href="${href}" data-route>${label}</a>`).join("")}</div>
+      </details>
     </nav>
   </header>`;
 }

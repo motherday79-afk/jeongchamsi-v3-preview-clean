@@ -1,7 +1,7 @@
 import { pageShell, esc } from "./layout.js";
 import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
-import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.19-perf";
+import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { REGION_DATA } from "../data/regions.js";
 
 function authHero(title, description) {

@@ -2,7 +2,7 @@ import { pageShell, esc } from "./layout.js";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
-import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.19-perf";
+import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { APP_VERSION, BUILD_NAME } from "../version.js";
 
 const TABS = [
@@ -83,8 +83,39 @@ async function listEditorPanel(domain, title, max, placeholder) {
   return `<section class="admin-panel"><h2>${title}</h2><form class="admin-form" data-admin-form="${domain}-list"><label>최대 ${max}개 · 한 줄에 하나<textarea name="lines" rows="${max}" placeholder="${esc(placeholder)}">${esc(lines.join("\n"))}</textarea></label>${formButtons(domain)}</form></section>`;
 }
 async function academyPanel() {
-  const data = await getDomain("academy"); const slots = data.slots || []; const edit = params().edit; const old = edit && edit !== "new" ? slots.find(x => x.id === edit) : {};
-  return `<section class="admin-panel"><div class="admin-panel-head"><h2>아카데미</h2><button class="primary-btn" type="button" data-admin-new="academy">새 일정</button></div><div class="admin-list">${slots.map(x => `<article><div><b>${esc(x.date)} · ${esc(x.title)}</b><span>${x.closed ? "마감" : "신청가능"}</span></div><div class="admin-list-actions"><button class="edit" data-admin-edit="academy" data-id="${esc(x.id)}">수정</button><button class="delete" data-admin-delete="academy" data-id="${esc(x.id)}">삭제</button></div></article>`).join("")}</div>${edit ? `<form class="admin-form" data-admin-form="academy" data-item-id="${esc(old?.id || "")}"><div class="admin-form-row"><label>날짜<input name="date" value="${esc(old?.date || "")}" required></label><label>제목<input name="title" value="${esc(old?.title || "")}" required></label></div><label>설명<input name="description" value="${esc(old?.description || "")}"></label><div class="admin-form-row"><label class="check"><input type="checkbox" name="published" ${old?.published === false ? "" : "checked"}> 공개</label><label class="check"><input type="checkbox" name="closed" ${old?.closed ? "checked" : ""}> 마감</label></div>${formButtons("academy")}</form>` : ""}</section>`;
+  const data = await getDomain("academy");
+  const config = {
+    eyebrow:"JEONGCHAMSI ACADEMY",
+    title:"정참시 아카데미",
+    headline:"정치의 꿈을 실제 준비로.",
+    description:"정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.",
+    cta:"수강 가능 일정 확인",
+    ...(data.config || {})
+  };
+  const slots = (data.slots || []).slice().sort((a,b)=>`${a.date||""} ${a.startTime||""}`.localeCompare(`${b.date||""} ${b.startTime||""}`));
+  const edit = params().edit;
+  const old = edit && edit !== "new" ? slots.find(x => x.id === edit) : {};
+  return `<section class="admin-panel">
+    <div class="admin-panel-head"><div><h2>아카데미</h2><span class="status-pill"><b>MAIN</b>메인 문구 + 일정</span></div><button class="primary-btn" type="button" data-admin-new="academy">새 일정</button></div>
+    <form class="admin-form academy-main-settings" data-admin-form="academy-settings">
+      <div class="section-title"><h2>메인 아카데미 문구</h2><span>메인에 즉시 반영</span></div>
+      <div class="admin-form-row"><label>영문 라벨<input name="eyebrow" maxlength="60" value="${esc(config.eyebrow)}"></label><label>섹션 제목<input name="title" maxlength="60" value="${esc(config.title)}" required></label></div>
+      <label>강조 문구<input name="headline" maxlength="100" value="${esc(config.headline)}" required></label>
+      <label>설명<textarea name="description" rows="3" maxlength="300" required>${esc(config.description)}</textarea></label>
+      <label>버튼 문구<input name="cta" maxlength="60" value="${esc(config.cta)}" required></label>
+      <div class="admin-form-actions"><button class="primary-btn" type="submit">메인 문구 저장</button><span class="save-state" data-save-state></span></div>
+    </form>
+    <div class="section-title top-gap"><h2>교육 일정</h2><span>${slots.length}개</span></div>
+    <div class="admin-list">${slots.length ? slots.map(x => `<article><div><b>${esc(x.date || "날짜 미정")} ${esc(x.startTime || "")}${x.endTime ? `–${esc(x.endTime)}` : ""} · ${esc(x.title)}</b><span>${x.status === "closed" || x.closed ? "마감" : x.status === "scheduled" ? "예정" : "신청가능"}</span></div><div class="admin-list-actions"><button class="edit" data-admin-edit="academy" data-id="${esc(x.id)}">수정</button><button class="delete" data-admin-delete="academy" data-id="${esc(x.id)}">삭제</button></div></article>`).join("") : `<div class="empty-inline">아직 등록된 교육 일정이 없습니다.</div>`}</div>
+    ${edit ? `<form class="admin-form" data-admin-form="academy" data-item-id="${esc(old?.id || "")}">
+      <div class="section-title"><h2>${old?.id ? "일정 수정" : "새 일정"}</h2><span>날짜·시간 직접 설정</span></div>
+      <div class="admin-form-row"><label>날짜<input type="date" name="date" value="${esc(old?.date || "")}" required></label><label>교육명<input name="title" maxlength="100" value="${esc(old?.title || "")}" required></label></div>
+      <div class="admin-form-row"><label>시작시간<input type="time" name="startTime" value="${esc(old?.startTime || "")}" required></label><label>종료시간<input type="time" name="endTime" value="${esc(old?.endTime || "")}" required></label></div>
+      <label>설명<input name="description" maxlength="240" value="${esc(old?.description || "")}"></label>
+      <div class="admin-form-row"><label>상태<select name="status"><option value="open" ${(old?.status || (!old?.closed ? "open" : "")) === "open" ? "selected" : ""}>신청가능</option><option value="scheduled" ${old?.status === "scheduled" ? "selected" : ""}>예정</option><option value="closed" ${(old?.status === "closed" || old?.closed) ? "selected" : ""}>마감</option></select></label><label class="check"><input type="checkbox" name="published" ${old?.published === false ? "" : "checked"}> 메인/아카데미에 공개</label></div>
+      ${formButtons("academy")}
+    </form>` : ""}
+  </section>`;
 }
 async function presidentPanel() {
   const data = await getDomain("president"); const p = data.profile || {};
@@ -150,12 +181,32 @@ export async function saveAdminForm(form) {
   if (domain === "keywords-list") { const lines = splitLines(fd.get("lines")).slice(0, 15); return saveDomain("keywords", { items: lines.map((line, i) => { const [label, delta = ""] = line.split("|").map(x => x.trim()); return { id: `keyword-${i + 1}`, rank: i + 1, label, delta, published: true }; }) }); }
   if (domain === "trending-list") { const lines = splitLines(fd.get("lines")).slice(0, 10); return saveDomain("trending", { items: lines.map((line, i) => { const [title, href = ""] = line.split("|").map(x => x.trim()); return { id: `trending-${i + 1}`, rank: i + 1, title, href, published: true }; }) }); }
   if (domain === "president") { const current = await getDomain("president"); const photo = form.querySelector("[data-profile-preview]")?.dataset.profileData || current.profile?.photo || ""; const next = { ...current, profile: { ...current.profile, photo, name: fd.get("name"), party: fd.get("party"), birth: fd.get("birth"), education: fd.get("education"), inauguratedAt: fd.get("inauguratedAt"), term: fd.get("term") }, career: splitLines(fd.get("career")), elections: splitLines(fd.get("elections")), vision: String(fd.get("vision") || ""), policies: splitLines(fd.get("policies")), pledges: splitLines(fd.get("pledges")), nationalTasks: splitLines(fd.get("nationalTasks")), channels: splitLines(fd.get("channels")), updatedAt: now }; return saveDomain("president", next); }
+  if (domain === "academy-settings") {
+    const data = await getDomain("academy");
+    data.config = {
+      eyebrow: String(fd.get("eyebrow") || "JEONGCHAMSI ACADEMY").trim().slice(0,60),
+      title: String(fd.get("title") || "정참시 아카데미").trim().slice(0,60),
+      headline: String(fd.get("headline") || "").trim().slice(0,100),
+      description: String(fd.get("description") || "").trim().slice(0,300),
+      cta: String(fd.get("cta") || "수강 가능 일정 확인").trim().slice(0,60)
+    };
+    return saveDomain("academy", data);
+  }
   if (domain === "generation") { const data = await getDomain("generation"); data.enabled = fd.get("enabled") === "on"; data.candidates = splitLines(fd.get("candidates")).filter(id => /^(assembly|metropolitan|basic)-\d{3}$/.test(id)).slice(0, 543); return saveDomain("generation", data); }
   if (domain === "nationalEvaluation") { const data = await getDomain("nationalEvaluation"); const subjectId = String(fd.get("subjectId") || ""); const nextSubject = /^assembly-\d{3}$/.test(subjectId) ? subjectId : null; const previous = data.subjectId && data.subjectId !== nextSubject ? String(data.subjectId) : ""; data.history = Array.isArray(data.history) ? data.history : []; if (previous && !data.history.some(x => x.subjectId === previous)) data.history.unshift({ subjectId: previous, closedAt: new Date().toISOString() }); data.history = data.history.slice(0, 100); data.subjectId = nextSubject; data.enabled = fd.get("enabled") === "on" && !!data.subjectId; data.results = data.results || {}; return saveDomain("nationalEvaluation", data); }
   const data = await getDomain(domain); const id = form.dataset.itemId || `${domain}-${Date.now().toString(36)}`;
   if (["columns", "community", "news"].includes(domain)) { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const cover = form.querySelector("[data-cover-preview]")?.dataset.coverData || old?.coverImage || ""; const next = { id, title: fd.get("title"), author: fd.get("author"), category: fd.get("category") || "", summary: fd.get("summary"), body: fd.get("body"), coverImage: cover, featured: fd.get("featured") === "on", published: fd.get("published") === "on", createdAt: old?.createdAt || now, updatedAt: now, likes: old?.likes || 0, views: old?.views || 0, ownerId: old?.ownerId || "" }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }
   else if (domain === "polls") { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const oldVotes = Object.fromEntries((old?.options || []).map(x => [x.label, x.votes || 0])); const labels = splitLines(fd.get("options")).slice(0, 10); const startsRaw = String(fd.get("startsAt") || "").trim(); const endsRaw = String(fd.get("endsAt") || "").trim(); const startsAt = startsRaw ? new Date(startsRaw).toISOString() : ""; const endsAt = endsRaw ? new Date(endsRaw).toISOString() : ""; if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) return { ok: false, error: "POLL_END_MUST_BE_AFTER_START" }; const next = { id, question: fd.get("question"), description: fd.get("description"), options: labels.map((label, i) => ({ id: `${id}-o${i + 1}`, label, votes: oldVotes[label] || 0 })), published: fd.get("published") === "on", startsAt, endsAt, createdAt: old?.createdAt || now, updatedAt: now }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }
-  else if (domain === "academy") { const list = data.slots || []; const old = list.find(x => String(x.id) === String(id)); const next = { id, date: fd.get("date"), title: fd.get("title"), description: fd.get("description"), published: fd.get("published") === "on", closed: fd.get("closed") === "on", createdAt: old?.createdAt || now, updatedAt: now }; data.slots = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }
+  else if (domain === "academy") {
+    const list = data.slots || [];
+    const old = list.find(x => String(x.id) === String(id));
+    const startTime = String(fd.get("startTime") || "").trim();
+    const endTime = String(fd.get("endTime") || "").trim();
+    if (startTime && endTime && endTime <= startTime) return { ok:false, error:"ACADEMY_END_MUST_BE_AFTER_START" };
+    const status = ["open","scheduled","closed"].includes(String(fd.get("status") || "")) ? String(fd.get("status")) : "open";
+    const next = { id, date: String(fd.get("date") || ""), startTime, endTime, title: String(fd.get("title") || "").trim(), description: String(fd.get("description") || "").trim(), status, published: fd.get("published") === "on", closed: status === "closed", createdAt: old?.createdAt || now, updatedAt: now };
+    data.slots = old ? list.map(x => x.id === id ? next : x) : [next, ...list];
+  }
   return saveDomain(domain, data);
 }
 export async function deleteAdminItem(domain, id) { const data = await getDomain(domain); if (domain === "academy") data.slots = (data.slots || []).filter(x => String(x.id) !== String(id)); else data.items = (data.items || []).filter(x => String(x.id) !== String(id)); return saveDomain(domain, data); }

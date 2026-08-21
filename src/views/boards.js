@@ -27,10 +27,12 @@ function bodyHtml(body = "") {
   return String(body || "").split(/\n{2,}|\r?\n/).map(x => x.trim()).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join("") || `<p>본문이 없습니다.</p>`;
 }
 
-export async function renderBoard(domain) {
+export async function renderBoard(domain, search = "") {
   const config = CONFIG[domain] || CONFIG.community;
   const data = await getDomain(domain);
-  const items = published(data.items || []);
+  const q = String(new URLSearchParams(search || "").get("q") || "").trim();
+  const norm = v => String(v || "").toLowerCase().replace(/\s+/g,"");
+  const items = published(data.items || []).filter(item => !q || norm(`${item.title||""} ${item.summary||""} ${item.body||""} ${item.category||""} ${item.author||""}`).includes(norm(q)));
   const session = getUserSession();
   const isAdmin = session.authenticated && session.user?.role === "admin";
   const canWrite = config.memberWrite ? session.authenticated : isAdmin;
@@ -41,7 +43,7 @@ export async function renderBoard(domain) {
   return pageShell(`<main class="subpage">
     <section class="page-hero"><span class="eyebrow">${config.eyebrow}</span><h1>${config.title}</h1><p>${config.description}</p></section>
     <section class="content-card">
-      <div class="board-toolbar"><p>${isAdmin ? "관리자 권한으로 이 게시판에서 바로 등록·수정·삭제할 수 있습니다." : (config.memberWrite ? "회원이 직접 글을 작성하고 댓글·좋아요로 참여할 수 있습니다." : "관리자가 등록한 게시물을 확인할 수 있습니다.")}</p><div class="inline-actions"><span class="status-pill"><b>POSTS</b>${items.length}개</span>${writeButton}</div></div>
+      <div class="board-toolbar"><p>${isAdmin ? "관리자 권한으로 이 게시판에서 바로 등록·수정·삭제할 수 있습니다." : (config.memberWrite ? "회원이 직접 글을 작성하고 댓글·좋아요로 참여할 수 있습니다." : "관리자가 등록한 게시물을 확인할 수 있습니다.")}</p><div class="inline-actions"><span class="status-pill"><b>${q ? `SEARCH · ${esc(q)}` : "POSTS"}</b>${items.length}개</span>${writeButton}</div></div>
       ${items.length ? `<div class="board-list">${items.map(item => {
         const cover = safeImage(item.coverImage);
         const noThumb = !config.image;

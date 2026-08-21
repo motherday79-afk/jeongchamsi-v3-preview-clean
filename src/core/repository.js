@@ -28,7 +28,16 @@ const defaults = {
     createdAt: "2026-08-21T00:00:00.000Z",
     updatedAt: "2026-08-21T00:00:00.000Z"
   }] },
-  academy: { slots: [] },
+  academy: {
+    config: {
+      eyebrow: "JEONGCHAMSI ACADEMY",
+      title: "정참시 아카데미",
+      headline: "정치의 꿈을 실제 준비로.",
+      description: "정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.",
+      cta: "수강 가능 일정 확인"
+    },
+    slots: []
+  },
   generation: { enabled: true, candidates: [], results: {} },
   nationalEvaluation: { enabled: false, subjectId: null, results: {}, history: [] },
   itsme: { categories: DEFAULT_ITSME_CATEGORIES, items: [] },

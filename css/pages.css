@@ -1115,3 +1115,59 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   font-style:normal;
 }
 
+/* ---------- alpha6.0.20 FUNCTION DETAIL ---------- */
+
+/* top service navigation: 7 primary items + compact overflow */
+.service-more{position:relative;display:inline-flex;align-items:center}
+.service-more summary{list-style:none;cursor:pointer;min-width:30px;height:30px;display:grid;place-items:center;border-radius:9px;font-size:20px;line-height:1;color:#52645e;transition:background-color 140ms var(--ui-ease),color 140ms var(--ui-ease),transform 140ms var(--ui-ease)}
+.service-more summary::-webkit-details-marker{display:none}
+.service-more summary:hover{background:var(--ui-hover-bg);color:var(--green)}
+.service-more summary:active{transform:scale(.94)}
+.service-more-menu{position:absolute;z-index:80;top:36px;right:0;width:190px;padding:8px;background:#fff;border:1px solid #dbe8e4;border-radius:14px;box-shadow:0 14px 36px rgba(23,42,36,.14);display:grid;gap:3px}
+.service-more-menu a{display:block;padding:10px 12px;border-radius:9px;white-space:nowrap}
+.service-more-menu a:hover{background:#f4faf8;color:var(--green)}
+
+/* generation mock-vote search: type -> immediate selection */
+.person-quick-picker{position:relative}
+.person-quick-results{position:absolute;z-index:70;left:0;right:0;top:68px;padding:6px;background:#fff;border:1px solid #d9e8e3;border-radius:12px;box-shadow:0 14px 34px rgba(23,42,36,.13);display:grid;gap:3px}
+.person-quick-results[hidden]{display:none}
+.person-quick-results button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:9px 10px;border:0;border-radius:9px;background:#fff;text-align:left;cursor:pointer}
+.person-quick-results button:hover{background:#f3faf7}
+.person-quick-results button b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.person-quick-results button span{flex:none;color:var(--green);font-size:11px;font-weight:850}
+
+/* Search empty category previews are examples, never fake live results */
+.search-empty-example{padding:18px;border:1px dashed #ceded9;border-radius:14px;background:#fbfdfc}
+.search-empty-example>b{display:block;font-size:14px}
+.search-empty-example>p{margin:6px 0 12px;color:#71817b;font-size:12px}
+.search-empty-example article{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;background:#f4f8f7;color:#6c7b76}
+.search-empty-example article span{flex:none;padding:3px 7px;border-radius:999px;background:#e5efec;color:#688079;font-size:10px;font-weight:900}
+.search-empty-example article strong{font-size:12px;font-weight:700}
+.search-group-more{margin-top:12px;text-align:right}
+.search-evaluation-list{display:grid;gap:8px}
+.search-evaluation-list button{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:10px;padding:10px;border:1px solid #e2ebe8;border-radius:12px;background:#fff;text-align:left;cursor:pointer}
+.search-evaluation-list .search-person-avatar{width:42px;height:42px;border-radius:50%}
+.search-evaluation-list small,.search-evaluation-list em{color:#71817b;font-size:11px;font-style:normal}
+
+/* Main poll is only a preview; pointer communicates navigation, not voting */
+.poll-module .poll-options button[data-go]{cursor:pointer}
+.poll-module .poll-options button[data-go]:hover{border-color:#afd2c8;background:#f5fbf9;transform:translateY(-1px)}
+
+/* More life-like fictional politician vectors; zero external requests */
+.compare-avatar.sample-a,.fake-avatar.a{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgMTYwIj48cmVjdCB3aWR0aD0iMTYwIiBoZWlnaHQ9IjE2MCIgcng9IjMwIiBmaWxsPSIjZWFmM2YwIi8+PHBhdGggZD0iTTMxIDE2MGM0LTM0IDIyLTQ5IDQ5LTQ5czQ1IDE1IDQ5IDQ5IiBmaWxsPSIjMjUzYjQ4Ii8+PHBhdGggZD0iTTY0IDExMmwxNiAxNyAxNi0xNyA5IDQ4SDU1eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik03NSAxMjloMTBsNSAzMUg3MHoiIGZpbGw9IiMzNzZmNjkiLz48ZWxsaXBzZSBjeD0iODAiIGN5PSI3MSIgcng9IjMyIiByeT0iMzkiIGZpbGw9IiNlN2JjOWQiLz48cGF0aCBkPSJNNDggNjJjMS0yOSAxNS00MyAzNS00MyAyMSAwIDM0IDE1IDMzIDQwLTgtMTMtMTgtMjAtMzItMjEtMTMgOS0yNCAxMy0zNiAxM3oiIGZpbGw9IiMyNzMxMzkiLz48cGF0aCBkPSJNNTQgNjljMCAyOSAxMSA0NCAyNiA0NCAxOCAwIDI4LTE3IDI4LTQ1IiBmaWxsPSJub25lIiBzdHJva2U9IiNjNThmNzMiIHN0cm9rZS13aWR0aD0iMiIgb3BhY2l0eT0iLjQ1Ii8+PHBhdGggZD0iTTYyIDY4aDEyTTg4IDY4aDEyIiBzdHJva2U9IiMzYjM1MzIiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTc0IDkxYzQgMyA5IDMgMTMgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWY2NTRmIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTQzIDY0YzMtMiA2LTIgOSAxTTEwOCA2NWMzLTMgNi0zIDkgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYzU4ZjczIiBzdHJva2Utd2lkdGg9IjMiLz48L3N2Zz4=")}
+.compare-avatar.sample-b,.fake-avatar.b{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgMTYwIj48cmVjdCB3aWR0aD0iMTYwIiBoZWlnaHQ9IjE2MCIgcng9IjMwIiBmaWxsPSIjZWVmMWY2Ii8+PHBhdGggZD0iTTI5IDE2MGM1LTM1IDIzLTUwIDUxLTUwczQ2IDE1IDUxIDUwIiBmaWxsPSIjMzAzOTRkIi8+PHBhdGggZD0iTTYzIDExMWwxNyAxOCAxNy0xOCA5IDQ5SDU0eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik03NSAxMjloMTBsNCAzMUg3MXoiIGZpbGw9IiM3NzVkNzciLz48ZWxsaXBzZSBjeD0iODAiIGN5PSI3MCIgcng9IjMxIiByeT0iNDAiIGZpbGw9IiNlMWIzOTQiLz48cGF0aCBkPSJNNTAgNThjMC0yNyAxNC00MiAzNC00MiAxOSAwIDMxIDEzIDMzIDM4LTktNy0xOC0xMS0yOS0xMi0xMiA3LTI0IDEwLTM4IDEweiIgZmlsbD0iIzI1MjQyYSIvPjxwYXRoIGQ9Ik02MSA2OGgxMk04OCA2OGgxMSIgc3Ryb2tlPSIjMzgzMzMxIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03NCA5MWM1IDQgMTAgNCAxNSAwIiBmaWxsPSJub25lIiBzdHJva2U9IiM5ZDYyNTAiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNNTggNThjLTIgNC0zIDgtMyAxM00xMDQgNThjMiA0IDMgOCAzIDEzIiBmaWxsPSJub25lIiBzdHJva2U9IiNiZDg3NmUiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==")}
+.compare-avatar.sample-a,.compare-avatar.sample-b,.fake-avatar.a,.fake-avatar.b{background-size:cover;background-position:center;border:1px solid #d7e4e0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.5)}
+
+/* Academy editor + time-aware rows */
+.academy-main-settings{margin-bottom:22px}
+.schedule-date small{display:block;margin-top:3px;color:#71817b;font-size:10px;font-weight:700}
+.academy-admin-edit{white-space:nowrap}
+.academy-detail-intro h2{margin:0 0 8px}
+.academy-detail-intro p{margin:0;color:#65766f;line-height:1.7}
+.schedule-row.empty{opacity:.6}
+
+@media(max-width:900px){
+  .service-more-menu{position:fixed;left:16px;right:16px;top:auto;width:auto;margin-top:4px}
+  .person-quick-results{top:65px}
+}
+
