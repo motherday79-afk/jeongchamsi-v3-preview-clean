@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.21-header-drawer";
 
 const DOCS = Object.freeze({
   guide: {

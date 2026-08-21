@@ -1,22 +1,25 @@
 {
-  "version": "v3.0.0-alpha6.0.20",
-  "base": "alpha6.0.19",
+  "version": "v3.0.0-alpha6.0.21",
+  "base": "alpha6.0.20",
   "patch_only": true,
-  "js_syntax": "ALL PASS",
-  "feature_checks": {
-    "generation_search_quick_select": "PASS",
-    "home_poll_navigation_only": "PASS",
-    "poll_full_options_preselect": "PASS",
-    "integrated_search_category_examples": "PASS",
-    "top_nav_7_plus_more": "PASS",
-    "fictional_politician_svg": "PASS",
-    "academy_copy_and_calendar_time_editor": "PASS"
+  "scope": [
+    "more outside-click close",
+    "icon quick navigation",
+    "full hamburger drawer redesign"
+  ],
+  "checks": {
+    "js_syntax": "ALL PASS",
+    "top_quick_primary_count": 7,
+    "drawer_quick_count": 8,
+    "more_outside_click_close": true,
+    "escape_close": true,
+    "drawer_backdrop_close": true,
+    "external_icon_requests": 0,
+    "important_count": 0
   },
-  "performance_guard": {
-    "no_external_compare_image_requests": true,
-    "generation_search_server_requests": 0,
-    "important_count": 0,
-    "home_path_gzip_delta_approx_kb": 2.75
+  "performance": {
+    "approx_home_path_gzip_delta_kb": 3.8,
+    "alpha20_transfer_baseline_kb": 63.7
   },
   "changed_files": [
     "package.json",
@@ -26,12 +29,11 @@
     "css/pages.css",
     "src/views/boards.js",
     "src/views/admin.js",
+    "src/views/legal.js",
     "src/views/layout.js",
     "src/views/home.js",
     "src/views/user.js",
     "src/views/people.js",
-    "src/views/features.js",
-    "src/core/repository.js",
-    "src/data/person-provider.js"
+    "src/views/features.js"
   ]
 }

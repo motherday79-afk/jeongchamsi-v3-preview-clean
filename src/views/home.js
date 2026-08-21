@@ -1,7 +1,7 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
-import { drawer, siteHeader, footer } from "./layout.js";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.21-header-drawer";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
