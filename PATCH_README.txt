@@ -1,32 +1,17 @@
-정참시 v3 alpha6.0.15 · GLOBAL INTERACTION POLISH
+정참시 v3 alpha6.0.16 · MOBILE SVG + TOUCH POLISH
 
-기준 버전
-- alpha6.0.14 적용 상태
+기준: alpha6.0.15
 
 PATCH ONLY
-- FULL CLEAN 아님
-- 전체 프로젝트 덮어쓰기 아님
-- ZIP 안 변경 파일만 동일 경로에 적용
+- 전체 덮어쓰기 아님
+- 변경 파일만 동일 경로에 적용
 
-디자인 정리
-- 상단 삼선바 / 내 참여 / 최근 본 정치인 아이콘을 문자기호에서 통일된 SVG 라인아이콘으로 교체
-- 헤더 아이콘 hover / active / keyboard focus 추가
-- 알림형 아이콘에는 짧은 bell nudge, 별 아이콘에는 미세 회전 피드백
-- 더보기 / 기본 버튼 / 보조 버튼 / 위험 버튼 인터랙션 규칙 통일
-- 탭 / 마이페이지 메뉴 / 최근 본 정치인 목록 hover/focus 통일
-- IT’S ME / COLUMN / COMMUNITY / 정치인 카드에 미세한 hover lift + shadow
-- 좋아요 / 투표 / 평가 선택에 즉각적인 클릭 피드백
-- Drawer close / 사이드 action affordance 정리
-- prefers-reduced-motion 지원
-
-보존
-- PC/모바일/Fold 레이아웃 크기 변경 없음
-- 폰트 크기 변경 없음
+수정
+- PC와 동일한 SVG 헤더 아이콘을 모바일/Fold에서도 명시적으로 적용
+- 모바일 메인 '내 참여 · 배지 / 최근 본 정치인' 도 SVG 아이콘 적용
+- 모바일/Fold 터치 active/pressed 피드백 추가
+- Galaxy 기본/Ultra/Fold 접힘·펼침/iPhone 등 터치 환경 대응
+- 레이아웃 크기 / 폰트 크기 변경 없음
 - css/app.css 변경 없음
 - 기능/권한/저장구조 변경 없음
 - !important 0개
-- Vercel Function 1개 유지
-
-원칙
-- hover에서 margin/padding/border-width를 변경하지 않음
-- transform/background/shadow/opacity 중심이라 CLS 유발 없음

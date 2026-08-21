@@ -165,7 +165,7 @@ export async function renderHome() {
       <section class="mobile-utility" aria-label="모바일 빠른 정보">
         ${loginMobile}
         <div class="mobile-keywords"><div class="mobile-utility-head"><b>실시간 정치키워드</b><span role="button" data-go="/keywords">더보기</span></div><div class="mobile-keyword-track">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></div>
-        <div class="mobile-mini-tools"><button type="button" data-go="/mypage/activity"><b>내 참여 · 배지</b><span>활동 보기</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>다시 보기</span></button></div>
+        <div class="mobile-mini-tools"><button type="button" data-go="/mypage/activity"><span class="mobile-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><span class="mobile-tool-copy"><b>내 참여 · 배지</b><span>활동 보기</span></span></button><button type="button" data-go="/mypage/recent"><span class="mobile-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></span><span class="mobile-tool-copy"><b>최근 본 정치인</b><span>다시 보기</span></span></button></div>
       </section>
 
       <main class="main-column">
