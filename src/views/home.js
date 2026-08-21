@@ -76,6 +76,24 @@ function sideNewsRow(item, i) {
   return `<div class="side-row live" role="button" tabindex="0" data-go="/news/${esc(item.id)}"><span>${i + 1}</span><i>${esc(item.title)}</i></div>`;
 }
 
+function itsmeHomeCard(item, index) {
+  if (!item) return `<article class="itsme-card itsme-empty"><span>${String(index + 1).padStart(2, "0")}</span><b>아직 등록된 정책이 없습니다</b><p>IT’S ME에 정책이 등록되면 이곳에 표시됩니다.</p></article>`;
+  return `<article class="itsme-card" role="button" tabindex="0" data-go="/itsme/${esc(item.id)}"><span>${String(index + 1).padStart(2, "0")}</span><b>${esc(item.title || "정책 제안")}</b><p>${esc(item.summary || item.body || "")}</p></article>`;
+}
+
+function nationalEvaluationHomeMarkup(data = {}) {
+  const subjectId = String(data.subjectId || "");
+  const match = subjectId.match(/^assembly-(\d{3})$/);
+  if (!match) {
+    return `<div class="national-eval-layout"><div class="eval-person"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>아직 선택된 국회의원이 없습니다</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>관리자에서 평가 대상을 선택하면 메인에 바로 표시됩니다.</p></div><div class="eval-score"><small>전국 평가</small><strong>—</strong><span>대상 선택 전</span></div></div>`;
+  }
+  const slot = Number(match[1]);
+  const votes = { positive: 0, neutral: 0, negative: 0, ...(data.results?.[subjectId] || {}) };
+  const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
+  const positiveShare = total ? Math.round(Number(votes.positive || 0) * 100 / total) : 0;
+  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>국회의원 ${String(slot).padStart(3, "0")}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
+}
+
 function pollMarkup(poll) {
   if (!poll) return `<div class="poll-main">
     <div class="poll-question"><span class="poll-status">진행중</span><h3>설문 질문이 이 영역에 표시됩니다.</h3><p>관리자에서 설문을 등록하면 메인에 바로 반영됩니다.</p></div>
@@ -122,6 +140,11 @@ export async function renderHome() {
   while (news.length < 5) news.push(null);
 
   const poll = published(data.polls?.items || [])[0] || null;
+  const itsmeHomeItems = published(data.itsme?.items || [])
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 6);
+  while (itsmeHomeItems.length < 6) itsmeHomeItems.push(null);
+  const nationalEvaluation = data.nationalEvaluation || {};
   const academySlots = (data.academy?.slots || []).filter(x => x.published !== false).slice(0, 4);
 
   const keywords = (data.keywords?.items || []).filter(x => x.published !== false).slice(0, 8);
@@ -157,7 +180,7 @@ export async function renderHome() {
 
         <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow">NOW RANK</span><h2>지금 가장 주목받는 정치인</h2><p class="module-desc">상위 5명은 한눈에, 6~15위는 흐름을 읽기 쉽게.</p></div><button class="more-btn" type="button" data-go="/now">NOW Rank 전체보기 →</button></div><div class="rank-top-grid">${rankTop5}</div><div class="rank-divider"><span>6–15위</span><i></i></div><div class="rank-list">${rankList10}</div></section>
 
-        <section class="module" id="itsme"><div class="module-header"><div><span class="eyebrow">IT’S ME</span><h2>내가 정치의 주인공이라면</h2><p class="module-desc">역할을 선택해 직접 정책과 아이디어를 제안하는 참여 게시판.</p></div><button class="more-btn" type="button" data-go="/itsme">IT’S ME 전체보기 →</button></div><div class="itsme-grid"><article class="itsme-card" role="button" tabindex="0" data-go="/itsme?category=${encodeURIComponent("내가 대통령이라면")}"><span>01</span><b>내가 대통령이라면</b><p>국가 정책과 방향을 제안합니다.</p></article><article class="itsme-card" role="button" tabindex="0" data-go="/itsme?category=${encodeURIComponent("내가 국회의원이라면")}"><span>02</span><b>내가 국회의원이라면</b><p>법과 제도를 직접 제안합니다.</p></article><article class="itsme-card" role="button" tabindex="0" data-go="/itsme?category=${encodeURIComponent("내가 시장이라면")}"><span>03</span><b>내가 시장이라면</b><p>우리 도시의 변화를 제안합니다.</p></article><article class="itsme-card" role="button" tabindex="0" data-go="/itsme?category=${encodeURIComponent("내가 장관이라면")}"><span>04</span><b>내가 장관이라면</b><p>분야별 정책을 직접 설계합니다.</p></article><article class="itsme-card" role="button" tabindex="0" data-go="${userSession.authenticated ? "/itsme/write" : "/login"}"><span>05</span><b>내 정책 제안 쓰기</b><p>로그인 회원이 직접 글을 작성합니다.</p></article><article class="itsme-card accent" role="button" tabindex="0" data-go="/itsme"><span>06</span><b>IT’S ME 게시판</b><p>모든 시민 제안을 한곳에서 봅니다.</p></article></div></section>
+        <section class="module" id="itsme"><div class="module-header"><div><span class="eyebrow">IT’S ME</span><h2>내가 정치의 주인공이라면</h2><p class="module-desc">IT’S ME에 등록된 최신 정책 제안을 메인에서 바로 확인합니다.</p></div><button class="more-btn" type="button" data-go="/itsme">IT’S ME 전체보기 →</button></div><div class="itsme-grid">${itsmeHomeItems.map(itsmeHomeCard).join("")}</div></section>
 
         <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2><p class="module-desc">대표 COLUMN 1개 + 추가 COLUMN 4개 구조.</p></div><button class="more-btn" type="button" data-go="/column">COLUMN 전체보기 →</button></div>${columnLead(lead)}<div class="column-grid">${minis.map(columnMini).join("")}</div></section>
 
@@ -169,7 +192,7 @@ export async function renderHome() {
 
         <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대가 뽑은 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p></div><button class="more-btn" type="button" data-go="/generation-president">세대별 선택 전체보기 →</button></div><div class="generation-feature"><div class="generation-intro"><span class="generation-mark">세대별</span><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p><button type="button" data-go="/generation-president">모의투표 참여 →</button></div><div class="generation-grid">${["10대", "20대", "30대", "40대", "50대", "60대+"].map((age, i) => `<article class="generation-card ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>1위 후보 영역</b><small>투표 결과 표시</small><div class="generation-bar"><i style="width:${[54,68,61,57,63,59][i]}%"></i></div></article>`).join("")}</div></div></section>
 
-        <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전국 평가제 보기 →</button></div><div class="national-eval-layout"><div class="eval-person"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>국회의원 영역</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>메인에서는 현재 평가 대상과 핵심 결과만 노출하고, 상세 평가 항목은 전용 페이지에서 진행.</p></div><div class="eval-score"><small>전국 평가</small><strong>—</strong><span>참여 전</span></div></div></section>
+        <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전국 평가제 보기 →</button></div>${nationalEvaluationHomeMarkup(nationalEvaluation)}</section>
 
         <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">JEONGCHAMSI ACADEMY</span><h2>정참시 아카데미</h2><p class="module-desc">정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.</p></div><button class="more-btn" type="button" data-go="/academy">아카데미 일정 보기 →</button></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>정치의 꿈을 실제 준비로.</h3><p>과정과 강사진은 추후 설계. 메인에서는 아카데미의 성격과 예약 가능한 스케줄 진입점을 명확하게 보여줍니다.</p><button type="button" data-go="/academy">수강 가능 일정 확인 →</button></div><div class="academy-schedule"><div class="schedule-head"><b>이번 달 수강 가능 일정</b><span>월간보기</span></div>${academyRows(academySlots)}</div></div></section>
       </main>
