@@ -7,6 +7,7 @@ const routeLoaders = Object.freeze({
   "action": () => require("../server/v3/routes/action"),
   "content": () => require("../server/v3/routes/content"),
   "home": () => require("../server/v3/routes/home"),
+  "people": () => require("../server/v3/routes/people"),
   "health": () => require("../server/v3/routes/health"),
   "setup": () => require("../server/v3/routes/setup"),
   "upload": () => require("../server/v3/routes/upload"),

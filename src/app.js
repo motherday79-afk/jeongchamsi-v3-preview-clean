@@ -12,6 +12,8 @@ let renderEpoch = 0;
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
   const p = parse(state.pathname);
+  const peopleRoutes = new Set(["", "person", "now", "compare", "generation-president", "national-evaluation", "search", "admin", "mypage"]);
+  if (peopleRoutes.has(p[0] || "")) { const { ensurePeopleIndex } = await import("./data/person-provider.js"); await ensurePeopleIndex(); }
   if (!p.length) return (await import("./views/home.js")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
@@ -136,6 +138,9 @@ document.addEventListener("click", async event => {
   }
   const delUser = event.target.closest("[data-user-post-delete]");
   if (delUser) { if (!confirm("이 글을 삭제할까요?")) return; const domain = delUser.dataset.userPostDelete; const r = await performAction("user-post-delete", { domain, id: delUser.dataset.id }); if (!r.ok) return alert(`삭제하지 못했습니다. ${r.error || ""}`); clearDomainCache(); const target = { itsme:"/itsme", community:"/community", columns:"/column", news:"/news" }[domain] || "/"; route(target, { replace: true }); return; }
+
+  const peopleSync = event.target.closest("[data-people-sync-assembly]");
+  if (peopleSync) { if (!confirm("국회 공식 데이터로 국회의원 정보를 동기화할까요? 사진은 가져오지 않습니다.")) return; peopleSync.disabled=true; const state=document.querySelector("[data-people-sync-state]"); if(state)state.textContent="국회 공식 데이터 동기화 중…"; const r=await performAction("people-sync-assembly"); if(!r.ok){peopleSync.disabled=false;if(state)state.textContent=r.error==="OPEN_ASSEMBLY_API_KEY_MISSING"?"OPEN_ASSEMBLY_API_KEY가 필요합니다.":`동기화 실패 · ${r.error||""}`;return;} const {resetPeopleIndex,ensurePeopleIndex}=await import("./data/person-provider.js");resetPeopleIndex();await ensurePeopleIndex({fresh:true});clearDomainCache();if(state)state.textContent=`완료 · ${r.connected}명 연결`;await render(currentRoute(),{resetScroll:false});return;}
 
   const tab = event.target.closest("[data-admin-tab]"); if (tab) return route(`/admin?tab=${encodeURIComponent(tab.dataset.adminTab)}`);
   const add = event.target.closest("[data-admin-new]"); if (add) return route(`/admin?tab=${encodeURIComponent(add.dataset.adminNew)}&edit=new`);

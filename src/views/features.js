@@ -31,6 +31,7 @@ function formatDate(v) {
   catch { return ""; }
 }
 function slotLabel(person) {
+  if (person?.connected && person?.name) return `${person.name}${person.party ? ` · ${person.party}` : ""}${person.jurisdiction ? ` · ${person.jurisdiction}` : ""}`;
   return `${person.roleLabel} ${String(person.slot).padStart(3, "0")}`;
 }
 function memberAgeGroup(birthYear) {
