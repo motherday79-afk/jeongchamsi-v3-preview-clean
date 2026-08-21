@@ -253,6 +253,11 @@
 .keyword-rank-list,.trending-rank-list{display:grid;gap:8px}.keyword-rank-list article,.trending-rank-list button{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:58px;padding:10px 14px;border:1px solid #e3e8e6;border-radius:12px;background:#fff;text-align:left}.keyword-rank-list strong,.trending-rank-list strong{font-size:16px;color:#0b8b73}.keyword-rank-list b,.trending-rank-list b{font-size:15px}.keyword-rank-list span,.trending-rank-list span{font-size:12px;color:#66756f}.trending-rank-list button{width:100%;cursor:pointer}
 .itsme-category-tabs{display:flex;gap:7px;flex-wrap:wrap}.itsme-category-tabs button{min-height:38px;padding:8px 12px;border:1px solid #dfe8e5;border-radius:999px;background:#fff;font-size:13px;font-weight:800;cursor:pointer}.itsme-category-tabs button.active{border-color:#0b8b73;background:#eef8f5;color:#08725e}.member-post-form{display:grid;gap:14px}.member-post-form label{display:grid;gap:7px;font-size:13px;font-weight:800}.member-post-form input,.member-post-form select,.member-post-form textarea{width:100%;border:1px solid #dfe8e5;border-radius:10px;padding:12px 13px;background:#fff;font:inherit;color:#18211f}
 .poll-live-card small{display:block;margin-top:12px;color:#69766f}.poll-choice-list button i{height:7px;border-radius:999px;background:#e5ece9;overflow:hidden}.poll-choice-list button i em{display:block;height:100%;background:#0b8b73}
+.poll-options button.selected,.poll-choice-list button.selected{border-color:#0b8b73;background:#eef8f5;box-shadow:0 0 0 1px #0b8b73 inset}
+.poll-vote-panel{display:grid;gap:10px}
+.poll-confirm-row{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.poll-confirm-row span{color:var(--text-3);font-size:12px}
+.poll-confirm-row .primary-btn:disabled{opacity:.45;cursor:default}
 .mypage-menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mypage-menu-grid button{min-height:90px;padding:16px;border:1px solid #e3e8e6;border-radius:14px;background:#fff;text-align:left;cursor:pointer}.mypage-menu-grid b,.mypage-menu-grid span{display:block}.mypage-menu-grid b{font-size:16px}.mypage-menu-grid span{margin-top:6px;color:#66756f;font-size:13px}.badge-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.badge-detail-grid article{display:grid;grid-template-columns:40px minmax(0,1fr);align-items:center;gap:10px;padding:13px;border:1px solid #e3e8e6;border-radius:12px;opacity:.55}.badge-detail-grid article.earned{border-color:#98d6c8;background:#f2fbf8;opacity:1}.badge-detail-grid article>span{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#edf3f1;font-weight:900}.badge-detail-grid b{font-size:14px}.badge-detail-grid p{margin:3px 0 0;color:#66756f;font-size:12px}.recent-person-list{display:grid;gap:8px}.recent-person-list button{display:grid;grid-template-columns:28px 44px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:62px;padding:9px 12px;border:1px solid #e3e8e6;border-radius:12px;background:#fff;text-align:left;cursor:pointer}.recent-person-avatar{width:42px;height:42px;border-radius:50%;background:#e2ece8}.recent-person-list strong{color:#0b8b73}.recent-person-list em{font-style:normal;color:#66756f;font-size:12px}.recent-row button{cursor:pointer}
 .recent-circle-row{display:grid;grid-template-columns:repeat(4,42px);justify-content:space-between;align-items:start;gap:6px}
 .recent-circle-btn{width:42px;display:grid;justify-items:center;gap:4px;padding:0;border:0;background:transparent}
@@ -307,8 +312,8 @@
 
 
 .footer-view-switch{display:none}
-html.jcv3-force-desktop .footer-view-switch.desktop-return{display:inline-flex;margin-top:10px;min-height:38px;align-items:center;padding:8px 12px;border:1px solid #dfe7e4;border-radius:9px;background:#fff;color:var(--text);font-size:13px;font-weight:850;cursor:pointer}
-html.jcv3-force-desktop .footer-view-switch.mobile-pc{display:none}
+html.jcv3-touch-ui .footer{position:relative;padding-bottom:74px}
+html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;position:absolute;right:16px;bottom:18px;min-height:38px;align-items:center;padding:8px 12px;border:1px solid #dfe7e4;border-radius:9px;background:#fff;color:var(--text);font-size:13px;font-weight:850;cursor:pointer}
 
 /* ---------- responsive: single-source ---------- */
 @media(max-width:760px){
@@ -316,7 +321,6 @@ html.jcv3-force-desktop .footer-view-switch.mobile-pc{display:none}
   .admin-page>.page-hero{grid-column:auto}
   .admin-tabs{position:static;max-height:none;overflow:visible;display:flex;flex-direction:column}
   .admin-tabs button{width:100%;text-align:left}
-  html:not(.jcv3-force-desktop) .footer-view-switch.mobile-pc{display:inline-flex;margin-top:10px;min-height:38px;align-items:center;padding:8px 12px;border:1px solid #dfe7e4;border-radius:9px;background:#fff;color:var(--text);font-size:13px;font-weight:850;cursor:pointer}
 
   .page-hero,.content-card,.admin-panel,.auth-card{padding:17px 15px;border-radius:15px}
   .detail-grid{grid-template-columns:1fr}
@@ -383,25 +387,8 @@ html.jcv3-force-desktop .footer-view-switch.mobile-pc{display:none}
   .info-list div{grid-template-columns:92px minmax(0,1fr)}
 }
 
-/* alpha6.0.11: mobile/fold PC-view button safety */
-@media(max-width:900px),(hover:none) and (pointer:coarse){
-  html:not(.jcv3-force-desktop) .footer-view-switch.mobile-pc{
-    display:inline-flex;
-    margin-top:10px;
-    min-height:38px;
-    align-items:center;
-    padding:8px 12px;
-    border:1px solid #dfe7e4;
-    border-radius:9px;
-    background:#fff;
-    color:var(--text);
-    font-size:13px;
-    font-weight:850;
-    cursor:pointer;
-  }
-}
 
-/* alpha6.0.13 profile / search / analysis / footer hotfix */
+/* profile / search / analysis */
 .region-select-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .region-select-grid label{display:grid;gap:6px;font-size:13px;font-weight:850}
 .region-select-grid select{width:100%;border:1px solid #dfe7e4;border-radius:10px;padding:11px 12px;background:#fff;color:var(--text);font:inherit}
@@ -423,10 +410,6 @@ html.jcv3-force-desktop .footer-view-switch.mobile-pc{display:none}
 .evaluation-history-list span{margin-top:3px;color:var(--text-3);font-size:12px}
 .evaluation-history-list p{margin:0;color:var(--text-2);font-size:13px;white-space:nowrap}
 
-@media(max-width:900px),(hover:none) and (pointer:coarse){
-  .footer{position:relative;padding-bottom:74px}
-  html:not(.jcv3-force-desktop) .footer-view-switch.mobile-pc{position:absolute;right:16px;bottom:18px;margin:0;z-index:2}
-}
 @media(max-width:760px){
   .region-select-grid,.compare-analysis-text{grid-template-columns:1fr}
   .evaluation-history-list article{align-items:flex-start;flex-direction:column;gap:5px}

@@ -1,5 +1,6 @@
 const { health } = require("../../../lib/v3/redis");
 const { sessionSecret } = require("../../../lib/v3/user-auth");
+const { blobConfigured } = require("../../../lib/v3/blob");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -17,7 +18,8 @@ module.exports = async function handler(req, res) {
       ok: true,
       storage: "ready",
       storageSource: storage.source,
-      session: "ready"
+      session: "ready",
+      blob: blobConfigured() ? "ready" : "missing"
     });
   } catch (error) {
     const status =

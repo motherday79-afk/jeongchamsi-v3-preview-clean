@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
   try {
     const values = await mgetJSON(DOMAINS);
     const data = Object.fromEntries(DOMAINS.map((d, i) => [d, values[i] || defaultDomain(d)]));
-    res.setHeader("Cache-Control", "no-store, max-age=0");
+    res.setHeader("Cache-Control", "public, max-age=0, s-maxage=15, stale-while-revalidate=30");
     return res.status(200).json({ ok: true, data });
   } catch (error) {
     return res.status(error?.code === "STORAGE_MISSING" ? 503 : 500).json({ ok: false, error: error?.code || "HOME_READ_FAILED" });

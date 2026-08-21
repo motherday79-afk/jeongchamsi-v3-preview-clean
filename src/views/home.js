@@ -1,6 +1,6 @@
 import { getHomeSnapshot } from "../core/repository.js";
 import { drawer, siteHeader, footer } from "./layout.js";
-import { getUserSummary } from "../core/user.js";
+import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -94,23 +94,16 @@ function nationalEvaluationHomeMarkup(data = {}) {
   return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>국회의원 ${String(slot).padStart(3, "0")}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
 }
 
-function pollMarkup(poll) {
-  if (!poll) return `<div class="poll-main">
-    <div class="poll-question"><span class="poll-status">진행중</span><h3>설문 질문이 이 영역에 표시됩니다.</h3><p>관리자에서 설문을 등록하면 메인에 바로 반영됩니다.</p></div>
-    <div class="poll-options">
-      <button type="button"><span>선택지 1</span><i><em style="width:58%"></em></i><b>58%</b></button>
-      <button type="button"><span>선택지 2</span><i><em style="width:27%"></em></i><b>27%</b></button>
-      <button type="button"><span>선택지 3</span><i><em style="width:15%"></em></i><b>15%</b></button>
-    </div>
-  </div>`;
+function pollMarkup(poll, voted = false) {
+  if (!poll) return `<div class="poll-main"><div class="poll-question"><span class="poll-status">진행중</span><h3>설문 질문이 이 영역에 표시됩니다.</h3><p>관리자에서 설문을 등록하면 메인에 바로 반영됩니다.</p></div><div class="poll-vote-panel"><div class="poll-options"><button type="button" disabled><span>선택지 1</span><i><em style="width:0%"></em></i><b>0%</b></button><button type="button" disabled><span>선택지 2</span><i><em style="width:0%"></em></i><b>0%</b></button><button type="button" disabled><span>선택지 3</span><i><em style="width:0%"></em></i><b>0%</b></button></div></div></div>`;
 
   const options = (poll.options || []).slice(0, 3);
   const total = Math.max(0, options.reduce((sum, x) => sum + Number(x.votes || 0), 0));
   const optionMarkup = options.map(opt => {
     const pct = total ? Math.round(Number(opt.votes || 0) * 100 / total) : 0;
-    return `<button type="button" data-poll-vote data-poll-id="${esc(poll.id)}" data-option-id="${esc(opt.id)}"><span>${esc(opt.label)}</span><i><em style="width:${pct}%"></em></i><b>${pct}%</b></button>`;
+    return `<button type="button" ${voted ? "disabled" : `data-poll-select data-option-id="${esc(opt.id)}"`} aria-pressed="false"><span>${esc(opt.label)}</span><i><em style="width:${pct}%"></em></i><b>${pct}%</b></button>`;
   }).join("");
-  return `<div class="poll-main"><div class="poll-question"><span class="poll-status">진행중</span><h3>${esc(poll.question)}</h3><p>${poll.sample ? "검수용 예시 설문" : "정참시 참여자 기반 설문"} · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-options">${optionMarkup}</div></div>`;
+  return `<div class="poll-main"><div class="poll-question"><span class="poll-status">${voted ? "참여완료" : "진행중"}</span><h3>${esc(poll.question)}</h3><p>${poll.sample ? "검수용 예시 설문" : "정참시 참여자 기반 설문"} · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-vote-panel" data-poll-scope data-poll-id="${esc(poll.id)}"><div class="poll-options">${optionMarkup}</div>${voted ? `<div class="poll-confirm-row"><span>이 설문에 이미 참여했습니다.</span></div>` : `<div class="poll-confirm-row"><span data-poll-select-state>선택지를 선택해 주세요.</span><button class="primary-btn" type="button" data-poll-confirm disabled>투표 확인</button></div>`}</div></div>`;
 }
 
 function academyRows(slots = []) {
@@ -184,7 +177,7 @@ export async function renderHome() {
 
         <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2><p class="module-desc">대표 COLUMN 1개 + 추가 COLUMN 4개 구조.</p></div><button class="more-btn" type="button" data-go="/column">COLUMN 전체보기</button></div>${columnLead(lead)}<div class="column-grid">${minis.map(columnMini).join("")}</div></section>
 
-        <section class="module poll-module" id="poll"><div class="module-header"><div><span class="eyebrow">CITIZENS’ CHOICE</span><h2>지금 시민들의 선택</h2><p class="module-desc">메인에서는 질문 1개와 선택지 최대 3개까지만 일관되게 노출.</p></div><button class="more-btn" type="button" data-go="/poll">전체 설문 바로가기</button></div>${pollMarkup(poll)}</section>
+        <section class="module poll-module" id="poll"><div class="module-header"><div><span class="eyebrow">CITIZENS’ CHOICE</span><h2>지금 시민들의 선택</h2><p class="module-desc">메인에서는 질문 1개와 선택지 최대 3개까지만 일관되게 노출.</p></div><button class="more-btn" type="button" data-go="/poll">전체 설문 바로가기</button></div>${pollMarkup(poll, userSession.authenticated && !!poll && hasVotedPoll(poll.id))}</section>
 
         <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티.</p></div><button class="more-btn" type="button" data-go="/community">정뮤니티 전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map(communityRow).join("")}</div></section>
 

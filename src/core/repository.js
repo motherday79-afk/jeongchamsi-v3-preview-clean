@@ -1,5 +1,6 @@
 const CACHE = new Map();
 let storageState = { available: true, error: "" };
+let homeRevision = 0;
 
 export const DEFAULT_ITSME_CATEGORIES = [
   "내가 대통령이라면",
@@ -78,6 +79,7 @@ export async function saveDomain(domain, data) {
       body: JSON.stringify({ domain, data })
     });
     CACHE.set(domain, body.data || data);
+    homeRevision += 1;
     storageState = { available: true, error: "" };
     return { ok: true, data: clone(body.data || data) };
   } catch (error) {
@@ -93,7 +95,10 @@ export async function performAction(action, payload = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, payload })
     });
-    if (["user-post-save", "user-post-delete", "post-like", "poll-vote", "generation-vote", "comment-add"].includes(action)) CACHE.clear();
+    if (["user-post-save", "user-post-delete", "post-like", "poll-vote", "generation-vote", "national-evaluation-vote", "comment-add"].includes(action)) {
+      CACHE.clear();
+      homeRevision += 1;
+    }
     return body;
   } catch (error) {
     return { ok: false, error: error.code || error.message, status: error.status || 0 };
@@ -102,7 +107,7 @@ export async function performAction(action, payload = {}) {
 
 export async function getHomeSnapshot() {
   try {
-    const body = await requestJSON("/api/v3/home");
+    const body = await requestJSON(`/api/v3/home${homeRevision ? `?r=${homeRevision}` : ""}`);
     storageState = { available: true, error: "" };
     return body?.data || Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)]));
   } catch (error) {

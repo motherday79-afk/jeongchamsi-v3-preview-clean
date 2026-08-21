@@ -186,8 +186,14 @@ module.exports = async function handler(req, res) {
       const isAdmin = user.role === "admin";
       if (!["community", "itsme", "columns", "news"].includes(domain)) return res.status(400).json({ ok: false, error: "INVALID_DOMAIN" });
       if (["columns", "news"].includes(domain) && !isAdmin) return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
-      const title = String(payload.title || "").trim().slice(0, 120);
-      const body = String(payload.body || "").trim().slice(0, 50000);
+      const rawTitle = String(payload.title || "").trim();
+      const rawSummary = String(payload.summary || "").trim();
+      const rawBody = String(payload.body || "").trim();
+      if (domain === "itsme" && rawTitle.length > 30) return res.status(400).json({ ok: false, error: "ITSME_TITLE_TOO_LONG" });
+      if (domain === "itsme" && rawSummary.length > 15) return res.status(400).json({ ok: false, error: "ITSME_SUMMARY_TOO_LONG" });
+      if (domain === "itsme" && rawBody.length > 3000) return res.status(400).json({ ok: false, error: "ITSME_BODY_TOO_LONG" });
+      const title = rawTitle.slice(0, domain === "itsme" ? 30 : 120);
+      const body = rawBody.slice(0, domain === "itsme" ? 3000 : 50000);
       if (!title || !body) return res.status(400).json({ ok: false, error: "TITLE_BODY_REQUIRED" });
       const current = (await getJSON(domain)) || defaultDomain(domain);
       const items = current.items || [];
@@ -198,7 +204,7 @@ module.exports = async function handler(req, res) {
       const now = new Date().toISOString();
       const next = {
         id, title,
-        summary: String(payload.summary || "").trim().slice(0, 240),
+        summary: rawSummary.slice(0, domain === "itsme" ? 15 : 240),
         category: String(payload.category || "").trim().slice(0, 60),
         author: String(old?.author || user.nickname || user.id).slice(0, 40),
         ownerId: String(old?.ownerId || user.id),

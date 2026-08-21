@@ -54,7 +54,7 @@ async function uploadCompressed(dataUrl, prefix) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok || !body.url) {
     const map = {
-      BLOB_STORAGE_NOT_CONFIGURED: "이미지 저장소가 아직 연결되지 않았습니다. Vercel Blob을 연결해 주세요.",
+      BLOB_STORAGE_NOT_CONFIGURED: "Vercel Blob 연결이 필요합니다. 관리자 > 시스템에서 이미지 저장 상태를 확인해 주세요.",
       ADMIN_REQUIRED: "관리자 권한이 필요합니다.",
       INVALID_IMAGE_PAYLOAD: "이미지 형식을 처리할 수 없습니다."
     };

@@ -99,7 +99,15 @@ async function nationalEvaluationPanel() {
   const assembly = listAllPoliticians().filter(x => x.type === "assembly");
   return `<section class="admin-panel"><div class="admin-panel-head"><h2>국회의원 전국 평가제</h2><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div><div class="notice-box">국회의원 300개 Slot 중 현재 전국 평가 대상을 한 명 선택합니다. 실제 인물정보가 연결되기 전에는 Slot 번호로 기능을 검수합니다.</div><form class="admin-form" data-admin-form="nationalEvaluation"><label>현재 평가 대상<select name="subjectId"><option value="">대상 선택 전</option>${assembly.map(x => `<option value="${x.id}" ${x.id === data.subjectId ? "selected" : ""}>국회의원 ${String(x.slot).padStart(3, "0")}</option>`).join("")}</select></label><label class="check"><input type="checkbox" name="enabled" ${data.enabled ? "checked" : ""}> 전국 평가 참여 활성</label>${formButtons("national")}</form></section>`;
 }
-function systemPanel() { return `<section class="admin-panel"><h2>시스템</h2><dl class="info-list"><div><dt>버전</dt><dd>${APP_VERSION}</dd></div><div><dt>빌드</dt><dd>${BUILD_NAME}</dd></div><div><dt>메인 Layout CSS</dt><dd>LOCKED</dd></div><div><dt>Persistent Source</dt><dd>Redis only</dd></div><div><dt>Browser fallback</dt><dd>NONE · 비회원 최근본만 localStorage</dd></div><div><dt>V2 runtime</dt><dd>NONE</dd></div></dl></section>`; }
+async function systemPanel() {
+  let health = { storage: "unknown", blob: "unknown" };
+  try {
+    const response = await fetch("/api/v3/health", { credentials: "same-origin", cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    if (response.ok) health = body;
+  } catch {}
+  return `<section class="admin-panel"><h2>시스템</h2><dl class="info-list"><div><dt>버전</dt><dd>${APP_VERSION}</dd></div><div><dt>빌드</dt><dd>${BUILD_NAME}</dd></div><div><dt>메인 Layout CSS</dt><dd>LOCKED</dd></div><div><dt>콘텐츠 저장</dt><dd>${health.storage === "ready" ? "Redis 정상" : "확인 필요"}</dd></div><div><dt>이미지 저장</dt><dd>${health.blob === "ready" ? "Vercel Blob 정상" : "Vercel Blob 연결 필요"}</dd></div><div><dt>Browser fallback</dt><dd>NONE · 비회원 최근본/화면모드만 localStorage</dd></div><div><dt>V2 runtime</dt><dd>NONE</dd></div></dl>${health.blob === "ready" ? "" : `<div class="notice-box">COLUMN·NEWS 대표사진 업로드를 사용하려면 Vercel 프로젝트에 Blob Store와 BLOB_READ_WRITE_TOKEN이 연결되어 있어야 합니다.</div>`}</section>`;
+}
 
 export async function renderAdmin() {
   const session = getUserSession();
@@ -120,7 +128,7 @@ export async function renderAdmin() {
   else if (tab === "generation") panel = await generationPanel();
   else if (tab === "national") panel = await nationalEvaluationPanel();
   else if (tab === "academy") panel = await academyPanel();
-  else if (tab === "system") panel = systemPanel();
+  else if (tab === "system") panel = await systemPanel();
   else panel = await dashboardPanel();
   return pageShell(`<main class="subpage admin-page"><section class="page-hero"><span class="eyebrow">ADMIN · V3 CLEAN CORE</span><h1>정참시 관리자</h1><p>회원·콘텐츠·참여기능을 동일한 서버 Source of Truth에서 관리합니다.</p></section>${adminTabs(tab)}${panel}</main>`);
 }

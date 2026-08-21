@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" id="jcv3-viewport">
   <script>
     try {
+      const mobileUA = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+      const touch = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
+      const shortSide = Math.min(Number(screen.width || 9999), Number(screen.height || 9999));
+      if (mobileUA || (touch && shortSide <= 1024)) document.documentElement.classList.add("jcv3-touch-ui");
       if (localStorage.getItem("jcv3:view-mode") === "desktop") {
         document.documentElement.classList.add("jcv3-force-desktop");
         document.getElementById("jcv3-viewport").setAttribute("content","width=1280,initial-scale=1");
@@ -13,11 +17,11 @@
   </script>
   <meta name="theme-color" content="#0b8f78">
   <title>정참시 v3 Preview</title>
-  <link rel="stylesheet" href="/css/app.css?v=alpha6.0.13-hotfix">
-  <link rel="stylesheet" href="/css/pages.css?v=alpha6.0.13-hotfix">
+  <link rel="stylesheet" href="/css/app.css?v=alpha6.0.14-cleanup">
+  <link rel="stylesheet" href="/css/pages.css?v=alpha6.0.14-cleanup">
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="/src/app.js?v=alpha6.0.13-hotfix"></script>
+  <script type="module" src="/src/app.js?v=alpha6.0.14-cleanup"></script>
 </body>
 </html>
