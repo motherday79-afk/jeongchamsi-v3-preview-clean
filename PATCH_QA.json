@@ -1,19 +1,34 @@
 {
-  "version": "v3.0.0-alpha6.0.26",
-  "base": "v3.0.0-alpha6.0.25",
+  "version": "v3.0.0-alpha6.0.27",
+  "base": "v3.0.0-alpha6.0.26",
   "patch_only": true,
+  "order": [
+    "brand",
+    "itsme",
+    "poll",
+    "generation-president",
+    "national-eval",
+    "now",
+    "compare",
+    "academy",
+    "column",
+    "community"
+  ],
+  "wording": {
+    "itsme_title": "저는, 이렇게 제안합니다",
+    "itsme_desc": "꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다.",
+    "poll_title": "귀담아 들어야 합니다.",
+    "poll_desc": "작은 관심이 세상을 바꿉니다."
+  },
   "checks": {
     "js_syntax": "ALL PASS",
-    "hero_pc_min_height": "220px",
-    "hero_title_max": "36px",
-    "mobile_min_height": "285px",
-    "small_mobile_min_height": "315px",
-    "important_count": 0
+    "source_order": "PASS",
+    "css_changed": false,
+    "api_changed": false
   },
   "changed_files": [
     "package.json",
     "index.html",
-    "css/pages.css",
     "src/app.js",
     "src/version.js",
     "src/views/user.js",
