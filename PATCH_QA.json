@@ -1,24 +1,14 @@
 {
-  "version": "v3.0.0-alpha6.0.25",
-  "base": "v3.0.0-alpha6.0.24",
+  "version": "v3.0.0-alpha6.0.26",
+  "base": "v3.0.0-alpha6.0.25",
   "patch_only": true,
-  "scope": {
-    "main_president_slot_replaced_with_brand_hero": true,
-    "president_page_preserved_in_more_menu": true,
-    "brand_admin_editable": true,
-    "about_page": "/about",
-    "support_page": "/support",
-    "hero_visual_asset": "assets/brand/hero-art.webp",
-    "hero_visual_bytes": 14302
-  },
   "checks": {
     "js_syntax": "ALL PASS",
-    "brand_schema_runtime": "PASS",
-    "home_brand_runtime": "PASS",
-    "about_runtime": "PASS",
-    "support_runtime": "PASS",
-    "important_count": 0,
-    "vercel_function_count": 1
+    "hero_pc_min_height": "220px",
+    "hero_title_max": "36px",
+    "mobile_min_height": "285px",
+    "small_mobile_min_height": "315px",
+    "important_count": 0
   },
   "changed_files": [
     "package.json",
@@ -33,10 +23,6 @@
     "src/views/home.js",
     "src/views/brand.js",
     "src/views/boards.js",
-    "src/views/people.js",
-    "src/core/repository.js",
-    "lib/v3/schema.js",
-    "assets/brand/hero-art.webp",
-    "server/v3/routes/home.js"
+    "src/views/people.js"
   ]
 }

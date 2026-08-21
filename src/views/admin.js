@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.25-brand-hero";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.26-brand-compact";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";

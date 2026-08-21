@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.25-brand-hero";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.26-brand-compact";
 import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";

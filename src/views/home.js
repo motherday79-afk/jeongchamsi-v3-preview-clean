@@ -1,6 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.25-brand-hero";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.26-brand-compact";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({

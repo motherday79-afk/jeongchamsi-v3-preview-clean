@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.25-brand-hero";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.26-brand-compact";
 
 const DOCS = Object.freeze({
   guide: {
