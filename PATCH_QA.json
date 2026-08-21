@@ -1,34 +1,20 @@
 {
-  "version": "v3.0.0-alpha6.0.27",
-  "base": "v3.0.0-alpha6.0.26",
+  "version": "v3.0.0-alpha6.0.28",
+  "base": "v3.0.0-alpha6.0.27",
   "patch_only": true,
-  "order": [
-    "brand",
-    "itsme",
-    "poll",
-    "generation-president",
-    "national-eval",
-    "now",
-    "compare",
-    "academy",
-    "column",
-    "community"
-  ],
-  "wording": {
-    "itsme_title": "저는, 이렇게 제안합니다",
-    "itsme_desc": "꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다.",
-    "poll_title": "귀담아 들어야 합니다.",
-    "poll_desc": "작은 관심이 세상을 바꿉니다."
-  },
+  "donation_url": "https://toon.at/donate/jungchamsi",
   "checks": {
-    "js_syntax": "ALL PASS",
-    "source_order": "PASS",
-    "css_changed": false,
-    "api_changed": false
+    "donation_main_direct": true,
+    "donation_about_direct": true,
+    "search_brand_removed": true,
+    "functional_placeholder": true,
+    "no_brand_hint_css": true,
+    "important_zero": true
   },
   "changed_files": [
     "package.json",
     "index.html",
+    "css/pages.css",
     "src/app.js",
     "src/version.js",
     "src/views/user.js",
@@ -37,6 +23,7 @@
     "src/views/admin.js",
     "src/views/home.js",
     "src/views/brand.js",
+    "src/views/layout.js",
     "src/views/boards.js",
     "src/views/people.js"
   ]

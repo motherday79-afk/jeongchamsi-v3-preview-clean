@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.27-home-story";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.28-support-search";
 import { getDomain } from "../core/repository.js";
 
 function paragraphs(text = "") {
@@ -38,7 +38,7 @@ export async function renderAbout() {
         <span>정참시 — 정치에 참여할 시간</span>
         <b>바라볼 때가 아닌, 행동할 때 정치가 시작됩니다.</b>
       </div>
-      <div class="brand-story-actions"><button class="primary-btn" type="button" data-go="/">정참시 메인으로</button><button class="ghost-btn" type="button" data-go="/support">정참시 후원하기</button></div>
+      <div class="brand-story-actions"><button class="primary-btn" type="button" data-go="/">정참시 메인으로</button><a class="ghost-btn" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer">정참시 후원하기</a></div>
     </section>
   </main>`);
 }
@@ -55,7 +55,7 @@ export async function renderSupport() {
       <div class="brand-support-mark">♡</div>
       <div class="brand-story-body">${paragraphs(data.support.body)}</div>
       <div class="notice-box brand-support-note">${esc(data.support.note)}</div>
-      <div class="brand-story-actions"><button class="primary-btn" type="button" data-go="/about">정참시 더 알아보기</button><button class="ghost-btn" type="button" data-go="/">메인으로</button></div>
+      <div class="brand-story-actions"><a class="primary-btn" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer">후원 페이지로 이동</a><button class="ghost-btn" type="button" data-go="/about">정참시 더 알아보기</button><button class="ghost-btn" type="button" data-go="/">메인으로</button></div>
     </section>
   </main>`);
 }

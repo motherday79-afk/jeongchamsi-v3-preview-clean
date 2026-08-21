@@ -1,6 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.27-home-story";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.28-support-search";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -73,7 +73,7 @@ function brandHero(data = {}) {
       <div class="brand-subcopy"><p>${esc(hero.subline1)}</p><p>${esc(hero.subline2)}</p></div>
       <div class="brand-hero-actions">
         <button class="brand-primary" type="button" data-go="/about">${esc(hero.learnLabel)} <span>→</span></button>
-        <button class="brand-secondary" type="button" data-go="/support">${esc(hero.supportLabel)} <span>♡</span></button>
+        <a class="brand-secondary" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer">${esc(hero.supportLabel)} <span>♡</span></a>
       </div>
     </div>
     <div class="brand-hero-art" aria-hidden="true" style="background-image:url('${esc(art)}')"></div>

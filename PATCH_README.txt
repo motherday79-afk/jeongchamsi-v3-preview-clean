@@ -1,42 +1,28 @@
-정참시 v3 alpha6.0.27 · HOME STORY ORDER
-기준: alpha6.0.26
+정참시 v3 alpha6.0.28 · SUPPORT DIRECT / SEARCH CLEAN
+기준: alpha6.0.27
 형식: PATCH ONLY
 
-메인 노출 순서
-0. 정참시 브랜드 선언
-1. IT’S ME
-2. CITIZENS’ CHOICE
-3. 세대가 뽑은 대통령
-4. 국회의원 전국 평가제
-5. NOW Rank
-6. 정치인 비교분석
-7. 정참시 아카데미
-8. COLUMN
-9. 정뮤니티
+1. 정참시 후원하기
+- 메인 히어로 '정참시 후원하기' 클릭 시 외부 후원 URL로 바로 이동
+- URL: https://toon.at/donate/jungchamsi
+- 새 탭 + noopener/noreferrer
+- /about 내부 후원 버튼도 동일 URL 직결
+- /support 안내 페이지는 유지하며 실제 후원 페이지 이동 버튼 추가
 
-의도
-브랜드 선언 → 시민 제안 → 시민 선택 → 세대 선택 → 정치인 평가 → 주목 정치인 → 비교 → 실제 참여 준비 → 읽을거리/토론
-정참시의 '행동 우선' 정체성이 메인 순서 자체에서 보이도록 재구성.
+2. 검색창 브랜딩 제거
+- 검색창 안 '정치에 참여할 시간' 오버레이 제거
+- 검색창 앞의 단독 '정' 홈 마크도 제거
+- 검색창은 기능만 남김
+- placeholder:
+  정치인·정당·정책·NEWS·COLUMN 통합검색
 
-문구 변경
-IT’S ME
-- 제목: 저는, 이렇게 제안합니다
-- 설명: 꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다.
-
-CITIZENS’ CHOICE
-- 제목: 귀담아 들어야 합니다.
-- 설명: 작은 관심이 세상을 바꿉니다.
-
-보존
-- 모든 모듈 기능/데이터 연결 그대로
-- 히어로 /about /support / 관리자 수정 그대로
-- 사이드바 그대로
-- CSS 변경 없음
-- API/Redis/정치인 543명 데이터 변경 없음
-- 성능 critical path 변경 없음
+3. 회원가입 인증
+- 이번 패치에서는 변경 없음
+- 현재 진입장벽 낮은 가입 구조 유지
 
 QA
 - 전체 JS node --check PASS
-- 메인 section source-order 검증 PASS
-- 새 문구 4종 검증 PASS
-- 기존 문구 제거 확인 PASS
+- 메인/ABOUT 후원 URL 직결 확인
+- 검색 brand hint / search home mark 제거 확인
+- functional placeholder 확인
+- !important 0
