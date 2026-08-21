@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.23-generation-home";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.24-stability";
 
 const DOCS = Object.freeze({
   guide: {

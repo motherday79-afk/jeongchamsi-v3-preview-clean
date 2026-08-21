@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.23-generation-home";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.24-stability";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
@@ -41,7 +41,34 @@ async function membersPanel() {
   const result = await fetchMembers();
   if (!result.ok) return `<section class="admin-panel"><h2>회원관리</h2><div class="notice-box">회원 데이터를 불러오지 못했습니다: ${esc(result.error)}</div></section>`;
   const users = result.users;
-  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>회원관리</h2><span class="status-pill"><b>MEMBERS</b>${users.length}명</span></div></div><div class="member-admin-note">가입 회원을 검색하고 일반회원 ↔ 관리자 권한, 정상 ↔ 이용정지 상태를 변경합니다. 마지막 활성 관리자는 시스템이 자동 보호합니다.</div><div class="member-admin-search"><input type="search" placeholder="이름 · 아이디 · 닉네임 · 지역 검색" data-member-search></div><div class="member-admin-list">${users.map(user => `<article data-member-row data-member-search-text="${esc(`${user.id} ${user.name || ""} ${user.nickname || ""} ${user.region || ""}`.toLowerCase())}"><div class="member-admin-profile"><b>${esc(user.name || user.nickname || user.id)}</b><span>${user.nickname ? `${esc(user.nickname)} · ` : ""}ID ${esc(user.id)} · ${esc(user.region || "지역 미설정")} · ${esc(user.preferredParty || "선호정당 미설정")}</span><small>가입 ${esc(String(user.createdAt || "").slice(0, 10))}</small></div><div class="member-access-controls"><label>권한<select data-member-role="${esc(user.id)}"><option value="member" ${user.role !== "admin" ? "selected" : ""}>일반회원</option><option value="admin" ${user.role === "admin" ? "selected" : ""}>관리자</option></select></label><label>상태<select data-member-status="${esc(user.id)}"><option value="active" ${user.status !== "suspended" ? "selected" : ""}>정상</option><option value="suspended" ${user.status === "suspended" ? "selected" : ""}>이용정지</option></select></label><button class="primary-btn" type="button" data-member-access="${esc(user.id)}">변경 저장</button></div></article>`).join("")}</div><div class="save-state" data-member-save-state></div></section>`;
+  const now = Date.now();
+  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>회원관리</h2><span class="status-pill"><b>MEMBERS</b>${users.length}명</span></div></div><div class="member-admin-note">회원정보 수정, 관리자 권한, 비밀번호 초기화, 기간제재를 한곳에서 관리합니다. 비밀번호 원문은 조회하지 않으며 관리자가 새 비밀번호를 지정하면 즉시 새 해시로 교체됩니다. 마지막 활성 관리자는 자동 보호됩니다.</div><div class="member-admin-search"><input type="search" placeholder="이름 · 아이디 · 닉네임 · 지역 검색" data-member-search></div><div class="member-admin-list member-admin-expanded">${users.map(user => {
+    const until = Date.parse(user.suspendedUntil || "");
+    const suspended = user.status === "suspended" && (!Number.isFinite(until) || until > now);
+    const suspensionText = suspended ? (Number.isFinite(until) ? `정지 ~ ${String(user.suspendedUntil).slice(0,10)}` : "무기한 정지") : "정상";
+    const remainingDays = suspended && Number.isFinite(until) ? Math.max(1, Math.ceil((until - now) / 86400000)) : 0;
+    const durationPreset = remainingDays <= 2 ? 2 : remainingDays <= 7 ? 7 : remainingDays <= 30 ? 30 : 0;
+    return `<article data-member-row data-member-id="${esc(user.id)}" data-member-search-text="${esc(`${user.id} ${user.name || ""} ${user.nickname || ""} ${user.region || ""}`.toLowerCase())}">
+      <div class="member-admin-profile"><b>${esc(user.name || user.nickname || user.id)}</b><span>ID ${esc(user.id)} · ${esc(user.region || "지역 미설정")} · ${esc(user.preferredParty || "선호정당 미설정")}</span><small>가입 ${esc(String(user.createdAt || "").slice(0,10))} · ${esc(suspensionText)}${user.suspensionReason ? ` · ${esc(user.suspensionReason)}` : ""}</small></div>
+      <div class="member-edit-grid">
+        <label>이름<input data-member-name="${esc(user.id)}" value="${esc(user.name || "")}" maxlength="40"></label>
+        <label>닉네임<input data-member-nickname="${esc(user.id)}" value="${esc(user.nickname || "")}" maxlength="40"></label>
+        <label>지역<input data-member-region="${esc(user.id)}" value="${esc(user.region || "")}" maxlength="80"></label>
+        <label>선호정당<input data-member-party="${esc(user.id)}" value="${esc(user.preferredParty || "")}" maxlength="80"></label>
+        <label>이메일<input type="email" data-member-email="${esc(user.id)}" value="${esc(user.email || "")}" maxlength="120"></label>
+        <label>전화<input data-member-phone="${esc(user.id)}" value="${esc(user.phone || "")}" maxlength="40"></label>
+        <label>출생연도<input inputmode="numeric" data-member-birth="${esc(user.id)}" value="${esc(user.birthYear || "")}" maxlength="4"></label>
+        <label>새 비밀번호<input type="password" data-member-password="${esc(user.id)}" placeholder="변경할 때만 입력 · 8자 이상" autocomplete="new-password"></label>
+      </div>
+      <div class="member-access-controls member-access-expanded">
+        <label>권한<select data-member-role="${esc(user.id)}"><option value="member" ${user.role !== "admin" ? "selected" : ""}>일반회원</option><option value="admin" ${user.role === "admin" ? "selected" : ""}>관리자</option></select></label>
+        <label>상태<select data-member-status="${esc(user.id)}"><option value="active" ${!suspended ? "selected" : ""}>정상</option><option value="suspended" ${suspended ? "selected" : ""}>이용정지</option></select></label>
+        <label>정지기간<select data-member-days="${esc(user.id)}"><option value="0" ${suspended && !Number.isFinite(until) ? "selected" : ""}>무기한</option><option value="2" ${durationPreset===2 ? "selected" : ""}>2일</option><option value="7" ${durationPreset===7 ? "selected" : ""}>7일</option><option value="30" ${durationPreset===30 ? "selected" : ""}>30일</option></select></label>
+        <label class="member-reason">제재 사유<input data-member-reason="${esc(user.id)}" value="${esc(user.suspensionReason || "")}" maxlength="200" placeholder="선택 입력"></label>
+        <button class="primary-btn" type="button" data-member-access="${esc(user.id)}">회원정보 저장</button>
+      </div>
+    </article>`;
+  }).join("")}</div><div class="save-state" data-member-save-state></div></section>`;
 }
 function peoplePanel() {
   return `<section class="admin-panel"><h2>인물 관리</h2><div class="people-admin-grid"><article><b>국회의원</b><strong>${PERSON_COUNTS.assembly} / 300</strong><span>텍스트 연결</span></article><article><b>광역단체장</b><strong>${PERSON_COUNTS.metropolitan} / 16</strong><span>텍스트 연결</span></article><article><b>기초단체장</b><strong>${PERSON_COUNTS.basic} / 227</strong><span>텍스트 연결</span></article><article><b>인물 공급자</b><strong>${PERSON_PROVIDER_STATUS}</strong><span>앱 내부 Seed · 즉시 노출</span></article><article><b>사진 공급자</b><strong>${PHOTO_PROVIDER_STATUS}</strong><span>1차에서 제외</span></article><article><b>NOW ENGINE</b><strong>DEFERRED</strong><span>뉴스·키워드 후속</span></article></div><div class="notice-box">543개 전원 이름·정당·지역·직책·기본 임기 텍스트를 앱 내부에 저장했습니다. 사용자 페이지에서 외부 정치인 API 호출은 없습니다.</div></section>`;
@@ -210,9 +237,12 @@ export async function saveAdminForm(form) {
   return saveDomain(domain, data);
 }
 export async function deleteAdminItem(domain, id) { const data = await getDomain(domain); if (domain === "academy") data.slots = (data.slots || []).filter(x => String(x.id) !== String(id)); else data.items = (data.items || []).filter(x => String(x.id) !== String(id)); return saveDomain(domain, data); }
-export async function updateMemberAccess(id, role, status) {
-  try { const r = await fetch("/api/v3/admin/users", { method: "PATCH", credentials: "same-origin", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ id, role, status }) }); const b = await r.json().catch(() => ({})); return r.ok ? { ok: true } : { ok: false, error: b.error || "MEMBER_UPDATE_FAILED" }; }
-  catch { return { ok: false, error: "MEMBER_UPDATE_FAILED" }; }
+export async function updateMemberAccess(id, patch = {}) {
+  try {
+    const r = await fetch("/api/v3/admin/users", { method:"PATCH", credentials:"same-origin", headers:{ "Content-Type":"application/json", Accept:"application/json" }, body:JSON.stringify({ id, ...patch }) });
+    const b = await r.json().catch(() => ({}));
+    return r.ok ? { ok:true, user:b.user } : { ok:false, error:b.error || "MEMBER_UPDATE_FAILED" };
+  } catch { return { ok:false, error:"MEMBER_UPDATE_FAILED" }; }
 }
 export async function submitFirstAdmin(form) {
   const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) return { ok: false, error: "비밀번호 확인이 일치하지 않습니다." };

@@ -10,7 +10,20 @@ module.exports = async function handler(req, res) {
 
     if (req.method === "GET") return res.status(200).json({ ok: true, users: await listUsers() });
     if (req.method === "PATCH") {
-      const result = await updateUserAccess(req.body?.id, { role: req.body?.role, status: req.body?.status });
+      const result = await updateUserAccess(req.body?.id, {
+        role: req.body?.role,
+        status: req.body?.status,
+        suspendDays: req.body?.suspendDays,
+        suspensionReason: req.body?.suspensionReason,
+        nickname: req.body?.nickname,
+        name: req.body?.name,
+        region: req.body?.region,
+        preferredParty: req.body?.preferredParty,
+        email: req.body?.email,
+        phone: req.body?.phone,
+        birthYear: req.body?.birthYear,
+        password: req.body?.password
+      });
       if (!result.ok) return res.status(result.error === "USER_NOT_FOUND" ? 404 : 409).json(result);
       return res.status(200).json(result);
     }

@@ -1,5 +1,5 @@
 import { getDomain } from "../core/repository.js";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.23-generation-home";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.24-stability";
 import { getUserSession, isPostLiked } from "../core/user.js";
 
 const CONFIG = Object.freeze({
@@ -96,7 +96,7 @@ export async function renderBoardDetail(domain, id) {
   const comments = (commentData.items || []).filter(c => c.published !== false && c.domain === domain && String(c.postId) === String(id)).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   return pageShell(`<main class="subpage">
-    <article class="content-card article-detail">
+    <article class="content-card article-detail article-${esc(domain)}">
       <span class="eyebrow">${config.eyebrow}${item.category ? ` · ${esc(item.category)}` : ""}</span>
       <h1>${esc(item.title)}</h1>
       <div class="article-meta"><span>${esc(item.author || "정참시")}</span><span>${formatDate(item.createdAt)}</span><span>조회 ${Number(item.views || 0)}</span><span>좋아요 ${Number(item.likes || 0)}</span></div>

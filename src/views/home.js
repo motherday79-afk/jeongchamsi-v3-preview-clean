@@ -1,7 +1,7 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.18-consolidated";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.23-generation-home";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.24-stability";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -188,12 +188,15 @@ export async function renderHome() {
   const academySlots = (data.academy?.slots || []).filter(x => x.published !== false).sort((a,b)=>`${a.date||""} ${a.startTime||""}`.localeCompare(`${b.date||""} ${b.startTime||""}`)).slice(0, 4);
 
   const keywords = (data.keywords?.items || []).filter(x => x.published !== false).slice(0, 8);
-  const manualTrending = (data.trending?.items || []).filter(x => x.published !== false).slice(0, 5);
-  const derivedTrending = [...columns.map(x => ({ title: x.title, href: `/column/${x.id}`, score: Number(x.likes || 0) * 4 + Number(x.views || 0) })), ...community.map(x => ({ title: x.title, href: `/community/${x.id}`, score: Number(x.likes || 0) * 4 + Number(x.views || 0) })), ...published(data.news?.items || []).map(x => ({ title: x.title, href: `/news/${x.id}`, score: Number(x.likes || 0) * 4 + Number(x.views || 0) }))].sort((a, b) => b.score - a.score).slice(0, 5);
-  const trending = manualTrending.length ? manualTrending.map(x => ({ ...x, href: x.href || `/search?q=${encodeURIComponent(x.title || "")}` })) : derivedTrending;
   const recentPeople = userSummary.recentPeople || [];
 
   const nowPeople = HOME_NOW_PREVIEW;
+  const trending = nowPeople.slice(0,5).map((p,i) => ({
+    title:p.name,
+    meta:[p.party,p.jurisdiction].filter(Boolean).join(" · "),
+    href:`/person/${p.id}`,
+    rank:i+1
+  }));
   const rankTop5 = nowPeople.slice(0,5).map((p,i)=>`<article class="rank-top-card" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
   const rankList10 = nowPeople.slice(5,15).map((p,i)=>`<div class="rank-list-row" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-list-no">${i+6}</span><span class="rank-list-avatar"></span><span class="rank-list-copy"><b>${esc(p.name)}</b><em>${esc(p.party)} · ${esc(p.jurisdiction)}</em></span><span class="rank-list-meta">상세</span></div>`).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
@@ -273,7 +276,7 @@ export async function renderHome() {
           const info = recentPersonSlotLabel(id, getPerson);
           const person = typeof getPerson === "function" ? getPerson(id) : null;
           return `<button type="button" class="recent-visual-card" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar"></span><b>${esc(info.name || `${info.group} ${info.number}`)}</b><small>${esc(person?.party || info.group)}</small></button>`;
-        }).join("")}</div></section><section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승</b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live" role="button" tabindex="0" data-go="${esc(x.href || `/search?q=${encodeURIComponent(x.title || "")}`)}"><span>${i + 1}</span><i>${esc(x.title)}</i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}</section></aside>
+        }).join("")}</div></section><section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live politician-rising-row" role="button" tabindex="0" data-go="${esc(x.href)}"><span>${i + 1}</span><i><b>${esc(x.title)}</b><small>${esc(x.meta || "")}</small></i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}</section></aside>
     </div></div>
     ${footer()}
     ${drawer()}

@@ -27,6 +27,13 @@ module.exports = async function handler(req, res) {
 
   if (req.method === "POST") {
     try {
+      const stored = await getUser(req.body?.id);
+      if (stored?.status === "suspended") {
+        const until = Date.parse(stored.suspendedUntil || "");
+        if (!Number.isFinite(until) || until > Date.now()) {
+          return res.status(403).json({ ok:false, error:"ACCOUNT_SUSPENDED", suspendedUntil:stored.suspendedUntil || "", reason:stored.suspensionReason || "" });
+        }
+      }
       const user = await authenticateUser(req.body?.id, req.body?.password);
       if (!user) return res.status(401).json({ ok: false, error: "INVALID_CREDENTIALS" });
       setCookie(res, issueSession(user.id), req);

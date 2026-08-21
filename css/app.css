@@ -222,17 +222,19 @@ img{display:block;max-width:100%}
 .academy-intro h3{margin-top:16px;font-size:21px}
 .academy-intro p{color:#e2efeb;font-size:var(--fs-sub);line-height:1.65}
 .academy-intro button{margin-top:12px;padding:10px 13px;border:0;border-radius:9px;background:#fff;color:#18362f;font-size:13px;font-weight:900}
-.academy-schedule{padding:15px;border:1px solid #e4ebe8;border-radius:var(--r-md)}
-.schedule-head{display:flex;justify-content:space-between;margin-bottom:8px}
-.schedule-head b{font-size:var(--fs-sub)}
-.schedule-head span{color:var(--text-2);font-size:12px}
-.schedule-row{display:grid;grid-template-columns:48px 1fr 62px;gap:9px;align-items:center;min-height:50px;border-top:1px solid #edf1ef}
-.schedule-date{font-size:13px;font-weight:850}
-.schedule-line{display:grid;gap:5px}
-.schedule-line i,.schedule-line em{display:block;height:7px;border-radius:999px;background:#e9efed}
-.schedule-line i{width:75%}
-.schedule-line em{width:48%}
-.schedule-row button{padding:7px 5px;border:0;border-radius:7px;background:#eef7f4;color:var(--green);font-size:12px;font-weight:900}
+.academy-schedule{min-width:0;padding:15px;border:1px solid #e4ebe8;border-radius:var(--r-md)}
+.academy-schedule .schedule-head{display:flex;justify-content:space-between;margin-bottom:0;padding-bottom:10px;border-bottom:1px solid #e8efec}
+.academy-schedule .schedule-head b{font-size:var(--fs-sub)}
+.academy-schedule .schedule-head span{color:var(--text-2);font-size:12px}
+.academy-schedule .schedule-row{display:grid;grid-template-columns:92px minmax(0,1fr) 72px;gap:12px;align-items:center;min-height:49px;padding:8px 0;border-top:1px solid #edf2f0}
+.academy-schedule .schedule-date{display:block;color:#233a33;font-size:12px;line-height:1.2;font-weight:900;letter-spacing:-.2px}
+.academy-schedule .schedule-date small{display:block;margin-top:4px;color:#87938f;font-size:9px;font-weight:750}
+.academy-schedule .schedule-line{min-width:0;display:block}
+.academy-schedule .schedule-line i{display:none}
+.academy-schedule .schedule-line em{display:block;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;color:#344942;font-size:12px;line-height:1.4;font-style:normal;font-weight:750;height:auto;width:auto;border-radius:0}
+.academy-schedule .schedule-row button{min-width:68px;min-height:34px;padding:7px 9px;border:0;border-radius:9px;background:#edf7f3;color:var(--green);font-size:10px;font-weight:900;white-space:nowrap}
+.academy-schedule .schedule-row button:disabled{background:#f2f4f3;color:#9aa5a1}
+.academy-schedule .schedule-row.empty{opacity:.72}
 
 /* SIDEBAR */
 .side-column{display:grid;gap:14px;position:sticky;top:-260px;align-self:start}

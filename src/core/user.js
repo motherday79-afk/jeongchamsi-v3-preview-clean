@@ -38,7 +38,8 @@ function authErrorMessage(error, fallback) {
     API_HANDLER_FAILED: "서버 인증 기능 실행 중 오류가 발생했습니다.",
     JCV3_SESSION_SECRET_NOT_CONFIGURED: "로그인 세션 설정이 완료되지 않았습니다.",
     NETWORK_ERROR: "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    HTTP_404: "서버 API 연결 경로를 찾지 못했습니다."
+    HTTP_404: "서버 API 연결 경로를 찾지 못했습니다.",
+    ACCOUNT_SUSPENDED: "이용정지된 계정입니다. 정지기간이나 사유는 관리자에게 문의해 주세요."
   };
   return map[error] || fallback || error || "요청 처리에 실패했습니다.";
 }

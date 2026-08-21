@@ -1,5 +1,5 @@
 import { getDomain } from "../core/repository.js";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.23-generation-home";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.24-stability";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
   listAssemblyMembers,
@@ -189,7 +189,7 @@ export async function renderNow(search = "") {
   const nextLimit = Math.min(total, shown.length + 50);
   const title = partyParam ? `${label} 전체보기` : searchParam ? `${label} 전체보기` : "NOW Rank 전체 정치인";
 
-  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>${esc(title)}</h1><p>${partyParam || searchParam ? esc(filterDescription) : "메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다."}</p><div class="capacity-line"><span>${esc(filterDescription)}</span><b>총 ${total}명</b></div></section>${!partyParam && !searchParam ? `<nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key,x])=>`<button type="button" class="${type===key?"active":""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav>` : `<div class="directory-filter-actions"><button class="ghost-btn" type="button" data-go="/now">전체 정치인 분류로 돌아가기</button><button class="ghost-btn" type="button" data-go="/search?q=${encodeURIComponent(partyParam||searchParam)}">통합검색 결과</button></div>`}<section class="content-card directory-section"><div class="section-title"><h2>${esc(label)}</h2><span>${shown.length} / ${total}명 표시</span></div>${shown.length ? `<div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-go="${nextBase}${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${esc(label)} ${total}명 전체를 불러왔습니다.</div>`}` : `<div class="empty-state"><h2>해당 정치인이 없습니다.</h2><p>검색어나 정당명을 다시 확인해 주세요.</p></div>`}</section></main>`);
+  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>${esc(title)}</h1><p>${partyParam || searchParam ? esc(filterDescription) : "메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다."}</p><div class="capacity-line"><span>${esc(filterDescription)}</span><b>총 ${total}명</b></div></section>${!partyParam && !searchParam ? `<nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key,x])=>`<button type="button" class="${type===key?"active":""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav>` : `<div class="directory-filter-actions"><button class="ghost-btn" type="button" data-go="/now">전체 정치인 분류로 돌아가기</button><button class="ghost-btn" type="button" data-go="/search?q=${encodeURIComponent(partyParam||searchParam)}">통합검색 결과</button></div>`}<section class="content-card directory-section"><div class="section-title"><h2>${esc(label)}</h2><span>${shown.length} / ${total}명 표시</span></div>${shown.length ? `<div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-now-load-more="${nextBase}${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${esc(label)} ${total}명 전체를 불러왔습니다.</div>`}` : `<div class="empty-state"><h2>해당 정치인이 없습니다.</h2><p>검색어나 정당명을 다시 확인해 주세요.</p></div>`}</section></main>`);
 }
 
 export async function renderPolls(search = "") {
@@ -218,16 +218,18 @@ export async function renderKeywords() {
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">LIVE POLITICAL KEYWORDS</span><h1>실시간 정치키워드</h1><p>메인에서는 상위 8개, 전체페이지에서는 최대 15개까지 보여줍니다.</p></section><section class="content-card"><div class="section-title"><h2>실시간 TOP 15</h2><span>${items.length}개 등록</span></div>${items.length ? `<div class="keyword-rank-list">${items.map((x, i) => `<article><strong>${i + 1}</strong><b>${esc(x.label)}</b><span>${esc(x.delta || "")}</span></article>`).join("")}</div>` : `<div class="empty-state"><h2>등록된 키워드가 없습니다.</h2><p>관리자에서 최대 15개 키워드를 등록하면 메인과 이 페이지에 표시됩니다.</p></div>`}</section></main>`);
 }
 
-async function trendingItems() {
-  const manual = await getDomain("trending");
-  const manualItems = (manual.items || []).filter(x => x.published !== false).slice(0, 10);
-  if (manualItems.length) return manualItems.map(x => ({ ...x, href: x.href || `/search?q=${encodeURIComponent(x.title || "")}` }));
-  const [columns, community, news] = await Promise.all([getDomain("columns"), getDomain("community"), getDomain("news")]);
-  return [...(columns.items || []).map(x => ({ ...x, href: `/column/${x.id}` })), ...(community.items || []).map(x => ({ ...x, href: `/community/${x.id}` })), ...(news.items || []).map(x => ({ ...x, href: `/news/${x.id}` }))].filter(x => x.published !== false).sort((a, b) => (Number(b.likes || 0) * 4 + Number(b.views || 0)) - (Number(a.likes || 0) * 4 + Number(a.views || 0))).slice(0, 10).map((x, i) => ({ id: x.id, rank: i + 1, title: x.title, href: x.href }));
+function trendingItems() {
+  return listAllPoliticians().slice(0,10).map((p,i) => ({
+    id:p.id,
+    rank:i+1,
+    title:p.name || `${p.roleLabel} ${String(p.slot).padStart(3,"0")}`,
+    meta:[p.party,p.jurisdiction].filter(Boolean).join(" · "),
+    href:`/person/${p.id}`
+  }));
 }
 export async function renderTrending() {
-  const items = await trendingItems();
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">TRENDING NOW</span><h1>실시간 급상승</h1><p>메인에서는 TOP 5, 전체페이지에서는 TOP 10까지 보여줍니다.</p></section><section class="content-card"><div class="section-title"><h2>급상승 TOP 10</h2><span>${items.length}개</span></div>${items.length ? `<div class="trending-rank-list">${items.map((x, i) => `<button type="button" data-go="${esc(x.href || `/search?q=${encodeURIComponent(x.title || "")}`)}"><strong>${i + 1}</strong><b>${esc(x.title)}</b><span>보기 →</span></button>`).join("")}</div>` : `<div class="empty-state"><h2>급상승 데이터가 없습니다.</h2><p>관리자에서 직접 TOP 10을 입력하거나 게시물이 쌓이면 참여지표 기반으로 구성됩니다.</p></div>`}</section></main>`);
+  const items = trendingItems();
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">TRENDING NOW</span><h1>실시간 급상승 정치인</h1><p>실시간 변동 데이터가 연결되기 전에는 NOW Rank 순위를 기준으로 정치인을 보여줍니다.</p></section><section class="content-card"><div class="section-title"><h2>정치인 TOP 10</h2><span>NOW Rank fallback</span></div>${items.length ? `<div class="trending-rank-list">${items.map((x, i) => `<button type="button" data-go="${esc(x.href || `/search?q=${encodeURIComponent(x.title || "")}`)}"><strong>${i + 1}</strong><b>${esc(x.title)}${x.meta ? `<small>${esc(x.meta)}</small>` : ""}</b><span>상세 →</span></button>`).join("")}</div>` : `<div class="empty-state"><h2>급상승 데이터가 없습니다.</h2><p>관리자에서 직접 TOP 10을 입력하거나 게시물이 쌓이면 참여지표 기반으로 구성됩니다.</p></div>`}</section></main>`);
 }
 
 export async function renderAcademy() {
