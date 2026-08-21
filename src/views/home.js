@@ -1,6 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.30-search-home-restore";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.32-art-direction-2";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -264,7 +264,7 @@ export async function renderHome() {
     ? `<div class="badge-home-preview">${homeBadges.slice(0,3).map(x => `<button type="button" data-go="/mypage/activity?tab=badges"><span>${esc(x.mark)}</span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></button>`).join("")}<button type="button" class="badge-more-card" data-go="/mypage/activity?tab=badges"><span>+</span><b>배지함</b><small>전체보기</small></button></div>`
     : `<button type="button" class="badge-empty-cta" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}"><span class="badge-empty-icon">B</span><span><b>${userSession.authenticated ? "첫 배지를 획득해보세요" : "로그인하고 배지를 모아보세요"}</b><small>설문·글쓰기·참여 활동으로 시작</small></span><em>›</em></button>`;
 
-  return `<div class="site-shell">
+  return `<div class="site-shell home-art-directed">
     ${siteHeader()}
 
     <div class="page-wrap"><div class="portal-layout">

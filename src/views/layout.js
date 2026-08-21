@@ -1,4 +1,4 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.32-art-direction-2";
 import { getUserSession } from "../core/user.js";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
