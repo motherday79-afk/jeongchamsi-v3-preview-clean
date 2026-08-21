@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.28-support-search";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.29-search-hotfix";
 import { getDomain } from "../core/repository.js";
 
 function paragraphs(text = "") {

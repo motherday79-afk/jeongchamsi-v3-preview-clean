@@ -1,14 +1,13 @@
 {
-  "version": "v3.0.0-alpha6.0.28",
-  "base": "v3.0.0-alpha6.0.27",
+  "version": "v3.0.0-alpha6.0.29",
+  "base": "v3.0.0-alpha6.0.28",
   "patch_only": true,
-  "donation_url": "https://toon.at/donate/jungchamsi",
+  "root_cause": "base CSS kept 3-column grid after brand column markup was removed",
   "checks": {
-    "donation_main_direct": true,
-    "donation_about_direct": true,
-    "search_brand_removed": true,
-    "functional_placeholder": true,
-    "no_brand_hint_css": true,
+    "two_column_desktop": true,
+    "two_column_mobile": true,
+    "plain_input_markup": true,
+    "placeholder_ok": true,
     "important_zero": true
   },
   "changed_files": [
@@ -23,7 +22,6 @@
     "src/views/admin.js",
     "src/views/home.js",
     "src/views/brand.js",
-    "src/views/layout.js",
     "src/views/boards.js",
     "src/views/people.js"
   ]

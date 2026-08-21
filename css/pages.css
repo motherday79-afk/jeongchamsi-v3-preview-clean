@@ -2095,15 +2095,39 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 }
 
 
-/* alpha6.0.28 · SEARCH CLEAN / DONATION DIRECT */
+/* alpha6.0.29 · SEARCH GRID HOTFIX
+   app.css base search still reserves the removed 40px brand column.
+   Clean search explicitly owns a two-column layout: input + search button. */
+.main-search.main-search-clean{
+  grid-template-columns:minmax(0,1fr) 66px;
+  padding:0 8px 0 16px;
+  column-gap:8px;
+}
 .main-search-clean>input{
-  flex:1 1 auto;
+  width:100%;
   min-width:0;
   height:100%;
+  padding:0;
   border:0;
   background:transparent;
   outline:0;
   font:inherit;
+  font-size:15px;
+  color:var(--text);
+}
+.main-search-clean>input::placeholder{
+  color:#8a9792;
+  opacity:1;
+}
+@media(max-width:560px){
+  .main-search.main-search-clean{
+    grid-template-columns:minmax(0,1fr) 58px;
+    padding-left:12px;
+    column-gap:6px;
+  }
+  .main-search-clean>input{
+    font-size:14px;
+  }
 }
 .brand-hero-actions a,
 .brand-story-actions a{
