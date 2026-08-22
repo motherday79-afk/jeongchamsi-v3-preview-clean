@@ -348,6 +348,39 @@ document.addEventListener("click", async event => {
     return;
   }
 
+  const nowRefresh = event.target.closest("[data-now-refresh]");
+  if (nowRefresh) {
+    nowRefresh.disabled = true;
+    const r = await (await import("./views/admin.js")).runNowDataRefresh();
+    if (!r.ok) alert(`NOW 새로고침 실패 · ${r.error || ""}`);
+    await render(currentRoute(), { resetScroll:false });
+    return;
+  }
+  const nowRetry = event.target.closest("[data-now-retry]");
+  if (nowRetry) {
+    nowRetry.disabled = true;
+    const r = await (await import("./views/admin.js")).retryNowDataFailures();
+    if (!r.ok) alert(`오류 재수집 실패 · ${r.error || ""}`);
+    await render(currentRoute(), { resetScroll:false });
+    return;
+  }
+  const nowFinalize = event.target.closest("[data-now-finalize]");
+  if (nowFinalize) {
+    nowFinalize.disabled = true;
+    const r = await (await import("./views/admin.js")).finalizeNowData();
+    if (!r.ok) alert(`순위 계산 실패 · ${r.error || ""}`);
+    await render(currentRoute(), { resetScroll:false });
+    return;
+  }
+  const nowPublish = event.target.closest("[data-now-publish]");
+  if (nowPublish) {
+    if (!confirm("현재 NOW 데이터 미리보기를 공개 스냅샷으로 게시할까요?")) return;
+    nowPublish.disabled = true;
+    const r = await (await import("./views/admin.js")).publishNowData();
+    if (!r.ok) alert(`NOW 게시 실패 · ${r.error || ""}`);
+    await render(currentRoute(), { resetScroll:false });
+    return;
+  }
   const tab = event.target.closest("[data-admin-tab]"); if (tab) return route(`/admin?tab=${encodeURIComponent(tab.dataset.adminTab)}`);
   const add = event.target.closest("[data-admin-new]"); if (add) return route(`/admin?tab=${encodeURIComponent(add.dataset.adminNew)}&edit=new`);
   const edit = event.target.closest("[data-admin-edit]"); if (edit) return route(`/admin?tab=${encodeURIComponent(edit.dataset.adminEdit)}&edit=${encodeURIComponent(edit.dataset.id)}`);

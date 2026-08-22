@@ -5,7 +5,7 @@ import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
 
 const TABS = [
-  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["president", "대통령"],
+  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["president", "대통령"],
   ["columns", "COLUMN"], ["community", "정뮤니티"], ["itsme", "IT’S ME"], ["news", "정참시 NEWS"],
   ["polls", "시민들의 선택"], ["keywords", "정치키워드"], ["trending", "실시간 급상승"],
   ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["system", "시스템"]
@@ -219,6 +219,102 @@ async function nationalEvaluationPanel() {
   const tools = await import("./national-evaluation-admin.js");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>국회의원 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
+
+function num(v) { return Number(v || 0).toLocaleString("ko-KR"); }
+function timeText(v) { if (!v) return "—"; const d = new Date(v); return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("ko-KR", { hour12:false }); }
+async function fetchNowDataStatus() {
+  try {
+    const r = await fetch("/api/v3/admin/now-data", { credentials:"same-origin", cache:"no-store", headers:{ Accept:"application/json" } });
+    const b = await r.json().catch(() => ({}));
+    return r.ok ? b : { ok:false, error:b.error || "NOW_STATUS_FAILED" };
+  } catch { return { ok:false, error:"NOW_STATUS_FAILED" }; }
+}
+async function nowDataPanel() {
+  const data = await fetchNowDataStatus();
+  if (!data.ok) return `<section class="admin-panel"><h2>NOW 데이터 센터</h2><div class="notice-box">상태를 불러오지 못했습니다 · ${esc(data.error || "NOW_STATUS_FAILED")}</div></section>`;
+  const draft = data.draft || null, summary = draft?.summary || { total:data.rosterTotal || 542, completed:0, success:0, partial:0, failed:0, remaining:data.rosterTotal || 542 };
+  const pct = summary.total ? Math.min(100, Math.round(summary.completed / summary.total * 100)) : 0;
+  const top30 = draft?.top30?.length ? draft.top30 : (data.current?.top30 || []);
+  const ready = data.configured?.searchAds && data.configured?.news;
+  const draftStatus = draft?.status || "대기";
+  return `<section class="admin-panel now-data-center">
+    <div class="admin-panel-head"><div><h2>NOW 데이터 센터</h2><span class="status-pill"><b>NAVER ONLY</b>PC·모바일 검색 + 네이버 뉴스</span></div></div>
+    <div class="now-data-kpis">
+      <article><span>수집 대상</span><strong>${num(data.rosterTotal)}</strong><small>실제 정치인</small></article>
+      <article><span>네이버 검색</span><strong>${data.configured?.searchAds ? "READY" : "확인필요"}</strong><small>PC · 모바일</small></article>
+      <article><span>네이버 뉴스</span><strong>${data.configured?.news ? "READY" : "확인필요"}</strong><small>6H · 24H · 7D</small></article>
+      <article><span>최근 게시</span><strong>${data.current?.publishedAt ? timeText(data.current.publishedAt).slice(5,16) : "—"}</strong><small>${data.current?.draftId || "게시 전"}</small></article>
+    </div>
+    <div class="now-speed-note"><b>FAST REFRESH</b><span>10명 배치 · 브라우저 2개 워커 · 서버 배치당 5명 병렬 · 검색/뉴스 동시 호출</span></div>
+    <div class="now-control-grid">
+      <div class="now-weight-box"><b>NOW 미리보기 가중치</b><div><label>검색<input type="number" min="0" max="100" value="${esc(draft?.weights?.search ?? data.current?.weights?.search ?? 50)}" data-now-search-weight></label><label>뉴스<input type="number" min="0" max="100" value="${esc(draft?.weights?.news ?? data.current?.weights?.news ?? 50)}" data-now-news-weight></label></div><small>현재는 실제 542명 분포를 보기 위한 초기값입니다. 게시 전 결과를 보고 조정할 수 있습니다.</small></div>
+      <div class="now-actions">
+        <button class="primary-btn" type="button" data-now-refresh ${ready ? "" : "disabled"}>전체 데이터 새로고침</button>
+        <button class="ghost-btn" type="button" data-now-retry ${draft?.failedBatchIndexes?.length ? "" : "disabled"}>실패 항목만 다시 수집</button>
+        <button class="ghost-btn" type="button" data-now-finalize ${draft && summary.completed === summary.total ? "" : "disabled"}>순위 다시 계산</button>
+        <button class="primary-btn" type="button" data-now-publish ${draft?.status === "preview" ? "" : "disabled"}>현재 데이터로 게시</button>
+      </div>
+    </div>
+    <div class="now-progress-card">
+      <div class="now-progress-head"><b data-now-progress-label>${esc(draftStatus)}</b><span data-now-progress-count>${num(summary.completed)} / ${num(summary.total)}</span></div>
+      <div class="now-progress"><i data-now-progress-bar style="width:${pct}%"></i></div>
+      <div class="now-progress-stats"><span>정상 <b data-now-success>${num(summary.success)}</b></span><span>부분성공 <b data-now-partial>${num(summary.partial)}</b></span><span>실패 <b data-now-failed>${num(summary.failed)}</b></span><span>남음 <b data-now-remaining>${num(summary.remaining)}</b></span></div>
+      <small data-now-live-state>${draft ? `시작 ${timeText(draft.startedAt)}${draft.finalizedAt ? ` · 계산 ${timeText(draft.finalizedAt)}` : ""}` : "새로고침을 실행하면 배치별 진행상태가 이곳에 표시됩니다."}</small>
+    </div>
+    ${!ready ? `<div class="notice-box">네이버 Search Ads 또는 네이버 뉴스 환경변수가 빠져 있습니다. 두 연결이 모두 READY여야 전체 새로고침을 실행합니다.</div>` : ""}
+    <div class="now-preview-head"><div><h3>새 순위 미리보기</h3><span>${draft?.status === "preview" ? "현재 수집 초안" : data.current ? "최근 게시 스냅샷" : "수집 전"}</span></div>${draft?.failedBatchIndexes?.length ? `<em>오류 포함 배치 ${draft.failedBatchIndexes.length}개</em>` : ""}</div>
+    <div class="now-preview-table"><table><thead><tr><th>순위</th><th>정치인</th><th>NOW</th><th>PC</th><th>모바일</th><th>6H 뉴스</th><th>24H 뉴스</th><th>언론사</th><th>상태</th></tr></thead><tbody>${top30.length ? top30.map(row => `<tr><td><b>${row.rank}</b></td><td><strong>${esc(row.person?.name || "")}</strong><small>${esc(row.person?.party || "")} · ${esc(row.person?.office || "")}</small></td><td><b>${Number(row.score || 0).toFixed(1)}</b></td><td>${num(row.search?.monthlyPcQcCnt)}</td><td>${num(row.search?.monthlyMobileQcCnt)}</td><td>${num(row.news?.count6)}</td><td>${num(row.news?.count24)}</td><td>${num(row.news?.sources24)}</td><td><span class="now-row-state ${esc(row.state || "")}">${row.state === "success" ? "정상" : row.state === "partial" ? "부분" : "실패"}</span></td></tr>`).join("") : `<tr><td colspan="9"><div class="empty-inline">아직 계산된 스냅샷이 없습니다.</div></td></tr>`}</tbody></table></div>
+  </section>`;
+}
+
+async function nowApi(body) {
+  try {
+    const r = await fetch("/api/v3/admin/now-data", { method:"POST", credentials:"same-origin", headers:{ "Content-Type":"application/json", Accept:"application/json" }, body:JSON.stringify(body) });
+    const b = await r.json().catch(() => ({}));
+    return r.ok ? b : { ok:false, error:b.error || "NOW_API_FAILED", summary:b.summary };
+  } catch { return { ok:false, error:"NOW_API_FAILED" }; }
+}
+function setNowProgress(done,total,label="수집 중") {
+  const pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
+  const bar = document.querySelector("[data-now-progress-bar]"); if (bar) bar.style.width = `${pct}%`;
+  const count = document.querySelector("[data-now-progress-count]"); if (count) count.textContent = `${num(done)} / ${num(total)}`;
+  const text = document.querySelector("[data-now-progress-label]"); if (text) text.textContent = label;
+}
+async function runBatchQueue({draftId,batchIndexes,total,batchSize,action}) {
+  let cursor = 0, doneBatches = 0, firstError = "";
+  const workers = Array.from({length:Math.min(2,batchIndexes.length || 1)}, async () => {
+    while (true) {
+      const at = cursor++; if (at >= batchIndexes.length) return;
+      const batchIndex = batchIndexes[at];
+      let r = await nowApi({ action, draftId, batchIndex });
+      if (!r.ok) { await new Promise(resolve => setTimeout(resolve, 350)); r = await nowApi({ action, draftId, batchIndex }); }
+      if (!r.ok && !firstError) firstError = r.error || "BATCH_FAILED";
+      doneBatches++;
+      setNowProgress(Math.min(total, doneBatches * batchSize), total, action === "retry-batch" ? "오류 재수집 중" : "네이버 데이터 수집 중");
+      const state = document.querySelector("[data-now-live-state]"); if (state) state.textContent = `배치 ${doneBatches}/${batchIndexes.length} · 최근 처리 #${batchIndex + 1}${r.elapsedMs ? ` · ${(r.elapsedMs/1000).toFixed(1)}초` : ""}`;
+    }
+  });
+  await Promise.all(workers); return firstError ? { ok:false, error:firstError } : { ok:true };
+}
+export async function runNowDataRefresh() {
+  const searchWeight = Number(document.querySelector("[data-now-search-weight]")?.value || 50), newsWeight = Number(document.querySelector("[data-now-news-weight]")?.value || 50);
+  const start = await nowApi({ action:"start", searchWeight, newsWeight }); if (!start.ok) return start;
+  setNowProgress(0,start.total,"네이버 데이터 수집 시작");
+  const queue = await runBatchQueue({draftId:start.draftId,batchIndexes:Array.from({length:start.batchCount},(_,i)=>i),total:start.total,batchSize:start.batchSize,action:"collect-batch"});
+  if (!queue.ok) return queue;
+  setNowProgress(start.total,start.total,"NOW 순위 계산 중");
+  return nowApi({ action:"finalize", draftId:start.draftId });
+}
+export async function retryNowDataFailures() {
+  const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return { ok:false, error:status.error || "NOW_DRAFT_NOT_FOUND" };
+  const indexes = status.draft.failedBatchIndexes || []; if (!indexes.length) return { ok:true };
+  const q = await runBatchQueue({draftId:status.draft.draftId,batchIndexes:indexes,total:indexes.length * (status.draft.batchSize || 10),batchSize:status.draft.batchSize || 10,action:"retry-batch"});
+  if (!q.ok) return q;
+  return nowApi({ action:"finalize", draftId:status.draft.draftId });
+}
+export async function finalizeNowData() { const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return {ok:false,error:"NOW_DRAFT_NOT_FOUND"}; return nowApi({ action:"finalize", draftId:status.draft.draftId }); }
+export async function publishNowData() { const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return {ok:false,error:"NOW_DRAFT_NOT_FOUND"}; return nowApi({ action:"publish", draftId:status.draft.draftId }); }
+
 async function systemPanel() {
   let health = { storage: "unknown", blob: "unknown" };
   try {
@@ -241,6 +337,7 @@ export async function renderAdmin() {
   else if (tab === "members") panel = await membersPanel();
   else if (tab === "requests") panel = await (await import("./participation.js")).renderParticipationAdminPanel();
   else if (tab === "people") panel = await peoplePanel();
+  else if (tab === "nowdata") panel = await nowDataPanel();
   else if (tab === "president") panel = await presidentPanel();
   else if (["columns", "community", "news"].includes(tab)) panel = await boardPanel(tab, edit);
   else if (tab === "itsme") panel = await itsmePanel();
