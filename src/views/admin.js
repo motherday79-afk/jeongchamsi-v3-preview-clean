@@ -249,7 +249,7 @@ async function nowDataPanel() {
     <div class="now-control-grid">
       <div class="now-weight-box"><b>NOW 미리보기 가중치</b><div><label>검색<input type="number" min="0" max="100" value="${esc(draft?.weights?.search ?? data.current?.weights?.search ?? 50)}" data-now-search-weight></label><label>뉴스<input type="number" min="0" max="100" value="${esc(draft?.weights?.news ?? data.current?.weights?.news ?? 50)}" data-now-news-weight></label></div><small>현재는 실제 542명 분포를 보기 위한 초기값입니다. 게시 전 결과를 보고 조정할 수 있습니다.</small></div>
       <div class="now-actions">
-        <button class="primary-btn" type="button" data-now-refresh ${ready ? "" : "disabled"}>전체 데이터 새로고침</button>
+        <button class="primary-btn" type="button" data-now-refresh>전체 데이터 새로고침</button>
         <button class="ghost-btn" type="button" data-now-retry ${draft?.failedBatchIndexes?.length ? "" : "disabled"}>실패 항목만 다시 수집</button>
         <button class="ghost-btn" type="button" data-now-finalize ${draft && summary.completed === summary.total ? "" : "disabled"}>순위 다시 계산</button>
         <button class="primary-btn" type="button" data-now-publish ${draft?.status === "preview" ? "" : "disabled"}>현재 데이터로 게시</button>
@@ -261,7 +261,7 @@ async function nowDataPanel() {
       <div class="now-progress-stats"><span>정상 <b data-now-success>${num(summary.success)}</b></span><span>부분성공 <b data-now-partial>${num(summary.partial)}</b></span><span>실패 <b data-now-failed>${num(summary.failed)}</b></span><span>남음 <b data-now-remaining>${num(summary.remaining)}</b></span></div>
       <small data-now-live-state>${draft ? `시작 ${timeText(draft.startedAt)}${draft.finalizedAt ? ` · 계산 ${timeText(draft.finalizedAt)}` : ""}` : "새로고침을 실행하면 배치별 진행상태가 이곳에 표시됩니다."}</small>
     </div>
-    ${!ready ? `<div class="notice-box">네이버 Search Ads 또는 네이버 뉴스 환경변수가 빠져 있습니다. 두 연결이 모두 READY여야 전체 새로고침을 실행합니다.</div>` : ""}
+    ${!ready ? `<div class="notice-box">연결 확인 필요 · 현재 v3 프로젝트에서 확인되지 않은 항목: ${esc((data.missingEnv || []).join(", ") || "네이버 연결정보")}. 버튼은 잠그지 않으며, 연결이 완료되면 즉시 수집을 시작합니다.</div>` : ""}
     <div class="now-preview-head"><div><h3>새 순위 미리보기</h3><span>${draft?.status === "preview" ? "현재 수집 초안" : data.current ? "최근 게시 스냅샷" : "수집 전"}</span></div>${draft?.failedBatchIndexes?.length ? `<em>오류 포함 배치 ${draft.failedBatchIndexes.length}개</em>` : ""}</div>
     <div class="now-preview-table"><table><thead><tr><th>순위</th><th>정치인</th><th>NOW</th><th>PC</th><th>모바일</th><th>6H 뉴스</th><th>24H 뉴스</th><th>언론사</th><th>상태</th></tr></thead><tbody>${top30.length ? top30.map(row => `<tr><td><b>${row.rank}</b></td><td><strong>${esc(row.person?.name || "")}</strong><small>${esc(row.person?.party || "")} · ${esc(row.person?.office || "")}</small></td><td><b>${Number(row.score || 0).toFixed(1)}</b></td><td>${num(row.search?.monthlyPcQcCnt)}</td><td>${num(row.search?.monthlyMobileQcCnt)}</td><td>${num(row.news?.count6)}</td><td>${num(row.news?.count24)}</td><td>${num(row.news?.sources24)}</td><td><span class="now-row-state ${esc(row.state || "")}">${row.state === "success" ? "정상" : row.state === "partial" ? "부분" : "실패"}</span></td></tr>`).join("") : `<tr><td colspan="9"><div class="empty-inline">아직 계산된 스냅샷이 없습니다.</div></td></tr>`}</tbody></table></div>
   </section>`;

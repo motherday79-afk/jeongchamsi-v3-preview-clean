@@ -7,6 +7,16 @@ const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resul
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory';
 const batchDomain=(draftId,index)=>`nowDataBatch:${draftId}:${index}`;
+
+function configState(){
+  const search=searchCredentials(),news=newsCredentials(),missingEnv=[];
+  if(!search.accessLicense)missingEnv.push('NAVER_AD_ACCESS_LICENSE');
+  if(!search.secretKey)missingEnv.push('NAVER_AD_SECRET_KEY');
+  if(!search.customerId)missingEnv.push('NAVER_AD_CUSTOMER_ID');
+  if(!news.id)missingEnv.push('NAVER_API_HUB_CLIENT_ID');
+  if(!news.secret)missingEnv.push('NAVER_API_HUB_CLIENT_SECRET');
+  return {searchAds:search.configured,news:news.configured,missingEnv};
+}
 function weights(body={}){let s=Math.max(0,Math.min(100,Number(body.searchWeight)||50)),n=Math.max(0,Math.min(100,Number(body.newsWeight)||50));if(s+n===0){s=50;n=50;}return {search:s,news:n};}
 async function loadBatches(meta){if(!meta?.draftId||!Array.isArray(meta.batches))return [];return mgetJSON(meta.batches.map((_,i)=>batchDomain(meta.draftId,i)));}
 function failedBatchIndexes(batches=[]){const out=[];batches.forEach((batch,i)=>{if(batch?.results?.some(row=>resultState(row)!=='success'))out.push(i);});return out;}
@@ -21,11 +31,12 @@ module.exports=async function nowDataAdmin(req,res){
     const admin=await requireAdmin(req);if(!admin)return res.status(401).json({ok:false,error:'ADMIN_LOGIN_REQUIRED'});
     if(req.method==='GET'){
       const [meta,current]=await Promise.all([getJSON(META),getJSON(CURRENT)]),batches=await loadBatches(meta);
-      return res.status(200).json({ok:true,configured:{searchAds:searchCredentials().configured,news:newsCredentials().configured},rosterTotal:allPeople().length,draft:publicMeta(meta,batches),current:current?{draftId:current.draftId,publishedAt:current.publishedAt,weights:current.weights,top30:(current.ranked||[]).slice(0,30)}:null,performance:{batchSize:10,browserWorkers:2,serverConcurrency:5}});
+      const configured=configState(); return res.status(200).json({ok:true,configured:{searchAds:configured.searchAds,news:configured.news},missingEnv:configured.missingEnv,rosterTotal:allPeople().length,draft:publicMeta(meta,batches),current:current?{draftId:current.draftId,publishedAt:current.publishedAt,weights:current.weights,top30:(current.ranked||[]).slice(0,30)}:null,performance:{batchSize:10,browserWorkers:2,serverConcurrency:5}});
     }
     if(req.method!=='POST')return res.status(405).json({ok:false,error:'METHOD_NOT_ALLOWED'});
     const action=String(req.body?.action||'');
     if(action==='start'){
+      const configured=configState(); if(configured.missingEnv.length)return res.status(409).json({ok:false,error:'NAVER_CONFIG_REQUIRED',missingEnv:configured.missingEnv,configured:{searchAds:configured.searchAds,news:configured.news}});
       const people=allPeople(),ids=people.map(x=>x.id),batches=makeBatches(ids,10),w=weights(req.body),draftId=`now-${Date.now().toString(36)}`;
       const meta={draftId,status:'collecting',total:ids.length,batchSize:10,batchCount:batches.length,batches,weights:w,startedAt:new Date().toISOString(),createdBy:admin.id};
       await setJSON(META,meta);
