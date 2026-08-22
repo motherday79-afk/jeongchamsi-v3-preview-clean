@@ -1,4 +1,4 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.32-art-direction-2";
+import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { getUserSession } from "../core/user.js";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -71,33 +71,15 @@ function drawerListItem(key, label, href, meta = "") {
 }
 
 export function siteHeader() {
-  return `<header class="site-header">
-    <div class="header-line">
-      <button class="header-icon header-menu-icon" type="button" aria-label="전체 메뉴" title="전체 메뉴" data-drawer-open>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      </button>
-      <div class="header-gap"></div>
-      <button class="header-icon header-bell-icon" type="button" aria-label="내 참여" title="내 참여" data-go="/mypage/activity">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
-      </button>
-      <button class="header-icon header-star-icon" type="button" aria-label="최근 본 정치인" title="최근 본 정치인" data-go="/mypage/recent">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg>
-      </button>
+  return `<header class="site-header product-header">
+    <div class="product-head-main">
+      <button class="product-menu" type="button" aria-label="전체 메뉴" data-drawer-open><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <a class="product-wordmark" href="/" data-route aria-label="정참시 홈"><b>정참시</b><span>JEONGCHAMSI</span></a>
+      <nav class="product-primary-nav" aria-label="핵심 메뉴"><a href="/now" data-route>NOW</a><a href="/poll" data-route>시민선택</a><a href="/itsme" data-route>IT’S ME</a><a href="/column" data-route>COLUMN</a><a href="/community" data-route>정뮤니티</a></nav>
+      <form class="product-search" data-search-form><input name="q" aria-label="통합검색" placeholder="정치인, 정당, 이슈를 검색하세요"><button type="submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></button></form>
+      <div class="product-account-tools"><button type="button" aria-label="내 참여" data-go="/mypage/activity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button type="button" aria-label="최근 본 정치인" data-go="/mypage/recent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></button></div>
     </div>
-    <div class="search-wrap">
-      <form class="main-search main-search-clean" data-search-form>
-        <button class="search-home-mark" type="button" aria-label="정참시 홈" title="홈으로" data-go="/">정</button>
-        <input name="q" aria-label="통합검색" placeholder="정치인·정당·정책·NEWS·COLUMN 통합검색">
-        <button type="submit">검색</button>
-      </form>
-    </div>
-    <nav class="service-nav" aria-label="주요 서비스">
-      ${NAV.map(quickNavItem).join("")}
-      <details class="service-more">
-        <summary aria-label="메뉴 더보기" title="메뉴 더보기"><span class="quick-nav-icon quick-more-icon"><i></i><i></i><i></i></span><span class="quick-nav-label">더보기</span></summary>
-        <div class="service-more-menu">${MORE_NAV.map(item => `<a href="${item.href}" data-route><span>${iconSvg(item.key)}</span><b>${esc(item.label)}</b></a>`).join("")}</div>
-      </details>
-    </nav>
+    <div class="product-service-bar"><nav class="product-service-inner" aria-label="정참시 전체 서비스"><span>서비스</span><a href="/president" data-route>대통령</a><a href="/now" data-route>NOW Rank</a><a href="/news" data-route>NEWS</a><a href="/generation-president" data-route>세대별 대통령</a><a href="/national-evaluation" data-route>전국 평가제</a><a href="/compare" data-route>비교분석</a><a href="/academy" data-route>아카데미</a><a href="/keywords" data-route>정치키워드</a></nav></div>
   </header>`;
 }
 

@@ -1,6 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.32-art-direction-2";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.35-benchmarked-product";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -78,6 +78,38 @@ function brandHero(data = {}) {
     </div>
     <div class="brand-hero-art" aria-hidden="true" style="background-image:url('${esc(art)}')"></div>
   </section>`;
+}
+
+function productHero(nowPeople = [], poll = null) {
+  const top = nowPeople.slice(0,3);
+  const total = poll ? (poll.options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0) : 0;
+  const pollLabel = poll?.question || "오늘의 정치, 당신의 선택은?";
+  return `<section class="product-hero" aria-label="정참시 오늘의 정치">
+    <div class="product-hero-copy">
+      <div class="product-hero-kicker"><span>JEONGCHAMSI</span><em>정치에 참여할 시간</em></div>
+      <h1>정치를 보는 것에서<br><strong>움직이는 것</strong>으로.</h1>
+      <p>인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요.</p>
+      <div class="product-hero-actions"><button type="button" class="hero-action-primary" data-go="/now">지금 정치 보기 <span>→</span></button><button type="button" class="hero-action-secondary" data-go="/poll">시민 선택 참여</button></div>
+      <div class="product-hero-proof"><span><b>NOW</b> 실시간 주목도</span><span><b>CHOICE</b> 시민 설문</span><span><b>IT’S ME</b> 정책 제안</span></div>
+    </div>
+    <div class="product-hero-live">
+      <div class="hero-live-head"><div><span class="live-dot"></span><b>지금 움직이는 정치</b></div><em>LIVE</em></div>
+      <div class="hero-rank-stack">${top.map((p,i)=>`<button type="button" data-go="/person/${esc(p.id)}"><span class="hero-rank-no">0${i+1}</span><span class="hero-rank-person"><b>${esc(p.name)}</b><small>${esc(p.party)} · ${esc(p.region)}</small></span><span class="hero-rank-arrow">↗</span></button>`).join("")}</div>
+      <div class="hero-poll-mini" role="button" tabindex="0" data-go="/poll"><span>오늘의 시민선택</span><b>${esc(pollLabel)}</b><small>${total ? `${total.toLocaleString("ko-KR")}명 참여 중` : "첫 선택을 기다리고 있어요"}</small><i>투표하기 →</i></div>
+    </div>
+  </section>`;
+}
+
+function productLauncher() {
+  const items = [
+    ["01","NOW Rank","지금 가장 주목받는 정치인","/now","now"],
+    ["02","시민들의 선택","오늘의 쟁점에 직접 한 표","/poll","choice"],
+    ["03","IT’S ME","내가 만드는 정책 제안","/itsme","itsme"],
+    ["04","정치인 비교","두 사람을 같은 기준으로","/compare","compare"],
+    ["05","세대별 대통령","세대마다 다른 선택 보기","/generation-president","generation"],
+    ["06","정뮤니티","지금 시민들이 하는 말","/community","community"]
+  ];
+  return `<section class="product-launcher"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시에서 무엇을 할까요?</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(([no,title,desc,href,key])=>`<button type="button" class="launcher-card launcher-${key}" data-go="${href}"><span class="launcher-no">${no}</span><span class="launcher-copy"><b>${title}</b><small>${desc}</small></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
 }
 
 function columnLead(item) {
@@ -264,10 +296,10 @@ export async function renderHome() {
     ? `<div class="badge-home-preview">${homeBadges.slice(0,3).map(x => `<button type="button" data-go="/mypage/activity?tab=badges"><span>${esc(x.mark)}</span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></button>`).join("")}<button type="button" class="badge-more-card" data-go="/mypage/activity?tab=badges"><span>+</span><b>배지함</b><small>전체보기</small></button></div>`
     : `<button type="button" class="badge-empty-cta" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}"><span class="badge-empty-icon">B</span><span><b>${userSession.authenticated ? "첫 배지를 획득해보세요" : "로그인하고 배지를 모아보세요"}</b><small>설문·글쓰기·참여 활동으로 시작</small></span><em>›</em></button>`;
 
-  return `<div class="site-shell home-art-directed">
+  return `<div class="site-shell">
     ${siteHeader()}
 
-    <div class="page-wrap"><div class="portal-layout">
+    <div class="page-wrap product-home-wrap">${productHero(nowPeople, poll)}${productLauncher()}<div class="portal-layout product-content-grid">
       <section class="mobile-utility" aria-label="모바일 빠른 정보">
         ${loginMobile}
         <div class="mobile-keywords"><div class="mobile-utility-head"><b>실시간 정치키워드</b><span role="button" data-go="/keywords">더보기</span></div><div class="mobile-keyword-track">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></div>
@@ -275,8 +307,6 @@ export async function renderHome() {
       </section>
 
       <main class="main-column">
-        ${brandHero(data.brand)}
-
         <section class="module" id="itsme"><div class="module-header"><div><span class="eyebrow">IT’S ME</span><h2>저는, 이렇게 제안합니다</h2><p class="module-desc">꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다.</p></div><button class="more-btn" type="button" data-go="/itsme">IT’S ME 전체보기</button></div><div class="itsme-grid">${itsmeHomeItems.map(itsmeHomeCard).join("")}</div></section>
 
         <section class="module poll-module" id="poll"><div class="module-header"><div><span class="eyebrow">CITIZENS’ CHOICE</span><h2>귀담아 들어야 합니다.</h2><p class="module-desc">작은 관심이 세상을 바꿉니다.</p></div><button class="more-btn" type="button" data-go="/poll">전체 설문 바로가기</button></div>${pollMarkup(poll, userSession.authenticated && !!poll && hasVotedPoll(poll.id))}</section>
