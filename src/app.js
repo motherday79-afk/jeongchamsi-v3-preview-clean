@@ -13,7 +13,7 @@ let liveBarRotationTimer = 0;
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=alpha6.0.36.25-sidebar-badge-layout")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=alpha6.0.36.26-mobile-foundation")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js?v=alpha6.0.36.24-showcase-hero-now");
     if (p[0] === "login") return view.renderLogin();
@@ -50,7 +50,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=alpha6.0.36.25-sidebar-badge-layout")).renderHome();
+  return (await import("./views/home.js?v=alpha6.0.36.26-mobile-foundation")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -239,16 +239,6 @@ document.addEventListener("click", async event => {
   if (go) { const to = go.dataset.go; if (to && to !== "#") route(to); return; }
   if (event.target.closest("[data-drawer-open]")) return toggleDrawer(true);
   if (event.target.closest("[data-drawer-close]")) return toggleDrawer(false);
-  const viewMode = event.target.closest("[data-view-mode]");
-  if (viewMode) {
-    const mode = viewMode.dataset.viewMode;
-    try {
-      if (mode === "desktop") localStorage.setItem("jcv3:view-mode", "desktop");
-      else localStorage.removeItem("jcv3:view-mode");
-    } catch {}
-    window.location.reload();
-    return;
-  }
   if (event.target.closest("[data-user-logout]")) { await logoutUser(); route("/", { replace: true }); return render(currentRoute()); }
 
   const favorite = event.target.closest("[data-person-favorite]");

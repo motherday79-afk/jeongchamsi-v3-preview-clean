@@ -1,6 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot, getAuthorProfiles } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.24-showcase-hero-now";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.26-mobile-foundation";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
 import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
@@ -341,10 +341,9 @@ export async function renderHome() {
     ${siteHeader({ memberCount:data.memberCount, liveBar:data.brand?.liveBar })}
 
     <div class="page-wrap product-home-wrap">${productHero(data.brand || {})}${productLauncher()}<div class="portal-layout product-content-grid">
-      <section class="mobile-utility" aria-label="모바일 빠른 정보">
+      <section class="mobile-utility" aria-label="모바일 내 정참시">
         ${loginMobile}
-        <div class="mobile-keywords"><div class="mobile-utility-head"><b>실시간 정치키워드</b><span role="button" data-go="/keywords">더보기</span></div><div class="mobile-keyword-track">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></div>
-        <div class="mobile-mini-tools"><button type="button" data-go="/mypage/activity"><span class="mobile-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><span class="mobile-tool-copy"><b>내 참여 · 배지</b><span>활동 보기</span></span></button><button type="button" data-go="/mypage/recent"><span class="mobile-tool-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></span><span class="mobile-tool-copy"><b>최근 본 정치인</b><span>다시 보기</span></span></button></div>
+        <section class="mobile-participation participation-card"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div>${badgePreview}</section>
       </section>
 
       <main class="main-column">

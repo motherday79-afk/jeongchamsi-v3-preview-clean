@@ -1,4 +1,4 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.26-mobile-foundation";
 import { getUserSession } from "../core/user.js";
 import { SERVICE_CATALOG, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 
@@ -84,12 +84,7 @@ export function drawer() {
 
 
 export function footer() {
-  const touchUi = document.documentElement.classList.contains("jcv3-touch-ui");
-  const desktopMode = document.documentElement.classList.contains("jcv3-force-desktop");
-  const viewToggle = touchUi
-    ? `<button type="button" class="footer-view-switch mobile-toggle" data-view-mode="${desktopMode ? "mobile" : "desktop"}">${desktopMode ? "모바일버전 보기" : "PC버전 보기"}</button>`
-    : "";
-  return `<footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간</span></div><nav class="footer-links" aria-label="정참시 운영 안내"><a href="/guide" data-route>이용안내</a><a href="/privacy" data-route>개인정보처리방침</a><a href="/policy" data-route>운영정책</a></nav>${viewToggle}</footer>`;
+  return `<footer class="footer"><div><b>정참시</b><span>정치에 참여할 시간</span></div><nav class="footer-links" aria-label="정참시 운영 안내"><a href="/guide" data-route>이용안내</a><a href="/privacy" data-route>개인정보처리방침</a><a href="/policy" data-route>운영정책</a></nav></footer>`;
 }
 
 export function pageShell(content) {

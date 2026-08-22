@@ -9,10 +9,8 @@
       const touch = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
       const shortSide = Math.min(Number(screen.width || 9999), Number(screen.height || 9999));
       if (mobileUA || (touch && shortSide <= 1024)) document.documentElement.classList.add("jcv3-touch-ui");
-      if (localStorage.getItem("jcv3:view-mode") === "desktop") {
-        document.documentElement.classList.add("jcv3-force-desktop");
-        document.getElementById("jcv3-viewport").setAttribute("content","width=1280,initial-scale=1");
-      }
+      localStorage.removeItem("jcv3:view-mode");
+      document.documentElement.classList.remove("jcv3-force-desktop");
     } catch {}
   </script>
   <meta name="theme-color" content="#18242a">
@@ -21,9 +19,10 @@
   <link rel="stylesheet" href="/css/pages.css?v=alpha6.0.36.25-sidebar-badge-layout">
   <link rel="stylesheet" href="/css/product-system.css?v=alpha6.0.36.24-showcase-hero-now">
   <link rel="stylesheet" href="/css/spectrum-palette.css?v=alpha6.0.36.24-showcase-hero-now">
+  <link rel="stylesheet" href="/css/mobile-foundation.css?v=alpha6.0.36.26-mobile-foundation">
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="/src/app.js?v=alpha6.0.36.25-sidebar-badge-layout"></script>
+  <script type="module" src="/src/app.js?v=alpha6.0.36.26-mobile-foundation"></script>
 </body>
 </html>
