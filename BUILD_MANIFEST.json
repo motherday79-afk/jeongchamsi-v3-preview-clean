@@ -1,6 +1,6 @@
 {
-  "version": "v3.0.0-alpha6.0.36.31",
-  "build": "PHOTO CHAIN ROOTFIX",
+  "version": "v3.0.0-alpha6.0.36.32",
+  "build": "MOBILE SCROLL ROOTFIX",
   "vercel_function_count": 1,
   "vercel_function": [
     "api/gateway.js"
@@ -88,5 +88,24 @@
       "home-person-preview.js",
       "politician-photo-index.js"
     ]
+  },
+  "mobile_scroll_rootfix": {
+    "scroll_history_policy": "memory + bounded 240ms History API flush",
+    "removed": "requestAnimationFrame -> history.replaceState on every scroll frame",
+    "immediate_flush_boundaries": [
+      "route navigation",
+      "scrollend",
+      "touchend",
+      "pointerup",
+      "pagehide",
+      "visibility hidden"
+    ],
+    "protected_navigation": [
+      "manual history.scrollRestoration",
+      "forward route starts at 0,0",
+      "Back/Forward restores saved x/y",
+      "NOW append-only load more unchanged"
+    ],
+    "duplicate_history_write_guard": true
   }
 }
