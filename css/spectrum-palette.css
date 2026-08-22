@@ -676,3 +676,42 @@ a,.more-btn{--jc-link:#087f74}
   background:#f5fbf9!important;
   color:var(--green)!important;
 }
+
+
+/* alpha6.0.36.13 — generation result PANEL (definitive override) */
+#generation-president .generation-result{
+  margin-top:10px!important;
+  padding:10px 11px 9px!important;
+  border:1px solid #d9e4f8!important;
+  border-radius:11px!important;
+  background:#f4f7fe!important;
+}
+#generation-president .generation-result b{
+  display:block!important;
+  margin:0!important;
+  color:#182126!important;
+  font-size:13px!important;
+  font-weight:850!important;
+  line-height:1.4!important;
+}
+#generation-president .generation-result .generation-bar{
+  height:7px!important;
+  margin:8px 0 0!important;
+  border-radius:999px!important;
+  background:#dfe7f6!important;
+}
+#generation-president .generation-result .generation-bar i{
+  background:var(--ps-blue)!important;
+}
+#generation-president .generation-result small{
+  display:block!important;
+  margin-top:7px!important;
+  color:#66737a!important;
+  font-size:11px!important;
+  line-height:1.35!important;
+}
+#generation-president .generation-result-empty{
+  background:#f7f9fc!important;
+  border-color:#e3e8f0!important;
+}
+#generation-president .generation-result-empty .generation-bar{background:#e8edf4!important}
