@@ -352,7 +352,11 @@ document.addEventListener("click", async event => {
   if (nowRefresh) {
     nowRefresh.disabled = true;
     const r = await (await import("./views/admin.js")).runNowDataRefresh();
-    if (!r.ok) alert(r.error === 'NAVER_CONFIG_REQUIRED' ? `NOW 새로고침 준비 필요 · 현재 v3 프로젝트에 없는 환경변수: ${(r.missingEnv || r.missingConfig || []).join(', ')}` : `NOW 새로고침 실패 · ${r.error || ''}`);
+    if (!r.ok) {
+      const groups = r.missingGroups || [];
+      const need = [groups.includes('searchAds') ? '네이버 검색량' : '', groups.includes('news') ? '네이버 뉴스' : ''].filter(Boolean).join(' + ');
+      alert(r.error === 'NAVER_CONFIG_REQUIRED' ? `NOW 새로고침 준비 필요 · ${need || '네이버 데이터 연결'} 연결이 필요합니다.` : `NOW 새로고침 실패 · ${r.error || ''}`);
+    }
     await render(currentRoute(), { resetScroll:false });
     return;
   }
