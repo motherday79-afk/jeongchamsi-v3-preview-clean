@@ -1,5 +1,5 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
-import { getDomain } from "../core/repository.js";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getDomain } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
 
 function paragraphs(text = "") {
   return String(text || "").split(/\n{2,}/).map(x => x.trim()).filter(Boolean).map(x => `<p>${esc(x)}</p>`).join("");

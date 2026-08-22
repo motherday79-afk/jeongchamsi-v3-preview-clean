@@ -1,13 +1,13 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.15-ops-sync";
-import { getUserSession } from "../core/user.js";
-import { SERVICE_CATALOG, serviceBarServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.15-ops-sync";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getUserSession } from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
+import { SERVICE_CATALOG, serviceBarServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.16-badge-eval-hero";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 }[c]));
 
 function drawerServiceItem(item) {
-  return `<a class="drawer-service-item drawer-service-${esc(item.key)}" href="${item.href}" data-route><span class="drawer-service-icon">${serviceIconSvg(item.key)}</span><span class="drawer-service-copy"><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span><em>→</em></a>`;
+  return `<a class="drawer-service-item drawer-service-${esc(item.key)} drawer-tone-${esc(item.tone || "teal")}" href="${item.href}" data-route><span class="drawer-service-icon">${serviceIconSvg(item.key)}</span><span class="drawer-service-copy"><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span><em>→</em></a>`;
 }
 
 function iconSvg(key = "") { return serviceIconSvg(key); }

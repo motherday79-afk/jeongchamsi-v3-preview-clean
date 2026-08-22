@@ -1,9 +1,10 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
-import { getUserSession, initializeUserState } from "../core/user.js";
-import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getUserSession, initializeUserState } from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.15-ops-sync";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.16-badge-eval-hero";
+import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.16-badge-eval-hero";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],
@@ -60,6 +61,7 @@ async function membersPanel() {
         <label>출생연도<input inputmode="numeric" data-member-birth="${esc(user.id)}" value="${esc(user.birthYear || "")}" maxlength="4"></label>
         <label>새 비밀번호<input type="password" data-member-password="${esc(user.id)}" placeholder="변경할 때만 입력 · 8자 이상" autocomplete="new-password"></label>
       </div>
+      <details class="member-badge-admin"><summary><span><b>배지 관리</b><small>관리자 직접 해금 · 현재 대표 ${esc(badgeByKey(user.representativeBadge)?.name || "미설정")}</small></span><em>${(user.grantedBadges || []).length}개 해금</em></summary><div class="member-badge-grid">${BADGE_CATALOG.map(badge => `<label class="member-badge-chip"><input type="checkbox" data-member-badge="${esc(user.id)}" value="${esc(badge.key)}" ${(user.grantedBadges || []).includes(badge.key) ? "checked" : ""}>${badgeGemSvg(badge.key)}<span><b>${esc(badge.name)}</b><small>${esc(badge.tier)}</small></span></label>`).join("")}</div><p class="field-help">조건을 달성하지 않은 배지도 관리자가 직접 열어줄 수 있습니다. 체크 해제 후 회원정보 저장 시 관리자 해금만 회수됩니다.</p></details>
       <div class="member-access-controls member-access-expanded">
         <label>권한<select data-member-role="${esc(user.id)}"><option value="member" ${user.role !== "admin" ? "selected" : ""}>일반회원</option><option value="admin" ${user.role === "admin" ? "selected" : ""}>관리자</option></select></label>
         <label>상태<select data-member-status="${esc(user.id)}"><option value="active" ${!suspended ? "selected" : ""}>정상</option><option value="suspended" ${suspended ? "selected" : ""}>이용정지</option></select></label>
@@ -202,13 +204,13 @@ async function presidentPanel() {
 }
 async function generationPanel() {
   const data = await getDomain("generation");
-  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.15-ops-sync");
+  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>세대가 뽑은 대통령</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/generation-president">외부 페이지</button></div>${adminTools.renderGenerationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function nationalEvaluationPanel() {
   const data = await getDomain("nationalEvaluation");
-  const assembly = listAllPoliticians().filter(x => x.type === "assembly");
-  return `<section class="admin-panel"><div class="admin-panel-head"><h2>국회의원 전국 평가제</h2><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div><div class="notice-box">국회의원 300개 Slot 중 현재 전국 평가 대상을 한 명 선택합니다. 실제 인물정보가 연결되기 전에는 Slot 번호로 기능을 검수합니다.</div><form class="admin-form" data-admin-form="nationalEvaluation"><label>현재 평가 대상<select name="subjectId"><option value="">대상 선택 전</option>${assembly.map(x => `<option value="${x.id}" ${x.id === data.subjectId ? "selected" : ""}>국회의원 ${String(x.slot).padStart(3, "0")}</option>`).join("")}</select></label><label class="check"><input type="checkbox" name="enabled" ${data.enabled ? "checked" : ""}> 전국 평가 참여 활성</label>${formButtons("national")}</form></section>`;
+  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>국회의원 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function systemPanel() {
   let health = { storage: "unknown", blob: "unknown" };

@@ -1,8 +1,9 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
-import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
-import { getDomain } from "../core/repository.js";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getDomain } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { REGION_DATA } from "../data/regions.js";
+import { BADGE_CATALOG, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.16-badge-eval-hero";
 
 function authHero(title, description) {
   return `<section class="page-hero"><span class="eyebrow">MEMBER</span><h1>${esc(title)}</h1><p>${esc(description)}</p></section>`;
@@ -18,28 +19,13 @@ function formatDate(v) {
   try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(v)); }
   catch { return ""; }
 }
-const BADGE_CATALOG = Object.freeze([
-  { tier: "STANDARD", name: "도시락알리미", mission: "정오(12시) 시간대에 정참시 방문", kind: "시간 미션" },
-  { tier: "STANDARD", name: "신데렐라", mission: "자정(00시) 시간대에 정참시 방문", kind: "시간 미션" },
-  { tier: "STANDARD", name: "위크맨", mission: "7일 연속 출석", kind: "연속 출석" },
-  { tier: "STANDARD", name: "슈퍼히어로", mission: "한 달 개근", kind: "월간 출석" },
-  { tier: "STANDARD", name: "첫 참여", mission: "설문·댓글·글쓰기 중 첫 참여", kind: "참여" },
-  { tier: "STANDARD", name: "시민 선택", mission: "시민들의 선택 설문에 참여", kind: "투표" },
-  { tier: "GOLD", name: "퍼스트팽귄", mission: "초기 COLUMN 작가·선도 참여자에게 운영진 부여", kind: "역할형" },
-  { tier: "GOLD", name: "인플루언서", mission: "팔로워·영향력 기준을 충족한 회원에게 부여", kind: "역할형" },
-  { tier: "GOLD", name: "정책 제안자", mission: "IT’S ME 정책 제안 작성", kind: "IT’S ME" },
-  { tier: "GOLD", name: "의견 리더", mission: "정뮤니티·댓글 활동 상위 참여", kind: "COMMUNITY" },
-  { tier: "PLATINUM", name: "TOP 1% · 정뮤니티", mission: "정뮤니티 활동 상위 1% 시즌 배지", kind: "시즌" },
-  { tier: "PLATINUM", name: "TOP 1% · IT’S ME", mission: "IT’S ME 활동 상위 1% 시즌 배지", kind: "시즌" }
-]);
-
 function badgeList(activity, authoredCount, commentCount, itsmeCount = 0) {
   const pollCount = Object.keys(activity.pollVotes || {}).length;
-  const earned = new Set();
-  if (pollCount + commentCount + authoredCount > 0) earned.add("첫 참여");
-  if (pollCount > 0) earned.add("시민 선택");
-  if (itsmeCount > 0) earned.add("정책 제안자");
-  return BADGE_CATALOG.map(x => ({ ...x, earned: earned.has(x.name) }));
+  const earned = new Set(activity.grantedBadges || []);
+  if (pollCount + commentCount + authoredCount > 0) earned.add("first-participation");
+  if (pollCount > 0) earned.add("citizen-choice");
+  if (itsmeCount > 0) earned.add("policy-proposer");
+  return BADGE_CATALOG.map(x => ({ ...x, earned: earned.has(x.key), representative: String(activity.representativeBadge || "") === x.key, adminGranted:(activity.grantedBadges || []).includes(x.key) }));
 }
 
 function currentAge(birthYear) {
@@ -94,7 +80,7 @@ export async function renderMyPage() {
   const activity = getUserActivity();
   const counts = await myContentCounts(session.user.id);
   const user = session.user;
-  return pageShell(`<main class="subpage"><section class="page-hero member-profile-hero"><span class="eyebrow">MY JEONGCHAMSI</span><h1>${esc(user.name || user.nickname || user.id)}님</h1><p>${esc(user.region || "지역 미설정")} · ${currentAge(user.birthYear) !== null ? `${currentAge(user.birthYear)}세` : "출생연도 미설정"} · ${esc(user.preferredParty || "선호정당 미설정")} · ${user.role === "admin" ? "관리자" : "일반회원"}</p><div class="inline-actions top-gap">${user.role === "admin" ? `<button class="primary-btn" type="button" data-go="/admin">관리자 페이지</button>` : ""}<button class="ghost-btn" type="button" data-user-logout>로그아웃</button></div></section><section class="member-stat-grid"><article class="content-card"><small>내가 쓴 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article class="content-card"><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article class="content-card"><small>즐겨찾기</small><strong>${(activity.favorites || []).length}</strong><span>명</span></article><article class="content-card"><small>설문 참여</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></section><section class="mypage-menu-grid"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글</b><span>게시판별로 모아보기 →</span></button><button type="button" data-go="/mypage/activity"><b>내 참여 · 배지</b><span>좋아요·설문·즐겨찾기·배지 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>최근 열어본 정치인 →</span></button><button type="button" data-go="/mypage/profile"><b>회원정보</b><span>내 프로필 수정 →</span></button></section><section class="content-card"><div class="section-title"><h2>획득 가능한 배지</h2><button class="text-link" type="button" data-go="/mypage/activity?tab=badges">전체 배지 보기</button></div><div class="badge-preview-row">${BADGE_CATALOG.slice(0, 6).map(x => `<span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span>`).join("")}</div></section><section class="content-card"><div class="section-title"><h2>즐겨찾기 정치인</h2><span>${(activity.favorites || []).length}명</span></div>${(activity.favorites || []).length ? `<div class="member-link-list">${activity.favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">정치인 상세페이지에서 ‘즐겨찾기’를 눌러보세요.</div>`}</section></main>`);
+  return pageShell(`<main class="subpage"><section class="page-hero member-profile-hero"><span class="eyebrow">MY JEONGCHAMSI</span><h1>${esc(user.name || user.nickname || user.id)}님</h1><p>${esc(user.region || "지역 미설정")} · ${currentAge(user.birthYear) !== null ? `${currentAge(user.birthYear)}세` : "출생연도 미설정"} · ${esc(user.preferredParty || "선호정당 미설정")} · ${user.role === "admin" ? "관리자" : "일반회원"}</p><div class="inline-actions top-gap">${user.role === "admin" ? `<button class="primary-btn" type="button" data-go="/admin">관리자 페이지</button>` : ""}<button class="ghost-btn" type="button" data-user-logout>로그아웃</button></div></section><section class="member-stat-grid"><article class="content-card"><small>내가 쓴 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article class="content-card"><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article class="content-card"><small>즐겨찾기</small><strong>${(activity.favorites || []).length}</strong><span>명</span></article><article class="content-card"><small>설문 참여</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></section><section class="mypage-menu-grid"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글</b><span>게시판별로 모아보기 →</span></button><button type="button" data-go="/mypage/activity"><b>내 참여 · 배지</b><span>좋아요·설문·즐겨찾기·배지 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>최근 열어본 정치인 →</span></button><button type="button" data-go="/mypage/profile"><b>회원정보</b><span>내 프로필 수정 →</span></button></section><section class="content-card"><div class="section-title"><h2>획득 가능한 배지</h2><button class="text-link" type="button" data-go="/mypage/activity?tab=badges">전체 배지 보기</button></div><div class="badge-preview-row badge-jewel-preview">${BADGE_CATALOG.slice(0, 6).map(x => `<span>${badgeGemSvg(x.key)}<b>${esc(x.name)}</b><small>${esc(x.tier)}</small></span>`).join("")}</div></section><section class="content-card"><div class="section-title"><h2>즐겨찾기 정치인</h2><span>${(activity.favorites || []).length}명</span></div>${(activity.favorites || []).length ? `<div class="member-link-list">${activity.favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">정치인 상세페이지에서 ‘즐겨찾기’를 눌러보세요.</div>`}</section></main>`);
 }
 
 export async function renderMyActivity(search = "") {
@@ -119,7 +105,7 @@ export async function renderMyActivity(search = "") {
     const favorites = activity.favorites || [];
     detail = `<div class="section-title"><h2>즐겨찾기 정치인</h2><span>${favorites.length}명</span></div>${favorites.length ? `<div class="member-link-list">${favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">즐겨찾기한 정치인이 없습니다.</div>`}`;
   } else if (tab === "badges") {
-    detail = `<div class="section-title"><h2>획득 가능한 배지</h2><span>${badges.filter(x => x.earned).length}개 획득 · 총 ${badges.length}종</span></div><p class="badge-catalog-note">v2에서 기획한 시간미션·출석·역할형·게시판 시즌 배지를 v3 기준으로 정리했습니다. 일부 히든/역할형 배지는 운영 기준이 확정되면 자동판정 또는 관리자 부여로 연결됩니다.</p><div class="badge-detail-grid">${badges.map(x => `<article class="${x.earned ? "earned" : ""}"><span>${x.earned ? "✓" : x.tier === "PLATINUM" ? "P" : x.tier === "GOLD" ? "G" : "S"}</span><div><small>${esc(x.tier)} · ${esc(x.kind)}</small><b>${esc(x.name)}</b><p>${esc(x.mission)}</p></div></article>`).join("")}</div>`;
+    detail = `<div class="section-title"><h2>내 배지 컬렉션</h2><span>${badges.filter(x => x.earned).length}개 획득 · 총 ${badges.length}종</span></div><p class="badge-catalog-note">획득한 배지 중 하나를 대표 배지로 선택하면 메인 오른쪽 ‘내 참여 · 배지’에 바로 표시됩니다.</p><div class="badge-detail-grid badge-jewel-grid">${badges.map(x => `<article class="${x.earned ? "earned" : "locked"} ${x.representative ? "representative" : ""}"><div class="badge-jewel-stage">${badgeGemSvg(x.key)}</div><div class="badge-jewel-copy"><small>${esc(x.tier)} · ${esc(x.kind)}${x.adminGranted ? " · 관리자 해금" : ""}</small><b>${esc(x.name)}</b><p>${esc(x.mission)}</p>${x.earned ? `<button class="ghost-btn badge-representative-btn ${x.representative ? "active" : ""}" type="button" data-badge-representative="${esc(x.key)}">${x.representative ? "대표 배지로 설정됨" : "대표 배지로 설정"}</button>` : `<span class="badge-locked-label">미획득</span>`}</div></article>`).join("")}</div>`;
   } else {
     detail = `<div class="section-title"><h2>활동 요약</h2><span>내 기록</span></div><div class="member-stat-grid activity-inner-stats"><article><small>작성 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article><small>좋아요</small><strong>${(activity.likedPosts || []).length}</strong><span>개</span></article><article><small>설문</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></div><div class="member-link-list top-gap"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글·댓글</b><span>${counts.authoredCount + counts.myComments.length}개 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>${getRecentPeople().length}명 →</span></button></div>`;
   }

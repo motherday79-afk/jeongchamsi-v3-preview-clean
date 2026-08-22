@@ -1,4 +1,4 @@
-import { performAction } from "./repository.js";
+import { performAction } from "./repository.js?v=alpha6.0.36.16-badge-eval-hero";
 
 const GUEST_RECENT_KEY = "jcv3:guest-recent:v1";
 let session = { authenticated: false, user: null };
@@ -6,7 +6,7 @@ let activity = emptyActivity();
 let initialized = false;
 
 function emptyActivity() {
-  return { favorites: [], recentPeople: [], likedPosts: [], pollVotes: {}, generationVotes: {}, nationalEvaluationVotes: {}, academyApplications: [], updatedAt: null };
+  return { favorites: [], recentPeople: [], likedPosts: [], pollVotes: {}, generationVotes: {}, nationalEvaluationVotes: {}, academyApplications: [], grantedBadges: [], representativeBadge: "", updatedAt: null };
 }
 function readGuestRecent() {
   try { return JSON.parse(localStorage.getItem(GUEST_RECENT_KEY) || "[]").filter(Boolean).slice(0, 20); }
@@ -155,6 +155,13 @@ export function hasGenerationVote(ageGroup) { return !!activity.generationVotes?
 export function generationVoteFor(ageGroup) { return activity.generationVotes?.[String(ageGroup || "")] || ""; }
 export function hasNationalEvaluationVote(personId) { return !!activity.nationalEvaluationVotes?.[String(personId || "")]; }
 
+export async function setRepresentativeBadge(badgeKey = "") {
+  if (!session.authenticated) return { ok:false, requiresLogin:true };
+  const result = await performAction("badge-representative-set", { badgeKey:String(badgeKey || "") });
+  if (result.ok && result.activity) activity = { ...emptyActivity(), ...result.activity };
+  return result;
+}
+
 export async function refreshUserActivity() {
   if (!session.authenticated) return emptyActivity();
   const body = await apiJSON("/api/v3/user/activity");
@@ -173,7 +180,9 @@ export function getUserSummary() {
     pollVotes: Object.keys(activity.pollVotes || {}).length,
     generationVotes: Object.keys(activity.generationVotes || {}).length,
     nationalEvaluationVotes: Object.keys(activity.nationalEvaluationVotes || {}).length,
-    academyApplications: activity.academyApplications?.length || 0
+    academyApplications: activity.academyApplications?.length || 0,
+    grantedBadges: [...(activity.grantedBadges || [])],
+    representativeBadge: String(activity.representativeBadge || "")
   };
 }
 

@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
 
 const DOCS = Object.freeze({
   guide: {

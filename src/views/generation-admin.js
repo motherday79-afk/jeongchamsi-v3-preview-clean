@@ -1,4 +1,4 @@
-import { getDomain, saveDomain } from "../core/repository.js";
+import { getDomain, saveDomain } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
 import { listAllPoliticians, getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 
 const AGES = Object.freeze(["10대", "20대", "30대", "40대", "50대", "60대+"]);

@@ -1,5 +1,5 @@
-import { getDomain } from "../core/repository.js";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
+import { getDomain } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
   listAssemblyMembers,
@@ -17,7 +17,7 @@ import {
   generationVoteFor,
   hasNationalEvaluationVote,
   isPostLiked
-} from "../core/user.js";
+} from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
 
 function pct(option, options) {
   const total = (options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
@@ -353,18 +353,25 @@ export async function renderGeneration() {
 
   let generationAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.15-ops-sync");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
     generationAdmin = adminTools.renderGenerationAdminEditor(data, { context:"detail", open:false });
   }
 
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h1>세대가 뽑은 대통령</h1><p>회원가입 때 입력한 출생연도로 내 세대는 자동 고정됩니다. 후보는 543명 목록을 직접 내리지 않고 검색해서 선택할 수 있습니다.</p></section><section class="content-card"><div class="generation-page-grid">${cards}</div></section>${generationAdmin}<section class="content-card"><div class="section-title"><h2>모의투표 참여</h2><span>${session.authenticated ? "회원 출생연도 기준 세대 자동 적용" : "로그인 필요"}</span></div>${voteArea}</section></main>`);
 }
 
+function nationalEvaluationDisplayVotes(data = {}, personId = "") {
+  const id = String(personId || data.subjectId || "");
+  if (!id) return { positive:0, neutral:0, negative:0 };
+  const source = data.demoMode === true ? data.demoResults : data.results;
+  return { positive:0, neutral:0, negative:0, ...((source || {})[id] || {}) };
+}
+
 export async function renderNationalEvaluation() {
   const data = await getDomain("nationalEvaluation");
   const session = getUserSession();
   const person = data.subjectId ? getPersonSlotById(data.subjectId) : null;
-  const votes = person ? { positive: 0, neutral: 0, negative: 0, ...(data.results?.[person.id] || {}) } : { positive: 0, neutral: 0, negative: 0 };
+  const votes = person ? nationalEvaluationDisplayVotes(data, person.id) : { positive: 0, neutral: 0, negative: 0 };
   const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
   const share = key => total ? Math.round(Number(votes[key] || 0) * 100 / total) : 0;
   const voted = person && hasNationalEvaluationVote(person.id);
@@ -381,7 +388,12 @@ export async function renderNationalEvaluation() {
     return { id, label: p ? slotLabel(p) : id, count, positive: percent("positive"), neutral: percent("neutral"), negative: percent("negative") };
   });
   const historyMarkup = `<section class="content-card"><div class="section-title"><h2>지난 전국 평가</h2><span>${history.length}건</span></div>${history.length ? `<div class="evaluation-history-list">${history.map(x => `<article><div><b>${esc(x.label)}</b><span>${x.count}명 참여</span></div><p>긍정 ${x.positive}% · 보통 ${x.neutral}% · 부정 ${x.negative}%</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 종료된 이전 평가가 없습니다.</div>`}</section>`;
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NATIONAL EVALUATION</span><h1>국회의원 전국 평가제</h1><p>현재 평가와 지난 평가 결과를 한 페이지에서 확인합니다.</p></section>${person ? `<section class="person-detail-hero content-card"><div class="person-detail-photo"></div><div class="person-detail-title"><span class="eyebrow">CURRENT SUBJECT</span><h1>${esc(slotLabel(person))}</h1><p>${esc(person.party || "")} · ${esc(person.jurisdiction || "")}</p><div class="person-detail-badges"><span>전국 평가 대상</span><span>${data.enabled ? "평가 진행중" : "평가 일시중지"}</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세페이지</button></div></section><section class="content-card"><div class="section-title"><h2>현재 평가 결과</h2><span>${total}명 참여</span></div><div class="evaluation-result-grid"><article><small>긍정</small><strong>${share("positive")}%</strong><span>${Number(votes.positive || 0)}표</span></article><article><small>보통</small><strong>${share("neutral")}%</strong><span>${Number(votes.neutral || 0)}표</span></article><article><small>부정</small><strong>${share("negative")}%</strong><span>${Number(votes.negative || 0)}표</span></article></div></section><section class="content-card"><div class="section-title"><h2>전국 평가 참여</h2><span>${voted ? "참여 완료" : voting ? "평가 진행중" : "평가 중지"}</span></div>${!session.authenticated ? `<div class="member-login-prompt"><span>평가 참여는 로그인 후 가능합니다.</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>` : !voting ? `<div class="empty-inline">관리자가 평가를 활성화하면 참여할 수 있습니다.</div>` : voted ? `<div class="empty-inline">이 평가에 이미 참여했습니다.</div>` : `<form class="evaluation-vote-form" data-national-evaluation-form data-person-id="${esc(person.id)}"><label><input type="radio" name="rating" value="positive" required><b>긍정 평가</b><span>전반적으로 잘하고 있다고 봅니다.</span></label><label><input type="radio" name="rating" value="neutral" required><b>보통</b><span>긍정과 아쉬움이 비슷합니다.</span></label><label><input type="radio" name="rating" value="negative" required><b>부정 평가</b><span>전반적으로 아쉽다고 봅니다.</span></label><button class="primary-btn" type="submit">평가 제출</button><div class="save-state" data-national-evaluation-state></div></form>`}</section>` : `<section class="content-card"><div class="empty-state tall"><div class="empty-icon">評</div><h2>평가 대상 선택 전</h2><p>관리자에서 국회의원 300개 슬롯 중 한 명을 선택하면 이 페이지에서 바로 평가할 수 있습니다.</p></div></section>`}${historyMarkup}</main>`);
+  let nationalAdmin = "";
+  if (session.authenticated && session.user?.role === "admin") {
+    const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+    nationalAdmin = tools.renderNationalEvaluationAdminEditor(data, { context:"detail", open:false });
+  }
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NATIONAL EVALUATION</span><h1>국회의원 전국 평가제</h1><p>현재 평가와 지난 평가 결과를 한 페이지에서 확인합니다.</p></section>${nationalAdmin}${person ? `<section class="person-detail-hero content-card"><div class="person-detail-photo"></div><div class="person-detail-title"><span class="eyebrow">CURRENT SUBJECT</span><h1>${esc(slotLabel(person))}</h1><p>${esc(person.party || "")} · ${esc(person.jurisdiction || "")}</p><div class="person-detail-badges"><span>전국 평가 대상</span><span>${data.enabled ? "평가 진행중" : "평가 일시중지"}</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세페이지</button></div></section><section class="content-card"><div class="section-title"><h2>현재 평가 결과</h2><span>${total}명 참여</span></div><div class="evaluation-result-grid"><article><small>긍정</small><strong>${share("positive")}%</strong><span>${Number(votes.positive || 0)}표</span></article><article><small>보통</small><strong>${share("neutral")}%</strong><span>${Number(votes.neutral || 0)}표</span></article><article><small>부정</small><strong>${share("negative")}%</strong><span>${Number(votes.negative || 0)}표</span></article></div></section><section class="content-card"><div class="section-title"><h2>전국 평가 참여</h2><span>${voted ? "참여 완료" : voting ? "평가 진행중" : "평가 중지"}</span></div>${!session.authenticated ? `<div class="member-login-prompt"><span>평가 참여는 로그인 후 가능합니다.</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>` : !voting ? `<div class="empty-inline">관리자가 평가를 활성화하면 참여할 수 있습니다.</div>` : voted ? `<div class="empty-inline">이 평가에 이미 참여했습니다.</div>` : `<form class="evaluation-vote-form" data-national-evaluation-form data-person-id="${esc(person.id)}"><label><input type="radio" name="rating" value="positive" required><b>긍정 평가</b><span>전반적으로 잘하고 있다고 봅니다.</span></label><label><input type="radio" name="rating" value="neutral" required><b>보통</b><span>긍정과 아쉬움이 비슷합니다.</span></label><label><input type="radio" name="rating" value="negative" required><b>부정 평가</b><span>전반적으로 아쉽다고 봅니다.</span></label><button class="primary-btn" type="submit">평가 제출</button><div class="save-state" data-national-evaluation-state></div></form>`}</section>` : `<section class="content-card"><div class="empty-state tall"><div class="empty-icon">評</div><h2>평가 대상 선택 전</h2><p>관리자에서 국회의원 300개 슬롯 중 한 명을 선택하면 이 페이지에서 바로 평가할 수 있습니다.</p></div></section>`}${historyMarkup}</main>`);
 }
 
 export async function renderSearch(query = "") {

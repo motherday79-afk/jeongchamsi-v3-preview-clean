@@ -173,6 +173,37 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, activity });
     }
 
+
+    if (action === "badge-representative-set") {
+      const validBadges = new Set(["noon-signal","midnight","weekman","superhero","first-participation","citizen-choice","first-penguin","influencer","policy-proposer","opinion-leader","top-community","top-itsme"]);
+      const badgeKey = String(payload.badgeKey || "");
+      if (badgeKey && !validBadges.has(badgeKey)) return res.status(400).json({ ok:false, error:"INVALID_BADGE" });
+      if (badgeKey) {
+        const granted = new Set(activity.grantedBadges || []);
+        let unlocked = granted.has(badgeKey);
+        if (badgeKey === "citizen-choice") unlocked = unlocked || Object.keys(activity.pollVotes || {}).length > 0;
+        if (badgeKey === "first-participation") {
+          unlocked = unlocked || Object.keys(activity.pollVotes || {}).length > 0 || Object.keys(activity.generationVotes || {}).length > 0 || Object.keys(activity.nationalEvaluationVotes || {}).length > 0;
+          if (!unlocked) {
+            const [comments, community, itsme] = await Promise.all([
+              getJSON("comments").then(x => x || defaultDomain("comments")),
+              getJSON("community").then(x => x || defaultDomain("community")),
+              getJSON("itsme").then(x => x || defaultDomain("itsme"))
+            ]);
+            unlocked = (comments.items || []).some(x => String(x.ownerId || "") === String(user.id)) || (community.items || []).some(x => String(x.ownerId || "") === String(user.id)) || (itsme.items || []).some(x => String(x.ownerId || "") === String(user.id));
+          }
+        }
+        if (badgeKey === "policy-proposer" && !unlocked) {
+          const itsme = (await getJSON("itsme")) || defaultDomain("itsme");
+          unlocked = (itsme.items || []).some(x => String(x.ownerId || "") === String(user.id));
+        }
+        if (!unlocked) return res.status(403).json({ ok:false, error:"BADGE_LOCKED" });
+      }
+      activity.representativeBadge = badgeKey;
+      activity = await setActivity(user.id, activity);
+      return res.status(200).json({ ok:true, activity });
+    }
+
     if (action === "academy-apply") {
       const slotId = String(payload.slotId || "");
       if (!slotId) return res.status(400).json({ ok: false, error: "INVALID_SLOT" });
