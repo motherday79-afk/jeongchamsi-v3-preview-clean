@@ -13,8 +13,8 @@ function configState(){
   if(!search.accessLicense)missingEnv.push('NAVER_AD_ACCESS_LICENSE');
   if(!search.secretKey)missingEnv.push('NAVER_AD_SECRET_KEY');
   if(!search.customerId)missingEnv.push('NAVER_AD_CUSTOMER_ID');
-  if(!news.id)missingEnv.push('NAVER_API_HUB_CLIENT_ID');
-  if(!news.secret)missingEnv.push('NAVER_API_HUB_CLIENT_SECRET');
+  if(!news.id)missingEnv.push('NAVER_NEWS_CLIENT_ID');
+  if(!news.secret)missingEnv.push('NAVER_NEWS_CLIENT_SECRET');
   const missingGroups=[];
   if(!search.configured)missingGroups.push('searchAds');
   if(!news.configured)missingGroups.push('news');
@@ -68,7 +68,7 @@ module.exports=async function nowDataAdmin(req,res){
     }
     if(action==='publish'){
       if(meta.status!=='preview'||!Array.isArray(meta.ranked))return res.status(409).json({ok:false,error:'NOW_PREVIEW_REQUIRED'});
-      const publishedAt=new Date().toISOString(),current={schemaVersion:1,draftId:meta.draftId,publishedAt,weights:meta.weights,ranked:meta.ranked,batchCount:meta.batchCount,batches:meta.batches,providers:['naver-search-ads','naver-news']};
+      const publishedAt=new Date().toISOString(),current={schemaVersion:1,draftId:meta.draftId,publishedAt,weights:meta.weights,ranked:meta.ranked,batchCount:meta.batchCount,batches:meta.batches,providers:['naver-search-ads','naver-news-search-api']};
       await setJSON(CURRENT,current);
       const history=(await getJSON(HISTORY))||{items:[]};history.items=[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:meta.top30},...(history.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30);await setJSON(HISTORY,history);
       meta.status='published';meta.publishedAt=publishedAt;await setJSON(META,meta);
