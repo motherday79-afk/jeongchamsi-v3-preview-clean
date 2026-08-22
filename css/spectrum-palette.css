@@ -620,3 +620,44 @@ a,.more-btn{--jc-link:#087f74}
 #generation-president .generation-card small{color:#747d82!important}
 #generation-president .generation-bar{background:#e7edf8!important}
 #generation-president .generation-bar i{background:var(--ps-blue)!important}
+
+/* alpha6.0.36.10 — generation president refinement */
+/* Remove decorative badge; the intro starts cleanly with the message. */
+#generation-president .generation-intro h3{
+  margin-top:0!important;
+}
+
+/* Participation CTA: quiet blue choice-style control, not a solid color block. */
+#generation-president .generation-intro button{
+  background:#f3f7ff!important;
+  border:1px solid #cedafb!important;
+  color:#315fc4!important;
+  box-shadow:none!important;
+}
+#generation-president .generation-intro button:hover{
+  background:#eaf1ff!important;
+  border-color:#b9caf5!important;
+}
+
+/* Age labels are plain information, not colored badges. */
+#generation-president .generation-age{
+  display:block!important;
+  padding:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#182126!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+
+/* All generation cards share one neutral surface — no special 20s/focus tile. */
+#generation-president .generation-card,
+#generation-president .generation-card.focus{
+  background:#fff!important;
+  border-color:#e6e9eb!important;
+  color:#182126!important;
+}
+
+/* Blue remains only where it carries data meaning. */
+#generation-president .generation-bar{background:#e7edf8!important}
+#generation-president .generation-bar i{background:var(--ps-blue)!important}
