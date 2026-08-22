@@ -247,3 +247,57 @@ a,.more-btn{--jc-link:#087f74}
     font-size:64px!important;
   }
 }
+
+
+/* JEONGCHAMSI alpha6.0.36.4 — HOME DENSITY + COPY + READABILITY HOTFIX
+   Layout system stays intact; main NOW preview becomes 1–10 in two rows on desktop. */
+#now .rank-top-grid-10{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+#now .rank-top-grid-10 .rank-top-card{
+  min-height:150px;
+  color:#172026!important;
+}
+#now .rank-top-grid-10 .rank-top-card .rank-top-no,
+#now .rank-top-grid-10 .rank-top-card .rank-top-copy b,
+#now .rank-top-grid-10 .rank-top-card .rank-top-copy span{
+  color:#172026!important;
+}
+#now .rank-top-grid-10 .rank-top-card .rank-top-copy span{font-size:12px!important;line-height:1.45}
+#now .rank-top-grid-10 .rank-top-card .rank-top-no{font-size:12px!important}
+#now .rank-top-grid-10 .rank-top-card .rank-top-copy b{font-size:16px!important}
+
+/* Remove the reintroduced tiny-text feel on the home surface. */
+.product-home-wrap .eyebrow{font-size:11px}
+.product-home-wrap .more-btn{font-size:13px;font-weight:800}
+.product-home-wrap .product-hero-kicker span,
+.product-home-wrap .product-hero-kicker em{font-size:12px}
+.product-home-wrap .product-hero-proof{font-size:11px}
+.product-home-wrap .product-hero-proof b{font-size:10px}
+.product-home-wrap .hero-live-head em{font-size:10px}
+.product-home-wrap .hero-rank-no{font-size:12px}
+.product-home-wrap .hero-rank-person small{font-size:12px}
+.product-home-wrap .hero-poll-mini span,
+.product-home-wrap .hero-poll-mini small,
+.product-home-wrap .hero-poll-mini i{font-size:11px}
+.product-home-wrap .product-launcher-head>div>span{font-size:10px}
+.product-home-wrap .launcher-no{font-size:11px}
+.product-home-wrap .launcher-copy small{font-size:12px}
+.product-home-wrap .keyword-grid span{font-size:11px}
+.product-home-wrap .side-news .side-row i,
+.product-home-wrap .side-rising .side-row i{font-size:12px}
+
+@media(max-width:820px){
+  #now .rank-top-grid-10{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  #now .rank-top-grid-10{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #now .rank-top-grid-10 .rank-top-card:first-child{
+    grid-column:auto!important;
+    display:block!important;
+    min-height:150px!important;
+    text-align:center!important;
+  }
+  #now .rank-top-grid-10 .rank-top-card:first-child .rank-top-avatar{margin:10px auto 9px!important}
+  .product-home-wrap .module-desc{font-size:13px}
+  .product-home-wrap .launcher-copy small{font-size:11px}
+  .product-home-wrap .hero-rank-person small{font-size:11px}
+}
