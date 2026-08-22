@@ -271,7 +271,7 @@ async function nowApi(body) {
   try {
     const r = await fetch("/api/v3/admin/now-data", { method:"POST", credentials:"same-origin", headers:{ "Content-Type":"application/json", Accept:"application/json" }, body:JSON.stringify(body) });
     const b = await r.json().catch(() => ({}));
-    return r.ok ? b : { ok:false, error:b.error || "NOW_API_FAILED", summary:b.summary };
+    return r.ok ? b : { ok:false, error:b.error || "NOW_API_FAILED", summary:b.summary, missingEnv:b.missingEnv, configured:b.configured, detail:b.detail };
   } catch { return { ok:false, error:"NOW_API_FAILED" }; }
 }
 function setNowProgress(done,total,label="수집 중") {

@@ -352,7 +352,7 @@ document.addEventListener("click", async event => {
   if (nowRefresh) {
     nowRefresh.disabled = true;
     const r = await (await import("./views/admin.js")).runNowDataRefresh();
-    if (!r.ok) alert(r.error === 'NAVER_CONFIG_REQUIRED' ? `NOW 새로고침 준비 필요 · 현재 v3 프로젝트에 없는 환경변수: ${(r.missingConfig || []).join(', ')}` : `NOW 새로고침 실패 · ${r.error || ''}`);
+    if (!r.ok) alert(r.error === 'NAVER_CONFIG_REQUIRED' ? `NOW 새로고침 준비 필요 · 현재 v3 프로젝트에 없는 환경변수: ${(r.missingEnv || r.missingConfig || []).join(', ')}` : `NOW 새로고침 실패 · ${r.error || ''}`);
     await render(currentRoute(), { resetScroll:false });
     return;
   }

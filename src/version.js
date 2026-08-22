@@ -1,3 +1,3 @@
-export const APP_VERSION = "v3.0.0-alpha6.0.36.38";
+export const APP_VERSION = "v3.0.0-alpha6.0.39";
 export const BUILD_NAME = "NOW DATA CENTER · REFRESH ACTIVATION HOTFIX";
 export const ADMIN_VERSION = "0.36.38";
