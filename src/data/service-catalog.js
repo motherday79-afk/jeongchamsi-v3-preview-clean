@@ -3,7 +3,7 @@ export const SERVICE_CATALOG = Object.freeze([
   { key:"poll", tone:"red", label:"시민들의 선택", shortLabel:"시민선택", description:"오늘의 쟁점에 직접 한 표", href:"/poll", launcher:true, serviceBar:true, group:"참여" },
   { key:"itsme", tone:"teal", label:"IT’S ME", shortLabel:"IT’S ME", description:"내가 만드는 정책 제안", href:"/itsme", launcher:true, serviceBar:true, group:"참여" },
   { key:"compare", tone:"orange", label:"정치인 비교분석", shortLabel:"비교분석", description:"두 사람을 같은 기준으로 비교", href:"/compare", launcher:true, serviceBar:true, group:"분석" },
-  { key:"generation", tone:"navy", label:"세대가 뽑은 대통령", shortLabel:"세대별 대통령", description:"세대별 모의투표 결과", href:"/generation-president", launcher:true, serviceBar:true, group:"참여" },
+  { key:"generation", tone:"navy", label:"세대의 선택, 대통령", shortLabel:"세대별 대통령", description:"세대별 모의투표 결과", href:"/generation-president", launcher:true, serviceBar:true, group:"참여" },
   { key:"community", tone:"green", label:"정뮤니티", shortLabel:"정뮤니티", description:"지금 시민들이 하는 말", href:"/community", launcher:true, serviceBar:false, group:"콘텐츠" },
   { key:"president", tone:"gold", label:"대통령", shortLabel:"대통령", description:"대통령 정보와 기록", href:"/president", launcher:false, serviceBar:true, group:"정치 보기" },
   { key:"news", tone:"red", label:"정참시 NEWS", shortLabel:"NEWS", description:"정치 뉴스 모아보기", href:"/news", launcher:false, serviceBar:true, group:"콘텐츠" },

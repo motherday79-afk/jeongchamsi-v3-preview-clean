@@ -36,7 +36,7 @@ export function renderGenerationAdminEditor(data = {}, { context = "page", open 
     return `<section class="generation-admin-age" data-generation-age="${esc(age)}"><div class="generation-admin-age-head"><b>${esc(age)}</b><span>현재 합계 ${total.toLocaleString("ko-KR")}표</span></div><div class="generation-admin-rows">${rows}</div><button class="generation-admin-add" type="button" data-generation-add-row>+ 후보 추가</button></section>`;
   }).join("");
   const options = people.map(p => `<option value="${esc(`${personText(p)} [${p.id}]`)}"></option>`).join("");
-  return `<details class="generation-admin-editor ${open ? "is-open" : ""}" ${open ? "open" : ""}><summary><span><b>세대뽑 관리</b><small>세대별 표시 숫자를 한 화면에서 수정</small></span><em>관리</em></summary><form data-generation-admin-form><div class="generation-admin-toolbar"><label class="check"><input type="checkbox" name="enabled" ${data.enabled === false ? "" : "checked"}> 사용자 모의투표 참여 활성</label><div><span>숫자를 저장하면 시연용 표시 수치로 바로 적용됩니다.</span><button class="ghost-btn" type="button" data-generation-live-mode>실제 참여 집계 사용</button></div></div><div class="generation-admin-grid">${ages}</div><datalist id="${datalistId}">${options}</datalist><div class="generation-admin-actions"><button class="primary-btn" type="submit">세대별 숫자 일괄 저장</button><span class="save-state" data-generation-admin-state>${data.demoMode === true ? "시연 표시 수치 사용 중" : "실제 참여 집계 표시 중"}</span></div></form></details>`;
+  return `<details class="generation-admin-editor ${open ? "is-open" : ""}" ${open ? "open" : ""}><summary><span><b>세대뽑 관리</b><small>세대별 표시 숫자를 한 화면에서 수정</small></span><em>관리</em></summary><form data-generation-admin-form><div class="generation-admin-toolbar"><label class="check"><input type="checkbox" name="enabled" ${data.enabled === false ? "" : "checked"}> 사용자 모의투표 참여 활성</label><div><span>숫자를 저장하면 시연용 표시 수치로 바로 적용됩니다</span><button class="ghost-btn" type="button" data-generation-live-mode>실제 참여 집계 사용</button></div></div><div class="generation-admin-grid">${ages}</div><datalist id="${datalistId}">${options}</datalist><div class="generation-admin-actions"><button class="primary-btn" type="submit">세대별 숫자 일괄 저장</button><span class="save-state" data-generation-admin-state>${data.demoMode === true ? "시연 표시 수치 사용 중" : "실제 참여 집계 표시 중"}</span></div></form></details>`;
 }
 
 function resolvePersonId(value = "", previousId = "") {
@@ -62,7 +62,7 @@ export async function saveGenerationAdminForm(form) {
       const id = resolvePersonId(input?.value, row.dataset.personId || "");
       const count = Math.max(0, Math.round(Number(countInput?.value || 0)));
       if (!id) {
-        if (String(input?.value || "").trim()) return { ok:false, error:`${age} 정치인을 목록에서 선택해 주세요.` };
+        if (String(input?.value || "").trim()) return { ok:false, error:`${age} 정치인을 목록에서 선택해 주세요` };
         continue;
       }
       if (count > 0) votes[id] = count;

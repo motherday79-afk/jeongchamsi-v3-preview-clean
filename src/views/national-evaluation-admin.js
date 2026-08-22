@@ -30,7 +30,7 @@ export function renderNationalEvaluationAdminEditor(data = {}, { context="page",
 export async function saveNationalEvaluationAdminForm(form) {
   const current = await getDomain("nationalEvaluation");
   const subjectId = resolvePersonId(form.querySelector('[name="subject"]')?.value || "");
-  if (!subjectId) return { ok:false, error:"평가할 국회의원을 검색 목록에서 선택해 주세요." };
+  if (!subjectId) return { ok:false, error:"평가할 국회의원을 검색 목록에서 선택해 주세요" };
   const clean = name => Math.max(0, Math.round(Number(form.querySelector(`[name="${name}"]`)?.value || 0)));
   const demoResults = { ...(current.demoResults || {}), [subjectId]: { positive:clean("positive"), neutral:clean("neutral"), negative:clean("negative") } };
   const history = Array.isArray(current.history) ? [...current.history] : [];

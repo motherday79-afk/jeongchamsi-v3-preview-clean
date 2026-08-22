@@ -1,10 +1,10 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot, getAuthorProfiles } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.22-author-partner-hub";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
-import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.22-author-partner-hub";
-import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.22-author-partner-hub";
-import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.22-author-partner-hub";
+import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -59,9 +59,9 @@ function published(items = []) {
 function brandHero(data = {}) {
   const hero = {
     kicker:"정참시 — 정치에 참여할 시간",
-    headline:"바라볼 때가 아닌, 행동할 때 정치가 시작됩니다.",
-    subline1:"알고, 비교하고, 선택하고, 평가하는 것.",
-    subline2:"한 사람의 작은 행동이 정치의 방향을 만듭니다.",
+    headline:"바라볼 때가 아닌, 행동할 때 정치가 시작됩니다",
+    subline1:"알고, 비교하고, 선택하고, 평가하는 것",
+    subline2:"한 사람의 작은 행동이 정치의 방향을 만듭니다",
     learnLabel:"정참시 더 알아보기",
     supportLabel:"정참시 후원하기",
     artImage:"",
@@ -87,20 +87,20 @@ function productHero() {
   return `<section class="product-hero product-hero-participation" aria-label="정참시 참여 허브">
     <div class="product-hero-copy">
       <div class="product-hero-kicker"><span>JEONGCHAMSI</span><em>정치에 참여할 시간</em></div>
-      <h1>정치를 보는 것에서<br><strong>움직이는 것</strong>으로.</h1>
-      <p>인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요.</p>
+      <h1>정치를 보는 것에서<br><strong>움직이는 것</strong>으로!</h1>
+      <p>인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요</p>
       <div class="product-hero-actions"><button type="button" class="hero-action-primary" data-go="/about">정참시 응원하기 <span>→</span></button><a class="hero-action-secondary" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer">정참시 후원하기 <span>♡</span></a></div>
     </div>
     <div class="product-hero-live hero-participation-hub">
-      <button type="button" class="hero-hub-card hero-hub-request" data-go="/request-politician"><span class="hero-hub-label">POLITICIAN REQUEST</span><strong>찾는 정치인이 없나요?</strong><p>이름만 남겨주세요. 정보를 확인해 등록합니다.</p><em>정치인 등록 요청 →</em></button>
-      <button type="button" class="hero-hub-card hero-hub-partners" data-go="/partners"><span class="hero-hub-label">JEONGCHAMSI PARTNERS</span><strong>정참시와 함께 콘텐츠를 만들어주세요.</strong><p>PARTNER는 COLUMN·NEWS를 직접 작성할 수 있습니다.</p><em>파트너스 신청 →</em></button>
+      <button type="button" class="hero-hub-card hero-hub-request" data-go="/request-politician"><span class="hero-hub-label">POLITICIAN REQUEST</span><strong>찾는 정치인이 없나요?</strong><p>이름만 남겨주세요. 정보를 확인해 등록합니다</p><em>정치인 등록 요청 →</em></button>
+      <button type="button" class="hero-hub-card hero-hub-partners" data-go="/partners"><span class="hero-hub-label">JEONGCHAMSI PARTNERS</span><strong>정참시와 함께 콘텐츠를 만들어주세요.</strong><p>PARTNER는 COLUMN·NEWS를 직접 작성할 수 있습니다</p><em>파트너스 신청 →</em></button>
     </div>
   </section>`;
 }
 
 function productLauncher() {
   const items = launcherServices();
-  return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시는 여러분의 참여로 만들어갑니다.</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(item=>`<button type="button" class="launcher-card launcher-${item.key === "poll" ? "choice" : item.key}" data-go="${item.href}" aria-label="${esc(item.label)} · ${esc(item.description)}"><span class="launcher-icon">${serviceIconSvg(item.key)}</span><span class="launcher-copy"><b>${esc(item.shortLabel || item.label)}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
+  return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시는 여러분의 참여로 만들어갑니다</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(item=>`<button type="button" class="launcher-card launcher-${item.key === "poll" ? "choice" : item.key}" data-go="${item.href}" aria-label="${esc(item.label)} · ${esc(item.description)}"><span class="launcher-icon">${serviceIconSvg(item.key)}</span><span class="launcher-copy"><b>${esc(item.shortLabel || item.label)}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
 }
 
 function columnLead(item, authorProfiles = {}) {
@@ -163,23 +163,23 @@ function nationalEvaluationHomeMarkup(data = {}, getPerson = null) {
   const subjectId = String(data.subjectId || "");
   const match = subjectId.match(/^assembly-(\d{3})$/);
   if (!match) {
-    return `<div class="national-eval-layout"><div class="eval-person"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>아직 선택된 국회의원이 없습니다</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>관리자에서 평가 대상을 선택하면 메인에 바로 표시됩니다.</p></div><div class="eval-score"><small>전국 평가</small><strong>—</strong><span>대상 선택 전</span></div></div>`;
+    return `<div class="national-eval-layout"><div class="eval-person"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>아직 선택된 국회의원이 없습니다</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>관리자에서 평가 대상을 선택하면 메인에 바로 표시됩니다</p></div><div class="eval-score"><small>전국 평가</small><strong>—</strong><span>대상 선택 전</span></div></div>`;
   }
   const slot = Number(match[1]);
   const votes = nationalEvaluationDisplayVotes(data, subjectId);
   const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
   const positiveShare = total ? Math.round(Number(votes.positive || 0) * 100 / total) : 0;
-  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>${esc((typeof getPerson === "function" ? getPerson(subjectId)?.name : "")||`국회의원 ${String(slot).padStart(3, "0")}`)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다." : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다."}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
+  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>${esc((typeof getPerson === "function" ? getPerson(subjectId)?.name : "")||`국회의원 ${String(slot).padStart(3, "0")}`)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다" : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다"}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
 }
 
 function pollMarkup(poll) {
-  if (!poll) return `<div class="poll-main"><div class="poll-question"><span class="poll-status">준비중</span><h3>시민들의 선택 설문 영역</h3><p>관리자가 설문을 등록하면 최대 3개 선택지를 미리 보여줍니다.</p></div><div class="poll-vote-panel"><div class="poll-options">${Array.from({length:3},()=>`<button type="button" disabled><span>선택지</span><i><em style="width:0%"></em></i><b>—</b></button>`).join("")}</div></div></div>`;
+  if (!poll) return `<div class="poll-main"><div class="poll-question"><span class="poll-status">준비중</span><h3>시민들의 선택 설문 영역</h3><p>관리자가 설문을 등록하면 최대 3개 선택지를 미리 보여줍니다</p></div><div class="poll-vote-panel"><div class="poll-options">${Array.from({length:3},()=>`<button type="button" disabled><span>선택지</span><i><em style="width:0%"></em></i><b>—</b></button>`).join("")}</div></div></div>`;
   const total = (poll.options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
   const optionMarkup = (poll.options || []).slice(0,3).map(opt => {
     const pct = total ? Math.round(Number(opt.votes || 0) * 100 / total) : 0;
     return `<button type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}&option=${encodeURIComponent(opt.id)}" aria-label="${esc(opt.label)} 선택 후 전체 설문 보기"><span>${esc(opt.label)}</span><i><em style="width:${pct}%"></em></i><b>${pct}%</b></button>`;
   }).join("");
-  return `<div class="poll-main"><div class="poll-question"><h3>${esc(poll.question)}</h3><p>메인에서는 최대 3개만 표시 · 전체 선택지는 설문페이지에서 투표 · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-vote-panel"><div class="poll-options">${optionMarkup}</div><div class="poll-confirm-row"><span>항목을 누르면 전체 설문으로 이동합니다.</span><button class="ghost-btn" type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}">전체 선택지 보기</button></div></div></div>`;
+  return `<div class="poll-main"><div class="poll-question"><h3>${esc(poll.question)}</h3><p>메인에서는 최대 3개만 표시 · 전체 선택지는 설문페이지에서 투표 · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-vote-panel"><div class="poll-options">${optionMarkup}</div><div class="poll-confirm-row"><span>항목을 누르면 전체 설문으로 이동합니다</span><button class="ghost-btn" type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}">전체 선택지 보기</button></div></div></div>`;
 }
 
 function academyRows(slots = []) {
@@ -239,8 +239,8 @@ export async function renderHome() {
   const academyConfig = {
     eyebrow:"JEONGCHAMSI ACADEMY",
     title:"정참시 아카데미",
-    headline:"정치의 꿈을 실제 준비로.",
-    description:"정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳.",
+    headline:"정치의 꿈을 실제 준비로",
+    description:"정치를 꿈꾸는 사람이 실제 수강 가능한 일정을 확인하고 신청하는 곳",
     cta:"수강 가능 일정 확인",
     ...(data.academy?.config || {})
   };
@@ -282,16 +282,16 @@ export async function renderHome() {
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
   const loginMobile = !userReady
-    ? `<div class="mobile-login"><div><b>회원정보 확인 중</b><span>메인 콘텐츠를 먼저 표시하고 있습니다.</span></div><button type="button" disabled aria-label="회원정보 확인 중">···</button></div>`
+    ? `<div class="mobile-login"><div><b>회원정보 확인 중</b><span>메인 콘텐츠를 먼저 표시하고 있습니다</span></div><button type="button" disabled aria-label="회원정보 확인 중">···</button></div>`
     : userSession.authenticated
       ? `<div class="mobile-login"><div><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><span>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</span></div><button type="button" data-go="/mypage">MY</button></div>`
       : `<div class="mobile-login"><div><b>정참시에 로그인하세요</b><span>즐겨찾기 · 참여 · 배지 · 알림</span></div><button type="button" data-go="/login">로그인</button></div>`;
 
   const loginSide = !userReady
-    ? `<section class="side-card login-card side-login session-pending"><b>회원정보 확인 중</b><p>정치 콘텐츠는 기다리지 않고 먼저 표시합니다.</p><button type="button" disabled aria-label="회원정보 확인 중">확인 중</button></section>`
+    ? `<section class="side-card login-card side-login session-pending"><b>회원정보 확인 중</b><p>정치 콘텐츠는 기다리지 않고 먼저 표시합니다</p><button type="button" disabled aria-label="회원정보 확인 중">확인 중</button></section>`
     : userSession.authenticated
       ? `<section class="side-card login-card side-login"><b>${esc(userSession.user.nickname || userSession.user.id)}님</b><p>즐겨찾기 ${userSummary.favorites} · 좋아요 ${userSummary.likedPosts} · 설문 ${userSummary.pollVotes}</p><button type="button" data-go="/mypage">마이페이지</button></section>`
-      : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button" data-go="/login">로그인</button></section>`;
+      : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다</p><button type="button" data-go="/login">로그인</button></section>`;
 
   const generationAges = ["10대", "20대", "30대", "40대", "50대", "60대+"];
   const generationResults = generationDisplayResults;
@@ -323,12 +323,12 @@ export async function renderHome() {
 
   let generationAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.22-author-partner-hub");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.23-copy-scroll-hotfix");
     generationAdmin = adminTools.renderGenerationAdminEditor(data.generation || {}, { context:"home", open:false });
   }
   let nationalAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.22-author-partner-hub");
+    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.23-copy-scroll-hotfix");
     nationalAdmin = adminTools.renderNationalEvaluationAdminEditor(nationalEvaluation, { context:"home", open:false });
   }
 
@@ -343,25 +343,25 @@ export async function renderHome() {
       </section>
 
       <main class="main-column">
-        <section class="module itsme-home-module" id="itsme"><div class="module-header"><div><span class="eyebrow">IT’S ME</span><h2 class="itsme-signature-title">저는, 이렇게 제안합니다</h2><p class="module-desc">꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다.</p></div><button class="more-btn" type="button" data-go="/itsme">전체보기</button></div><div class="itsme-grid">${itsmeHomeItems.map(itsmeHomeCard).join("")}</div></section>
+        <section class="module itsme-home-module" id="itsme"><div class="module-header"><div><span class="eyebrow">IT’S ME</span><h2 class="itsme-signature-title">나는 이렇게 제안합니다</h2><p class="module-desc">꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다</p></div><button class="more-btn" type="button" data-go="/itsme">전체보기</button></div><div class="itsme-grid">${itsmeHomeItems.map(itsmeHomeCard).join("")}</div></section>
 
-        <section class="module poll-module" id="poll"><div class="module-header"><div><span class="eyebrow">CITIZENS’ CHOICE</span><h2>귀담아 들어야 합니다.</h2><p class="module-desc">작은 관심이 세상을 바꿉니다.</p></div><button class="more-btn" type="button" data-go="/poll">전체보기</button></div>${pollMarkup(poll, userSession.authenticated && !!poll && hasVotedPoll(poll.id))}</section>
+        <section class="module poll-module" id="poll"><div class="module-header"><div><span class="eyebrow">CITIZENS’ CHOICE</span><h2>귀담아 들어야 합니다</h2><p class="module-desc">작은 관심이 세상을 바꿉니다</p></div><button class="more-btn" type="button" data-go="/poll">전체보기</button></div>${pollMarkup(poll, userSession.authenticated && !!poll && hasVotedPoll(poll.id))}</section>
 
         <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전체보기</button></div>${nationalEvaluationHomeMarkup(nationalEvaluation, getPerson)}${nationalAdmin}</section>
 
-        <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대가 뽑은 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p></div><button class="more-btn" type="button" data-go="/generation-president">전체보기</button></div><div class="generation-feature"><div class="generation-intro"><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p><button class="ghost-btn generation-participation-cta" type="button" data-go="/generation-president">모의투표 참여</button></div><div class="generation-grid">${generationHomeCards}</div></div>${generationAdmin}</section>
+        <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대의 선택, 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다</p></div><button class="more-btn" type="button" data-go="/generation-president">전체보기</button></div><div class="generation-feature"><div class="generation-intro"><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다</p><button class="ghost-btn generation-participation-cta" type="button" data-go="/generation-president">모의투표 참여</button></div><div class="generation-grid">${generationHomeCards}</div></div>${generationAdmin}</section>
 
 
 
-        <section class="module" id="compare"><div class="module-header"><div><span class="eyebrow">COMPARE · SAMPLE</span><h2>정치인 비교분석</h2><p class="module-desc">실제 정치인을 상시 노출하지 않고, 가상후보 예시로 결과 형태를 먼저 보여줍니다.</p></div><button class="more-btn" type="button" data-go="/compare">비교하기</button></div><div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div><div class="compare-layout"><div class="compare-person"><span class="compare-avatar sample-a"></span><b>가상후보 A</b><small>정책·민생형</small></div><div class="compare-metrics"><div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div><div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div><div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div><div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div></div><div class="compare-person"><span class="compare-avatar sample-b"></span><b>가상후보 B</b><small>개혁·소통형</small></div></div><div class="compare-summary"><b>비교 결과 예시</b><span>활동도는 A가 강하고, 관심도·참여도는 세부 지표에서 서로 다른 흐름을 보이는 식으로 분석됩니다.</span></div></section>
+        <section class="module" id="compare"><div class="module-header"><div><span class="eyebrow">COMPARE · SAMPLE</span><h2>정치인 비교분석</h2><p class="module-desc">실제 정치인을 상시 노출하지 않고, 가상후보 예시로 결과 형태를 먼저 보여줍니다</p></div><button class="more-btn" type="button" data-go="/compare">비교하기</button></div><div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div><div class="compare-layout"><div class="compare-person"><span class="compare-avatar sample-a"></span><b>가상후보 A</b><small>정책·민생형</small></div><div class="compare-metrics"><div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div><div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div><div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div><div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div></div><div class="compare-person"><span class="compare-avatar sample-b"></span><b>가상후보 B</b><small>개혁·소통형</small></div></div><div class="compare-summary"><b>비교 결과 예시</b><span>활동도는 A가 강하고, 관심도·참여도는 세부 지표에서 서로 다른 흐름을 보이는 식으로 분석됩니다</span></div></section>
 
         <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">${esc(academyConfig.eyebrow)}</span><h2>${esc(academyConfig.title)}</h2><p class="module-desc">${esc(academyConfig.description)}</p></div><div class="inline-actions">${userSession.authenticated && userSession.user?.role === "admin" ? `<button class="ghost-btn academy-admin-edit" type="button" data-go="/admin?tab=academy">메인 아카데미 편집</button>` : ""}<button class="more-btn" type="button" data-go="/academy">일정 보기</button></div></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>${esc(academyConfig.headline)}</h3><p>${esc(academyConfig.description)}</p><button type="button" data-go="/academy">${esc(academyConfig.cta)}</button></div><div class="academy-schedule"><div class="schedule-head"><b>예정 교육 일정</b><span>${academySlots.length}개</span></div>${academyRows(academySlots)}</div></div></section>
 
-        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow">NOW RANK</span><h2>지금 가장 주목받는 정치인</h2><p class="module-desc">상위 10명을 두 줄로 간결하게 확인하세요.</p></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="rank-top-grid rank-top-grid-10">${rankTop10}</div></section>
+        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow">NOW RANK</span><h2>지금 가장 주목받는 정치인</h2><p class="module-desc">상위 10명을 두 줄로 간결하게 확인하세요</p></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="rank-top-grid rank-top-grid-10">${rankTop10}</div></section>
 
-        <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2><p class="module-desc">대표 COLUMN 1개 + 추가 COLUMN 4개 구조.</p></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div>${columnLead(lead, homeAuthorProfiles)}<div class="column-grid">${minis.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
+        <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2><p class="module-desc">대표 COLUMN 1개 + 추가 COLUMN 4개 구조</p></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div>${columnLead(lead, homeAuthorProfiles)}<div class="column-grid">${minis.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 
-        <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티.</p></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map((item, index) => communityRow(item, index, homeAuthorProfiles)).join("")}</div></section>
+        <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티</p></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map((item, index) => communityRow(item, index, homeAuthorProfiles)).join("")}</div></section>
       </main>
 
       <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div><div class="participation-main participation-badge-main" role="button" tabindex="0" data-go="/mypage/activity?tab=badges">${representativeMarkup}</div>${badgePreview}</section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {

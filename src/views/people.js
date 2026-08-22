@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.22-author-partner-hub";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
 
@@ -35,7 +35,7 @@ function timeline(p){
 
 export async function renderPersonDetail(id){
   const p=getPersonSlotById(id);
-  if(!p)return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>존재하지 않는 정치인입니다.</h2><button class="primary-btn" type="button" data-go="/now">전체 정치인</button></section></main>`);
+  if(!p)return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>존재하지 않는 정치인입니다</h2><button class="primary-btn" type="button" data-go="/now">전체 정치인</button></section></main>`);
   const session=getUserSession(); recordRecentPerson(p.id);
   const favorite=session.authenticated&&isFavoritePerson(p.id);
   const activityTitle=p.type==="assembly"?"의정활동":"행정활동";
@@ -52,9 +52,9 @@ export async function renderPersonDetail(id){
     <section class="content-card"><div class="section-title"><h2>경력 · 주요 이력</h2><span>기본 이력부터 연결</span></div><div class="timeline-shell">${timeline(p)}</div></section>
     <div class="detail-grid">
       <section class="content-card"><div class="section-title"><h2>${activityTitle}</h2><span>상세 공식데이터 후속</span></div><dl class="info-list"><div><dt>${p.type==="assembly"?"소속 위원회":"관할 지역"}</dt><dd>${v(p.type==="assembly"?p.committee:p.jurisdiction)}</dd></div><div><dt>주요 활동</dt><dd>${empty()}</dd></div><div><dt>주요 성과</dt><dd>${empty()}</dd></div></dl></section>
-      <section class="content-card"><div class="section-title"><h2>공약 · 정책</h2><span>선관위 공식자료 후속</span></div><div class="timeline-shell"><div class="empty-inline">공약·정책 원문은 다음 데이터 단계에서 공식자료로 연결합니다.</div></div></section>
+      <section class="content-card"><div class="section-title"><h2>공약 · 정책</h2><span>선관위 공식자료 후속</span></div><div class="timeline-shell"><div class="empty-inline">공약·정책 원문은 다음 데이터 단계에서 공식자료로 연결합니다</div></div></section>
     </div>
     <section class="content-card"><div class="section-title"><h2>정참시 데이터</h2><span>뉴스·키워드·NOW는 후속</span></div><div class="metric-shell"><article><small>NOW Rank</small><strong>—</strong><span>후속</span></article><article><small>관심도</small><strong>—</strong><span>후속</span></article><article><small>언급량</small><strong>—</strong><span>후속</span></article><article><small>전국 평가</small><strong>—</strong><span>참여 데이터</span></article></div></section>
-    <section class="content-card"><div class="notice-box">출처: ${esc(p.source)} · 사진과 실시간 뉴스는 이번 1차 데이터에서 불러오지 않습니다.</div></section>
+    <section class="content-card"><div class="notice-box">출처: ${esc(p.source)} · 사진과 실시간 뉴스는 이번 1차 데이터에서 불러오지 않습니다</div></section>
   </main>`);
 }

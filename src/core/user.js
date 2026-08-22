@@ -28,20 +28,20 @@ async function apiJSON(url, options = {}) {
 
 function authErrorMessage(error, fallback) {
   const map = {
-    API_ROUTE_NOT_FOUND: "서버 API 연결 경로를 찾지 못했습니다.",
-    STORAGE_MISSING: "회원 저장소가 연결되지 않았습니다. 관리자에게 문의해 주세요.",
-    JCV3_STORAGE_NOT_CONFIGURED: "회원 저장소가 연결되지 않았습니다. 관리자에게 문의해 주세요.",
-    SESSION_SECRET_MISSING: "로그인 세션 설정이 완료되지 않았습니다.",
-    STORAGE_AUTH: "회원 저장소 인증정보가 올바르지 않습니다. 관리자에게 문의해 주세요.",
-    STORAGE_NETWORK: "회원 저장소에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    STORAGE_REQUEST: "회원 저장소 요청 처리에 실패했습니다. 관리자에게 문의해 주세요.",
-    API_HANDLER_FAILED: "서버 인증 기능 실행 중 오류가 발생했습니다.",
-    JCV3_SESSION_SECRET_NOT_CONFIGURED: "로그인 세션 설정이 완료되지 않았습니다.",
-    NETWORK_ERROR: "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    HTTP_404: "서버 API 연결 경로를 찾지 못했습니다.",
-    ACCOUNT_SUSPENDED: "이용정지된 계정입니다. 정지기간이나 사유는 관리자에게 문의해 주세요."
+    API_ROUTE_NOT_FOUND: "서버 API 연결 경로를 찾지 못했습니다",
+    STORAGE_MISSING: "회원 저장소가 연결되지 않았습니다. 관리자에게 문의해 주세요",
+    JCV3_STORAGE_NOT_CONFIGURED: "회원 저장소가 연결되지 않았습니다. 관리자에게 문의해 주세요",
+    SESSION_SECRET_MISSING: "로그인 세션 설정이 완료되지 않았습니다",
+    STORAGE_AUTH: "회원 저장소 인증정보가 올바르지 않습니다. 관리자에게 문의해 주세요",
+    STORAGE_NETWORK: "회원 저장소에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요",
+    STORAGE_REQUEST: "회원 저장소 요청 처리에 실패했습니다. 관리자에게 문의해 주세요",
+    API_HANDLER_FAILED: "서버 인증 기능 실행 중 오류가 발생했습니다",
+    JCV3_SESSION_SECRET_NOT_CONFIGURED: "로그인 세션 설정이 완료되지 않았습니다",
+    NETWORK_ERROR: "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요",
+    HTTP_404: "서버 API 연결 경로를 찾지 못했습니다",
+    ACCOUNT_SUSPENDED: "이용정지된 계정입니다. 정지기간이나 사유는 관리자에게 문의해 주세요"
   };
-  return map[error] || fallback || error || "요청 처리에 실패했습니다.";
+  return map[error] || fallback || error || "요청 처리에 실패했습니다";
 }
 
 export async function initializeUserState() {
@@ -77,7 +77,7 @@ export async function loginUser(id, password) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id: String(id || "").trim(), password: String(password || "") })
   });
-  if (!body.ok) return { ok: false, error: body.error === "INVALID_CREDENTIALS" ? "아이디 또는 비밀번호가 올바르지 않습니다." : authErrorMessage(body.error, "로그인에 실패했습니다.") };
+  if (!body.ok) return { ok: false, error: body.error === "INVALID_CREDENTIALS" ? "아이디 또는 비밀번호가 올바르지 않습니다" : authErrorMessage(body.error, "로그인에 실패했습니다") };
   session = { authenticated: true, user: body.user };
   const act = await apiJSON("/api/v3/user/activity");
   activity = act.ok && act.activity ? { ...emptyActivity(), ...act.activity } : emptyActivity();
@@ -97,8 +97,8 @@ export async function registerUser(input) {
     body: JSON.stringify(input || {})
   });
   if (!body.ok) {
-    const map = { DUPLICATE_ID: "이미 사용 중인 아이디입니다.", INVALID_ID: "아이디는 영문·숫자 기준 4~24자로 입력해 주세요.", WEAK_PASSWORD: "비밀번호는 8자 이상 입력해 주세요.", NAME_REQUIRED: "이름을 입력해 주세요.", REGION_REQUIRED: "도/광역시와 시/군을 선택해 주세요.", INVALID_BIRTH_YEAR: "출생연도를 올바르게 입력해 주세요." };
-    return { ok: false, error: map[body.error] || authErrorMessage(body.error, "회원가입에 실패했습니다.") };
+    const map = { DUPLICATE_ID: "이미 사용 중인 아이디입니다", INVALID_ID: "아이디는 영문·숫자 기준 4~24자로 입력해 주세요", WEAK_PASSWORD: "비밀번호는 8자 이상 입력해 주세요", NAME_REQUIRED: "이름을 입력해 주세요", REGION_REQUIRED: "도/광역시와 시/군을 선택해 주세요", INVALID_BIRTH_YEAR: "출생연도를 올바르게 입력해 주세요" };
+    return { ok: false, error: map[body.error] || authErrorMessage(body.error, "회원가입에 실패했습니다") };
   }
   session = { authenticated: true, user: body.user };
   activity = emptyActivity();

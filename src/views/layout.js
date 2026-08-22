@@ -1,6 +1,6 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.22-author-partner-hub";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 import { getUserSession } from "../core/user.js";
-import { SERVICE_CATALOG, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.22-author-partner-hub";
+import { SERVICE_CATALOG, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -35,7 +35,7 @@ export function siteHeader({ memberCount = null, liveBar = null } = {}) {
       <div class="product-account-tools"><button type="button" aria-label="내 참여" data-go="/mypage/activity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button type="button" aria-label="최근 본 정치인" data-go="/mypage/recent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></button></div>
     </div>
     <div class="product-service-bar live-community-bar" data-livebar data-member-count="${displayCount === null ? "" : displayCount}">
-      <div class="live-community-inner"><div class="live-community-count"><b data-livebar-count>${countText}</b><span>명이 정참시와 함께합니다.</span></div><div class="live-community-actions"><a class="live-community-cta is-active" href="/about" data-route data-livebar-cta="about">정참시 응원하기 <span>→</span></a><a class="live-community-cta" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer" data-livebar-cta="support">정참시 후원하기 <span>♡</span></a></div>${adminEditor}</div>
+      <div class="live-community-inner"><div class="live-community-count"><b data-livebar-count>${countText}</b><span>명이 정참시와 함께합니다</span></div><div class="live-community-actions"><a class="live-community-cta is-active" href="/about" data-route data-livebar-cta="about">정참시 응원하기 <span>→</span></a><a class="live-community-cta" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer" data-livebar-cta="support">정참시 후원하기 <span>♡</span></a></div>${adminEditor}</div>
     </div>
   </header>`;
 }
@@ -44,7 +44,7 @@ export function drawer() {
   const session = getUserSession();
   const account = session.authenticated
     ? `<div class="drawer-account drawer-account-live"><div class="drawer-account-copy"><b>${esc(session.user.nickname || session.user.id)}님</b><span>${session.user.role === "admin" ? "관리자 계정" : "정참시 회원"}</span></div><a class="drawer-account-arrow" href="/mypage" data-route aria-label="마이페이지">›</a></div>`
-    : `<div class="drawer-account"><div class="drawer-account-copy"><b>로그인하세요</b><span>참여·투표·즐겨찾기·배지를 한곳에서 관리하세요.</span></div><a class="drawer-account-arrow" href="/login" data-route aria-label="로그인">›</a></div>`;
+    : `<div class="drawer-account"><div class="drawer-account-copy"><b>로그인하세요</b><span>참여·투표·즐겨찾기·배지를 한곳에서 관리하세요</span></div><a class="drawer-account-arrow" href="/login" data-route aria-label="로그인">›</a></div>`;
 
   const adminLink = session.authenticated && session.user?.role === "admin"
     ? drawerListItem("admin","관리자","/admin","콘텐츠·회원·아카데미 관리")
