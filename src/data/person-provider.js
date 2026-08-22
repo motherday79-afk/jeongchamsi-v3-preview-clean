@@ -1,4 +1,5 @@
 import { HOME_NOW_PREVIEW } from "./home-person-preview.js";
+import { politicianPhoto } from "./politician-photo-index.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS } from "./person-meta.js";
 export { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS };
 
@@ -38,18 +39,22 @@ function build(type, rows) {
   }));
 }
 
-const HOME_ASSEMBLY=HOME_NOW_PREVIEW.map(p=>Object.freeze({
-  ...p,
-  groupLabel:"국회",
-  jurisdictionLabel:"선거구",
-  connected:true,
-  termStart:p.termStart||"",
-  termEnd:p.termEnd||"",
-  office:p.office||"국회의원",
-  electionLabel:p.electionLabel||"제22대 국회의원",
-  photo:"",
-  source:"국회 공개정보 기반 정참시 현역 스냅샷"
-}));
+const HOME_ASSEMBLY=HOME_NOW_PREVIEW.map(p=>{
+  const photo=politicianPhoto(p.id,"card");
+  return Object.freeze({
+    ...p,
+    groupLabel:"국회",
+    jurisdictionLabel:"선거구",
+    connected:true,
+    termStart:p.termStart||"",
+    termEnd:p.termEnd||"",
+    office:p.office||"국회의원",
+    electionLabel:p.electionLabel||"제22대 국회의원",
+    photo:photo?.url||"",
+    photoFocus:photo?.focus||"",
+    source:"국회 공개정보 기반 정참시 현역 스냅샷"
+  });
+});
 const REST_ASSEMBLY=build("assembly",S.assembly).map((p,i)=>Object.freeze({...p,id:`assembly-${pad(i+16)}`,slot:i+16}));
 const ASSEMBLY=Object.freeze([...HOME_ASSEMBLY,...REST_ASSEMBLY]);
 const METROPOLITAN=build("metropolitan",S.metropolitan);

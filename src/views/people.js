@@ -1,17 +1,18 @@
 import { pageShell, esc } from "./layout.js";
 import { getPersonSlotById } from "../data/person-provider.js";
+import { politicianPhoto } from "../data/politician-photo-index.js";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
 
 const empty=()=>`<span class="info-empty" aria-label="추가 데이터 준비중"></span>`;
 const v=x=>x?esc(x):empty();
-function basicInfo(p){
+function basicInfo(p, photo=null){
   return `<dl class="info-list">
     <div><dt>이름</dt><dd>${v(p.name)}</dd></div>
     <div><dt>직책</dt><dd>${v(p.office||p.roleLabel)}</dd></div>
     <div><dt>정당</dt><dd>${v(p.party)}</dd></div>
     <div><dt>${esc(p.jurisdictionLabel)}</dt><dd>${v(p.jurisdiction)}</dd></div>
     <div><dt>구분</dt><dd>${v(p.terms)}</dd></div>
-    <div><dt>사진</dt><dd>1차 데이터에서 제외</dd></div>
+    <div><dt>사진</dt><dd>${photo ? "PHOTO FOUNDATION 연결" : "순차 연결 중"}</dd></div>
   </dl>`;
 }
 function electionInfo(p){
@@ -39,14 +40,19 @@ export async function renderPersonDetail(id){
   const session=getUserSession(); recordRecentPerson(p.id);
   const favorite=session.authenticated&&isFavoritePerson(p.id);
   const activityTitle=p.type==="assembly"?"의정활동":"행정활동";
+  const photo=politicianPhoto(p.id,"profile");
+  const photoMarkup=photo ? `<img src="${esc(photo.url)}" alt="${esc(p.name)}" width="${photo.width}" height="${photo.width}" loading="eager" decoding="async" fetchpriority="high">` : "";
+  const photoNotice=photo
+    ? ` · 사진: <a href="${esc(photo.sourcePage)}" target="_blank" rel="noopener noreferrer">${esc(photo.attribution)}</a> · <a href="${esc(photo.licenseUrl)}" target="_blank" rel="noopener noreferrer">${esc(photo.license)}</a> · 얼굴 중심 포커스/저용량 WebP 최적화`
+    : " · 사진은 순차 연결 중";
   return pageShell(`<main class="subpage">
     <section class="person-detail-hero content-card">
-      <div class="person-detail-photo"></div>
-      <div class="person-detail-title"><span class="eyebrow">${esc(p.roleLabel)} · TEXT DATA CONNECTED</span><h1>${esc(p.name)}</h1><p>${esc(p.party)} · ${esc(p.jurisdiction)}</p><div class="person-detail-badges"><span>${esc(p.roleLabel)}</span><span>${esc(p.terms||"기본정보")}</span><span>사진 제외</span></div></div>
+      <div class="person-detail-photo ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div>
+      <div class="person-detail-title"><span class="eyebrow">${esc(p.roleLabel)} · ${photo ? "PHOTO + TEXT CONNECTED" : "TEXT DATA CONNECTED"}</span><h1>${esc(p.name)}</h1><p>${esc(p.party)} · ${esc(p.jurisdiction)}</p><div class="person-detail-badges"><span>${esc(p.roleLabel)}</span><span>${esc(p.terms||"기본정보")}</span><span>${photo ? "PHOTO CONNECTED" : "사진 준비중"}</span></div></div>
       <div class="detail-action-bar"><button type="button" class="ghost-btn ${favorite?"active":""}" data-person-favorite="${esc(p.id)}">${favorite?"★ 즐겨찾기됨":"☆ 즐겨찾기"}</button><button type="button" class="ghost-btn" data-go="/compare?a=${esc(p.id)}">비교하기</button></div>
     </section>
     <div class="detail-grid">
-      <section class="content-card"><div class="section-title"><h2>기본정보</h2><span>1차 텍스트 데이터</span></div>${basicInfo(p)}</section>
+      <section class="content-card"><div class="section-title"><h2>기본정보</h2><span>1차 텍스트 데이터</span></div>${basicInfo(p, photo)}</section>
       <section class="content-card"><div class="section-title"><h2>임기 · 선거정보</h2><span>${esc(p.groupLabel)}</span></div>${electionInfo(p)}</section>
     </div>
     <section class="content-card"><div class="section-title"><h2>경력 · 주요 이력</h2><span>기본 이력부터 연결</span></div><div class="timeline-shell">${timeline(p)}</div></section>
@@ -55,6 +61,6 @@ export async function renderPersonDetail(id){
       <section class="content-card"><div class="section-title"><h2>공약 · 정책</h2><span>선관위 공식자료 후속</span></div><div class="timeline-shell"><div class="empty-inline">공약·정책 원문은 다음 데이터 단계에서 공식자료로 연결합니다</div></div></section>
     </div>
     <section class="content-card"><div class="section-title"><h2>정참시 데이터</h2><span>뉴스·키워드·NOW는 후속</span></div><div class="metric-shell"><article><small>NOW Rank</small><strong>—</strong><span>후속</span></article><article><small>관심도</small><strong>—</strong><span>후속</span></article><article><small>언급량</small><strong>—</strong><span>후속</span></article><article><small>전국 평가</small><strong>—</strong><span>참여 데이터</span></article></div></section>
-    <section class="content-card"><div class="notice-box">출처: ${esc(p.source)} · 사진과 실시간 뉴스는 이번 1차 데이터에서 불러오지 않습니다</div></section>
+    <section class="content-card"><div class="notice-box">기본 텍스트 출처: ${esc(p.source)}${photoNotice} · 실시간 뉴스는 후속 단계에서 연결합니다</div></section>
   </main>`);
 }

@@ -56,5 +56,32 @@
         }
       ]
     }
-  ]
+  ],
+  "images": {
+    "sizes": [
+      64,
+      96,
+      128,
+      160,
+      256,
+      384
+    ],
+    "domains": [],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "^upload\\.wikimedia\\.org$",
+        "port": "",
+        "pathname": "^/wikipedia/commons/.*$"
+      }
+    ],
+    "minimumCacheTTL": 2592000,
+    "qualities": [
+      55,
+      65
+    ],
+    "formats": [
+      "image/webp"
+    ]
+  }
 }

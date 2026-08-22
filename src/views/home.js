@@ -1,4 +1,5 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js";
+import { politicianPhoto } from "../data/politician-photo-index.js";
 import { getHomeSnapshot, getAuthorProfiles } from "../core/repository.js";
 import { drawer, siteHeader, footer } from "./layout.js";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
@@ -270,7 +271,11 @@ export async function renderHome() {
     if (name.includes("사회민주당")) return "사";
     return "무";
   };
-  const rankTop10 = nowPeople.slice(0,10).map((p,i)=>`<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
+  const rankTop10 = nowPeople.slice(0,10).map((p,i)=>{
+    const photo=politicianPhoto(p.id,"mini");
+    const photoMarkup=photo ? `<img src="${esc(photo.url)}" alt="${esc(p.name)}" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low">` : "";
+    return `<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`;
+  }).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
   const loginMobile = !userReady

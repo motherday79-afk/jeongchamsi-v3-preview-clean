@@ -206,7 +206,10 @@
 .column-lead-copy.live h3{margin:5px 0 8px;font-size:21px;line-height:1.4}
 .column-lead-copy.live p{margin:0;color:var(--text-2);font-size:14px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .column-card-copy.live b{display:block;font-size:14px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.column-card-copy.live span{display:block;margin-top:5px;color:var(--text-3);font-size:12px}
+.column-card-copy.live > span{display:flex;align-items:center;gap:4px;min-width:0;margin-top:5px;color:var(--text-3);font-size:12px;white-space:nowrap;overflow:hidden}
+.column-card-copy.live > span .author-identity{display:inline-flex;align-items:center;gap:4px;min-width:0;margin:0;flex:0 1 auto}
+.column-card-copy.live > span .author-identity span{margin:0;display:inline-flex}
+.column-card-copy.live > span .author-nickname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .community-highlight article.live p{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .community-row.live{cursor:pointer}
 .side-row.live{cursor:pointer}
@@ -881,6 +884,26 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 }
 .person-detail-photo:not(.has-photo),
 .president-photo{border:1px solid #d8e7e2}
+
+/* 0.36.28 PHOTO FOUNDATION — real photos stay inside the existing zero-shift shells. */
+.rank-top-avatar.has-photo,
+.person-photo-placeholder.has-photo,
+.person-detail-photo.has-photo{
+  overflow:hidden;
+  background-color:#edf5f2;
+  background-image:none;
+}
+.rank-top-avatar.has-photo img,
+.person-photo-placeholder.has-photo img,
+.person-detail-photo.has-photo img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:var(--photo-position,50% 28%);
+}
+.person-photo-placeholder.has-photo img,.rank-top-avatar.has-photo img{pointer-events:none}
+.person-detail-photo.has-photo{border:1px solid #d8e7e2}
 
 /* Community top two are clearly interactive */
 .community-highlight article.live{
@@ -2305,7 +2328,9 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .article-meta .author-identity,.board-list small .author-identity,.comment-list .author-identity{color:inherit}
 .comment-list b:has(.author-identity){display:inline-flex;align-items:center}
 .column-lead .author-identity,.column-card .author-identity,.community-row .author-identity{display:inline-flex}
-.column-lead .author-representative-badge .badge-gem,.column-card .author-representative-badge .badge-gem,.community-row .author-representative-badge .badge-gem{width:16px!important;height:16px!important;flex-basis:16px!important}
+.column-lead .author-representative-badge .badge-gem,.community-row .author-representative-badge .badge-gem{width:16px!important;height:16px!important;flex-basis:16px!important}
+.column-card .author-representative-badge .badge-gem{width:18px!important;height:18px!important;flex-basis:18px!important}
+.column-card .author-representative-badge .badge-gem svg{width:18px!important;height:18px!important}
 
 .participation-request-page,.partners-page{display:grid;gap:18px}
 .request-compose-card{display:grid;gap:14px}
