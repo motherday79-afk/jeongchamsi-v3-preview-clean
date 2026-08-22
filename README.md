@@ -1,3 +1,7 @@
+# alpha6.0.35.1 · Navigation Stability Hotfix
+
+현재 적용 디자인(alpha6.0.35)은 그대로 유지하고, 내부 페이지 전환과 브라우저 뒤로가기의 스크롤 흔들림만 수정한 핫픽스입니다. 자세한 변경점은 `NAV_STABILITY_HOTFIX.md`를 참고하세요.
+
 # 정참시 v3.0.0-alpha5.2
 
 DETAIL COMPLETE 01 · 543 NOW · MEMBER ADMIN · LAYOUT LOCK

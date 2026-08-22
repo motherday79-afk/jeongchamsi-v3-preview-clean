@@ -1,6 +1,6 @@
 {
-  "version": "v3.0.0-alpha6.0.2",
-  "build": "CLEAN CORE · AUTH ROUTING FIX · SINGLE FUNCTION",
+  "version": "v3.0.0-alpha6.0.35.1",
+  "build": "BENCHMARKED PRODUCT SYSTEM · NAV STABILITY HOTFIX",
   "vercel_function_count": 1,
   "vercel_function": [
     "api/gateway.js"
@@ -20,7 +20,13 @@
     "unknown_api_route": 404
   },
   "layout_font_locked": true,
-  "app_css_sha256": "920100f57c2ed74ed5b389b053473aa689aa2bbb8de7c23b699957a1cf69366b",
+  "app_css_sha256": "5927e8d373f6058aef1b712ba0b588ab8698d0780859c63e82ce33f0538e0936",
   "politician_slots": 543,
-  "v2_runtime_references": 0
+  "v2_runtime_references": 0,
+  "navigation_stability": {
+    "history_scroll_restoration": "manual",
+    "route_scroll_behavior": "instant",
+    "history_entry_scroll_xy": true,
+    "back_forward_exact_restore": true
+  }
 }
