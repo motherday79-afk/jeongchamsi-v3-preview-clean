@@ -1,4 +1,4 @@
-import { performAction } from "./repository.js?v=alpha6.0.36.16-badge-eval-hero";
+import { performAction } from "./repository.js?v=alpha6.0.36.18-livebar-auth-generation";
 
 const GUEST_RECENT_KEY = "jcv3:guest-recent:v1";
 let session = { authenticated: false, user: null };

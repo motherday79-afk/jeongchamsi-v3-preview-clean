@@ -59,6 +59,7 @@ const defaults = {
       intro: "정치는 선거일 하루에만 존재하지 않습니다. 우리의 일상과 선택, 지역과 미래를 매일 움직입니다.",
       body: "정참시는 정치인을 지지하거나 공격하기 위해 만든 곳이 아닙니다. 더 알고, 비교하고, 질문하고, 선택하고, 평가하기 위해 만들었습니다.\n\n정치인을 알아보는 것도 참여입니다. 정책과 기록을 비교하는 것도 참여입니다. 시민의 생각을 표현하고, 선출된 이후에도 계속 지켜보며 평가하는 것도 참여입니다.\n\n정치는 정치인만의 것이 아닙니다. 정치의 결과를 살아가는 사람이 시민이라면, 정치의 과정에도 시민의 자리가 있어야 합니다.\n\n한 사람의 관심은 작을 수 있습니다. 하지만 수많은 한 사람이 알고, 묻고, 비교하고, 선택하기 시작하면 정치의 방향은 달라질 수 있습니다.\n\n그래서 우리는 정참시를 만들었습니다. 바라볼 때가 아닌, 행동할 때 정치가 시작되니까요."
     },
+    liveBar: { useActualCount: true, overrideCount: 0 },
     support: {
       title: "정참시 후원하기",
       intro: "정치에 참여할 수 있는 더 나은 공간을 함께 만들어 주세요.",
@@ -142,10 +143,10 @@ export async function getHomeSnapshot() {
   try {
     const body = await requestJSON(`/api/v3/home${homeRevision ? `?r=${homeRevision}` : ""}`);
     storageState = { available: true, error: "" };
-    return body?.data || Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)]));
+    return body?.data || { ...Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)])), memberCount: 0 };
   } catch (error) {
     storageState = { available: false, error: error.code || error.message };
-    return Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)]));
+    return { ...Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)])), memberCount: 0 };
   }
 }
 

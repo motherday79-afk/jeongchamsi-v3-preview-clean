@@ -1,5 +1,6 @@
 const { mgetJSON } = require("../../../lib/v3/redis");
 const { defaultDomain } = require("../../../lib/v3/schema");
+const { listUsers } = require("../../../lib/v3/users");
 
 const DOMAINS = ["columns", "community", "news", "polls", "academy", "generation", "nationalEvaluation", "itsme", "keywords", "trending", "president", "brand"];
 
@@ -10,8 +11,9 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
   try {
-    const values = await mgetJSON(DOMAINS);
+    const [values, users] = await Promise.all([mgetJSON(DOMAINS), listUsers()]);
     const data = Object.fromEntries(DOMAINS.map((d, i) => [d, values[i] || defaultDomain(d)]));
+    data.memberCount = users.length;
     res.setHeader("Cache-Control", "public, max-age=0, s-maxage=15, stale-while-revalidate=30");
     return res.status(200).json({ ok: true, data });
   } catch (error) {

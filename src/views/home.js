@@ -1,9 +1,9 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
-import { getHomeSnapshot } from "../core/repository.js?v=alpha6.0.36.17-density-ux";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.17-density-ux";
-import { getUserSummary, hasVotedPoll } from "../core/user.js?v=alpha6.0.36.17-density-ux";
-import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.17-density-ux";
-import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.17-density-ux";
+import { getHomeSnapshot } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSummary, hasVotedPoll } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -303,12 +303,12 @@ export async function renderHome() {
     const total = sorted.reduce((sum,[,count]) => sum + Number(count || 0), 0);
     const top = sorted[0];
     if (!top || !total) {
-      return `<article class="generation-card generation-empty ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><div class="generation-result generation-result-empty"><b>아직 투표가 이뤄지지 않았습니다</b><div class="generation-bar"><i style="width:0%"></i></div><small>첫 투표를 기다리는 중</small></div></article>`;
+      return `<article class="generation-card generation-empty ${i === 1 ? "focus" : ""}" role="button" tabindex="0" data-go="/generation-president?age=${encodeURIComponent(age)}"><span class="generation-age">${age}</span><div class="generation-result generation-result-empty"><b>아직 투표가 이뤄지지 않았습니다</b><div class="generation-bar"><i style="width:0%"></i></div><small>첫 투표를 기다리는 중</small></div></article>`;
     }
     const person = typeof getPerson === "function" ? getPerson(top[0]) : null;
     const name = person?.name || "집계 중";
     const share = Math.round(Number(top[1]) * 100 / total);
-    return `<article class="generation-card ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><div class="generation-result"><b>${esc(name)}</b><div class="generation-bar"><i style="width:${share}%"></i></div><small>${Number(top[1]).toLocaleString("ko-KR")}표 · ${share}% · 총 ${total.toLocaleString("ko-KR")}명</small></div></article>`;
+    return `<article class="generation-card ${i === 1 ? "focus" : ""}" role="button" tabindex="0" data-go="/generation-president?age=${encodeURIComponent(age)}"><span class="generation-age">${age}</span><div class="generation-result"><b>${esc(name)}</b><div class="generation-bar"><i style="width:${share}%"></i></div><small>${Number(top[1]).toLocaleString("ko-KR")}표 · ${share}% · 총 ${total.toLocaleString("ko-KR")}명</small></div></article>`;
   }).join("");
 
   const earnedHomeBadgeKeys = [];
@@ -325,17 +325,17 @@ export async function renderHome() {
 
   let generationAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.17-density-ux");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
     generationAdmin = adminTools.renderGenerationAdminEditor(data.generation || {}, { context:"home", open:false });
   }
   let nationalAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.17-density-ux");
+    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
     nationalAdmin = adminTools.renderNationalEvaluationAdminEditor(nationalEvaluation, { context:"home", open:false });
   }
 
   return `<div class="site-shell">
-    ${siteHeader()}
+    ${siteHeader({ memberCount:data.memberCount, liveBar:data.brand?.liveBar })}
 
     <div class="page-wrap product-home-wrap">${productHero(nowPeople, poll)}${productLauncher()}<div class="portal-layout product-content-grid">
       <section class="mobile-utility" aria-label="모바일 빠른 정보">

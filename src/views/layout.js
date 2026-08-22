@@ -1,6 +1,6 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.16-badge-eval-hero";
-import { getUserSession } from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
-import { SERVICE_CATALOG, serviceBarServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.16-badge-eval-hero";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSession } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { SERVICE_CATALOG, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -16,18 +16,27 @@ function drawerListItem(key, label, href, meta = "") {
   return `<a class="drawer-list-item" href="${href}" data-route><span class="drawer-list-icon">${iconSvg(key)}</span><span><b>${esc(label)}</b>${meta ? `<small>${esc(meta)}</small>` : ""}</span><em>›</em></a>`;
 }
 
-export function siteHeader() {
-  const primaryKeys = new Set(["now","poll","itsme","column","community"]);
-  const primaryNav = SERVICE_CATALOG.filter(item => primaryKeys.has(item.key));
+export function siteHeader({ memberCount = null, liveBar = null } = {}) {
+  const session = getUserSession();
+  const config = { useActualCount:true, overrideCount:0, ...(liveBar || {}) };
+  const actual = Number(memberCount);
+  const displayCount = config.useActualCount !== false
+    ? (Number.isFinite(actual) ? Math.max(0, actual) : null)
+    : Math.max(0, Number(config.overrideCount || 0));
+  const countText = displayCount === null ? "…" : displayCount.toLocaleString("ko-KR");
+  const adminEditor = session.authenticated && session.user?.role === "admin"
+    ? `<details class="livebar-admin"><summary>관리</summary><form data-livebar-admin-form><label class="check"><input type="checkbox" name="useActualCount" ${config.useActualCount !== false ? "checked" : ""}> 실제 가입 회원수 사용</label><label>표시 인원<input type="number" name="overrideCount" min="0" step="1" value="${Math.max(0, Number(config.overrideCount || 0))}"></label><button class="ghost-btn" type="submit">저장</button><span class="save-state" data-livebar-admin-state></span></form></details>`
+    : "";
   return `<header class="site-header product-header">
     <div class="product-head-main">
       <button class="product-menu" type="button" aria-label="전체 메뉴" data-drawer-open><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <a class="product-wordmark" href="/" data-route aria-label="정참시 홈"><b>정참시</b><span>JEONGCHAMSI</span></a>
-      <nav class="product-primary-nav" aria-label="핵심 메뉴">${primaryNav.map(item => `<a href="${item.href}" data-route>${esc(item.shortLabel || item.label)}</a>`).join("")}</nav>
       <form class="product-search" data-search-form><input name="q" aria-label="통합검색" placeholder="정치인, 정당, 이슈를 검색하세요"><button type="submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></button></form>
       <div class="product-account-tools"><button type="button" aria-label="내 참여" data-go="/mypage/activity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button type="button" aria-label="최근 본 정치인" data-go="/mypage/recent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></button></div>
     </div>
-    <div class="product-service-bar"><nav class="product-service-inner" aria-label="정참시 전체 서비스"><span>서비스</span>${serviceBarServices().map(item => `<a href="${item.href}" data-route>${esc(item.shortLabel || item.label)}</a>`).join("")}</nav></div>
+    <div class="product-service-bar live-community-bar" data-livebar data-member-count="${displayCount === null ? "" : displayCount}">
+      <div class="live-community-inner"><div class="live-community-count"><b data-livebar-count>${countText}</b><span>명이 정참시와 함께합니다.</span></div><div class="live-community-actions"><a class="live-community-cta is-active" href="/about" data-route data-livebar-cta="about">정참시 응원하기 <span>→</span></a><a class="live-community-cta" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer" data-livebar-cta="support">정참시 후원하기 <span>♡</span></a></div>${adminEditor}</div>
+    </div>
   </header>`;
 }
 

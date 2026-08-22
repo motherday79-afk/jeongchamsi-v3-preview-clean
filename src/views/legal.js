@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
 
 const DOCS = Object.freeze({
   guide: {

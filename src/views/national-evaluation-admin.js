@@ -1,4 +1,4 @@
-import { getDomain, saveDomain } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getDomain, saveDomain } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));

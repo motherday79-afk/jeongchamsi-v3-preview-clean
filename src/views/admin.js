@@ -1,10 +1,10 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
-import { getUserSession, initializeUserState } from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
-import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSession, initializeUserState } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.16-badge-eval-hero";
-import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.16-badge-eval-hero";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],
@@ -171,12 +171,17 @@ async function brandPanel() {
     note:"현재 후원 방법은 준비 중입니다.",
     ...(data.support || {})
   };
+  const liveBar = { useActualCount:true, overrideCount:0, ...(data.liveBar || {}) };
+  const memberInfo = await fetchMembers();
+  const actualMemberCount = memberInfo.users.length;
   const art = hero.artImage || "/assets/brand/hero-art.webp";
   return `<section class="admin-panel">
     <div class="admin-panel-head"><div><h2>메인 최상단 · 정참시 브랜드 타이틀</h2><span class="status-pill"><b>HERO</b>금싸라기 영역</span></div><div class="inline-actions"><button class="ghost-btn" type="button" data-go="/">메인 보기</button><button class="ghost-btn" type="button" data-go="/about">더 알아보기 페이지</button></div></div>
     <div class="notice-box">기존 대통령 영역을 정참시 브랜드 선언 영역으로 교체했습니다. 대통령 페이지는 더보기 메뉴에서 그대로 유지됩니다.</div>
     <form class="admin-form brand-admin-form" data-admin-form="brand-settings">
-      <div class="section-title"><h2>메인 타이틀 수정</h2><span>저장 즉시 메인 반영</span></div>
+      <div class="section-title"><h2>상단 함께하는 사람 표시</h2><span>현재 가입 ${actualMemberCount.toLocaleString("ko-KR")}명</span></div>
+      <div class="admin-form-row"><label class="check"><input type="checkbox" name="liveBarUseActual" ${liveBar.useActualCount !== false ? "checked" : ""}> 실제 가입 회원수 자동 사용</label><label>수동 표시 인원<input type="number" name="liveBarOverride" min="0" step="1" value="${Math.max(0,Number(liveBar.overrideCount||0))}"></label></div>
+      <div class="section-title top-gap"><h2>메인 타이틀 수정</h2><span>저장 즉시 메인 반영</span></div>
       <label>상단 문구<input name="kicker" maxlength="100" value="${esc(hero.kicker)}"></label>
       <label>메인 문구<textarea name="headline" rows="3" maxlength="180" required>${esc(hero.headline)}</textarea></label>
       <label>서브 1<input name="subline1" maxlength="180" value="${esc(hero.subline1)}"></label>
@@ -204,12 +209,12 @@ async function presidentPanel() {
 }
 async function generationPanel() {
   const data = await getDomain("generation");
-  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>세대가 뽑은 대통령</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/generation-president">외부 페이지</button></div>${adminTools.renderGenerationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function nationalEvaluationPanel() {
   const data = await getDomain("nationalEvaluation");
-  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>국회의원 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function systemPanel() {
@@ -269,6 +274,10 @@ export async function saveAdminForm(form) {
     const artImage = form.querySelector("[data-cover-preview]")?.dataset.coverData || current.hero?.artImage || "";
     const next = {
       ...current,
+      liveBar: {
+        useActualCount: fd.get("liveBarUseActual") === "on",
+        overrideCount: Math.max(0, Math.round(Number(fd.get("liveBarOverride") || 0)))
+      },
       hero: {
         kicker:String(fd.get("kicker") || "").trim(),
         headline:String(fd.get("headline") || "").trim(),

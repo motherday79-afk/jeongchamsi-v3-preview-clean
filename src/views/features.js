@@ -1,5 +1,5 @@
-import { getDomain } from "../core/repository.js?v=alpha6.0.36.17-density-ux";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.17-density-ux";
+import { getDomain } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
   listAssemblyMembers,
@@ -17,7 +17,7 @@ import {
   generationVoteFor,
   hasNationalEvaluationVote,
   isPostLiked
-} from "../core/user.js?v=alpha6.0.36.17-density-ux";
+} from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
 
 function pct(option, options) {
   const total = (options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
@@ -329,20 +329,33 @@ export async function renderCompare(search = "") {
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">COMPARE POLITICIANS</span><h1>정치인 비교분석</h1><p>이름·정당·지역을 검색하고 결과에서 바로 선택해 비교하세요.</p></section><section class="content-card"><form class="compare-picker compare-picker-quick" data-compare-form><label class="person-quick-picker compare-person-quick-picker">정치인 A 검색<input type="search" id="compare-person-search-a" value="${esc(aLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-a" data-person-quick-results="#compare-person-results-a"><div class="person-quick-results" id="compare-person-results-a" hidden></div><select id="compare-person-a" name="a" required aria-hidden="true" tabindex="-1"><option value="">정치인 A 선택</option>${personOptions(a)}</select></label><span class="compare-vs">VS</span><label class="person-quick-picker compare-person-quick-picker">정치인 B 검색<input type="search" id="compare-person-search-b" value="${esc(bLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-b" data-person-quick-results="#compare-person-results-b"><div class="person-quick-results" id="compare-person-results-b" hidden></div><select id="compare-person-b" name="b" required aria-hidden="true" tabindex="-1"><option value="">정치인 B 선택</option>${personOptions(b)}</select></label><button class="primary-btn" type="submit">비교하기</button></form></section>${result}</main>`);
 }
 
-export async function renderGeneration() {
+export async function renderGeneration(search = "") {
   const data = await getDomain("generation");
   const session = getUserSession();
   const ages = ["10대", "20대", "30대", "40대", "50대", "60대+"];
   const results = data.demoMode === true ? (data.demoResults || {}) : (data.results || {});
-  const cards = ages.map(age => {
-    const votes = results[age] || {};
-    const sorted = Object.entries(votes).sort((a, b) => Number(b[1]) - Number(a[1]));
-    const top = sorted[0];
-    const total = sorted.reduce((sum, x) => sum + Number(x[1] || 0), 0);
-    const label = top ? slotLabel(getPersonSlotById(top[0]) || { roleLabel: "정치인", slot: 0 }) : "아직 투표 없음";
-    const share = top && total ? Math.round(Number(top[1]) * 100 / total) : 0;
-    return `<article><b>${age}</b><p>${esc(label)}</p><strong>${share}%</strong><span>${total}명 참여</span></article>`;
+  const params = new URLSearchParams(search || "");
+  const userAge = session.authenticated ? memberAgeGroup(session.user.birthYear) : "";
+  const requestedAge = params.get("age") || "";
+  const selectedAge = ages.includes(requestedAge) ? requestedAge : (ages.includes(userAge) ? userAge : ages[0]);
+  const selectedVotes = results[selectedAge] || {};
+  const sortedSelected = Object.entries(selectedVotes)
+    .filter(([,count]) => Number(count || 0) > 0)
+    .sort((a,b) => Number(b[1] || 0) - Number(a[1] || 0));
+  const selectedTotal = sortedSelected.reduce((sum,[,count]) => sum + Number(count || 0), 0);
+  const tabs = ages.map(age => {
+    const total = Object.values(results[age] || {}).reduce((sum,count)=>sum+Number(count||0),0);
+    return `<button type="button" class="generation-age-tab ${age === selectedAge ? "active" : ""}" data-go="/generation-president?age=${encodeURIComponent(age)}"><b>${esc(age)}</b><span>${total.toLocaleString("ko-KR")}표</span></button>`;
   }).join("");
+  const top15 = sortedSelected.slice(0,15).map(([personId,count], index) => {
+    const person = getPersonSlotById(personId);
+    const name = person?.name || slotLabel(person || { roleLabel:"정치인", slot:0 });
+    const meta = [person?.party, person?.jurisdiction].filter(Boolean).join(" · ") || "정치인 정보";
+    const share = selectedTotal ? Math.round(Number(count || 0) * 100 / selectedTotal) : 0;
+    const photo = person?.photo || "";
+    return `<article class="generation-top15-row" role="button" tabindex="0" data-go="/person/${esc(personId)}"><span class="generation-top15-rank">${index + 1}</span><span class="generation-top15-photo ${photo ? "has-photo" : ""}" ${photo ? `style="background-image:url('${esc(photo)}')"` : ""}></span><span class="generation-top15-person"><b>${esc(name)}</b><small>${esc(meta)}</small></span><span class="generation-top15-result"><i><em style="width:${share}%"></em></i><small>${Number(count || 0).toLocaleString("ko-KR")}표 · ${share}%</small></span></article>`;
+  }).join("");
+  const ranking = top15 || `<div class="empty-state generation-top15-empty"><h2>${esc(selectedAge)} 투표 결과를 기다리고 있습니다.</h2><p>첫 투표가 들어오면 이곳에 상위 15명까지 순위가 표시됩니다.</p></div>`;
 
   let voteArea = `<div class="member-login-prompt"><span>세대별 모의투표는 로그인 후 참여할 수 있습니다.</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>`;
   if (session.authenticated) {
@@ -355,11 +368,11 @@ export async function renderGeneration() {
 
   let generationAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.17-density-ux");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
     generationAdmin = adminTools.renderGenerationAdminEditor(data, { context:"detail", open:false });
   }
 
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h1>세대가 뽑은 대통령</h1><p>회원가입 때 입력한 출생연도로 내 세대는 자동 고정됩니다. 후보는 543명 목록을 직접 내리지 않고 검색해서 선택할 수 있습니다.</p></section><section class="content-card"><div class="generation-page-grid">${cards}</div></section>${generationAdmin}<section class="content-card"><div class="section-title"><h2>모의투표 참여</h2><span>${session.authenticated ? "회원 출생연도 기준 세대 자동 적용" : "로그인 필요"}</span></div>${voteArea}</section></main>`);
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h1>세대가 뽑은 대통령</h1><p>세대를 선택하면 현재 투표수 기준 상위 15명까지 확인할 수 있습니다. 정치인을 누르면 사진과 전체 인물정보가 있는 상세페이지로 이동합니다.</p></section>${generationAdmin}<section class="content-card generation-ranking-card"><div class="section-title"><h2>${esc(selectedAge)}가 선택한 대통령</h2><span>TOP 15 · 총 ${selectedTotal.toLocaleString("ko-KR")}표</span></div><div class="generation-age-tabs">${tabs}</div><div class="generation-top15-list">${ranking}</div></section><section class="content-card"><div class="section-title"><h2>모의투표 참여</h2><span>${session.authenticated ? "회원 출생연도 기준 세대 자동 적용" : "로그인 필요"}</span></div>${voteArea}</section></main>`);
 }
 
 function nationalEvaluationDisplayVotes(data = {}, personId = "") {
@@ -392,7 +405,7 @@ export async function renderNationalEvaluation() {
   const historyMarkup = `<section class="content-card"><div class="section-title"><h2>지난 전국 평가</h2><span>${history.length}건</span></div>${history.length ? `<div class="evaluation-history-list">${history.map(x => `<article><div><b>${esc(x.label)}</b><span>${x.count}명 참여</span></div><p>긍정 ${x.positive}% · 보통 ${x.neutral}% · 부정 ${x.negative}%</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 종료된 이전 평가가 없습니다.</div>`}</section>`;
   let nationalAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
-    const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.17-density-ux");
+    const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
     nationalAdmin = tools.renderNationalEvaluationAdminEditor(data, { context:"detail", open:false });
   }
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NATIONAL EVALUATION</span><h1>국회의원 전국 평가제</h1><p>현재 평가와 지난 평가 결과를 한 페이지에서 확인합니다.</p></section>${nationalAdmin}${person ? `<section class="person-detail-hero content-card"><div class="person-detail-photo"></div><div class="person-detail-title"><span class="eyebrow">CURRENT SUBJECT</span><h1>${esc(slotLabel(person))}</h1><p>${esc(person.party || "")} · ${esc(person.jurisdiction || "")}</p><div class="person-detail-badges"><span>전국 평가 대상</span><span>${data.enabled ? "평가 진행중" : "평가 일시중지"}</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세페이지</button></div></section><section class="content-card"><div class="section-title"><h2>현재 평가 결과</h2><span>${total}명 참여</span></div><div class="evaluation-result-grid"><article><small>긍정</small><strong>${share("positive")}%</strong><span>${Number(votes.positive || 0)}표</span></article><article><small>보통</small><strong>${share("neutral")}%</strong><span>${Number(votes.neutral || 0)}표</span></article><article><small>부정</small><strong>${share("negative")}%</strong><span>${Number(votes.negative || 0)}표</span></article></div></section><section class="content-card"><div class="section-title"><h2>전국 평가 참여</h2><span>${voted ? "참여 완료" : voting ? "평가 진행중" : "평가 중지"}</span></div>${!session.authenticated ? `<div class="member-login-prompt"><span>평가 참여는 로그인 후 가능합니다.</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>` : !voting ? `<div class="empty-inline">관리자가 평가를 활성화하면 참여할 수 있습니다.</div>` : voted ? `<div class="empty-inline">이 평가에 이미 참여했습니다.</div>` : `<form class="evaluation-vote-form" data-national-evaluation-form data-person-id="${esc(person.id)}"><label><input type="radio" name="rating" value="positive" required><b>긍정 평가</b><span>전반적으로 잘하고 있다고 봅니다.</span></label><label><input type="radio" name="rating" value="neutral" required><b>보통</b><span>긍정과 아쉬움이 비슷합니다.</span></label><label><input type="radio" name="rating" value="negative" required><b>부정 평가</b><span>전반적으로 아쉽다고 봅니다.</span></label><button class="primary-btn" type="submit">평가 제출</button><div class="save-state" data-national-evaluation-state></div></form>`}</section>` : `<section class="content-card"><div class="empty-state tall"><div class="empty-icon">評</div><h2>평가 대상 선택 전</h2><p>관리자에서 국회의원 300개 슬롯 중 한 명을 선택하면 이 페이지에서 바로 평가할 수 있습니다.</p></div></section>`}${historyMarkup}</main>`);
