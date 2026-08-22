@@ -194,3 +194,56 @@ a,.more-btn{--jc-link:#087f74}
   background:#fff;
   border-color:#efd9dc;
 }
+
+/* JEONGCHAMSI alpha6.0.36.3 — HERO HUNMINJEONGEUM TEXTURE HOTFIX
+   Hero-only color/texture adjustment. Layout and behavior untouched. */
+.product-hero{
+  background:#e7edf3!important;
+  border-color:#d5dee7!important;
+  isolation:isolate;
+}
+.product-hero:before{
+  content:"ㄱ ㄴ ㄷ ㄹ ㅁ ㅂ ㅅ ㅇ ㅈ ㅊ ㅋ ㅌ ㅍ ㅎ   정참시   ㆍ ㅡ ㅣ   ㄱ ㄴ ㄷ ㄹ   ㅁ ㅂ ㅅ ㅇ   정참시   ㅈ ㅊ ㅋ ㅌ ㅍ ㅎ   ㆍ ㅡ ㅣ";
+  position:absolute;
+  inset:-8% -2% -12% 34%;
+  z-index:0;
+  overflow:hidden;
+  color:#31506b;
+  opacity:.055;
+  font-size:46px;
+  line-height:1.85;
+  font-weight:800;
+  letter-spacing:.28em;
+  word-spacing:.8em;
+  transform:rotate(-3deg);
+  white-space:normal;
+  pointer-events:none;
+}
+.product-hero:after{
+  content:"정참시  훈민정음  정참시"!important;
+  left:auto!important;
+  right:5%!important;
+  bottom:-26px!important;
+  font-size:96px!important;
+  line-height:1!important;
+  color:#31506b!important;
+  opacity:.025!important;
+  letter-spacing:-.06em!important;
+  transform:none!important;
+}
+.product-hero-copy,
+.product-hero-live{position:relative;z-index:2}
+
+@media(max-width:820px){
+  .product-hero:before{
+    inset:8% -18% 10% 42%;
+    font-size:34px;
+    line-height:1.8;
+    opacity:.045;
+  }
+  .product-hero:after{
+    right:-4%!important;
+    bottom:-10px!important;
+    font-size:64px!important;
+  }
+}
