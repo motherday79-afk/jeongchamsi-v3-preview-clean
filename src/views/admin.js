@@ -1,9 +1,9 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.35-benchmarked-product";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.8-nav-itsme";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.7-color-rhythm";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.8-nav-itsme";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],

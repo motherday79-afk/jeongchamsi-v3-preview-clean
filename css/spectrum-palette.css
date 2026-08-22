@@ -410,3 +410,144 @@ a,.more-btn{--jc-link:#087f74}
   border-color:#e5e9ec!important;
 }
 #community .community-highlight span{color:#bc6d22!important}
+
+/* JEONGCHAMSI alpha6.0.36.8 — COMPACT NAVIGATOR + IT'S ME SIGNATURE
+   Fixed sections (Academy / Column / Community) are intentionally untouched. */
+
+/* 1) Explore becomes a low-height service navigator: icon first, text second. */
+.product-launcher.product-launcher-compact{
+  padding:18px 22px 20px;
+  border-radius:22px;
+}
+.product-launcher-compact .product-launcher-head{
+  align-items:center;
+  margin-bottom:12px;
+}
+.product-launcher-compact .product-launcher-head>div>span{
+  margin-bottom:3px;
+  font-size:9px;
+}
+.product-launcher-compact .product-launcher-head h2{
+  font-size:20px;
+  letter-spacing:-.75px;
+}
+.product-launcher-compact .product-launcher-grid{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:8px;
+}
+.product-launcher-compact .launcher-card{
+  min-height:70px;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr) 15px;
+  align-items:center;
+  gap:8px;
+  padding:10px 11px;
+  border:1px solid #e5e9ec!important;
+  border-radius:14px;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+.product-launcher-compact .launcher-card:hover{
+  transform:translateY(-1px);
+  border-color:#cfd7dc!important;
+  box-shadow:0 7px 16px rgba(23,38,47,.06)!important;
+}
+.product-launcher-compact .launcher-icon{
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:#f5f7f8;
+  color:#5f6c73;
+}
+.product-launcher-compact .launcher-icon svg{
+  width:21px;
+  height:21px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.product-launcher-compact .launcher-copy b{
+  font-size:13px;
+  line-height:1.25;
+  letter-spacing:-.35px;
+  color:#172026;
+}
+.product-launcher-compact .launcher-cue{
+  color:#a1aab0;
+  font-size:13px;
+}
+.product-launcher-compact .launcher-now .launcher-icon{color:var(--jc-blue)}
+.product-launcher-compact .launcher-choice .launcher-icon{color:var(--jc-red)}
+.product-launcher-compact .launcher-itsme .launcher-icon{color:var(--jc-teal)}
+.product-launcher-compact .launcher-compare .launcher-icon{color:var(--jc-orange)}
+.product-launcher-compact .launcher-generation .launcher-icon{color:var(--jc-navy)}
+.product-launcher-compact .launcher-community .launcher-icon{color:var(--jc-green)}
+
+/* 2) IT'S ME owns one memorable color gesture in the heading, not six cards. */
+#itsme.itsme-home-module .itsme-signature-title{
+  position:relative;
+  display:inline-block;
+  padding-bottom:13px;
+}
+#itsme.itsme-home-module .itsme-signature-title::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:2px;
+  width:min(220px,72%);
+  height:5px;
+  border-radius:999px;
+  background:var(--jc-teal);
+}
+#itsme.itsme-home-module .itsme-grid{gap:10px}
+#itsme.itsme-home-module .itsme-card,
+#itsme.itsme-home-module .itsme-card:nth-child(n){
+  min-height:104px;
+  padding:16px 17px;
+  background:#fff!important;
+  border-color:#e5e9ec!important;
+  box-shadow:none!important;
+}
+#itsme.itsme-home-module .itsme-card span{
+  display:block;
+  color:#8a9499!important;
+  font-size:11px;
+  font-weight:850;
+}
+#itsme.itsme-home-module .itsme-card b{
+  display:-webkit-box;
+  overflow:hidden;
+  margin-top:18px;
+  color:#172026;
+  font-size:15px;
+  line-height:1.45;
+  letter-spacing:-.35px;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+  text-overflow:ellipsis;
+}
+#itsme.itsme-home-module .itsme-card p{display:none!important}
+
+@media(max-width:1050px){
+  .product-launcher-compact .product-launcher-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  .product-launcher.product-launcher-compact{padding:15px 12px 13px}
+  .product-launcher-compact .product-launcher-head{margin:0 3px 10px}
+  .product-launcher-compact .product-launcher-head h2{font-size:18px}
+  .product-launcher-compact .product-launcher-head>button{font-size:11px}
+  .product-launcher-compact .product-launcher-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .product-launcher-compact .launcher-card{min-height:61px;padding:8px;grid-template-columns:30px minmax(0,1fr)}
+  .product-launcher-compact .launcher-icon{width:29px;height:29px;border-radius:9px}
+  .product-launcher-compact .launcher-icon svg{width:19px;height:19px}
+  .product-launcher-compact .launcher-copy b{font-size:12px}
+  .product-launcher-compact .launcher-cue{display:none}
+  #itsme.itsme-home-module .itsme-card{min-height:96px;padding:14px}
+  #itsme.itsme-home-module .itsme-card b{margin-top:14px;font-size:14px}
+  #itsme.itsme-home-module .itsme-signature-title::after{height:4px;width:min(190px,75%)}
+}

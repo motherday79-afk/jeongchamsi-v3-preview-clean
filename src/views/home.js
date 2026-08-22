@@ -1,6 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.35-benchmarked-product";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.8-nav-itsme";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
@@ -100,16 +100,28 @@ function productHero(nowPeople = [], poll = null) {
   </section>`;
 }
 
+function launcherIcon(key = "") {
+  const icons = {
+    now:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5 8.2 12l3 2.8 5.7-7.1"/><path d="M14.8 7.7h2.9v2.9"/><path d="M4 19h16"/></svg>`,
+    choice:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5h12l1.5 9H4.5l1.5-9Z"/><path d="M9 9.5V6.8a3 3 0 0 1 6 0v2.7"/><path d="m9.2 14 1.8 1.8 3.8-4"/></svg>`,
+    itsme:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H9l-4 3v-13Z"/><path d="m10 12 4.8-4.8 2 2L12 14H10v-2Z"/></svg>`,
+    compare:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16"/><path d="M5 7h5M14 7h5"/><path d="m5 7-2 5h6L7 7"/><path d="m17 7-2 5h6l-2-5"/><path d="M7 17h10"/></svg>`,
+    generation:`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="2.5"/><circle cx="16.5" cy="9" r="2"/><path d="M3.5 18c.6-3.3 2.1-5 4.5-5s3.9 1.7 4.5 5"/><path d="M13.5 18c.4-2.5 1.4-3.8 3-3.8 1.7 0 2.8 1.3 3.2 3.8"/></svg>`,
+    community:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11v8H8l-4 3V6Z"/><path d="M14 9h6v8h-3l-3 2v-10Z"/></svg>`
+  };
+  return icons[key] || icons.community;
+}
+
 function productLauncher() {
   const items = [
-    ["01","NOW Rank","지금 가장 주목받는 정치인","/now","now"],
-    ["02","시민들의 선택","오늘의 쟁점에 직접 한 표","/poll","choice"],
-    ["03","IT’S ME","내가 만드는 정책 제안","/itsme","itsme"],
-    ["04","정치인 비교","두 사람을 같은 기준으로","/compare","compare"],
-    ["05","세대별 대통령","세대마다 다른 선택 보기","/generation-president","generation"],
-    ["06","정뮤니티","지금 시민들이 하는 말","/community","community"]
+    ["NOW Rank","지금 가장 주목받는 정치인","/now","now"],
+    ["시민들의 선택","오늘의 쟁점에 직접 한 표","/poll","choice"],
+    ["IT’S ME","내가 만드는 정책 제안","/itsme","itsme"],
+    ["정치인 비교","두 사람을 같은 기준으로","/compare","compare"],
+    ["세대별 대통령","세대마다 다른 선택 보기","/generation-president","generation"],
+    ["정뮤니티","지금 시민들이 하는 말","/community","community"]
   ];
-  return `<section class="product-launcher"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시에서 무엇을 할까요?</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(([no,title,desc,href,key])=>`<button type="button" class="launcher-card launcher-${key}" data-go="${href}"><span class="launcher-no">${no}</span><span class="launcher-copy"><b>${title}</b><small>${desc}</small></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
+  return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시에서 무엇을 할까요?</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(([title,desc,href,key])=>`<button type="button" class="launcher-card launcher-${key}" data-go="${href}" aria-label="${esc(title)} · ${esc(desc)}"><span class="launcher-icon">${launcherIcon(key)}</span><span class="launcher-copy"><b>${title}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
 }
 
 function columnLead(item) {
@@ -157,8 +169,8 @@ function sideNewsRow(item, i) {
 }
 
 function itsmeHomeCard(item, index) {
-  if (!item) return `<article class="itsme-card itsme-empty"><span>${String(index + 1).padStart(2, "0")}</span><b>아직 등록된 정책이 없습니다</b><p>IT’S ME에 정책이 등록되면 이곳에 표시됩니다.</p></article>`;
-  return `<article class="itsme-card" role="button" tabindex="0" data-go="/itsme/${esc(item.id)}"><span>${String(index + 1).padStart(2, "0")}</span><b>${esc(item.title || "정책 제안")}</b><p>${esc(item.summary || item.body || "")}</p></article>`;
+  if (!item) return `<article class="itsme-card itsme-empty"><span>${String(index + 1).padStart(2, "0")}</span><b>아직 등록된 정책이 없습니다</b></article>`;
+  return `<article class="itsme-card" role="button" tabindex="0" data-go="/itsme/${esc(item.id)}"><span>${String(index + 1).padStart(2, "0")}</span><b>${esc(item.title || "정책 제안")}</b></article>`;
 }
 
 function nationalEvaluationHomeMarkup(data = {}, getPerson = null) {
@@ -317,7 +329,7 @@ export async function renderHome() {
       </section>
 
       <main class="main-column">
-        <section class="module" id="itsme"><div class="module-header"><div><span class="eyebrow">IT’S ME</span><h2>저는, 이렇게 제안합니다</h2><p class="module-desc">꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다.</p></div><button class="more-btn" type="button" data-go="/itsme">전체보기</button></div><div class="itsme-grid">${itsmeHomeItems.map(itsmeHomeCard).join("")}</div></section>
+        <section class="module itsme-home-module" id="itsme"><div class="module-header"><div><span class="eyebrow">IT’S ME</span><h2 class="itsme-signature-title">저는, 이렇게 제안합니다</h2><p class="module-desc">꼭 필요하고 유용한 정책이 공론화될 수 있도록 정참시가 앞장서겠습니다.</p></div><button class="more-btn" type="button" data-go="/itsme">전체보기</button></div><div class="itsme-grid">${itsmeHomeItems.map(itsmeHomeCard).join("")}</div></section>
 
         <section class="module poll-module" id="poll"><div class="module-header"><div><span class="eyebrow">CITIZENS’ CHOICE</span><h2>귀담아 들어야 합니다.</h2><p class="module-desc">작은 관심이 세상을 바꿉니다.</p></div><button class="more-btn" type="button" data-go="/poll">전체보기</button></div>${pollMarkup(poll, userSession.authenticated && !!poll && hasVotedPoll(poll.id))}</section>
 
