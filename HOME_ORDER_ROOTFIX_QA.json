@@ -1,0 +1,32 @@
+{
+  "version": "alpha6.0.36.6",
+  "home_main_order": [
+    "itsme",
+    "poll",
+    "generation-president",
+    "national-eval",
+    "compare",
+    "academy",
+    "now",
+    "column",
+    "community"
+  ],
+  "expected_home_main_order": [
+    "itsme",
+    "poll",
+    "generation-president",
+    "national-eval",
+    "compare",
+    "academy",
+    "now",
+    "column",
+    "community"
+  ],
+  "dom_order_matches": true,
+  "legacy_main_column_order_block_present": false,
+  "any_css_order_property_present": false,
+  "any_grid_area_property_present": false,
+  "home_js_dom_reinsertions": 0,
+  "product_css_cache_key": true,
+  "home_module_cache_key": true
+}
