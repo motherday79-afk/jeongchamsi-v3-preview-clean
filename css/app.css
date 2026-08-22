@@ -865,3 +865,11 @@ img{display:block;max-width:100%}
     grid-column:1;
   }
 }
+
+
+/* alpha6.0.36.12 — generation result block */
+.generation-card b{display:block;font-size:var(--fs-sub);margin-top:2px}
+.generation-result{margin-top:10px}
+.generation-result .generation-bar{margin-top:0}
+.generation-result small{display:block;margin-top:8px;font-size:11px;line-height:1.35;color:var(--text-2)}
+.generation-empty .generation-result small{margin-top:8px}

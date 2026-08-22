@@ -301,12 +301,12 @@ export async function renderHome() {
     const total = sorted.reduce((sum,[,count]) => sum + Number(count || 0), 0);
     const top = sorted[0];
     if (!top || !total) {
-      return `<article class="generation-card generation-empty ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>아직 투표가 이뤄지지 않았습니다</b><small>첫 투표를 기다리는 중</small><div class="generation-bar"><i style="width:0%"></i></div></article>`;
+      return `<article class="generation-card generation-empty ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>아직 투표가 이뤄지지 않았습니다</b><div class="generation-result"><div class="generation-bar"><i style="width:0%"></i></div><small>첫 투표를 기다리는 중</small></div></article>`;
     }
     const person = typeof getPerson === "function" ? getPerson(top[0]) : null;
     const name = person?.name || "집계 중";
     const share = Math.round(Number(top[1]) * 100 / total);
-    return `<article class="generation-card ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>${esc(name)}</b><small>1위 · ${Number(top[1]).toLocaleString("ko-KR")}표 · ${share}% · 총 ${total.toLocaleString("ko-KR")}명</small><div class="generation-bar"><i style="width:${share}%"></i></div></article>`;
+    return `<article class="generation-card ${i === 1 ? "focus" : ""}"><span class="generation-age">${age}</span><span class="generation-avatar"></span><b>${esc(name)}</b><div class="generation-result"><div class="generation-bar"><i style="width:${share}%"></i></div><small>${Number(top[1]).toLocaleString("ko-KR")}표 · ${share}% · 총 ${total.toLocaleString("ko-KR")}명</small></div></article>`;
   }).join("");
 
   const homeBadges = [];
