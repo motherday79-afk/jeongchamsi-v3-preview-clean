@@ -3,7 +3,7 @@ import { getHomeSnapshot } from "../core/repository.js?v=alpha6.0.36.18-livebar-
 import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { getUserSummary, hasVotedPoll } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.19-badge-tiers";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"

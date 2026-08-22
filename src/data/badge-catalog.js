@@ -1,10 +1,10 @@
 export const BADGE_CATALOG = Object.freeze([
-  { key:"noon-signal", tier:"STANDARD", name:"도시락알리미", mission:"정오(12시) 시간대에 정참시 방문", kind:"시간 미션" },
-  { key:"midnight", tier:"STANDARD", name:"신데렐라", mission:"자정(00시) 시간대에 정참시 방문", kind:"시간 미션" },
-  { key:"weekman", tier:"STANDARD", name:"위크맨", mission:"7일 연속 출석", kind:"연속 출석" },
-  { key:"superhero", tier:"STANDARD", name:"슈퍼히어로", mission:"한 달 개근", kind:"월간 출석" },
-  { key:"first-participation", tier:"STANDARD", name:"첫 참여", mission:"설문·댓글·글쓰기 중 첫 참여", kind:"참여" },
-  { key:"citizen-choice", tier:"STANDARD", name:"시민 선택", mission:"시민들의 선택 설문에 참여", kind:"투표" },
+  { key:"noon-signal", tier:"BRONZE", name:"도시락알리미", mission:"정오(12시) 시간대에 정참시 방문", kind:"시간 미션" },
+  { key:"midnight", tier:"BRONZE", name:"신데렐라", mission:"자정(00시) 시간대에 정참시 방문", kind:"시간 미션" },
+  { key:"weekman", tier:"SILVER", name:"위크맨", mission:"7일 연속 출석", kind:"연속 출석" },
+  { key:"superhero", tier:"SILVER", name:"슈퍼히어로", mission:"한 달 개근", kind:"월간 출석" },
+  { key:"first-participation", tier:"BRONZE", name:"첫 참여", mission:"설문·댓글·글쓰기 중 첫 참여", kind:"참여" },
+  { key:"citizen-choice", tier:"BRONZE", name:"시민 선택", mission:"시민들의 선택 설문에 참여", kind:"투표" },
   { key:"first-penguin", tier:"GOLD", name:"퍼스트팽귄", mission:"초기 COLUMN 작가·선도 참여자에게 운영진 부여", kind:"역할형" },
   { key:"influencer", tier:"GOLD", name:"인플루언서", mission:"팔로워·영향력 기준을 충족한 회원에게 부여", kind:"역할형" },
   { key:"policy-proposer", tier:"GOLD", name:"정책 제안자", mission:"IT’S ME 정책 제안 작성", kind:"IT’S ME" },
@@ -32,7 +32,7 @@ export function badgeByKey(key = "") { return BADGE_CATALOG.find(x => x.key === 
 export function badgeKeys() { return BADGE_CATALOG.map(x => x.key); }
 export function badgeGemSvg(key = "", extraClass = "") {
   const item = badgeByKey(key);
-  const tier = String(item?.tier || "STANDARD").toLowerCase();
+  const tier = String(item?.tier || "BRONZE").toLowerCase();
   const icon = ICON_PATHS[item?.key] || ICON_PATHS["first-participation"];
-  return `<span class="badge-gem badge-gem-${tier} ${extraClass}" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="badge-gem-shell" d="M12 1.8 19.6 6v9.1L12 22.2 4.4 15.1V6Z"/><path class="badge-gem-facet badge-gem-facet-a" d="m12 1.8 2.8 7.1L12 12 9.2 8.9Z"/><path class="badge-gem-facet badge-gem-facet-b" d="m4.4 6 4.8 2.9L12 12l-7.6 3.1Z"/><path class="badge-gem-facet badge-gem-facet-c" d="m19.6 6-4.8 2.9L12 12l7.6 3.1Z"/><g class="badge-gem-icon">${icon}</g></svg></span>`;
+  return `<span class="badge-gem badge-gem-${tier} ${extraClass}" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="badge-gem-shell" d="M12 1.8 19.6 6v9.1L12 22.2 4.4 15.1V6Z"/><path class="badge-gem-ring" d="M12 3.7 17.9 7v7.1L12 19.7 6.1 14.1V7Z"/><path class="badge-gem-facet badge-gem-facet-a" d="m12 1.8 2.8 7.1L12 12 9.2 8.9Z"/><path class="badge-gem-facet badge-gem-facet-b" d="m4.4 6 4.8 2.9L12 12l-7.6 3.1Z"/><path class="badge-gem-facet badge-gem-facet-c" d="m19.6 6-4.8 2.9L12 12l7.6 3.1Z"/><g class="badge-gem-icon">${icon}</g></svg></span>`;
 }

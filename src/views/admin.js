@@ -4,7 +4,7 @@ import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.19-badge-tiers";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],

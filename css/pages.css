@@ -2227,3 +2227,56 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .national-admin-editor{margin-top:16px;border:1px solid #dfe7e4;border-radius:15px;background:#fbfdfc;overflow:hidden}.national-admin-editor summary{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;cursor:pointer;list-style:none}.national-admin-editor summary::-webkit-details-marker{display:none}.national-admin-editor summary span{display:grid;gap:2px}.national-admin-editor summary b{font-size:13px}.national-admin-editor summary small{font-size:10px;color:var(--text-3)}.national-admin-editor summary em{font-size:10px;font-style:normal;font-weight:900;color:#087f74}.national-admin-editor form{padding:0 15px 15px;border-top:1px solid #edf1ef}.national-admin-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;padding-top:14px}.national-admin-toolbar label{display:grid;gap:6px;font-size:11px;font-weight:800}.national-admin-toolbar input[type=text]{height:42px;border:1px solid #dce4e1;border-radius:10px;padding:0 11px;background:#fff}.national-admin-toolbar .check{display:flex;align-items:center;gap:7px;min-height:42px}.national-admin-vote-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 120px;gap:9px;margin-top:12px}.national-admin-vote-grid label{display:grid;gap:5px;font-size:10px;font-weight:800}.national-admin-vote-grid input{height:40px;border:1px solid #dce4e1;border-radius:9px;padding:0 10px;background:#fff}.national-admin-total{display:grid;align-content:center;padding:8px 11px;border-radius:10px;background:#eef8f5}.national-admin-total small{font-size:9px;color:#668078}.national-admin-total b{font-size:16px;color:#087f74}.national-admin-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}.national-admin-actions .save-state{font-size:11px;color:var(--text-3)}
 @media(max-width:760px){.member-badge-grid{grid-template-columns:1fr 1fr}.national-admin-toolbar{grid-template-columns:1fr}.national-admin-vote-grid{grid-template-columns:1fr 1fr}.badge-jewel-grid article{grid-template-columns:64px 1fr!important}.badge-jewel-stage{width:58px;height:58px}.badge-jewel-stage .badge-gem{width:50px;height:50px}}
 @media(max-width:480px){.member-badge-grid{grid-template-columns:1fr}.national-admin-vote-grid{grid-template-columns:1fr 1fr}.national-admin-total{grid-column:1/-1}}
+
+
+/* alpha6.0.36.19 — badge rarity/material system */
+.badge-gem-ring{fill:none;stroke:currentColor;stroke-width:.7;opacity:.34}
+
+/* BRONZE — easy-entry participation badges */
+.badge-gem-bronze{color:#85563b}
+.badge-gem-bronze .badge-gem-shell{fill:#f3e5dc;stroke:#85563b}
+.badge-gem-bronze .badge-gem-facet-a{fill:#d49a72}
+.badge-gem-bronze .badge-gem-facet-b{fill:#faeee6}
+.badge-gem-bronze .badge-gem-facet-c{fill:#bf7d55}
+.badge-gem-bronze .badge-gem-ring{stroke:#9a684a;opacity:.32}
+
+/* SILVER — sustained participation */
+.badge-gem-silver{color:#66737a}
+.badge-gem-silver .badge-gem-shell{fill:#eef2f3;stroke:#748087}
+.badge-gem-silver .badge-gem-facet-a{fill:#cbd3d7}
+.badge-gem-silver .badge-gem-facet-b{fill:#fafcfc}
+.badge-gem-silver .badge-gem-facet-c{fill:#b7c1c6}
+.badge-gem-silver .badge-gem-ring{stroke:#7b878d;opacity:.42}
+
+/* GOLD — meaningful achievement. Preserve the current premium gold direction. */
+.badge-gem-gold{color:#8a5d08}
+.badge-gem-gold .badge-gem-shell{fill:#fff2bd;stroke:#94660e}
+.badge-gem-gold .badge-gem-facet-a{fill:#efcc58}
+.badge-gem-gold .badge-gem-facet-b{fill:#fff9dd}
+.badge-gem-gold .badge-gem-facet-c{fill:#dcae35}
+.badge-gem-gold .badge-gem-ring{stroke:#a77413;stroke-width:.82;opacity:.7}
+
+/* PLATINUM — JEONGCHAMSI's own top tier, using the deep brand color. */
+.badge-gem-platinum{color:#075e50}
+.badge-gem-platinum .badge-gem-shell{fill:#0b8b73;stroke:#075e50;stroke-width:1.3}
+.badge-gem-platinum .badge-gem-facet-a{fill:#18a88d}
+.badge-gem-platinum .badge-gem-facet-b{fill:#087864}
+.badge-gem-platinum .badge-gem-facet-c{fill:#075e50}
+.badge-gem-platinum .badge-gem-ring{stroke:#c9fff0;stroke-width:.78;opacity:.66}
+.badge-gem-platinum .badge-gem-icon{stroke:#effff9;stroke-width:1.55}
+
+/* Representative jewel gets a little more presence without enlarging the sidebar card. */
+.side-representative-jewel .badge-gem-gold,
+.side-representative-jewel .badge-gem-platinum{filter:drop-shadow(0 5px 7px rgba(20,42,35,.14))}
+.participation-badge-main>div p{font-weight:800!important;letter-spacing:.02em}
+
+/* Tier labels follow the material instead of all reading as the same green. */
+.badge-jewel-copy small{color:#68747a!important}
+.badge-jewel-grid article:has(.badge-gem-bronze) .badge-jewel-copy small{color:#85563b!important}
+.badge-jewel-grid article:has(.badge-gem-silver) .badge-jewel-copy small{color:#66737a!important}
+.badge-jewel-grid article:has(.badge-gem-gold) .badge-jewel-copy small{color:#8a5d08!important}
+.badge-jewel-grid article:has(.badge-gem-platinum) .badge-jewel-copy small{color:#087864!important}
+.badge-jewel-preview>span:has(.badge-gem-bronze) small{color:#85563b!important}
+.badge-jewel-preview>span:has(.badge-gem-silver) small{color:#66737a!important}
+.badge-jewel-preview>span:has(.badge-gem-gold) small{color:#8a5d08!important}
+.badge-jewel-preview>span:has(.badge-gem-platinum) small{color:#087864!important}
