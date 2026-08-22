@@ -13,7 +13,7 @@ let liveBarRotationTimer = 0;
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=alpha6.0.36.24-showcase-hero-now")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=alpha6.0.36.25-sidebar-badge-layout")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js?v=alpha6.0.36.24-showcase-hero-now");
     if (p[0] === "login") return view.renderLogin();
@@ -50,7 +50,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=alpha6.0.36.24-showcase-hero-now")).renderHome();
+  return (await import("./views/home.js?v=alpha6.0.36.25-sidebar-badge-layout")).renderHome();
 }
 
 function currentScrollPoint() {

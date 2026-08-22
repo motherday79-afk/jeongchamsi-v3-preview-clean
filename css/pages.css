@@ -2349,3 +2349,12 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .badge-showcase-note{display:inline-flex;align-items:center;min-height:36px;color:#087864;font-size:11px;font-weight:850}
 .admin-hero-primary-copy textarea{font-size:18px!important;font-weight:850!important;line-height:1.45!important}
 .admin-hero-primary-copy small{display:block;margin-top:6px;color:#75827d;font-size:11px;font-weight:700}
+
+
+/* alpha6.0.36.25 — sidebar badge layout: hero representative + three curated badges */
+.badge-showcase-secondary{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;margin-top:9px!important}
+.badge-showcase-secondary button{min-height:70px!important;padding:8px 5px!important;border-radius:11px!important}
+.badge-showcase-secondary button>.badge-gem{width:29px!important;height:29px!important;margin:0 auto 4px!important}
+.badge-showcase-secondary button>b{font-size:9px!important;line-height:1.2!important}
+.badge-showcase-secondary button>small{font-size:7px!important}
+.badge-showcase-secondary .badge-showcase-vacant{min-height:70px;border:1px dashed #e5ebe8;border-radius:11px;background:#fcfdfd}

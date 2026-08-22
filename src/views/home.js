@@ -316,11 +316,14 @@ export async function renderHome() {
 
   const representativeBadge = badgeByKey(userSummary.representativeBadge || "");
   const showcaseBadges = (userSummary.showcaseBadges || []).map(key => badgeByKey(key)).filter(Boolean).filter(x => x.key !== representativeBadge?.key).slice(0, 3);
-  const badgeSlots = [representativeBadge, ...showcaseBadges];
-  while (badgeSlots.length < 4) badgeSlots.push(null);
-  const badgePreview = `<div class="badge-home-preview badge-home-jewels badge-showcase-four">${badgeSlots.map((badge, index) => badge
-    ? `<button type="button" class="${index === 0 ? "is-representative" : "is-showcase"}" data-go="/mypage/activity?tab=badges" title="${esc(badge.name)}"><span class="badge-slot-label">${index === 0 ? "대표" : "전시"}</span>${badgeGemSvg(badge.key)}<b>${esc(badge.name)}</b><small>${esc(badge.tier)}</small></button>`
-    : `<button type="button" class="badge-showcase-empty" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}" aria-label="비어 있는 배지 전시 칸"><span class="badge-empty-mark">◇</span><b>${index === 0 ? "대표 배지" : ""}</b><small>${index === 0 && !userSession.authenticated ? "로그인" : ""}</small></button>`
+  const showcaseSlots = [...showcaseBadges];
+  while (showcaseSlots.length < 3) showcaseSlots.push(null);
+  const representativeMarkup = representativeBadge
+    ? `<span class="side-representative-jewel">${badgeGemSvg(representativeBadge.key)}</span><div><b>${esc(representativeBadge.name)}</b><p>대표 배지 · ${esc(representativeBadge.tier)}</p></div>`
+    : `<span class="side-representative-jewel badge-gem-empty"><span>◇</span></span><div><b>${userSession.authenticated ? "대표 배지를 선택하세요" : "대표 배지"}</b><p>${userSession.authenticated ? "배지함에서 대표 배지를 설정" : "로그인 후 대표 배지 설정"}</p></div>`;
+  const badgePreview = `<div class="participation-main participation-badge-main" role="button" tabindex="0" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}">${representativeMarkup}</div><div class="badge-home-preview badge-home-jewels badge-showcase-secondary">${showcaseSlots.map(badge => badge
+    ? `<button type="button" class="is-showcase" data-go="/mypage/activity?tab=badges" title="${esc(badge.name)}">${badgeGemSvg(badge.key)}<b>${esc(badge.name)}</b><small>${esc(badge.tier)}</small></button>`
+    : `<span class="badge-showcase-vacant" aria-hidden="true"></span>`
   ).join("")}</div>`;
 
   let generationAdmin = "";
