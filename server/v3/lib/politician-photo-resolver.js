@@ -1,175 +1,321 @@
 const ROSTER = require("../data/politician-photo-roster.json");
 
-const NEC_SEARCH_URL = "https://info.nec.go.kr/search/searchCandidate.xhtml";
-const NEC_HOME = "https://info.nec.go.kr/";
-const TIMEOUT_MS = 12000;
-const EXPECTED_ELECTION_CODE = Object.freeze({ assembly:"2", metropolitan:"3", basic:"4" });
-const ROSTER_BY_ID = new Map(ROSTER.map((person) => [person.id, Object.freeze(person)]));
-const sourceCache = globalThis.__JCV3_POLITICIAN_PHOTO_SOURCE_CACHE__ || new Map();
-globalThis.__JCV3_POLITICIAN_PHOTO_SOURCE_CACHE__ = sourceCache;
+const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
+const COMMONS_HOME = "https://commons.wikimedia.org/";
+const WIKIDATA_API = "https://www.wikidata.org/w/api.php";
+const WIKIPEDIA_KO_API = "https://ko.wikipedia.org/w/api.php";
+const TIMEOUT_MS = 10000;
+const USER_AGENT = "JCV3-Wikimedia-Politician-Photo/0.36.34 (https://commons.wikimedia.org/)";
 
-function decodeHtml(value) {
-  return String(value == null ? "" : value)
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number.parseInt(dec, 10)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&#x27;/gi, "'").replace(/&nbsp;/g, " ");
-}
-function stripTags(value) {
-  return decodeHtml(String(value || "").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
-}
+const ROSTER_BY_ID = new Map(ROSTER.map((person) => [person.id, Object.freeze(person)]));
+const sourceCache = globalThis.__JCV3_WIKIMEDIA_POLITICIAN_PHOTO_SOURCE_CACHE__ || new Map();
+globalThis.__JCV3_WIKIMEDIA_POLITICIAN_PHOTO_SOURCE_CACHE__ = sourceCache;
+
+/* Existing ten visible photos are retained only as verified Wikimedia Commons seeds.
+ * They now travel through the exact same /api/v3/politician-photo route as everybody else.
+ */
+const VERIFIED_COMMONS_SEEDS = Object.freeze({
+  "assembly-001": { filename:"Kim_Min-seok_20250807.jpg", page:"https://commons.wikimedia.org/wiki/File:Kim_Min-seok_20250807.jpg" },
+  "assembly-002": { filename:"Jung_Chung-rae's_Portrait_(2026.6).png", page:"https://commons.wikimedia.org/wiki/File:Jung_Chung-rae%27s_Portrait_(2026.6).png" },
+  "assembly-003": { filename:"Jang_Dong-hyeok's_Portrait_(2026.5).png", page:"https://commons.wikimedia.org/wiki/File:Jang_Dong-hyeok%27s_Portrait_(2026.5).png" },
+  "assembly-004": { filename:"Song_Young-gil.jpg", page:"https://commons.wikimedia.org/wiki/File:Song_Young-gil.jpg" },
+  "assembly-005": { filename:"Han_Dong-hoon's_Portrait_(2025).png", page:"https://commons.wikimedia.org/wiki/File:Han_Dong-hoon%27s_Portrait_(2025).png" },
+  "assembly-006": { filename:"Na_Kyung-won_2019.jpg", page:"https://commons.wikimedia.org/wiki/File:Na_Kyung-won_2019.jpg" },
+  "assembly-007": { filename:"Park_Ju-Min_벙커1_특강_니가_가라_여의도_01.png", page:"https://commons.wikimedia.org/wiki/File:Park_Ju-Min_%EB%B2%99%EC%BB%A41_%ED%8A%B9%EA%B0%95_%EB%8B%88%EA%B0%80_%EA%B0%80%EB%9D%BC_%EC%97%AC%EC%9D%98%EB%8F%84_01.png" },
+  "assembly-008": { filename:"Ahn_Cheol-Soo's_Portrait_(2025).png", page:"https://commons.wikimedia.org/wiki/File:Ahn_Cheol-Soo%27s_Portrait_(2025).png" },
+  "assembly-009": { filename:"전현희5*7.jpg", page:"https://commons.wikimedia.org/wiki/File:%EC%A0%84%ED%98%84%ED%9D%AC5%2A7.jpg" },
+  "assembly-010": { filename:"Army_(ROKA)_General_Kim_Byung-joo_육군대장_김병주_(USFK_photo_170811-A-PI620-204_Combined_Forces_Command_change_of_responsibility).jpg", page:"https://commons.wikimedia.org/wiki/File:Army_(ROKA)_General_Kim_Byung-joo_%EC%9C%A1%EA%B5%B0%EB%8C%80%EC%9E%A5_%EA%B9%80%EB%B3%91%EC%A3%BC_(USFK_photo_170811-A-PI620-204_Combined_Forces_Command_change_of_responsibility).jpg" }
+});
+
 function normalize(value) {
-  return String(value || "").toLowerCase().replace(/특별자치도|특별자치시|광역시|특별시|통합특별시|시|군|구|읍|면|동|선거|국회의원|시장|도지사/g, "").replace(/[\s·ㆍ,._\-()'"/]/g, "");
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&[^;]+;/g, " ")
+    .replace(/특별자치도|특별자치시|광역시|특별시|통합특별시|대한민국|국회의원|구청장|시장|군수|도지사|정치인/g, "")
+    .replace(/[\s·ㆍ,._\-()'"/\\:*?<>|\[\]{}]/g, "");
 }
-function attr(attrs, name) {
-  const m = String(attrs || "").match(new RegExp(`\\b${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, "i"));
-  return m ? decodeHtml(m[2]) : "";
+function htmlText(value) {
+  return String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&quot;/g, '"').replace(/&#39;|&#x27;/gi, "'")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ").trim();
 }
-function locationTokens(jurisdiction = "") {
+function compactRegionTokens(jurisdiction = "") {
   const raw=String(jurisdiction || "").replace(/[·,]/g," ");
-  const chunks=raw.split(/\s+/).filter(Boolean);
-  const tokens=new Set();
-  for (const chunk of chunks) {
-    const n=normalize(chunk);
-    if (n.length >= 2) tokens.add(n);
-    const stripped=n.replace(/[갑을병정무]$/,"" );
-    if (stripped.length >= 2) tokens.add(stripped);
+  const out=new Set();
+  for (const chunk of raw.split(/\s+/).filter(Boolean)) {
+    const clean=normalize(chunk).replace(/[갑을병정무]$/," ").trim();
+    if (clean.length >= 2) out.add(clean);
   }
-  const full=normalize(raw);
-  if (full.length >= 2) tokens.add(full);
-  return [...tokens];
+  return [...out];
 }
-function absoluteNecUrl(src = "") {
-  let value=decodeHtml(String(src || "").trim());
-  if (!value) return "";
-  if (value.startsWith("//")) value=`https:${value}`;
-  else if (value.startsWith("/")) value=new URL(value, NEC_HOME).href;
-  else if (!/^https?:\/\//i.test(value)) value=new URL(value, NEC_HOME).href;
-  value=value.replace(/^http:\/\/info\.nec\.go\.kr/i,"https://info.nec.go.kr");
-  return value;
+function officeWords(person) {
+  if (person.type === "assembly") return ["국회의원","의원","national assembly","politician"];
+  if (person.type === "metropolitan") return ["시장","도지사","광역","governor","mayor","politician"];
+  return ["구청장","시장","군수","mayor","county","district","politician"];
 }
-function extractPhotoUrl(cardHtml = "") {
-  const urls=[];
-  for (const m of String(cardHtml || "").matchAll(/<img\b[^>]*\bsrc\s*=\s*(["'])([^"']+)\1/gi)) urls.push(m[2]);
-  for (const m of String(cardHtml || "").matchAll(/url\(\s*(["']?)([^)'"\s]+)\1\s*\)/gi)) urls.push(m[2]);
-  const ranked=urls
-    .map(absoluteNecUrl)
-    .filter(Boolean)
-    .map((url) => ({ url, score:(/\/photo_/i.test(url)?100:0)+(/\/Hb\d+/i.test(url)?60:0)+(/thumbnail\./i.test(url)?20:0)+(/\.(?:jpe?g|png|webp)(?:\?|$)/i.test(url)?10:0) }))
-    .sort((a,b)=>b.score-a.score);
-  return ranked[0]?.score >= 80 ? ranked[0].url : "";
+function commonsFilePage(filename = "") {
+  const clean=String(filename || "").replace(/^File:/i, "").trim();
+  return clean ? `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(clean.replace(/ /g,"_"))}` : "";
 }
-function splitResultCards(html = "") {
-  const source=String(html || "");
-  const starts=[];
-  const re=/<div\b([^>]*)class=(["'])[^"']*\bresult\b[^"']*\2([^>]*)>/gi;
-  let m;
-  while ((m=re.exec(source))) starts.push({ index:m.index, attrs:`${m[1] || ""} ${m[3] || ""}`, tag:m[0] });
-  return starts.map((start,i)=>({ ...start, html:source.slice(start.index, starts[i+1]?.index ?? source.length) }));
+function commonsRedirectUrl(filename = "") {
+  const clean=String(filename || "").replace(/^File:/i, "").trim();
+  return clean ? `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(clean.replace(/ /g,"_"))}` : "";
 }
-function cardName(cardHtml = "") {
-  const nameBlock=String(cardHtml).match(/<p\b[^>]*class=(["'])[^"']*\bname\b[^"']*\1[^>]*>([\s\S]*?)<\/p>/i)?.[2] || "";
-  return stripTags(nameBlock.match(/<strong[^>]*>([\s\S]*?)<\/strong>/i)?.[1] || nameBlock).replace(/\([^)]*\)/g, "").trim();
+function isCommonsPage(url = "") {
+  try { return new URL(url).hostname === "commons.wikimedia.org"; }
+  catch { return false; }
 }
-function scoreCard(card, person) {
-  const html=card.html || "";
-  const text=stripTags(html);
-  const expectedCode=EXPECTED_ELECTION_CODE[person.type] || "";
-  let score=0;
-  const name=cardName(html);
-  if (normalize(name) !== normalize(person.name)) return -10000;
-  score += 500;
-  const codes=[...html.matchAll(/data-election-code\s*=\s*(["'])([^"']+)\1/gi)].map(m=>m[2]);
-  if (codes.includes(expectedCode)) score += 220;
-  else if (codes.length) score -= 120;
-  const ntext=normalize(text);
-  const party=normalize(person.party);
-  if (party && party !== "무소속" && ntext.includes(party)) score += 60;
-  const tokens=locationTokens(person.jurisdiction);
-  score += Math.min(160, tokens.filter(token => token && ntext.includes(token)).length * 40);
-  if (/당선/.test(text)) score += 35;
-  const dates=[...text.matchAll(/\[(\d{4})[.\-](\d{1,2})[.\-](\d{1,2})\]/g)].map(m=>Number(`${m[1]}${String(m[2]).padStart(2,"0")}${String(m[3]).padStart(2,"0")}`));
-  if (dates.length) score += Math.min(30, Math.max(...dates) >= 20240000 ? 30 : 10);
-  if (extractPhotoUrl(html)) score += 80;
-  return score;
+function isWikimediaImageUrl(url = "") {
+  try {
+    const host=new URL(url).hostname;
+    return host === "upload.wikimedia.org" || host === "commons.wikimedia.org";
+  } catch { return false; }
 }
-function resolveNecCandidatePhotoFromHtml(html, person) {
-  const cards=splitResultCards(html);
-  const ranked=cards.map(card=>({card,score:scoreCard(card,person),photo:extractPhotoUrl(card.html)})).filter(x=>x.photo && x.score > 400).sort((a,b)=>b.score-a.score);
-  if (!ranked.length) return null;
-  return { sourceUrl:ranked[0].photo, score:ranked[0].score, source:"NEC", matchedName:cardName(ranked[0].card.html) };
+function acceptedMime(mime = "", filename = "") {
+  const m=String(mime || "").toLowerCase();
+  if (m && !["image/jpeg","image/png","image/webp"].includes(m)) return false;
+  return /\.(?:jpe?g|png|webp)$/i.test(String(filename || "").split("?")[0]);
 }
-function upgradedOriginalUrl(url = "") {
-  const source=String(url || "");
-  if (!/thumbnail\./i.test(source)) return source;
-  return source.replace(/\/thumbnail\.([^/]+)$/i,"/$1");
+function rejectTitle(title = "") {
+  return /(?:signature|사인|서명|logo|로고|emblem|symbol|map|diagram|poster|banner|webm|ogg|svg)$/i.test(String(title || "")) || /(?:signature|사인|서명|logo|로고)/i.test(String(title || ""));
 }
 async function fetchWithTimeout(url, options = {}, timeoutMs = TIMEOUT_MS) {
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeoutMs);
-  try { return await fetch(url,{...options,signal:controller.signal}); }
-  finally { clearTimeout(timer); }
+  try {
+    return await fetch(url,{...options,signal:controller.signal,headers:{"user-agent":USER_AGENT,"accept-language":"ko,en;q=0.8",...(options.headers || {})}});
+  } finally { clearTimeout(timer); }
 }
-async function resolveNecPhoto(person) {
-  const body=new URLSearchParams({ searchKeyword:person.name, pageIndex:"1", firstIndex:"0", recordCountPerPage:"100" }).toString();
-  const response=await fetchWithTimeout(NEC_SEARCH_URL,{
-    method:"POST",
-    headers:{
-      "content-type":"application/x-www-form-urlencoded;charset=UTF-8",
-      "user-agent":"Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/151 Safari/537.36 JCV3PhotoResolver/1.0",
-      "referer":NEC_SEARCH_URL,
-      "accept":"text/html,application/xhtml+xml"
-    },
-    body
-  });
-  if (!response.ok) throw new Error(`NEC_SEARCH_${response.status}`);
-  const html=await response.text();
-  return resolveNecCandidatePhotoFromHtml(html,person);
+async function jsonGet(base, params, timeoutMs = TIMEOUT_MS) {
+  const url=new URL(base);
+  for (const [key,value] of Object.entries(params || {})) {
+    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key,String(value));
+  }
+  const response=await fetchWithTimeout(url.href,{headers:{accept:"application/json"}},timeoutMs);
+  if (!response.ok) throw new Error(`HTTP_${response.status}_${url.hostname}`);
+  return response.json();
+}
+function personContextText(person) {
+  return [person.name,person.party,person.jurisdiction,...officeWords(person)].filter(Boolean).join(" ");
+}
+function exactNameHit(text, name) {
+  const raw=htmlText(text);
+  if (!raw || !name) return false;
+  return raw.includes(name) || normalize(raw).includes(normalize(name));
+}
+function candidateText(page) {
+  const info=page?.imageinfo?.[0] || {};
+  const meta=info.extmetadata || {};
+  const vals=[page?.title,meta.ImageDescription?.value,meta.ObjectName?.value,meta.Categories?.value,meta.Credit?.value,meta.Artist?.value];
+  return htmlText(vals.filter(Boolean).join(" "));
+}
+function scoreCommonsPage(page, person, queryRank = 0) {
+  const info=page?.imageinfo?.[0] || {};
+  const filename=String(page?.title || "").replace(/^File:/i,"");
+  if (!acceptedMime(info.mime,filename) || rejectTitle(filename)) return -10000;
+  if (!isWikimediaImageUrl(info.url || "") || !isCommonsPage(info.descriptionurl || commonsFilePage(filename))) return -10000;
+  const text=candidateText(page);
+  const ntext=normalize(text);
+  let score=100 - queryRank*8;
+  if (exactNameHit(text,person.name)) score += 420;
+  else score -= 180;
+  const party=normalize(person.party);
+  const partyHit=Boolean(party && party !== "무소속" && ntext.includes(party));
+  if (partyHit) score += 75;
+  let regionHits=0;
+  for (const token of compactRegionTokens(person.jurisdiction)) if (token && ntext.includes(token)) { score += 32; regionHits += 1; }
+  const politicalHit=/(politician|national assembly|국회의원|의원|시장|도지사|구청장|군수|후보)/i.test(text);
+  if (politicalHit) score += 55;
+  if (!politicalHit && !partyHit && regionHits === 0) return -10000;
+  const w=Number(info.width || 0), h=Number(info.height || 0);
+  if (w >= 220 && h >= 220) score += 30;
+  if (w && h) {
+    const ratio=w/h;
+    if (ratio >= 0.52 && ratio <= 1.25) score += 35;
+    else if (ratio > 1.75) score -= 25;
+  }
+  return score;
+}
+async function commonsSearch(person) {
+  const queries=[
+    `"${person.name}" ${officeWords(person)[0]} ${person.party || ""} ${String(person.jurisdiction || "").split(/\s+/).slice(0,2).join(" ")}`.trim(),
+    `"${person.name}" 정치인`
+  ];
+  const seen=new Set();
+  const ranked=[];
+  for (let qi=0; qi<queries.length; qi += 1) {
+    let data;
+    try {
+      data=await jsonGet(COMMONS_API,{
+        action:"query",format:"json",formatversion:"2",generator:"search",gsrnamespace:"6",gsrsearch:queries[qi],gsrlimit:"8",
+        prop:"imageinfo",iiprop:"url|mime|size|extmetadata"
+      });
+    } catch (error) {
+      console.warn("[JCV3_COMMONS_SEARCH]",person.id,queries[qi],error?.message || error);
+      continue;
+    }
+    for (const page of data?.query?.pages || []) {
+      const key=String(page?.title || "");
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      const score=scoreCommonsPage(page,person,qi);
+      if (score > 360) ranked.push({page,score,query:queries[qi]});
+    }
+    if (ranked.some((x)=>x.score >= 560)) break;
+  }
+  ranked.sort((a,b)=>b.score-a.score);
+  const top=ranked[0];
+  if (!top) return null;
+  const info=top.page.imageinfo?.[0] || {};
+  const filename=String(top.page.title || "").replace(/^File:/i,"");
+  return {
+    source:"WIKIMEDIA_COMMONS_SEARCH",
+    filename,
+    sourceUrl:info.url,
+    sourcePage:info.descriptionurl || commonsFilePage(filename),
+    matchedName:person.name,
+    score:top.score,
+    verification:[`Commons 검색: ${top.query}`,`이름/직위/정당/지역 문맥 점수 ${top.score}`]
+  };
+}
+function rankWikidataSearchRow(row, person) {
+  if (!row || normalize(row.label) !== normalize(person.name)) return -10000;
+  const text=[row.label,row.description,row.match?.text,row.aliases?.join?.(" ")].filter(Boolean).join(" ");
+  let score=400;
+  if (/(politician|정치인|국회의원|의원|시장|도지사|구청장|군수|mayor|governor)/i.test(text)) score += 180;
+  for (const token of compactRegionTokens(person.jurisdiction)) if (normalize(text).includes(token)) score += 35;
+  if (person.party && normalize(text).includes(normalize(person.party))) score += 45;
+  return score;
+}
+async function wikidataEntityImage(person) {
+  let search;
+  try {
+    search=await jsonGet(WIKIDATA_API,{action:"wbsearchentities",format:"json",language:"ko",uselang:"ko",type:"item",limit:"10",search:person.name});
+  } catch (error) {
+    console.warn("[JCV3_WIKIDATA_SEARCH]",person.id,error?.message || error);
+    return null;
+  }
+  const ranked=(search?.search || []).map((row)=>({row,score:rankWikidataSearchRow(row,person)})).filter((x)=>x.score >= 520).sort((a,b)=>b.score-a.score).slice(0,4);
+  if (!ranked.length) return null;
+  const ids=ranked.map((x)=>x.row.id).join("|");
+  let entityData;
+  try {
+    entityData=await jsonGet(WIKIDATA_API,{action:"wbgetentities",format:"json",ids,props:"claims|sitelinks",languages:"ko"});
+  } catch { return null; }
+  for (const entry of ranked) {
+    const entity=entityData?.entities?.[entry.row.id];
+    const filename=entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    if (!filename || !acceptedMime("",filename) || rejectTitle(filename)) continue;
+    const koTitle=entity?.sitelinks?.kowiki?.title || "";
+    if (koTitle && !normalize(koTitle).includes(normalize(person.name))) continue;
+    return {
+      source:"WIKIMEDIA_COMMONS_WIKIDATA_P18",
+      filename,
+      sourceUrl:commonsRedirectUrl(filename),
+      sourcePage:commonsFilePage(filename),
+      matchedName:person.name,
+      score:entry.score + (koTitle ? 80 : 0),
+      verification:[`Wikidata ${entry.row.id}: ${entry.row.description || "정치인 항목"}`,koTitle ? `한국어 위키백과: ${koTitle}` : "Wikidata P18 Commons 이미지"]
+    };
+  }
+  return null;
+}
+async function wikipediaEntityImage(person) {
+  const titles=[`${person.name} (정치인)`,`${person.name} (대한민국의 정치인)`,person.name];
+  let data;
+  try {
+    data=await jsonGet(WIKIPEDIA_KO_API,{action:"query",format:"json",formatversion:"2",redirects:"1",titles:titles.join("|"),prop:"pageprops"});
+  } catch { return null; }
+  const pages=(data?.query?.pages || []).filter((page)=>!page?.missing && page?.pageprops?.wikibase_item && normalize(page.title).includes(normalize(person.name)));
+  if (!pages.length) return null;
+  const ids=[...new Set(pages.map((page)=>page.pageprops.wikibase_item))].join("|");
+  let entityData;
+  try { entityData=await jsonGet(WIKIDATA_API,{action:"wbgetentities",format:"json",ids,props:"claims|descriptions",languages:"ko"}); }
+  catch { return null; }
+  for (const page of pages) {
+    const qid=page.pageprops.wikibase_item;
+    const entity=entityData?.entities?.[qid];
+    const description=entity?.descriptions?.ko?.value || "";
+    const explicitPoliticalTitle=/\(.*정치인.*\)/.test(String(page.title || ""));
+    const politicalDescription=/(정치인|국회의원|의원|시장|도지사|구청장|군수)/.test(description);
+    if (!explicitPoliticalTitle && !politicalDescription) continue;
+    const filename=entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    if (!filename || !acceptedMime("",filename) || rejectTitle(filename)) continue;
+    return {
+      source:"WIKIMEDIA_COMMONS_WIKIPEDIA_P18",
+      filename,
+      sourceUrl:commonsRedirectUrl(filename),
+      sourcePage:commonsFilePage(filename),
+      matchedName:person.name,
+      score:700,
+      verification:[`한국어 위키백과: ${page.title}`,description ? `Wikidata ${qid}: ${description}` : `Wikidata ${qid} P18 → Wikimedia Commons`]
+    };
+  }
+  return null;
+}
+function seedResult(person) {
+  const seed=VERIFIED_COMMONS_SEEDS[person.id];
+  if (!seed) return null;
+  return {
+    source:"WIKIMEDIA_COMMONS_VERIFIED_SEED",
+    filename:seed.filename,
+    sourceUrl:commonsRedirectUrl(seed.filename),
+    sourcePage:seed.page || commonsFilePage(seed.filename),
+    matchedName:person.name,
+    score:1000,
+    verification:["0.36.33에서 이미 화면 검증된 Wikimedia Commons 사진","0.36.34 공통 Commons 경로로 통합"]
+  };
 }
 async function resolvePoliticianPhotoSource(person) {
   const cached=sourceCache.get(person.id);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
-  let value=null;
-  try { value=await resolveNecPhoto(person); }
-  catch (error) { console.warn("[JCV3_PHOTO_NEC_RESOLVE]",person.id,error?.message || error); }
-  sourceCache.set(person.id,{ value, expiresAt:Date.now() + (value ? 6*60*60*1000 : 15*60*1000) });
+
+  let value=seedResult(person);
+  if (!value) value=await wikidataEntityImage(person);
+  if (!value) value=await wikipediaEntityImage(person);
+  if (!value) value=await commonsSearch(person);
+
+  sourceCache.set(person.id,{value,expiresAt:Date.now() + (value ? 24*60*60*1000 : 30*60*1000)});
   return value;
 }
 async function fetchPoliticianPhoto(person, width = 160) {
   const resolved=await resolvePoliticianPhotoSource(person);
-  if (!resolved?.sourceUrl) return null;
-  const thumbnail=resolved.sourceUrl;
-  const preferred=Number(width) >= 256 ? upgradedOriginalUrl(thumbnail) : thumbnail;
-  const candidates=[preferred,thumbnail].filter((x,i,a)=>x && a.indexOf(x)===i);
-  for (const sourceUrl of candidates) {
-    try {
-      const response=await fetchWithTimeout(sourceUrl,{
-        headers:{
-          "user-agent":"Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/151 Safari/537.36 JCV3PhotoResolver/1.0",
-          "referer":NEC_HOME,
-          "accept":"image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
-        }
-      },10000);
-      const type=String(response.headers.get("content-type") || "").toLowerCase();
-      if (!response.ok || (!type.startsWith("image/") && !/\.(?:jpe?g|png|webp)(?:\?|$)/i.test(sourceUrl))) continue;
-      const buffer=Buffer.from(await response.arrayBuffer());
-      if (buffer.length < 256) continue;
-      return { buffer, contentType:type.startsWith("image/") ? type.split(";")[0] : "image/jpeg", sourceUrl, matched:resolved };
-    } catch (error) {
-      console.warn("[JCV3_PHOTO_FETCH]",person.id,error?.message || error);
-    }
+  if (!resolved?.sourceUrl || !isWikimediaImageUrl(resolved.sourceUrl)) return null;
+  const targetWidth=Math.max(64,Math.min(768,Number(width) || 160));
+  const deliveryUrl=resolved.filename
+    ? `${commonsRedirectUrl(resolved.filename)}?width=${targetWidth}`
+    : resolved.sourceUrl;
+  try {
+    const response=await fetchWithTimeout(deliveryUrl,{headers:{accept:"image/avif,image/webp,image/apng,image/*,*/*;q=0.8",referer:resolved.sourcePage || COMMONS_HOME}},12000);
+    const finalUrl=response.url || resolved.sourceUrl;
+    const type=String(response.headers.get("content-type") || "").toLowerCase().split(";")[0];
+    if (!response.ok || !type.startsWith("image/") || !isWikimediaImageUrl(finalUrl)) return null;
+    const buffer=Buffer.from(await response.arrayBuffer());
+    if (buffer.length < 512) return null;
+    return {buffer,contentType:type,sourceUrl:finalUrl,matched:resolved};
+  } catch (error) {
+    console.warn("[JCV3_COMMONS_FETCH]",person.id,error?.message || error);
+    return null;
   }
-  return null;
 }
 function getPoliticianById(id) { return ROSTER_BY_ID.get(String(id || "")) || null; }
 
 module.exports={
-  NEC_SEARCH_URL,
+  COMMONS_API,
+  WIKIDATA_API,
+  WIKIPEDIA_KO_API,
+  VERIFIED_COMMONS_SEEDS,
   getPoliticianById,
-  extractPhotoUrl,
-  splitResultCards,
-  scoreCard,
-  resolveNecCandidatePhotoFromHtml,
-  upgradedOriginalUrl,
+  normalize,
+  compactRegionTokens,
+  commonsFilePage,
+  commonsRedirectUrl,
+  acceptedMime,
+  rejectTitle,
+  scoreCommonsPage,
+  rankWikidataSearchRow,
   resolvePoliticianPhotoSource,
   fetchPoliticianPhoto
 };

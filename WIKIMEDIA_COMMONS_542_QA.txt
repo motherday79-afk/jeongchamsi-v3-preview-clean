@@ -1,0 +1,28 @@
+JCV3 0.36.34 — WIKIMEDIA COMMONS 542 QA
+
+[대상]
+- roster slots: 543
+- non-person vacancy: assembly-300 = 1
+- politician photo targets: 542
+
+[정책]
+- client photo endpoint: /api/v3/politician-photo
+- every valid politician ID uses the same endpoint
+- allowed final image hosts: commons.wikimedia.org, upload.wikimedia.org
+- NEC resolver removed
+- v2/legacy runtime dependency: none
+- signature/logo/svg/video candidates rejected
+- same-name candidates require political/party/region context
+
+[확인]
+- all JavaScript syntax checks: PASS
+- resolver unit tests: PASS
+- resolver mocked network chain tests: PASS
+- 542 unique target IDs: PASS
+- stale NEC URL/code scan: PASS
+- one client-facing photo endpoint: PASS
+
+[주의]
+이 패치는 사용자가 지시한 대로 Wikimedia Commons만 사용한다.
+Wikimedia Commons에 실제 인물 사진 자체가 존재하지 않는 인물은 다른 출처 사진으로 임의 대체하지 않는다.
+따라서 '542명 모두 Commons 방식 적용'과 'Commons에 542명 모두 실제 파일 존재'는 서로 다른 조건이다.
