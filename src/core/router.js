@@ -55,7 +55,7 @@ function emit(meta = {}) {
   for (const fn of listeners) fn(state, meta);
 }
 
-export function route(to, { replace = false, preserveScroll = true } = {}) {
+export function route(to, { replace = false, preserveScroll = false } = {}) {
   const url = new URL(to, location.origin);
   const next = `${url.pathname}${url.search}${url.hash}`;
   const current = `${location.pathname}${location.search}${location.hash}`;
@@ -132,6 +132,6 @@ export function startRouter() {
     const href = anchor.getAttribute("href");
     if (!href || href.startsWith("http") || href.startsWith("mailto:")) return;
     event.preventDefault();
-    route(href, { preserveScroll: true });
+    route(href, { preserveScroll: false });
   });
 }
