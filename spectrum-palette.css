@@ -1,0 +1,124 @@
+/* JEONGCHAMSI alpha6.0.36 — POLITICAL SPECTRUM PALETTE
+   Color-only layer. Layout, spacing, typography and behavior intentionally untouched. */
+:root{
+  --ps-ink:#13171a;
+  --ps-muted:#70777a;
+  --ps-bg:#f5f6f7;
+  --ps-paper:#ffffff;
+  --ps-brand:#168b80;
+  --ps-brand2:#0f7169;
+  --ps-mint:#eaf7f4;
+  --ps-blue:#315fc4;
+  --ps-blue-soft:#eef3ff;
+  --ps-yellow:#f0b846;
+  --ps-warm:#fff4e7;
+  --ps-line:#e3e6e8;
+
+  --jc-red:#e44955;
+  --jc-red-soft:#fff0f2;
+  --jc-blue:#315fc4;
+  --jc-blue-soft:#eef3ff;
+  --jc-navy:#29459d;
+  --jc-navy-soft:#eff1fa;
+  --jc-orange:#ed963e;
+  --jc-orange-soft:#fff3e7;
+  --jc-teal:#16a99d;
+  --jc-teal-soft:#eaf8f6;
+  --jc-green:#5c954d;
+  --jc-green-soft:#eef6eb;
+  --jc-ink:#182126;
+}
+
+/* Neutral brand surfaces — no single political hue owns the page */
+body{background:#f4f6f7;color:var(--ps-ink)}
+.product-header,.product-service-bar{background:#fff}
+.product-wordmark b{color:#087f74}
+.product-primary-nav a:hover,.product-service-inner>span{color:#087f74}
+.product-search{background:#f6f7f7;border-color:#e0e3e5}
+.product-menu:hover,.product-account-tools button:hover{background:#f4f5f6}
+
+/* Hero: neutral authority with the spectrum appearing in controlled accents */
+.product-hero{background:#18242a}
+.product-hero:after{color:rgba(255,255,255,.028)}
+.product-hero h1 strong{color:#f2b447}
+.product-hero-copy>p{color:#dce3e6}
+.product-hero-kicker em,.product-hero-proof{color:#c9d5d9}
+.product-hero-live{box-shadow:0 24px 55px rgba(18,30,36,.20)}
+.live-dot{background:var(--jc-teal);box-shadow:0 0 0 5px rgba(22,169,157,.11)}
+.hero-live-head em{background:var(--jc-teal-soft);color:#087d73}
+.hero-rank-stack button:first-child .hero-rank-no{color:var(--jc-blue)}
+.hero-rank-stack button:nth-child(2) .hero-rank-no{color:var(--jc-red)}
+.hero-rank-stack button:nth-child(3) .hero-rank-no{color:var(--jc-orange)}
+.hero-poll-mini{background:var(--jc-red-soft)}
+.hero-poll-mini span,.hero-poll-mini i{color:#c83d49}
+.hero-poll-mini small{color:#7b6e70}
+
+/* Service launcher: six services, six restrained accents */
+.product-launcher{background:#fff}
+.launcher-card{background:#fafbfb;border-color:#e6e9ea}
+.launcher-now{background:var(--jc-blue-soft);border-color:#dce5fb}
+.launcher-now .launcher-no,.launcher-now .launcher-cue{color:var(--jc-blue)}
+.launcher-choice{background:var(--jc-red-soft);border-color:#f5dadd}
+.launcher-choice .launcher-no,.launcher-choice .launcher-cue{color:var(--jc-red)}
+.launcher-itsme{background:var(--jc-teal-soft);border-color:#d3eeea}
+.launcher-itsme .launcher-no,.launcher-itsme .launcher-cue{color:#0b8f84}
+.product-launcher-grid .launcher-card:nth-child(4){background:var(--jc-orange-soft);border-color:#f2e0ca}
+.product-launcher-grid .launcher-card:nth-child(4) .launcher-no,.product-launcher-grid .launcher-card:nth-child(4) .launcher-cue{color:#c87627}
+.product-launcher-grid .launcher-card:nth-child(5){background:var(--jc-navy-soft);border-color:#dfe3f3}
+.product-launcher-grid .launcher-card:nth-child(5) .launcher-no,.product-launcher-grid .launcher-card:nth-child(5) .launcher-cue{color:var(--jc-navy)}
+.product-launcher-grid .launcher-card:nth-child(6){background:var(--jc-green-soft);border-color:#dcebd7}
+.product-launcher-grid .launcher-card:nth-child(6) .launcher-no,.product-launcher-grid .launcher-card:nth-child(6) .launcher-cue{color:#4f833f}
+
+/* Main modules — color is a navigation aid, not decoration */
+.eyebrow{color:#087f74}
+#now .rank-top-card:first-child{background:var(--jc-blue);border-color:var(--jc-blue)}
+#now .rank-top-card:first-child .rank-top-no,#now .rank-top-card:first-child .rank-top-copy span{color:#dfe8ff}
+#now .rank-top-no{color:var(--jc-blue)}
+
+#poll{background:var(--jc-red-soft);border-color:#f1d7da}
+#poll .poll-status{color:#c63d49}
+#poll .poll-question p{color:#806d70}
+#poll .poll-options em{background:var(--jc-red)}
+#poll .poll-options b{color:#c63d49}
+
+#itsme .itsme-card:nth-child(1){background:var(--jc-teal-soft);border-color:#d2ece8}
+#itsme .itsme-card:nth-child(2){background:#fff}
+#itsme .itsme-card:nth-child(3){background:var(--jc-orange-soft);border-color:#f1dfca}
+#itsme .itsme-card:nth-child(4){background:#fff}
+#itsme .itsme-card:nth-child(5){background:var(--jc-green-soft);border-color:#dcebd7}
+#itsme .itsme-card:nth-child(6){background:var(--jc-navy-soft);border-color:#dfe3f3}
+
+#column .column-lead{background:#f6f7f8}
+#community .community-highlight article:first-child{background:var(--jc-orange-soft);border-color:#f1dfc9}
+#community .community-highlight span{color:#bc6d22}
+
+/* Data / participation tools */
+#generation-president{background:#20262c;border-color:#20262c}
+#generation-president .eyebrow{color:#8fd7d0}
+#generation-president .generation-intro{background:var(--jc-navy)}
+#generation-president .generation-card{background:#292f35;border-color:#373e44}
+#generation-president .generation-card.focus{background:#303844;border-color:#4a5969}
+#generation-president .generation-age{background:#353d44;color:#d2dbe0}
+#generation-president .generation-bar{background:#3a4248}
+#generation-president .generation-bar i{background:var(--jc-teal)}
+
+#national-eval .eyebrow{color:#4f833f}
+#national-eval .national-eval-layout{background:var(--jc-green-soft)}
+#compare .eyebrow{color:var(--jc-navy)}
+#compare .compare-layout{background:var(--jc-navy-soft)}
+#academy .academy-intro{background:var(--jc-orange)}
+#academy .academy-mark{color:#cb7628}
+
+/* Sidebar and small controls */
+.login-card{background:#20262b;border-color:#20262b}
+.login-card button{background:#087f74}
+.keyword-grid span:nth-child(6n+1){background:var(--jc-blue-soft);color:#365aa9}
+.keyword-grid span:nth-child(6n+2){background:var(--jc-red-soft);color:#b94750}
+.keyword-grid span:nth-child(6n+3){background:var(--jc-orange-soft);color:#ae6d2f}
+.keyword-grid span:nth-child(6n+4){background:var(--jc-teal-soft);color:#217d75}
+.keyword-grid span:nth-child(6n+5){background:var(--jc-navy-soft);color:#4a5c9d}
+.keyword-grid span:nth-child(6n){background:var(--jc-green-soft);color:#5c7d52}
+.footer{background:#20262b}
+
+/* keep interactive green as Jeongchamsi's own utility color, not a political signal */
+a,.more-btn{--jc-link:#087f74}
