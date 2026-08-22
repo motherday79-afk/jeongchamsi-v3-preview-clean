@@ -12,7 +12,7 @@ let renderEpoch = 0;
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=alpha6.0.35.2-route-entry-restore")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=alpha6.0.36.5-home-order")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js?v=alpha6.0.35.2-route-entry-restore");
     if (p[0] === "login") return view.renderLogin();
@@ -47,7 +47,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration();
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=alpha6.0.35.2-route-entry-restore")).renderHome();
+  return (await import("./views/home.js?v=alpha6.0.36.5-home-order")).renderHome();
 }
 
 function currentScrollPoint() {
