@@ -94,8 +94,8 @@ function derivePersonView(current,history,id,nowMs=Date.now()){
   const rankDelta=prevRank?prevRank-num(row.rank):null;
   const trendLabel=prevRank?(rankDelta>0?`▲ ${rankDelta}`:rankDelta<0?`▼ ${Math.abs(rankDelta)}`:'—'):(prev?'NEW':'');
   const party=String(row?.person?.party||''),region=String(row?.person?.jurisdiction||'').split(/\s+/)[0]||'';
-  const related=rows.filter(x=>String(x?.person?.id||'')!==String(id||'')).map(x=>({x,score:(party&&x?.person?.party===party?4:0)+(region&&String(x?.person?.jurisdiction||'').startsWith(region)?2:0)+(Math.abs(num(x.rank)-num(row.rank))<=5?1:0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||num(a.x.rank)-num(b.x.rank)).slice(0,4).map(x=>x.x);
-  return {row,rankDelta,previousRank:prevRank,trendLabel,whyNow:whyNowText(row,rankDelta),related,publishedAt:current?.publishedAt||null,keywords:deriveKeywords(current,nowMs,8)};
+  const related=rows.filter(x=>String(x?.person?.id||'')!==String(id||'')).map(x=>({x,score:(party&&x?.person?.party===party?4:0)+(region&&String(x?.person?.jurisdiction||'').startsWith(region)?2:0)+(Math.abs(num(x.rank)-num(row.rank))<=5?1:0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||num(a.x.rank)-num(b.x.rank)).slice(0,4).map(({x})=>({rank:num(x.rank),score:num(x.score),person:{id:x?.person?.id||'',name:x?.person?.name||'',party:x?.person?.party||'',jurisdiction:x?.person?.jurisdiction||''}}));
+  return {row,rankDelta,previousRank:prevRank,trendLabel,whyNow:whyNowText(row,rankDelta),related,publishedAt:current?.publishedAt||null};
 }
 function derivePublicSignals(current,history,nowMs=Date.now()){
   if(!rowsOf(current).length)return {source:'none',publishedAt:null,keywords:[],rising:[]};

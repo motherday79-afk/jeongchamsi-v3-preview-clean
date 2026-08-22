@@ -32,9 +32,16 @@ async function fetchMembers() {
   } catch { return { ok: false, error: "MEMBER_READ_FAILED", users: [] }; }
 }
 async function dashboardPanel() {
-  const [columns, community, itsme, news, polls, academy, members] = await Promise.all([getDomain("columns"), getDomain("community"), getDomain("itsme"), getDomain("news"), getDomain("polls"), getDomain("academy"), fetchMembers()]);
+  let counts = { members:0, columns:0, community:0, itsme:0, news:0, polls:0, academy:0 };
+  let error = "";
+  try {
+    const r = await fetch("/api/v3/admin/dashboard", { credentials:"same-origin", headers:{ Accept:"application/json" } });
+    const b = await r.json().catch(() => ({}));
+    if (r.ok && b.counts) counts = { ...counts, ...b.counts };
+    else error = b.error || "ADMIN_DASHBOARD_FAILED";
+  } catch { error = "ADMIN_DASHBOARD_FAILED"; }
   const storage = getStorageState();
-  return `<section class="admin-panel"><div class="admin-panel-head"><h2>v3 운영 대시보드</h2><button type="button" class="ghost-btn" data-user-logout>로그아웃</button></div><div class="admin-stat-grid"><article><b>MEMBERS</b><strong>${members.users.length}</strong><span>가입 회원</span></article><article><b>PERSON SLOTS</b><strong>543</strong><span>300 + 16 + 227</span></article><article><b>COLUMN</b><strong>${(columns.items || []).length}</strong><span>등록 글</span></article><article><b>COMMUNITY</b><strong>${(community.items || []).length}</strong><span>등록 글</span></article><article><b>IT’S ME</b><strong>${(itsme.items || []).length}</strong><span>정책 제안</span></article><article><b>NEWS</b><strong>${(news.items || []).length}</strong><span>등록 글</span></article><article><b>POLLS</b><strong>${(polls.items || []).length}</strong><span>등록 설문</span></article><article><b>ACADEMY</b><strong>${(academy.slots || []).length}</strong><span>등록 일정</span></article></div><div class="notice-box">서버 Source of Truth: ${storage.available ? "정상" : `오류 · ${esc(storage.error)}`}. 브라우저 저장 fallback은 사용하지 않습니다. PC·모바일·Fold 메인 레이아웃과 폰트는 LOCK 상태입니다</div></section>`;
+  return `<section class="admin-panel"><div class="admin-panel-head"><h2>v3 운영 대시보드</h2><button type="button" class="ghost-btn" data-user-logout>로그아웃</button></div><div class="admin-stat-grid"><article><b>MEMBERS</b><strong>${counts.members}</strong><span>가입 회원</span></article><article><b>PERSON SLOTS</b><strong>543</strong><span>300 + 16 + 227</span></article><article><b>COLUMN</b><strong>${counts.columns}</strong><span>등록 글</span></article><article><b>COMMUNITY</b><strong>${counts.community}</strong><span>등록 글</span></article><article><b>IT’S ME</b><strong>${counts.itsme}</strong><span>정책 제안</span></article><article><b>NEWS</b><strong>${counts.news}</strong><span>등록 글</span></article><article><b>POLLS</b><strong>${counts.polls}</strong><span>등록 설문</span></article><article><b>ACADEMY</b><strong>${counts.academy}</strong><span>등록 일정</span></article></div><div class="notice-box">서버 Source of Truth: ${error ? `확인 필요 · ${esc(error)}` : storage.available ? "정상" : `오류 · ${esc(storage.error)}`}. 브라우저 저장 fallback은 사용하지 않습니다. PC·모바일·Fold 메인 레이아웃과 폰트는 LOCK 상태입니다</div></section>`;
 }
 async function membersPanel() {
   const result = await fetchMembers();
