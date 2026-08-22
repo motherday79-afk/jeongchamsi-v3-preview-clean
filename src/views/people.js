@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.35-benchmarked-product";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
 

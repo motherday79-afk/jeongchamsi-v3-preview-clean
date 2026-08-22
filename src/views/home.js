@@ -1,7 +1,8 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.8-nav-itsme";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.15-ops-sync";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
+import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.15-ops-sync";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -100,28 +101,9 @@ function productHero(nowPeople = [], poll = null) {
   </section>`;
 }
 
-function launcherIcon(key = "") {
-  const icons = {
-    now:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5 8.2 12l3 2.8 5.7-7.1"/><path d="M14.8 7.7h2.9v2.9"/><path d="M4 19h16"/></svg>`,
-    choice:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5h12l1.5 9H4.5l1.5-9Z"/><path d="M9 9.5V6.8a3 3 0 0 1 6 0v2.7"/><path d="m9.2 14 1.8 1.8 3.8-4"/></svg>`,
-    itsme:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H9l-4 3v-13Z"/><path d="m10 12 4.8-4.8 2 2L12 14H10v-2Z"/></svg>`,
-    compare:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16"/><path d="M5 7h5M14 7h5"/><path d="m5 7-2 5h6L7 7"/><path d="m17 7-2 5h6l-2-5"/><path d="M7 17h10"/></svg>`,
-    generation:`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="2.5"/><circle cx="16.5" cy="9" r="2"/><path d="M3.5 18c.6-3.3 2.1-5 4.5-5s3.9 1.7 4.5 5"/><path d="M13.5 18c.4-2.5 1.4-3.8 3-3.8 1.7 0 2.8 1.3 3.2 3.8"/></svg>`,
-    community:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11v8H8l-4 3V6Z"/><path d="M14 9h6v8h-3l-3 2v-10Z"/></svg>`
-  };
-  return icons[key] || icons.community;
-}
-
 function productLauncher() {
-  const items = [
-    ["NOW Rank","지금 가장 주목받는 정치인","/now","now"],
-    ["시민들의 선택","오늘의 쟁점에 직접 한 표","/poll","choice"],
-    ["IT’S ME","내가 만드는 정책 제안","/itsme","itsme"],
-    ["정치인 비교","두 사람을 같은 기준으로","/compare","compare"],
-    ["세대별 대통령","세대마다 다른 선택 보기","/generation-president","generation"],
-    ["정뮤니티","지금 시민들이 하는 말","/community","community"]
-  ];
-  return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시에서 무엇을 할까요?</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(([title,desc,href,key])=>`<button type="button" class="launcher-card launcher-${key}" data-go="${href}" aria-label="${esc(title)} · ${esc(desc)}"><span class="launcher-icon">${launcherIcon(key)}</span><span class="launcher-copy"><b>${title}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
+  const items = launcherServices();
+  return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시에서 무엇을 할까요?</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(item=>`<button type="button" class="launcher-card launcher-${item.key === "poll" ? "choice" : item.key}" data-go="${item.href}" aria-label="${esc(item.label)} · ${esc(item.description)}"><span class="launcher-icon">${serviceIconSvg(item.key)}</span><span class="launcher-copy"><b>${esc(item.shortLabel || item.label)}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
 }
 
 function columnLead(item) {
@@ -221,7 +203,8 @@ export async function renderHome() {
   const userSession = userSummary.session;
   const userReady = !document.documentElement.classList.contains("jcv3-user-pending");
   let getPerson = null;
-  const generationHasVotes = Object.values(data.generation?.results || {}).some(votes => Object.values(votes || {}).some(v => Number(v || 0) > 0));
+  const generationDisplayResults = data.generation?.demoMode === true ? (data.generation?.demoResults || {}) : (data.generation?.results || {});
+  const generationHasVotes = Object.values(generationDisplayResults).some(votes => Object.values(votes || {}).some(v => Number(v || 0) > 0));
   const needsPersonLookup = userReady && ((userSummary.recentPeople || []).length || data.nationalEvaluation?.subjectId || generationHasVotes);
   if (needsPersonLookup) {
     const provider = await import("../data/person-provider.js?v=alpha6.0.20-function-detail");
@@ -305,7 +288,7 @@ export async function renderHome() {
       : `<section class="side-card login-card side-login"><b>정참시에 로그인하세요</b><p>즐겨찾기, 참여 기록, 배지, 알림을 한곳에서 관리합니다.</p><button type="button" data-go="/login">로그인</button></section>`;
 
   const generationAges = ["10대", "20대", "30대", "40대", "50대", "60대+"];
-  const generationResults = data.generation?.results || {};
+  const generationResults = generationDisplayResults;
   const generationHomeCards = generationAges.map((age, i) => {
     const votes = generationResults[age] || {};
     const sorted = Object.entries(votes).filter(([,count]) => Number(count || 0) > 0).sort((a,b) => Number(b[1]) - Number(a[1]));
@@ -329,6 +312,12 @@ export async function renderHome() {
     ? `<div class="badge-home-preview">${homeBadges.slice(0,3).map(x => `<button type="button" data-go="/mypage/activity?tab=badges"><span>${esc(x.mark)}</span><b>${esc(x.name)}</b><small>${esc(x.tier)}</small></button>`).join("")}<button type="button" class="badge-more-card" data-go="/mypage/activity?tab=badges"><span>+</span><b>배지함</b><small>전체보기</small></button></div>`
     : `<button type="button" class="badge-empty-cta" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}"><span class="badge-empty-icon">B</span><span><b>${userSession.authenticated ? "첫 배지를 획득해보세요" : "로그인하고 배지를 모아보세요"}</b><small>설문·글쓰기·참여 활동으로 시작</small></span><em>›</em></button>`;
 
+  let generationAdmin = "";
+  if (userSession.authenticated && userSession.user?.role === "admin") {
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.15-ops-sync");
+    generationAdmin = adminTools.renderGenerationAdminEditor(data.generation || {}, { context:"home", open:false });
+  }
+
   return `<div class="site-shell">
     ${siteHeader()}
 
@@ -344,7 +333,7 @@ export async function renderHome() {
 
         <section class="module poll-module" id="poll"><div class="module-header"><div><span class="eyebrow">CITIZENS’ CHOICE</span><h2>귀담아 들어야 합니다.</h2><p class="module-desc">작은 관심이 세상을 바꿉니다.</p></div><button class="more-btn" type="button" data-go="/poll">전체보기</button></div>${pollMarkup(poll, userSession.authenticated && !!poll && hasVotedPoll(poll.id))}</section>
 
-        <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대가 뽑은 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p></div><button class="more-btn" type="button" data-go="/generation-president">전체보기</button></div><div class="generation-feature"><div class="generation-intro"><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p><button class="ghost-btn generation-participation-cta" type="button" data-go="/generation-president">모의투표 참여</button></div><div class="generation-grid">${generationHomeCards}</div></div></section>
+        <section class="module generation-president" id="generation-president"><div class="module-header"><div><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h2>세대가 뽑은 대통령</h2><p class="module-desc">같은 대통령 후보를 세대별로 바라보면 선택은 어떻게 달라질까? 정참시 모의투표로 비교합니다.</p></div><button class="more-btn" type="button" data-go="/generation-president">전체보기</button></div><div class="generation-feature"><div class="generation-intro"><h3>10대부터 60대+까지<br>각 세대의 선택을 한눈에.</h3><p>실제 선거 결과가 아닌 정참시 참여자 기반 모의투표 영역입니다.</p><button class="ghost-btn generation-participation-cta" type="button" data-go="/generation-president">모의투표 참여</button></div><div class="generation-grid">${generationHomeCards}</div></div>${generationAdmin}</section>
 
         <section class="module national-eval" id="national-eval"><div class="module-header"><div><span class="eyebrow">NATIONAL EVALUATION</span><h2>국회의원 전국 평가제</h2><p class="module-desc">지역구를 넘어, 한 명의 입법기관을 전국 유권자가 평가한다면?</p></div><button class="more-btn" type="button" data-go="/national-evaluation">전체보기</button></div>${nationalEvaluationHomeMarkup(nationalEvaluation, getPerson)}</section>
 

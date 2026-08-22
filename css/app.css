@@ -239,7 +239,7 @@ img{display:block;max-width:100%}
 .academy-schedule .schedule-row.empty{opacity:.72}
 
 /* SIDEBAR */
-.side-column{display:grid;gap:14px;position:sticky;top:-260px;align-self:start}
+.side-column{display:grid;gap:14px;position:sticky;top:-520px;align-self:start}
 .side-card{padding:16px}
 .side-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .side-head b{font-size:var(--fs-sub)}

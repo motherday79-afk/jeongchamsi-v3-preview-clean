@@ -1,0 +1,44 @@
+export const SERVICE_CATALOG = Object.freeze([
+  { key:"now", label:"NOW Rank", shortLabel:"NOW Rank", description:"지금 가장 주목받는 정치인", href:"/now", launcher:true, serviceBar:true, group:"정치 보기" },
+  { key:"poll", label:"시민들의 선택", shortLabel:"시민선택", description:"오늘의 쟁점에 직접 한 표", href:"/poll", launcher:true, serviceBar:true, group:"참여" },
+  { key:"itsme", label:"IT’S ME", shortLabel:"IT’S ME", description:"내가 만드는 정책 제안", href:"/itsme", launcher:true, serviceBar:true, group:"참여" },
+  { key:"compare", label:"정치인 비교분석", shortLabel:"비교분석", description:"두 사람을 같은 기준으로 비교", href:"/compare", launcher:true, serviceBar:true, group:"분석" },
+  { key:"generation", label:"세대가 뽑은 대통령", shortLabel:"세대별 대통령", description:"세대별 모의투표 결과", href:"/generation-president", launcher:true, serviceBar:true, group:"참여" },
+  { key:"community", label:"정뮤니티", shortLabel:"정뮤니티", description:"지금 시민들이 하는 말", href:"/community", launcher:true, serviceBar:false, group:"콘텐츠" },
+  { key:"president", label:"대통령", shortLabel:"대통령", description:"대통령 정보와 기록", href:"/president", launcher:false, serviceBar:true, group:"정치 보기" },
+  { key:"news", label:"정참시 NEWS", shortLabel:"NEWS", description:"정치 뉴스 모아보기", href:"/news", launcher:false, serviceBar:true, group:"콘텐츠" },
+  { key:"evaluation", label:"국회의원 전국 평가제", shortLabel:"전국 평가제", description:"전국 참여자 평가", href:"/national-evaluation", launcher:false, serviceBar:true, group:"분석" },
+  { key:"academy", label:"정참시 아카데미", shortLabel:"아카데미", description:"정치 교육 일정과 수강신청", href:"/academy", launcher:false, serviceBar:true, group:"참여" },
+  { key:"column", label:"COLUMN", shortLabel:"COLUMN", description:"오늘 정치에서 읽어야 할 것", href:"/column", launcher:false, serviceBar:false, group:"콘텐츠" },
+  { key:"keywords", label:"실시간 정치키워드", shortLabel:"정치키워드", description:"지금 많이 언급되는 정치어", href:"/keywords", launcher:false, serviceBar:true, group:"정치 보기" },
+  { key:"trending", label:"실시간 급상승 정치인", shortLabel:"급상승", description:"주목도가 빠르게 오른 정치인", href:"/trending", launcher:false, serviceBar:false, group:"정치 보기" }
+]);
+
+const ICON_PATHS = Object.freeze({
+  now:`<path d="M4 17 9 12l3 3 8-9"/><path d="M15 6h5v5"/>`,
+  itsme:`<path d="M5 5.5h14v10H9l-4 3v-13Z"/><path d="m10 12 4.8-4.8 2 2L12 14H10v-2Z"/>`,
+  column:`<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>`,
+  news:`<path d="M4 6h12v12H4z"/><path d="M8 9h5M8 12h5M8 15h3"/><path d="M16 9h4v8a1 1 0 0 1-1 1h-3"/>`,
+  poll:`<path d="M6 9.5h12l1.5 9H4.5l1.5-9Z"/><path d="M9 9.5V6.8a3 3 0 0 1 6 0v2.7"/><path d="m9.2 14 1.8 1.8 3.8-4"/>`,
+  community:`<path d="M4 6h11v8H8l-4 3V6Z"/><path d="M14 9h6v8h-3l-3 2v-10Z"/>`,
+  compare:`<path d="M12 4v16"/><path d="M5 7h5M14 7h5"/><path d="m5 7-2 5h6L7 7"/><path d="m17 7-2 5h6l-2-5"/><path d="M7 17h10"/>`,
+  president:`<path d="m12 3 2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.3-4.5 2.3.9-5L4.8 8.2l5-.7z"/>`,
+  generation:`<circle cx="8" cy="8" r="2.5"/><circle cx="16.5" cy="9" r="2"/><path d="M3.5 18c.6-3.3 2.1-5 4.5-5s3.9 1.7 4.5 5"/><path d="M13.5 18c.4-2.5 1.4-3.8 3-3.8 1.7 0 2.8 1.3 3.2 3.8"/>`,
+  evaluation:`<path d="M5 4h14v16H5z"/><path d="m8 12 2.3 2.3L16 8"/><path d="M8 7h3"/>`,
+  academy:`<path d="m3 8 9-4 9 4-9 4z"/><path d="M7 10v5c2.8 2 7.2 2 10 0v-5"/><path d="M21 8v6"/>`,
+  keywords:`<path d="M6 5h12M4 10h16M7 15h10M9 20h6"/>`,
+  trending:`<path d="m4 17 5-5 3 3 8-9"/><path d="M15 6h5v5"/>`,
+  recent:`<path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/>`,
+  badge:`<path d="M12 3 8 5v5c0 3 1.6 5.3 4 7 2.4-1.7 4-4 4-7V5z"/><path d="m9 18-1 3 4-2 4 2-1-3"/>`,
+  guide:`<circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/>`,
+  privacy:`<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>`,
+  policy:`<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/>`,
+  admin:`<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 3.1a7 7 0 0 0-1.7 1l-2.5-1-2 3.4L5 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.5-1a7 7 0 0 0 1.7 1l.4 3.1h4.8l.4-3.1a7 7 0 0 0 1.7-1l2.5 1 2-3.4-2-1.5a7 7 0 0 0 .1-1z"/>`
+});
+
+export function serviceIconSvg(key = "") {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[key] || ICON_PATHS.guide}</svg>`;
+}
+
+export function launcherServices() { return SERVICE_CATALOG.filter(x => x.launcher); }
+export function serviceBarServices() { return SERVICE_CATALOG.filter(x => x.serviceBar); }

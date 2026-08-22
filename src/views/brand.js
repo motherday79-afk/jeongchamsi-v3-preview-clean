@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.35-benchmarked-product";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
 import { getDomain } from "../core/repository.js";
 
 function paragraphs(text = "") {

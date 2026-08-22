@@ -1,5 +1,5 @@
 import { getDomain } from "../core/repository.js";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.35-benchmarked-product";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
   listAssemblyMembers,
@@ -331,7 +331,7 @@ export async function renderGeneration() {
   const data = await getDomain("generation");
   const session = getUserSession();
   const ages = ["10대", "20대", "30대", "40대", "50대", "60대+"];
-  const results = data.results || {};
+  const results = data.demoMode === true ? (data.demoResults || {}) : (data.results || {});
   const cards = ages.map(age => {
     const votes = results[age] || {};
     const sorted = Object.entries(votes).sort((a, b) => Number(b[1]) - Number(a[1]));
@@ -351,7 +351,13 @@ export async function renderGeneration() {
     else voteArea = `<form class="generation-vote-form generation-vote-fixed generation-vote-searchable" data-generation-vote-form><input type="hidden" name="ageGroup" value="${esc(ageGroup)}"><label>내 세대<input value="${esc(ageGroup)}" disabled></label><label class="person-quick-picker">대통령 후보 검색<input type="search" placeholder="이름·정당·지역 검색" autocomplete="off" id="generation-person-search" data-person-quick-search="#generation-person" data-person-quick-results="#generation-quick-results"><div class="person-quick-results" id="generation-quick-results" hidden></div><select id="generation-person" name="personId" required><option value="">정치인 선택</option>${personOptions("", data.candidates || [])}</select></label><button class="primary-btn" type="submit">투표하기</button><div class="save-state" data-generation-vote-state></div></form>`;
   }
 
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h1>세대가 뽑은 대통령</h1><p>회원가입 때 입력한 출생연도로 내 세대는 자동 고정됩니다. 후보는 543명 목록을 직접 내리지 않고 검색해서 선택할 수 있습니다.</p></section><section class="content-card"><div class="generation-page-grid">${cards}</div></section><section class="content-card"><div class="section-title"><h2>모의투표 참여</h2><span>${session.authenticated ? "회원 출생연도 기준 세대 자동 적용" : "로그인 필요"}</span></div>${voteArea}</section></main>`);
+  let generationAdmin = "";
+  if (session.authenticated && session.user?.role === "admin") {
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.15-ops-sync");
+    generationAdmin = adminTools.renderGenerationAdminEditor(data, { context:"detail", open:false });
+  }
+
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h1>세대가 뽑은 대통령</h1><p>회원가입 때 입력한 출생연도로 내 세대는 자동 고정됩니다. 후보는 543명 목록을 직접 내리지 않고 검색해서 선택할 수 있습니다.</p></section><section class="content-card"><div class="generation-page-grid">${cards}</div></section>${generationAdmin}<section class="content-card"><div class="section-title"><h2>모의투표 참여</h2><span>${session.authenticated ? "회원 출생연도 기준 세대 자동 적용" : "로그인 필요"}</span></div>${voteArea}</section></main>`);
 }
 
 export async function renderNationalEvaluation() {

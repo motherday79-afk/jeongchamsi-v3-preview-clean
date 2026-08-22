@@ -38,7 +38,7 @@ const defaults = {
     },
     slots: []
   },
-  generation: { enabled: true, candidates: [], results: {} },
+  generation: { enabled: true, candidates: [], results: {}, demoMode: false, demoResults: {} },
   nationalEvaluation: { enabled: false, subjectId: null, results: {}, history: [] },
   itsme: { categories: DEFAULT_ITSME_CATEGORIES, items: [] },
   comments: { items: [] },

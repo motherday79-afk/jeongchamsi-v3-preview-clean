@@ -1,9 +1,9 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.8-nav-itsme";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.15-ops-sync";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.14-data-rhythm";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.15-ops-sync";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],
@@ -202,7 +202,8 @@ async function presidentPanel() {
 }
 async function generationPanel() {
   const data = await getDomain("generation");
-  return `<section class="admin-panel"><div class="admin-panel-head"><h2>세대가 뽑은 대통령</h2><button class="ghost-btn" data-go="/generation-president">외부 페이지</button></div><div class="notice-box">공개페이지에서는 543개 정치인 슬롯 전체에서 한 명을 선택해 투표할 수 있습니다. 아래 후보 제한 목록을 비워두면 전체 543명을 허용합니다.</div><form class="admin-form" data-admin-form="generation"><label class="check"><input type="checkbox" name="enabled" ${data.enabled === false ? "" : "checked"}> 투표 기능 활성</label><label>후보 제한 ID · 선택사항<textarea name="candidates" rows="8" placeholder="assembly-001&#10;metropolitan-001">${esc((data.candidates || []).join("\n"))}</textarea></label>${formButtons("generation")}</form></section>`;
+  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.15-ops-sync");
+  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>세대가 뽑은 대통령</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/generation-president">외부 페이지</button></div>${adminTools.renderGenerationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function nationalEvaluationPanel() {
   const data = await getDomain("nationalEvaluation");
@@ -301,7 +302,6 @@ export async function saveAdminForm(form) {
     };
     return saveDomain("academy", data);
   }
-  if (domain === "generation") { const data = await getDomain("generation"); data.enabled = fd.get("enabled") === "on"; data.candidates = splitLines(fd.get("candidates")).filter(id => /^(assembly|metropolitan|basic)-\d{3}$/.test(id)).slice(0, 543); return saveDomain("generation", data); }
   if (domain === "nationalEvaluation") { const data = await getDomain("nationalEvaluation"); const subjectId = String(fd.get("subjectId") || ""); const nextSubject = /^assembly-\d{3}$/.test(subjectId) ? subjectId : null; const previous = data.subjectId && data.subjectId !== nextSubject ? String(data.subjectId) : ""; data.history = Array.isArray(data.history) ? data.history : []; if (previous && !data.history.some(x => x.subjectId === previous)) data.history.unshift({ subjectId: previous, closedAt: new Date().toISOString() }); data.history = data.history.slice(0, 100); data.subjectId = nextSubject; data.enabled = fd.get("enabled") === "on" && !!data.subjectId; data.results = data.results || {}; return saveDomain("nationalEvaluation", data); }
   const data = await getDomain(domain); const id = form.dataset.itemId || `${domain}-${Date.now().toString(36)}`;
   if (["columns", "community", "news"].includes(domain)) { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const cover = form.querySelector("[data-cover-preview]")?.dataset.coverData || old?.coverImage || ""; const next = { id, title: fd.get("title"), author: fd.get("author"), category: fd.get("category") || "", summary: fd.get("summary"), body: fd.get("body"), coverImage: cover, featured: fd.get("featured") === "on", published: fd.get("published") === "on", createdAt: old?.createdAt || now, updatedAt: now, likes: old?.likes || 0, views: old?.views || 0, ownerId: old?.ownerId || "" }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }

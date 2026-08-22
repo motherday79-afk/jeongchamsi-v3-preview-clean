@@ -1,85 +1,33 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.8-nav-itsme";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.15-ops-sync";
 import { getUserSession } from "../core/user.js";
+import { SERVICE_CATALOG, serviceBarServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.15-ops-sync";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 }[c]));
 
-const NAV = Object.freeze([
-  { key:"now", label:"NOW Rank", href:"/now" },
-  { key:"itsme", label:"IT’S ME", href:"/itsme" },
-  { key:"column", label:"COLUMN", href:"/column" },
-  { key:"news", label:"정참시 NEWS", href:"/news" },
-  { key:"poll", label:"시민들의 선택", href:"/poll" },
-  { key:"community", label:"정뮤니티", href:"/community" },
-  { key:"compare", label:"비교분석", href:"/compare" }
-]);
-
-const MORE_NAV = Object.freeze([
-  { key:"president", label:"대통령", href:"/president" },
-  { key:"generation", label:"세대별 대통령", href:"/generation-president" },
-  { key:"evaluation", label:"전국 평가제", href:"/national-evaluation" },
-  { key:"academy", label:"아카데미", href:"/academy" }
-]);
-
-const DRAWER_QUICK = Object.freeze([
-  { key:"now", label:"NOW Rank", href:"/now" },
-  { key:"itsme", label:"IT’S ME", href:"/itsme" },
-  { key:"news", label:"정참시 NEWS", href:"/news" },
-  { key:"column", label:"COLUMN", href:"/column" },
-  { key:"poll", label:"시민선택", href:"/poll" },
-  { key:"community", label:"정뮤니티", href:"/community" },
-  { key:"compare", label:"비교분석", href:"/compare" },
-  { key:"president", label:"대통령", href:"/president" }
-]);
-
-function iconSvg(key = "") {
-  const paths = {
-    now:`<path d="M4 17 9 12l3 3 8-9"/><path d="M15 6h5v5"/>`,
-    itsme:`<circle cx="12" cy="8" r="3"/><path d="M5.5 19c.8-4 3-6 6.5-6s5.7 2 6.5 6"/><path d="M18 4v4M16 6h4"/>`,
-    column:`<path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>`,
-    news:`<path d="M4 6h12v12H4z"/><path d="M8 9h5M8 12h5M8 15h3"/><path d="M16 9h4v8a1 1 0 0 1-1 1h-3"/>`,
-    poll:`<path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3 19h18"/>`,
-    community:`<path d="M5 5h14v10H9l-4 4z"/><path d="M8 9h8M8 12h5"/>`,
-    compare:`<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M3 19c.6-3.2 2.2-5 5-5s4.4 1.8 5 5M11 19c.6-3.2 2.2-5 5-5s4.4 1.8 5 5"/>`,
-    president:`<path d="m12 3 2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.3-4.5 2.3.9-5L4.8 8.2l5-.7z"/>`,
-    generation:`<path d="M4 18h16M6 15V9M12 15V5M18 15v-3"/><path d="m4 8 4-4 4 3 5-4 3 3"/>`,
-    evaluation:`<path d="M5 4h14v16H5z"/><path d="m8 12 2.3 2.3L16 8"/><path d="M8 7h3"/>`,
-    academy:`<path d="m3 8 9-4 9 4-9 4z"/><path d="M7 10v5c2.8 2 7.2 2 10 0v-5"/><path d="M21 8v6"/>`,
-    keywords:`<path d="M6 5h12M4 10h16M7 15h10M9 20h6"/>`,
-    trending:`<path d="m4 17 5-5 3 3 8-9"/><path d="M15 6h5v5"/>`,
-    recent:`<path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/>`,
-    badge:`<path d="M12 3 8 5v5c0 3 1.6 5.3 4 7 2.4-1.7 4-4 4-7V5z"/><path d="m9 18-1 3 4-2 4 2-1-3"/>`,
-    guide:`<circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/>`,
-    privacy:`<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>`,
-    policy:`<path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/>`,
-    admin:`<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.5 1a7 7 0 0 0-1.7-1L14.4 3h-4.8l-.4 3.1a7 7 0 0 0-1.7 1l-2.5-1-2 3.4L5 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.5-1a7 7 0 0 0 1.7 1l.4 3.1h4.8l.4-3.1a7 7 0 0 0 1.7-1l2.5 1 2-3.4-2-1.5a7 7 0 0 0 .1-1z"/>`
-  };
-  return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[key] || paths.guide}</svg>`;
+function drawerServiceItem(item) {
+  return `<a class="drawer-service-item drawer-service-${esc(item.key)}" href="${item.href}" data-route><span class="drawer-service-icon">${serviceIconSvg(item.key)}</span><span class="drawer-service-copy"><b>${esc(item.label)}</b><small>${esc(item.description)}</small></span><em>→</em></a>`;
 }
 
-function quickNavItem(item) {
-  return `<a class="quick-nav-item quick-${esc(item.key)}" href="${item.href}" data-route><span class="quick-nav-icon">${iconSvg(item.key)}</span><span class="quick-nav-label">${esc(item.label)}</span></a>`;
-}
-
-function drawerQuickItem(item) {
-  return `<a class="drawer-quick-item" href="${item.href}" data-route><span>${iconSvg(item.key)}</span><b>${esc(item.label)}</b></a>`;
-}
+function iconSvg(key = "") { return serviceIconSvg(key); }
 
 function drawerListItem(key, label, href, meta = "") {
   return `<a class="drawer-list-item" href="${href}" data-route><span class="drawer-list-icon">${iconSvg(key)}</span><span><b>${esc(label)}</b>${meta ? `<small>${esc(meta)}</small>` : ""}</span><em>›</em></a>`;
 }
 
 export function siteHeader() {
+  const primaryKeys = new Set(["now","poll","itsme","column","community"]);
+  const primaryNav = SERVICE_CATALOG.filter(item => primaryKeys.has(item.key));
   return `<header class="site-header product-header">
     <div class="product-head-main">
       <button class="product-menu" type="button" aria-label="전체 메뉴" data-drawer-open><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <a class="product-wordmark" href="/" data-route aria-label="정참시 홈"><b>정참시</b><span>JEONGCHAMSI</span></a>
-      <nav class="product-primary-nav" aria-label="핵심 메뉴"><a href="/now" data-route>NOW</a><a href="/poll" data-route>시민선택</a><a href="/itsme" data-route>IT’S ME</a><a href="/column" data-route>COLUMN</a><a href="/community" data-route>정뮤니티</a></nav>
+      <nav class="product-primary-nav" aria-label="핵심 메뉴">${primaryNav.map(item => `<a href="${item.href}" data-route>${esc(item.shortLabel || item.label)}</a>`).join("")}</nav>
       <form class="product-search" data-search-form><input name="q" aria-label="통합검색" placeholder="정치인, 정당, 이슈를 검색하세요"><button type="submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></button></form>
       <div class="product-account-tools"><button type="button" aria-label="내 참여" data-go="/mypage/activity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button type="button" aria-label="최근 본 정치인" data-go="/mypage/recent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></button></div>
     </div>
-    <div class="product-service-bar"><nav class="product-service-inner" aria-label="정참시 전체 서비스"><span>서비스</span><a href="/president" data-route>대통령</a><a href="/now" data-route>NOW Rank</a><a href="/news" data-route>NEWS</a><a href="/generation-president" data-route>세대별 대통령</a><a href="/national-evaluation" data-route>전국 평가제</a><a href="/compare" data-route>비교분석</a><a href="/academy" data-route>아카데미</a><a href="/keywords" data-route>정치키워드</a></nav></div>
+    <div class="product-service-bar"><nav class="product-service-inner" aria-label="정참시 전체 서비스"><span>서비스</span>${serviceBarServices().map(item => `<a href="${item.href}" data-route>${esc(item.shortLabel || item.label)}</a>`).join("")}</nav></div>
   </header>`;
 }
 
@@ -98,20 +46,9 @@ export function drawer() {
     <div class="drawer-head"><div><span>JEONGCHAMSI</span><b>정참시 전체메뉴</b></div><button type="button" data-drawer-close aria-label="닫기">×</button></div>
     ${account}
 
-    <section class="drawer-block">
-      <div class="drawer-block-head"><b>바로가기</b><span>자주 쓰는 정참시 서비스</span></div>
-      <div class="drawer-quick-grid">${DRAWER_QUICK.map(drawerQuickItem).join("")}</div>
-    </section>
-
-    <section class="drawer-block">
-      <div class="drawer-block-head"><b>참여 · 분석</b><span>직접 보고 선택하는 기능</span></div>
-      <div class="drawer-feature-list">
-        ${drawerListItem("generation","세대가 뽑은 대통령","/generation-president","세대별 모의투표")}
-        ${drawerListItem("evaluation","국회의원 전국 평가제","/national-evaluation","전국 참여자 평가")}
-        ${drawerListItem("keywords","실시간 정치키워드","/keywords","지금 많이 언급되는 정치어")}
-        ${drawerListItem("trending","실시간 급상승","/trending","주목도가 빠르게 오른 콘텐츠")}
-        ${drawerListItem("academy","정참시 아카데미","/academy","정치 교육 일정·수강신청")}
-      </div>
+    <section class="drawer-block drawer-service-block">
+      <div class="drawer-block-head"><b>전체 서비스</b><span>메인 네비게이터와 같은 서비스 기준</span></div>
+      <div class="drawer-service-grid">${SERVICE_CATALOG.map(drawerServiceItem).join("")}</div>
     </section>
 
     <section class="drawer-block drawer-block-compact">
