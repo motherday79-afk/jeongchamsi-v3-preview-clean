@@ -551,3 +551,72 @@ a,.more-btn{--jc-link:#087f74}
   #itsme.itsme-home-module .itsme-card b{margin-top:14px;font-size:14px}
   #itsme.itsme-home-module .itsme-signature-title::after{height:4px;width:min(190px,75%)}
 }
+
+/* alpha6.0.36.9 — choice + generation split hotfix */
+/* CITIZENS' CHOICE: white section, color moves into the choice options. */
+#poll{
+  background:#fff!important;
+  border-color:#e5e9ec!important;
+}
+#poll .poll-question p{color:#6f787d!important}
+#poll .poll-vote-panel{
+  background:transparent!important;
+  padding:0!important;
+}
+#poll .poll-status{
+  background:#fff!important;
+  color:#c63d49!important;
+}
+#poll .poll-options button{
+  background:#fff4f5!important;
+  border-color:#f0dadd!important;
+}
+#poll .poll-options button:hover{
+  background:#ffedef!important;
+  border-color:#ebc8ce!important;
+}
+#poll .poll-options i{background:#f5dde1!important}
+#poll .poll-options em{background:var(--jc-red)!important}
+#poll .poll-options b{color:#bd3c48!important}
+
+/* GENERATION PRESIDENT: mint label, neutral shell, blue as the data/state color. */
+#generation-president{
+  background:#fff!important;
+  border-color:#e5e9ec!important;
+  color:var(--ps-ink)!important;
+}
+#generation-president .eyebrow{color:#087f74!important}
+#generation-president .module-desc{color:#6f787d!important}
+#generation-president .more-btn{color:#535f5b!important}
+#generation-president .generation-intro{
+  background:#fff!important;
+  color:#182126!important;
+  border:1px solid #e5e9ec!important;
+  box-shadow:none!important;
+}
+#generation-president .generation-mark{
+  background:#eef6f3!important;
+  color:#087f74!important;
+}
+#generation-president .generation-intro p{color:#6f787d!important}
+#generation-president .generation-intro button{
+  background:var(--ps-blue)!important;
+  color:#fff!important;
+}
+#generation-president .generation-card{
+  background:#fff!important;
+  border-color:#e6e9eb!important;
+  color:#182126!important;
+}
+#generation-president .generation-card.focus{
+  background:#f7faff!important;
+  border-color:#d6e1fb!important;
+  color:#182126!important;
+}
+#generation-president .generation-age{
+  background:#eef3ff!important;
+  color:var(--ps-blue)!important;
+}
+#generation-president .generation-card small{color:#747d82!important}
+#generation-president .generation-bar{background:#e7edf8!important}
+#generation-president .generation-bar i{background:var(--ps-blue)!important}
