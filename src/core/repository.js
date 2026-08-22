@@ -172,7 +172,7 @@ export async function getHomeSnapshot({ fresh = false } = {}) {
 
 export function clearDomainCache(domain) {
   if (domain) CACHE.delete(domain);
-  else CACHE.clear();
+  else { CACHE.clear(); invalidateHomeSnapshot(); }
 }
 
 

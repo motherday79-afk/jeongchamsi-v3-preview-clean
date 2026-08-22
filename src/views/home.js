@@ -258,7 +258,16 @@ export async function renderHome() {
   const keywords = (data.keywords?.items || []).filter(x => x.published !== false).slice(0, 8);
   const recentPeople = userSummary.recentPeople || [];
 
-  const nowPeople = HOME_NOW_PREVIEW;
+  const publishedNowRows = Array.isArray(data.nowRank?.ranked) ? data.nowRank.ranked : [];
+  const nowPeople = publishedNowRows.length
+    ? publishedNowRows.map(row => ({
+        ...(row.person || {}),
+        rank: Number(row.rank || 0),
+        score: Number(row.score || 0),
+        search: row.search || {},
+        news: row.news || {}
+      })).filter(p => p.id && p.name)
+    : HOME_NOW_PREVIEW;
   const trending = nowPeople.slice(0,5).map((p,i) => ({
     title:p.name,
     meta:[p.party,p.jurisdiction].filter(Boolean).join(" · "),

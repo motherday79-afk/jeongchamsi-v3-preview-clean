@@ -382,6 +382,7 @@ document.addEventListener("click", async event => {
     nowPublish.disabled = true;
     const r = await (await import("./views/admin.js")).publishNowData();
     if (!r.ok) alert(`NOW 게시 실패 · ${r.error || ""}`);
+    else clearDomainCache();
     await render(currentRoute(), { resetScroll:false });
     return;
   }
