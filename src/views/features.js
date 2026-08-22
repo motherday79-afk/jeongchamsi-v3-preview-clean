@@ -1,4 +1,4 @@
-import { getDomain } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getDomain } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
@@ -17,7 +17,7 @@ import {
   generationVoteFor,
   hasNationalEvaluationVote,
   isPostLiked
-} from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+} from "../core/user.js";
 
 function pct(option, options) {
   const total = (options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);

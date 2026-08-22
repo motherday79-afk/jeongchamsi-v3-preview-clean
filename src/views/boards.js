@@ -1,6 +1,6 @@
-import { getDomain } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getDomain } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getUserSession, isPostLiked } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSession, isPostLiked } from "../core/user.js";
 
 const CONFIG = Object.freeze({
   columns: { title: "COLUMN", eyebrow: "COLUMN", route: "column", description: "정치를 조금 더 깊게 읽는 정참시의 칼럼 공간입니다.", image: true, memberWrite: false },

@@ -1,10 +1,10 @@
 import { startPerformanceMonitor } from "./performance.js";
 import { startRouter, subscribe, currentRoute, route, syncCurrentScroll } from "./core/router.js";
-import { performAction, clearDomainCache, getDomain, saveDomain } from "./core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { performAction, clearDomainCache, getDomain, saveDomain } from "./core/repository.js";
 import {
   initializeUserState, loginUser, registerUser, logoutUser, toggleFavoritePerson,
   togglePostLike, applyAcademy, getUserSession, refreshUserActivity, updateMyProfile, setRepresentativeBadge
-} from "./core/user.js?v=alpha6.0.36.19-badge-tiers";
+} from "./core/user.js";
 
 const app = document.querySelector("#app");
 let renderEpoch = 0;

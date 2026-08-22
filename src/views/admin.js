@@ -1,6 +1,6 @@
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getUserSession, initializeUserState } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSession, initializeUserState } from "../core/user.js";
+import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.18-livebar-auth-generation";

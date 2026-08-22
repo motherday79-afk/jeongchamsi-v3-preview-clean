@@ -1,6 +1,6 @@
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getDomain } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
+import { getDomain } from "../core/repository.js";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { REGION_DATA } from "../data/regions.js";
 import { BADGE_CATALOG, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.19-badge-tiers";

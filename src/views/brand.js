@@ -1,5 +1,5 @@
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getDomain } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getDomain } from "../core/repository.js";
 
 function paragraphs(text = "") {
   return String(text || "").split(/\n{2,}/).map(x => x.trim()).filter(Boolean).map(x => `<p>${esc(x)}</p>`).join("");

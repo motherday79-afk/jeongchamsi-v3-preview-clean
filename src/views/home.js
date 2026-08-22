@@ -1,7 +1,7 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
-import { getHomeSnapshot } from "../core/repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getHomeSnapshot } from "../core/repository.js";
 import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getUserSummary, hasVotedPoll } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSummary, hasVotedPoll } from "../core/user.js";
 import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.19-badge-tiers";
 

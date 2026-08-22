@@ -1,4 +1,4 @@
-import { performAction } from "./repository.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { performAction } from "./repository.js";
 
 const GUEST_RECENT_KEY = "jcv3:guest-recent:v1";
 let session = { authenticated: false, user: null };

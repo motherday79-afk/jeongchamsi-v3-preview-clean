@@ -1,5 +1,5 @@
 import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { getUserSession } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSession } from "../core/user.js";
 import { SERVICE_CATALOG, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({

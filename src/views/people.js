@@ -1,6 +1,6 @@
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
 
 const empty=()=>`<span class="info-empty" aria-label="추가 데이터 준비중"></span>`;
 const v=x=>x?esc(x):empty();
