@@ -1,4 +1,4 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.7-color-rhythm";
 import { getUserSession } from "../core/user.js";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({

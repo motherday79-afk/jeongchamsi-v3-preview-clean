@@ -1,0 +1,11 @@
+{
+  "version": "alpha6.0.36.7",
+  "scope": "color-only",
+  "layout_changed": false,
+  "dom_order_changed": false,
+  "routing_changed": false,
+  "now_party_colors_preserved": true,
+  "broad_color_scene": "citizens-choice-soft-red",
+  "neutralized_sections": ["itsme", "generation-president", "national-eval", "compare", "academy", "column", "community"],
+  "status": "PASS"
+}

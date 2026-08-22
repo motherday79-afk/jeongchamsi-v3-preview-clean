@@ -301,3 +301,112 @@ a,.more-btn{--jc-link:#087f74}
   .product-home-wrap .launcher-copy small{font-size:11px}
   .product-home-wrap .hero-rank-person small{font-size:11px}
 }
+
+/* JEONGCHAMSI alpha6.0.36.7 — COLOR RHYTHM HOTFIX
+   Principle: minimum color area, maximum color recognition.
+   Layout / spacing / routing / DOM order are untouched. */
+
+/* Explore: keep the full political spectrum, remove the painted-card feeling. */
+.product-launcher .launcher-card{
+  background:#fff!important;
+  border-color:#e5e9ec!important;
+}
+.product-launcher .launcher-now{box-shadow:inset 0 3px 0 var(--jc-blue)}
+.product-launcher .launcher-choice{box-shadow:inset 0 3px 0 var(--jc-red)}
+.product-launcher .launcher-itsme{box-shadow:inset 0 3px 0 var(--jc-teal)}
+.product-launcher-grid .launcher-card:nth-child(4){box-shadow:inset 0 3px 0 var(--jc-orange)}
+.product-launcher-grid .launcher-card:nth-child(5){box-shadow:inset 0 3px 0 var(--jc-navy)}
+.product-launcher-grid .launcher-card:nth-child(6){box-shadow:inset 0 3px 0 var(--jc-green)}
+
+/* IT'S ME: white cards, spectrum only as a slim signature line. */
+#itsme .itsme-card{
+  background:#fff!important;
+  border-color:#e5e9ec!important;
+}
+#itsme .itsme-card:nth-child(1){box-shadow:inset 0 3px 0 var(--jc-teal)}
+#itsme .itsme-card:nth-child(2){box-shadow:inset 0 3px 0 var(--jc-blue)}
+#itsme .itsme-card:nth-child(3){box-shadow:inset 0 3px 0 var(--jc-orange)}
+#itsme .itsme-card:nth-child(4){box-shadow:inset 0 3px 0 var(--jc-red)}
+#itsme .itsme-card:nth-child(5){box-shadow:inset 0 3px 0 var(--jc-green)}
+#itsme .itsme-card:nth-child(6){box-shadow:inset 0 3px 0 var(--jc-navy)}
+#itsme .itsme-card span{color:#68747a!important}
+
+/* Citizens' Choice is the single broad participation color scene. */
+#poll{
+  background:#fff5f6!important;
+  border-color:#f0dadd!important;
+}
+#poll .poll-vote-panel{background:#fff!important}
+#poll .poll-status{background:#fff!important;color:#c63d49!important}
+#poll .poll-options em{background:var(--jc-red)!important}
+#poll .poll-options b{color:#bd3c48!important}
+
+/* Generation President: remove the second red block; keep red in controls/data only. */
+#generation-president{
+  background:#fff!important;
+  border-color:#e5e9ec!important;
+  color:var(--ps-ink)!important;
+}
+#generation-president .eyebrow{color:#c74450!important}
+#generation-president .module-desc{color:#6f787d!important}
+#generation-president .more-btn{color:#b83d48!important}
+#generation-president .generation-intro{
+  background:#fff!important;
+  color:#182126!important;
+  border:1px solid #eadfe1!important;
+  box-shadow:inset 4px 0 0 #e65a66;
+}
+#generation-president .generation-intro p{color:#70797e!important}
+#generation-president .generation-intro button{background:#e65a66!important;color:#fff!important}
+#generation-president .generation-card,
+#generation-president .generation-card.focus{
+  background:#fff!important;
+  border-color:#e6e9eb!important;
+  color:#182126!important;
+}
+#generation-president .generation-age{background:#fff0f2!important;color:#bd4650!important}
+#generation-president .generation-card small{color:#747d82!important}
+#generation-president .generation-bar{background:#f1e5e7!important}
+#generation-president .generation-bar i{background:#e25562!important}
+
+/* National evaluation: neutral surface, green reduced to one data signature. */
+#national-eval{background:#fff!important}
+#national-eval .national-eval-layout{
+  background:#fff!important;
+  border-color:#dfe8dd!important;
+  box-shadow:inset 0 3px 0 var(--jc-green);
+}
+#national-eval .eval-score strong{color:#568447!important}
+
+/* Compare: neutral body, navy only where comparison data speaks. */
+#compare{background:#fff!important}
+#compare .compare-layout{
+  background:#fff!important;
+  border-color:#e2e5ee!important;
+  box-shadow:inset 0 3px 0 var(--jc-navy);
+}
+#compare .compare-metrics em{background:var(--jc-navy)!important}
+#compare .compare-sample-badge{color:#5264a5!important}
+
+/* Academy: remove the large orange panel; orange remains the action color. */
+#academy{background:#fff!important}
+#academy .academy-intro{
+  background:#fff!important;
+  color:#182126!important;
+  border:1px solid #eee2d5!important;
+  box-shadow:inset 4px 0 0 var(--jc-orange);
+}
+#academy .academy-intro p{color:#70797e!important}
+#academy .academy-intro button{background:var(--jc-orange)!important;color:#fff!important}
+#academy .academy-mark{color:#c87627!important}
+
+/* NOW is intentionally the multi-color peak: party-family backgrounds remain. */
+
+/* Reading / talking sections calm the page after NOW. */
+#column .column-lead{background:#f7f8f9!important}
+#community .community-highlight article,
+#community .community-highlight article:first-child{
+  background:#fff!important;
+  border-color:#e5e9ec!important;
+}
+#community .community-highlight span{color:#bc6d22!important}
