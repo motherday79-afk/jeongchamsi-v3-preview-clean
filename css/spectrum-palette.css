@@ -661,3 +661,18 @@ a,.more-btn{--jc-link:#087f74}
 /* Blue remains only where it carries data meaning. */
 #generation-president .generation-bar{background:#e7edf8!important}
 #generation-president .generation-bar i{background:var(--ps-blue)!important}
+
+
+/* alpha6.0.36.11 — shared secondary CTA system
+   Same-role secondary actions use the same quiet ghost-button language. */
+#generation-president .generation-intro .ghost-btn{
+  background:#fff!important;
+  border:1px solid #dfe7e4!important;
+  color:var(--text)!important;
+  box-shadow:none!important;
+}
+#generation-president .generation-intro .ghost-btn:hover:not(:disabled){
+  border-color:#b7d9d0!important;
+  background:#f5fbf9!important;
+  color:var(--green)!important;
+}

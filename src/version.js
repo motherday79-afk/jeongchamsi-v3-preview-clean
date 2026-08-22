@@ -1,2 +1,2 @@
-export const APP_VERSION = "v3.0.0-alpha6.0.36.10";
-export const BUILD_NAME = "GENERATION PRESIDENT REFINEMENT";
+export const APP_VERSION = "v3.0.0-alpha6.0.36.11";
+export const BUILD_NAME = "SHARED GHOST CTA SYSTEM";
