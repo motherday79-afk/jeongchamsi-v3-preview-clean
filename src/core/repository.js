@@ -1,6 +1,10 @@
 const CACHE = new Map();
+const AUTHOR_CACHE = new Map();
 let storageState = { available: true, error: "" };
 let homeRevision = 0;
+let homeSnapshotCache = null;
+const HOME_CACHE_TTL_MS = 10000;
+const AUTHOR_CACHE_TTL_MS = 15000;
 
 export const DEFAULT_ITSME_CATEGORIES = [
   "내가 대통령이라면",
@@ -76,6 +80,12 @@ const defaults = {
 };
 
 function clone(v) { return JSON.parse(JSON.stringify(v)); }
+function invalidateHomeSnapshot() { homeSnapshotCache = null; }
+export function clearAuthorProfileCache(ownerId = "") {
+  const id = String(ownerId || "").trim();
+  if (id) AUTHOR_CACHE.delete(id);
+  else AUTHOR_CACHE.clear();
+}
 export function defaultDomain(domain) { return clone(defaults[domain] || { items: [] }); }
 export function getStorageState() { return { ...storageState }; }
 
@@ -115,6 +125,7 @@ export async function saveDomain(domain, data) {
     });
     CACHE.set(domain, body.data || data);
     homeRevision += 1;
+    invalidateHomeSnapshot();
     storageState = { available: true, error: "" };
     return { ok: true, data: clone(body.data || data) };
   } catch (error) {
@@ -133,18 +144,26 @@ export async function performAction(action, payload = {}) {
     if (["user-post-save", "user-post-delete", "post-like", "poll-vote", "generation-vote", "national-evaluation-vote", "comment-add"].includes(action)) {
       CACHE.clear();
       homeRevision += 1;
+      invalidateHomeSnapshot();
     }
+    if (body?.ok && action === "badge-representative-set") clearAuthorProfileCache();
     return body;
   } catch (error) {
     return { ok: false, error: error.code || error.message, status: error.status || 0 };
   }
 }
 
-export async function getHomeSnapshot() {
+export async function getHomeSnapshot({ fresh = false } = {}) {
+  const now = Date.now();
+  if (!fresh && homeSnapshotCache && homeSnapshotCache.revision === homeRevision && now - homeSnapshotCache.at < HOME_CACHE_TTL_MS) {
+    return homeSnapshotCache.data;
+  }
   try {
     const body = await requestJSON(`/api/v3/home${homeRevision ? `?r=${homeRevision}` : ""}`);
+    const data = body?.data || { ...Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)])), memberCount: 0 };
+    homeSnapshotCache = { revision: homeRevision, at: now, data };
     storageState = { available: true, error: "" };
-    return body?.data || { ...Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)])), memberCount: 0 };
+    return data;
   } catch (error) {
     storageState = { available: false, error: error.code || error.message };
     return { ...Object.fromEntries(Object.keys(defaults).map(k => [k, defaultDomain(k)])), memberCount: 0 };
@@ -160,10 +179,29 @@ export function clearDomainCache(domain) {
 export async function getAuthorProfiles(ownerIds = []) {
   const ids = [...new Set((Array.isArray(ownerIds) ? ownerIds : []).map(x => String(x || "").trim()).filter(Boolean))].slice(0, 120);
   if (!ids.length) return {};
-  try {
-    const body = await requestJSON(`/api/v3/authors?ids=${encodeURIComponent(ids.join(","))}&r=${Date.now()}`);
-    return body?.profiles || {};
-  } catch { return {}; }
+  const now = Date.now();
+  const profiles = {};
+  const missing = [];
+  for (const id of ids) {
+    const cached = AUTHOR_CACHE.get(id);
+    if (cached && now - cached.at < AUTHOR_CACHE_TTL_MS) {
+      if (cached.profile) profiles[id] = clone(cached.profile);
+    } else {
+      missing.push(id);
+    }
+  }
+  if (missing.length) {
+    try {
+      const body = await requestJSON(`/api/v3/authors?ids=${encodeURIComponent(missing.join(","))}`);
+      const fetched = body?.profiles || {};
+      for (const id of missing) {
+        const profile = fetched[id] || null;
+        AUTHOR_CACHE.set(id, { at: now, profile: profile ? clone(profile) : null });
+        if (profile) profiles[id] = clone(profile);
+      }
+    } catch {}
+  }
+  return profiles;
 }
 
 export async function getPoliticianRequests() {

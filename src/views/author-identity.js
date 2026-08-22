@@ -1,4 +1,4 @@
-import { badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 

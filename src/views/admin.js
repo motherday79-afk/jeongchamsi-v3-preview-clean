@@ -1,10 +1,8 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.24-showcase-hero-now";
+import { pageShell, esc } from "./layout.js";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
-import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
-import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.24-showcase-hero-now";
-import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
+import { APP_VERSION, BUILD_NAME } from "../version.js";
+import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["president", "대통령"],
@@ -72,7 +70,8 @@ async function membersPanel() {
     </article>`;
   }).join("")}</div><div class="save-state" data-member-save-state></div></section>`;
 }
-function peoplePanel() {
+async function peoplePanel() {
+  const { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS } = await import("../data/person-meta.js");
   return `<section class="admin-panel"><h2>인물 관리</h2><div class="people-admin-grid"><article><b>국회의원</b><strong>${PERSON_COUNTS.assembly} / 300</strong><span>텍스트 연결</span></article><article><b>광역단체장</b><strong>${PERSON_COUNTS.metropolitan} / 16</strong><span>텍스트 연결</span></article><article><b>기초단체장</b><strong>${PERSON_COUNTS.basic} / 227</strong><span>텍스트 연결</span></article><article><b>인물 공급자</b><strong>${PERSON_PROVIDER_STATUS}</strong><span>앱 내부 Seed · 즉시 노출</span></article><article><b>사진 공급자</b><strong>${PHOTO_PROVIDER_STATUS}</strong><span>1차에서 제외</span></article><article><b>NOW ENGINE</b><strong>DEFERRED</strong><span>뉴스·키워드 후속</span></article></div><div class="notice-box">543개 전원 이름·정당·지역·직책·기본 임기 텍스트를 앱 내부에 저장했습니다. 사용자 페이지에서 외부 정치인 API 호출은 없습니다</div></section>`;
 }
 function formButtons(domain) { return `<div class="admin-form-actions"><button type="submit" class="primary-btn">저장</button><button type="button" class="ghost-btn" data-admin-cancel data-domain="${domain}">취소</button><span class="save-state" data-save-state></span></div>`; }
@@ -212,12 +211,12 @@ async function presidentPanel() {
 }
 async function generationPanel() {
   const data = await getDomain("generation");
-  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
+  const adminTools = await import("./generation-admin.js");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>세대의 선택, 대통령</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/generation-president">외부 페이지</button></div>${adminTools.renderGenerationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function nationalEvaluationPanel() {
   const data = await getDomain("nationalEvaluation");
-  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
+  const tools = await import("./national-evaluation-admin.js");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>국회의원 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function systemPanel() {
@@ -240,8 +239,8 @@ export async function renderAdmin() {
   let panel;
   if (tab === "brand") panel = await brandPanel();
   else if (tab === "members") panel = await membersPanel();
-  else if (tab === "requests") panel = await (await import("./participation.js?v=alpha6.0.36.24-showcase-hero-now")).renderParticipationAdminPanel();
-  else if (tab === "people") panel = peoplePanel();
+  else if (tab === "requests") panel = await (await import("./participation.js")).renderParticipationAdminPanel();
+  else if (tab === "people") panel = await peoplePanel();
   else if (tab === "president") panel = await presidentPanel();
   else if (["columns", "community", "news"].includes(tab)) panel = await boardPanel(tab, edit);
   else if (tab === "itsme") panel = await itsmePanel();
@@ -257,11 +256,13 @@ export async function renderAdmin() {
 }
 
 export async function prepareCoverPreview(file, previewEl) {
+  const { uploadCoverImage } = await import("../core/image.js");
   const data = await uploadCoverImage(file);
   if (previewEl) { previewEl.style.backgroundImage = `url('${data}')`; previewEl.textContent = ""; previewEl.dataset.coverData = data; }
   return data;
 }
 export async function prepareProfilePreview(file, previewEl) {
+  const { uploadProfileImage } = await import("../core/image.js");
   const data = await uploadProfileImage(file);
   if (previewEl) { previewEl.style.backgroundImage = `url('${data}')`; previewEl.textContent = ""; previewEl.dataset.profileData = data; }
   return data;

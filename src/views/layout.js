@@ -1,6 +1,6 @@
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.26-mobile-foundation";
+import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { getUserSession } from "../core/user.js";
-import { SERVICE_CATALOG, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { SERVICE_CATALOG, serviceIconSvg } from "../data/service-catalog.js";
 
 export const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"

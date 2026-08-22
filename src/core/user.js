@@ -1,4 +1,4 @@
-import { performAction } from "./repository.js";
+import { performAction, clearAuthorProfileCache } from "./repository.js";
 
 const GUEST_RECENT_KEY = "jcv3:guest-recent:v1";
 let session = { authenticated: false, user: null };
@@ -49,8 +49,11 @@ export async function initializeUserState() {
     const auth = await apiJSON("/api/v3/user/session");
     if (auth.ok && auth.authenticated && auth.user) {
       session = { authenticated: true, user: auth.user };
-      const act = await apiJSON("/api/v3/user/activity");
-      activity = act.ok && act.activity ? { ...emptyActivity(), ...act.activity } : emptyActivity();
+      if (auth.activity) activity = { ...emptyActivity(), ...auth.activity };
+      else {
+        const act = await apiJSON("/api/v3/user/activity");
+        activity = act.ok && act.activity ? { ...emptyActivity(), ...act.activity } : emptyActivity();
+      }
       const guest = readGuestRecent();
       if (guest.length) {
         const merged = await performAction("recent-merge", { personIds: guest });
@@ -70,6 +73,7 @@ export async function initializeUserState() {
 export function isUserStateInitialized() { return initialized; }
 export function getUserSession() { return { authenticated: session.authenticated, user: session.user ? { ...session.user } : null }; }
 export function getUserActivity() { return JSON.parse(JSON.stringify(activity)); }
+export function applyServerActivity(nextActivity = {}) { activity = { ...emptyActivity(), ...(nextActivity || {}) }; return getUserActivity(); }
 
 export async function loginUser(id, password) {
   const body = await apiJSON("/api/v3/user/session", {
@@ -79,8 +83,11 @@ export async function loginUser(id, password) {
   });
   if (!body.ok) return { ok: false, error: body.error === "INVALID_CREDENTIALS" ? "아이디 또는 비밀번호가 올바르지 않습니다" : authErrorMessage(body.error, "로그인에 실패했습니다") };
   session = { authenticated: true, user: body.user };
-  const act = await apiJSON("/api/v3/user/activity");
-  activity = act.ok && act.activity ? { ...emptyActivity(), ...act.activity } : emptyActivity();
+  if (body.activity) activity = { ...emptyActivity(), ...body.activity };
+  else {
+    const act = await apiJSON("/api/v3/user/activity");
+    activity = act.ok && act.activity ? { ...emptyActivity(), ...act.activity } : emptyActivity();
+  }
   const guest = readGuestRecent();
   if (guest.length) {
     const merged = await performAction("recent-merge", { personIds: guest });
@@ -204,5 +211,6 @@ export async function updateMyProfile(input = {}) {
   });
   if (!body.ok) return { ok: false, error: body.error || "PROFILE_UPDATE_FAILED" };
   session = { authenticated: true, user: body.user };
+  clearAuthorProfileCache(body.user?.id || "");
   return { ok: true, user: body.user };
 }

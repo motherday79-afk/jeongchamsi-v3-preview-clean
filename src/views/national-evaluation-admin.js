@@ -1,5 +1,5 @@
 import { getDomain, saveDomain } from "../core/repository.js";
-import { listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
+import { listAllPoliticians } from "../data/person-provider.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 const assembly = listAllPoliticians().filter(p => p.type === "assembly");

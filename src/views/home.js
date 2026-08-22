@@ -1,27 +1,14 @@
-import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
+import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js";
 import { getHomeSnapshot, getAuthorProfiles } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.26-mobile-foundation";
+import { drawer, siteHeader, footer } from "./layout.js";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
-import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
-import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
-import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.24-showcase-hero-now";
+import { launcherServices, serviceIconSvg } from "../data/service-catalog.js";
+import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js";
+import { authorIdentity, authorOwnerIds } from "./author-identity.js";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
 }[c]));
-
-let initialHomeSnapshot = null;
-let initialHomeSnapshotReuse = 0;
-async function getInitialHomeSnapshot() {
-  if (initialHomeSnapshot && initialHomeSnapshotReuse > 0) {
-    initialHomeSnapshotReuse -= 1;
-    return initialHomeSnapshot;
-  }
-  const data = await getInitialHomeSnapshot();
-  initialHomeSnapshot = data;
-  initialHomeSnapshotReuse = 1;
-  return data;
-}
 
 function recentPersonSlotLabel(id = "", getPerson = null) {
   const person = typeof getPerson === "function" ? getPerson(id) : null;
@@ -216,8 +203,8 @@ export async function renderHome() {
   const generationHasVotes = Object.values(generationDisplayResults).some(votes => Object.values(votes || {}).some(v => Number(v || 0) > 0));
   const needsPersonLookup = userReady && ((userSummary.recentPeople || []).length || data.nationalEvaluation?.subjectId || generationHasVotes);
   if (needsPersonLookup) {
-    const provider = await import("../data/person-provider.js?v=alpha6.0.20-function-detail");
-    getPerson = provider.getPersonSlotById;
+    const provider = await import("../data/person-lite.js");
+    getPerson = provider.getPersonLiteById;
   }
   const columns = published(data.columns?.items || []);
   const lead = columns.find(x => x.featured) || columns[0] || null;
@@ -233,7 +220,7 @@ export async function renderHome() {
   const news = published(data.news?.items || []).slice(0, 5);
   while (news.length < 5) news.push(null);
 
-  const homeAuthorProfiles = await getAuthorProfiles(authorOwnerIds([...columns, ...community, ...(data.itsme?.items || []), ...(data.news?.items || [])]));
+  const homeAuthorProfiles = await getAuthorProfiles(authorOwnerIds([lead, ...minis, ...general].filter(Boolean)));
 
   const poll = published(data.polls?.items || [])[0] || null;
   const itsmeHomeItems = published(data.itsme?.items || [])
@@ -249,7 +236,7 @@ export async function renderHome() {
     cta:"수강 가능 일정 확인",
     ...(data.academy?.config || {})
   };
-  const academySlots = (data.academy?.slots || []).filter(x => x.published !== false).sort((a,b)=>`${a.date||""} ${a.startTime||""}`.localeCompare(`${b.date||""} ${b.startTime||""}`)).slice(0, 4);
+  const academySlots = [...(data.academy?.slots || [])].filter(x => x.published !== false).sort((a,b)=>`${a.date||""} ${a.startTime||""}`.localeCompare(`${b.date||""} ${b.startTime||""}`)).slice(0, 4);
 
   const keywords = (data.keywords?.items || []).filter(x => x.published !== false).slice(0, 8);
   const recentPeople = userSummary.recentPeople || [];
@@ -328,12 +315,12 @@ export async function renderHome() {
 
   let generationAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
+    const adminTools = await import("./generation-admin.js");
     generationAdmin = adminTools.renderGenerationAdminEditor(data.generation || {}, { context:"home", open:false });
   }
   let nationalAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
+    const adminTools = await import("./national-evaluation-admin.js");
     nationalAdmin = adminTools.renderNationalEvaluationAdminEditor(nationalEvaluation, { context:"home", open:false });
   }
 

@@ -1,14 +1,6 @@
 import { getDomain, getAuthorProfiles } from "../core/repository.js";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.24-showcase-hero-now";
-import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
-import {
-  listAssemblyMembers,
-  listMetropolitanLeaders,
-  listBasicLeaders,
-  listAllPoliticians,
-  getPersonSlotById,
-  PERSON_COUNTS
-} from "../data/person-provider.js?v=alpha6.0.20-function-detail";
+import { pageShell, esc } from "./layout.js";
+import { GOVERNMENT_SEED } from "../data/government-seed.js";
 import {
   getUserSession,
   getUserActivity,
@@ -18,7 +10,18 @@ import {
   hasNationalEvaluationVote,
   isPostLiked
 } from "../core/user.js";
-import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.24-showcase-hero-now";
+import { authorIdentity, authorOwnerIds } from "./author-identity.js";
+
+let personProvider = null;
+async function ensurePersonProvider() {
+  if (!personProvider) personProvider = await import("../data/person-provider.js");
+  return personProvider;
+}
+function listAssemblyMembers() { return personProvider.listAssemblyMembers(); }
+function listMetropolitanLeaders() { return personProvider.listMetropolitanLeaders(); }
+function listBasicLeaders() { return personProvider.listBasicLeaders(); }
+function listAllPoliticians() { return personProvider.listAllPoliticians(); }
+function getPersonSlotById(id) { return personProvider.getPersonSlotById(id); }
 
 function pct(option, options) {
   const total = (options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
@@ -133,11 +136,14 @@ export async function renderPresident() {
   </main>`);
 }
 
-const NOW_TYPES = Object.freeze({
-  assembly: { label: "국회의원", count: PERSON_COUNTS.assembly, get: listAssemblyMembers },
-  metropolitan: { label: "광역단체장", count: PERSON_COUNTS.metropolitan, get: listMetropolitanLeaders },
-  basic: { label: "기초단체장", count: PERSON_COUNTS.basic, get: listBasicLeaders }
-});
+function nowTypes() {
+  const counts = personProvider.PERSON_COUNTS;
+  return {
+    assembly: { label: "국회의원", count: counts.assembly, get: listAssemblyMembers },
+    metropolitan: { label: "광역단체장", count: counts.metropolitan, get: listMetropolitanLeaders },
+    basic: { label: "기초단체장", count: counts.basic, get: listBasicLeaders }
+  };
+}
 function nowCard(person) {
   const title = person?.name || `${person.roleLabel} ${String(person.slot).padStart(3, "0")}`;
   const meta = [person?.party, person?.jurisdiction].filter(Boolean).join(" · ");
@@ -147,6 +153,8 @@ function nowCard(person) {
   return `<a class="person-slot-card data-connected" href="/person/${esc(person.id)}" data-route aria-label="${esc(title)} 상세페이지"><span class="slot-no">#${String(person.slot).padStart(3, "0")}</span><div class="person-photo-placeholder"></div><div class="slot-lines"><b class="slot-data-name">${esc(title)}</b><span class="slot-data-meta">${esc(meta)}</span><span class="slot-data-short">${esc(short)}</span></div></a>`;
 }
 export async function renderNow(search = "") {
+  await ensurePersonProvider();
+  const NOW_TYPES = nowTypes();
   const params = new URLSearchParams(search || "");
   const partyParam = String(params.get("party") || "").trim();
   const searchParam = String(params.get("search") || "").trim();
@@ -262,6 +270,7 @@ function trendingItems() {
   }));
 }
 export async function renderTrending() {
+  await ensurePersonProvider();
   const items = trendingItems();
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">TRENDING NOW</span><h1>실시간 급상승 정치인</h1><p>실시간 변동 데이터가 연결되기 전에는 NOW Rank 순위를 기준으로 정치인을 보여줍니다</p></section><section class="content-card"><div class="section-title"><h2>정치인 TOP 10</h2><span>NOW Rank fallback</span></div>${items.length ? `<div class="trending-rank-list">${items.map((x, i) => `<button type="button" data-go="${esc(x.href || `/search?q=${encodeURIComponent(x.title || "")}`)}"><strong>${i + 1}</strong><b>${esc(x.title)}${x.meta ? `<small>${esc(x.meta)}</small>` : ""}</b><span>상세 →</span></button>`).join("")}</div>` : `<div class="empty-state"><h2>급상승 데이터가 없습니다</h2><p>관리자에서 직접 TOP 10을 입력하거나 게시물이 쌓이면 참여지표 기반으로 구성됩니다</p></div>`}</section></main>`);
 }
@@ -348,6 +357,7 @@ function compareNarrative(person, metrics, side) {
 }
 
 export async function renderCompare(search = "") {
+  await ensurePersonProvider();
   const params = new URLSearchParams(search || "");
   const a = params.get("a") || "";
   const b = params.get("b") || "";
@@ -366,6 +376,7 @@ export async function renderCompare(search = "") {
 }
 
 export async function renderGeneration(search = "") {
+  await ensurePersonProvider();
   const data = await getDomain("generation");
   const session = getUserSession();
   const ages = ["10대", "20대", "30대", "40대", "50대", "60대+"];
@@ -404,7 +415,7 @@ export async function renderGeneration(search = "") {
 
   let generationAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
+    const adminTools = await import("./generation-admin.js");
     generationAdmin = adminTools.renderGenerationAdminEditor(data, { context:"detail", open:false });
   }
 
@@ -419,6 +430,7 @@ function nationalEvaluationDisplayVotes(data = {}, personId = "") {
 }
 
 export async function renderNationalEvaluation() {
+  await ensurePersonProvider();
   const data = await getDomain("nationalEvaluation");
   const session = getUserSession();
   const person = data.subjectId ? getPersonSlotById(data.subjectId) : null;
@@ -441,13 +453,14 @@ export async function renderNationalEvaluation() {
   const historyMarkup = `<section class="content-card"><div class="section-title"><h2>지난 전국 평가</h2><span>${history.length}건</span></div>${history.length ? `<div class="evaluation-history-list">${history.map(x => `<article><div><b>${esc(x.label)}</b><span>${x.count}명 참여</span></div><p>긍정 ${x.positive}% · 보통 ${x.neutral}% · 부정 ${x.negative}%</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 종료된 이전 평가가 없습니다</div>`}</section>`;
   let nationalAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
-    const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
+    const tools = await import("./national-evaluation-admin.js");
     nationalAdmin = tools.renderNationalEvaluationAdminEditor(data, { context:"detail", open:false });
   }
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NATIONAL EVALUATION</span><h1>국회의원 전국 평가제</h1><p>현재 평가와 지난 평가 결과를 한 페이지에서 확인합니다</p></section>${nationalAdmin}${person ? `<section class="person-detail-hero content-card"><div class="person-detail-photo"></div><div class="person-detail-title"><span class="eyebrow">CURRENT SUBJECT</span><h1>${esc(slotLabel(person))}</h1><p>${esc(person.party || "")} · ${esc(person.jurisdiction || "")}</p><div class="person-detail-badges"><span>전국 평가 대상</span><span>${data.enabled ? "평가 진행중" : "평가 일시중지"}</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세페이지</button></div></section><section class="content-card"><div class="section-title"><h2>현재 평가 결과</h2><span>${total}명 참여</span></div><div class="evaluation-result-grid"><article><small>긍정</small><strong>${share("positive")}%</strong><span>${Number(votes.positive || 0)}표</span></article><article><small>보통</small><strong>${share("neutral")}%</strong><span>${Number(votes.neutral || 0)}표</span></article><article><small>부정</small><strong>${share("negative")}%</strong><span>${Number(votes.negative || 0)}표</span></article></div></section><section class="content-card"><div class="section-title"><h2>전국 평가 참여</h2><span>${voted ? "참여 완료" : voting ? "평가 진행중" : "평가 중지"}</span></div>${!session.authenticated ? `<div class="member-login-prompt"><span>평가 참여는 로그인 후 가능합니다</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>` : !voting ? `<div class="empty-inline">관리자가 평가를 활성화하면 참여할 수 있습니다</div>` : voted ? `<div class="empty-inline">이 평가에 이미 참여했습니다</div>` : `<form class="evaluation-vote-form" data-national-evaluation-form data-person-id="${esc(person.id)}"><label><input type="radio" name="rating" value="positive" required><b>긍정 평가</b><span>전반적으로 잘하고 있다고 봅니다</span></label><label><input type="radio" name="rating" value="neutral" required><b>보통</b><span>긍정과 아쉬움이 비슷합니다</span></label><label><input type="radio" name="rating" value="negative" required><b>부정 평가</b><span>전반적으로 아쉽다고 봅니다</span></label><button class="primary-btn" type="submit">평가 제출</button><div class="save-state" data-national-evaluation-state></div></form>`}</section>` : `<section class="content-card"><div class="empty-state tall"><div class="empty-icon">評</div><h2>평가 대상 선택 전</h2><p>관리자에서 국회의원 300개 슬롯 중 한 명을 선택하면 이 페이지에서 바로 평가할 수 있습니다</p></div></section>`}${historyMarkup}</main>`);
 }
 
 export async function renderSearch(query = "") {
+  await ensurePersonProvider();
   const rawQ = String(query || "").trim();
   const { party, terms } = searchTerms(rawQ);
   const [columns, community, news, itsme] = await Promise.all([
