@@ -1,6 +1,6 @@
 {
-  "version": "v3.0.0-alpha6.0.36.30",
-  "build": "PHOTO GLOBAL LINK ROOTFIX",
+  "version": "v3.0.0-alpha6.0.36.31",
+  "build": "PHOTO CHAIN ROOTFIX",
   "vercel_function_count": 1,
   "vercel_function": [
     "api/gateway.js"
@@ -56,6 +56,37 @@
       "MY recent",
       "compare",
       "search politician/evaluation"
+    ]
+  },
+  "photo_chain_rootfix": {
+    "valid_optimizer_variants": {
+      "tiny": "64/q55",
+      "mini": "96/q55",
+      "sidebar": "64/q55",
+      "card": "160/q55",
+      "profile": "384/q65"
+    },
+    "invalid_widths_removed": [
+      72,
+      80
+    ],
+    "graceful_image_failure_fallback": true,
+    "generation_top15_background_image_removed": true,
+    "linked_surfaces": [
+      "NOW",
+      "person detail",
+      "generation ranking",
+      "national evaluation home/detail",
+      "recent sidebar",
+      "MY recent",
+      "compare",
+      "search politician/evaluation"
+    ],
+    "self_contained_files": [
+      "person-lite.js",
+      "person-provider.js",
+      "home-person-preview.js",
+      "politician-photo-index.js"
     ]
   }
 }

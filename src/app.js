@@ -164,6 +164,14 @@ function closeServiceMore() {
 }
 async function rerenderNoScroll(nextActivity = null) { clearDomainCache(); if (nextActivity) applyServerActivity(nextActivity); await render(currentRoute(), { resetScroll: false }); }
 
+document.addEventListener("error", event => {
+  const target = event.target;
+  if (!(target instanceof HTMLImageElement) || !target.matches("img[data-politician-photo]")) return;
+  const shell = target.parentElement;
+  target.remove();
+  shell?.classList.remove("has-photo");
+}, true);
+
 document.addEventListener("click", async event => {
   const insideMore = event.target.closest(".service-more");
   if (!insideMore) closeServiceMore();

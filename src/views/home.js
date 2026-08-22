@@ -42,7 +42,7 @@ function photoAsset(id = "", variant = "mini", alt = "정치인 사진", options
   const sizes = options.sizes ? ` sizes="${esc(options.sizes)}"` : "";
   return {
     photo,
-    img:`<img src="${esc(photo.url)}" alt="${esc(alt)}" width="${photo.width}" height="${photo.width}" loading="${loading}" decoding="async" fetchpriority="${fetchpriority}"${sizes}>`
+    img:`<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="${loading}" decoding="async" fetchpriority="${fetchpriority}"${sizes}>`
   };
 }
 
@@ -289,7 +289,7 @@ export async function renderHome() {
   };
   const rankTop10 = nowPeople.slice(0,10).map((p,i)=>{
     const photo=politicianPhoto(p.id,"mini");
-    const photoMarkup=photo ? `<img src="${esc(photo.url)}" alt="${esc(p.name)}" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low">` : "";
+    const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low">` : "";
     return `<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`;
   }).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");

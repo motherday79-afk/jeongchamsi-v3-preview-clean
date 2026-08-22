@@ -34,7 +34,7 @@ function roleLabel(role = "member") { return role === "admin" ? "관리자" : ro
 function recentPhotoMarkup(id = "", alt = "정치인 사진") {
   const photo = politicianPhoto(id, "tiny");
   if (!photo) return `<span class="recent-person-avatar"></span>`;
-  return `<span class="recent-person-avatar has-photo" style="--photo-position:${esc(photo.focus || "50% 28%")}"><img src="${esc(photo.url)}" alt="${esc(alt)}" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low" sizes="42px"></span>`;
+  return `<span class="recent-person-avatar has-photo" style="--photo-position:${esc(photo.focus || "50% 28%")}"><img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low" sizes="42px"></span>`;
 }
 
 function currentAge(birthYear) {

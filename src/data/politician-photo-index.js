@@ -7,9 +7,9 @@
  */
 
 const VARIANTS = Object.freeze({
-  tiny: Object.freeze({ width: 72, quality: 55 }),
+  tiny: Object.freeze({ width: 64, quality: 55 }),
   mini: Object.freeze({ width: 96, quality: 55 }),
-  sidebar: Object.freeze({ width: 80, quality: 55 }),
+  sidebar: Object.freeze({ width: 64, quality: 55 }),
   card: Object.freeze({ width: 160, quality: 55 }),
   profile: Object.freeze({ width: 384, quality: 65 })
 });
@@ -97,9 +97,13 @@ const PHOTO_INDEX = Object.freeze({
   })
 });
 
+const ALLOWED_WIDTHS = new Set([64, 96, 128, 160, 256, 384]);
+const ALLOWED_QUALITIES = new Set([55, 65]);
 function optimizerUrl(sourceUrl, width, quality) {
   if (!sourceUrl) return "";
-  return `/_vercel/image?url=${encodeURIComponent(sourceUrl)}&w=${width}&q=${quality}`;
+  const safeWidth = ALLOWED_WIDTHS.has(Number(width)) ? Number(width) : 160;
+  const safeQuality = ALLOWED_QUALITIES.has(Number(quality)) ? Number(quality) : 55;
+  return `/_vercel/image?url=${encodeURIComponent(sourceUrl)}&w=${safeWidth}&q=${safeQuality}`;
 }
 
 export function politicianPhotoMeta(id = "") {
@@ -116,7 +120,7 @@ export function politicianPhoto(id = "", variant = "card") {
     width:spec.width,
     quality:spec.quality,
     url:optimizerUrl(meta.sourceUrl, spec.width, spec.quality),
-    modifiedNote:"정참시: 얼굴 중심 포커스 · 리사이즈 · WebP 저용량 최적화",
+    modifiedNote:"정참시: 얼굴 중심 포커스 · 허용 규격 리사이즈 · WebP 저용량 캐시",
     verified:true
   });
 }

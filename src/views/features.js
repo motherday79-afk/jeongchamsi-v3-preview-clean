@@ -44,7 +44,7 @@ function personPhotoMarkup(person, className = "search-person-avatar", { side = 
   const focus = String(person?.photoFocus || "50% 28%");
   const extra = side ? ` ${side}` : "";
   if (!photo) return `<span class="${className}${extra}"></span>`;
-  return `<span class="${className}${extra} has-photo" style="--photo-position:${esc(focus)}"><img src="${esc(photo)}" alt="${esc(person?.name || "정치인")}" width="${size}" height="${size}" loading="${eager ? "eager" : "lazy"}" decoding="async" fetchpriority="${eager ? "high" : "low"}"></span>`;
+  return `<span class="${className}${extra} has-photo" style="--photo-position:${esc(focus)}"><img data-politician-photo src="${esc(photo)}" alt="" width="${size}" height="${size}" loading="${eager ? "eager" : "lazy"}" decoding="async" fetchpriority="${eager ? "high" : "low"}"></span>`;
 }
 const PARTY_ALIASES = Object.freeze([
   { canonical:"더불어민주당", aliases:["더불어민주당","더불어 민주당","민주당","더민주"] },
@@ -411,7 +411,10 @@ export async function renderGeneration(search = "") {
     const meta = [person?.party, person?.jurisdiction].filter(Boolean).join(" · ") || "정치인 정보";
     const share = selectedTotal ? Math.round(Number(count || 0) * 100 / selectedTotal) : 0;
     const photo = person?.photo || "";
-    return `<article class="generation-top15-row" role="button" tabindex="0" data-go="/person/${esc(personId)}"><span class="generation-top15-rank">${index + 1}</span><span class="generation-top15-photo ${photo ? "has-photo" : ""}" ${photo ? `style="background-image:url('${esc(photo)}')"` : ""}></span><span class="generation-top15-person"><b>${esc(name)}</b><small>${esc(meta)}</small></span><span class="generation-top15-result"><i><em style="width:${share}%"></em></i><small>${Number(count || 0).toLocaleString("ko-KR")}표 · ${share}%</small></span></article>`;
+    const photoShell = photo
+      ? `<span class="generation-top15-photo has-photo" style="--photo-position:${esc(person?.photoFocus || "50% 28%")}"><img data-politician-photo src="${esc(photo)}" alt="" width="64" height="64" loading="lazy" decoding="async" fetchpriority="low"></span>`
+      : `<span class="generation-top15-photo"></span>`;
+    return `<article class="generation-top15-row" role="button" tabindex="0" data-go="/person/${esc(personId)}"><span class="generation-top15-rank">${index + 1}</span>${photoShell}<span class="generation-top15-person"><b>${esc(name)}</b><small>${esc(meta)}</small></span><span class="generation-top15-result"><i><em style="width:${share}%"></em></i><small>${Number(count || 0).toLocaleString("ko-KR")}표 · ${share}%</small></span></article>`;
   }).join("");
   const ranking = top15 || `<div class="empty-state generation-top15-empty"><h2>${esc(selectedAge)} 투표 결과를 기다리고 있습니다</h2><p>첫 투표가 들어오면 이곳에 상위 15명까지 순위가 표시됩니다</p></div>`;
 
@@ -463,7 +466,7 @@ export async function renderNationalEvaluation() {
   });
   const historyMarkup = `<section class="content-card"><div class="section-title"><h2>지난 전국 평가</h2><span>${history.length}건</span></div>${history.length ? `<div class="evaluation-history-list">${history.map(x => `<article><div><b>${esc(x.label)}</b><span>${x.count}명 참여</span></div><p>긍정 ${x.positive}% · 보통 ${x.neutral}% · 부정 ${x.negative}%</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 종료된 이전 평가가 없습니다</div>`}</section>`;
   const currentPhotoMarkup = person?.photo
-    ? `<div class="person-detail-photo has-photo" style="--photo-position:${esc(person.photoFocus || "50% 28%")}"><img src="${esc(person.photo)}" alt="${esc(person.name || slotLabel(person))}" width="160" height="160" loading="eager" decoding="async" fetchpriority="high" sizes="116px"></div>`
+    ? `<div class="person-detail-photo has-photo" style="--photo-position:${esc(person.photoFocus || "50% 28%")}"><img data-politician-photo src="${esc(person.photo)}" alt="" width="160" height="160" loading="eager" decoding="async" fetchpriority="high" sizes="116px"></div>`
     : `<div class="person-detail-photo"></div>`;
   let nationalAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {

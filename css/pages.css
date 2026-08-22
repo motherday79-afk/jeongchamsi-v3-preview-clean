@@ -2407,3 +2407,20 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   object-position:var(--photo-position,50% 28%);
 }
 .fake-avatar.has-photo img,.search-person-avatar.has-photo img{pointer-events:none}
+
+/* 0.36.31 PHOTO CHAIN ROOTFIX */
+.generation-top15-photo.has-photo,
+.search-person-avatar.has-photo,
+.fake-avatar.has-photo{
+  overflow:hidden;
+  background-image:none!important;
+}
+.generation-top15-photo.has-photo img,
+.search-person-avatar.has-photo img,
+.fake-avatar.has-photo img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:var(--photo-position,50% 28%);
+}
