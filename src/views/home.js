@@ -255,7 +255,18 @@ export async function renderHome() {
     href:`/person/${p.id}`,
     rank:i+1
   }));
-  const rankTop5 = nowPeople.slice(0,5).map((p,i)=>`<article class="rank-top-card" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
+  const partyToneClass = (party = "") => {
+    const name = String(party || "");
+    if (name.includes("더불어민주당") || name === "민주당") return "party-democratic";
+    if (name.includes("국민의힘")) return "party-peoplepower";
+    if (name.includes("개혁신당")) return "party-reform";
+    if (name.includes("조국혁신당")) return "party-innovation";
+    if (name.includes("진보당")) return "party-progressive";
+    if (name.includes("기본소득당")) return "party-basicincome";
+    if (name.includes("사회민주당")) return "party-socialdemocratic";
+    return "party-independent";
+  };
+  const rankTop5 = nowPeople.slice(0,5).map((p,i)=>`<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
   const rankList10 = nowPeople.slice(5,15).map((p,i)=>`<div class="rank-list-row" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-list-no">${i+6}</span><span class="rank-list-avatar"></span><span class="rank-list-copy"><b>${esc(p.name)}</b><em>${esc(p.party)} · ${esc(p.jurisdiction)}</em></span><span class="rank-list-meta">상세</span></div>`).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
