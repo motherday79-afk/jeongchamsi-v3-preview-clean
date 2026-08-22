@@ -1,4 +1,4 @@
-import { getDomain, getAuthorProfiles } from "../core/repository.js";
+import { getDomain, getAuthorProfiles, getNowPublic } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js";
 import {
@@ -264,24 +264,17 @@ export async function renderPolls(search = "") {
 }
 
 export async function renderKeywords() {
-  const data = await getDomain("keywords");
-  const items = (data.items || []).filter(x => x.published !== false).slice(0, 15);
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">LIVE POLITICAL KEYWORDS</span><h1>실시간 정치키워드</h1><p>메인에서는 상위 8개, 전체페이지에서는 최대 15개까지 보여줍니다</p></section><section class="content-card"><div class="section-title"><h2>실시간 TOP 15</h2><span>${items.length}개 등록</span></div>${items.length ? `<div class="keyword-rank-list">${items.map((x, i) => `<article><strong>${i + 1}</strong><b>${esc(x.label)}</b><span>${esc(x.delta || "")}</span></article>`).join("")}</div>` : `<div class="empty-state"><h2>등록된 키워드가 없습니다</h2><p>관리자에서 최대 15개 키워드를 등록하면 메인과 이 페이지에 표시됩니다</p></div>`}</section></main>`);
+  const live = await getNowPublic();
+  const items = Array.isArray(live?.signals?.keywords) ? live.signals.keywords.slice(0,15) : [];
+  const publishedAt = live?.current?.publishedAt ? formatDate(live.current.publishedAt) : "";
+  return pageShell(`<main class="subpage live-keywords-page"><section class="page-hero"><span class="eyebrow">LIVE POLITICAL KEYWORDS</span><h1>실시간 정치키워드</h1><p>게시된 NOW 데이터의 최근 뉴스 제목을 분석해 지금 반복해서 등장하는 정치 이슈를 보여줍니다</p></section><section class="content-card"><div class="section-title"><h2>실시간 TOP 15</h2><span>${publishedAt ? `NOW 게시 ${esc(publishedAt)}` : "NOW 게시 데이터 대기"}</span></div>${items.length ? `<div class="keyword-rank-list live-keyword-rank-list">${items.map((x, i) => `<article><strong>${i + 1}</strong><b>${esc(x.label)}<small>${Number(x.peopleCount||0)}명 정치인 뉴스에서 포착</small></b><span>${esc(x.meta || `뉴스 ${Number(x.mentions||0)}건`)}</span></article>`).join("")}</div>` : `<div class="empty-state"><h2>아직 추출된 실시간 키워드가 없습니다</h2><p>NOW 데이터를 새로 수집해 게시하면 최근 정치뉴스를 기준으로 자동 생성됩니다</p></div>`}</section></main>`);
 }
 
-function trendingItems() {
-  return listAllPoliticians().slice(0,10).map((p,i) => ({
-    id:p.id,
-    rank:i+1,
-    title:p.name || `${p.roleLabel} ${String(p.slot).padStart(3,"0")}`,
-    meta:[p.party,p.jurisdiction].filter(Boolean).join(" · "),
-    href:`/person/${p.id}`
-  }));
-}
 export async function renderTrending() {
-  await ensurePersonProvider();
-  const items = trendingItems();
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">TRENDING NOW</span><h1>실시간 급상승 정치인</h1><p>실시간 변동 데이터가 연결되기 전에는 NOW Rank 순위를 기준으로 정치인을 보여줍니다</p></section><section class="content-card"><div class="section-title"><h2>정치인 TOP 10</h2><span>NOW Rank fallback</span></div>${items.length ? `<div class="trending-rank-list">${items.map((x, i) => `<button type="button" data-go="${esc(x.href || `/search?q=${encodeURIComponent(x.title || "")}`)}"><strong>${i + 1}</strong><b>${esc(x.title)}${x.meta ? `<small>${esc(x.meta)}</small>` : ""}</b><span>상세 →</span></button>`).join("")}</div>` : `<div class="empty-state"><h2>급상승 데이터가 없습니다</h2><p>관리자에서 직접 TOP 10을 입력하거나 게시물이 쌓이면 참여지표 기반으로 구성됩니다</p></div>`}</section></main>`);
+  const live = await getNowPublic();
+  const items = Array.isArray(live?.signals?.rising) ? live.signals.rising.slice(0,10) : [];
+  const publishedAt = live?.current?.publishedAt ? formatDate(live.current.publishedAt) : "";
+  return pageShell(`<main class="subpage live-trending-page"><section class="page-hero"><span class="eyebrow">TRENDING NOW</span><h1>실시간 급상승 정치인</h1><p>직전 게시 순위 변화가 있으면 순위 상승폭을 우선하고, 첫 게시이거나 동률이면 최근 6시간 뉴스 가속도로 정렬합니다</p></section><section class="content-card"><div class="section-title"><h2>급상승 TOP 10</h2><span>${publishedAt ? `NOW 게시 ${esc(publishedAt)}` : "NOW 게시 데이터 대기"}</span></div>${items.length ? `<div class="trending-rank-list live-trending-rank-list">${items.map((x, i) => `<button type="button" data-go="${esc(x.href)}"><strong>${i + 1}</strong><b>${esc(x.title)}<small>${esc([x.party,x.jurisdiction,`NOW ${x.rank}위`].filter(Boolean).join(" · "))}</small></b><span class="trend-page-signal ${Number(x.rankDelta)>0?"up":x.trendLabel==="NEW"?"new":""}">${esc(x.trendLabel || "NOW")}</span></button>`).join("")}</div>` : `<div class="empty-state"><h2>아직 급상승 데이터가 없습니다</h2><p>NOW 데이터를 게시하면 실시간 급상승 정치인이 자동 구성됩니다</p></div>`}</section></main>`);
 }
 
 export async function renderAcademy() {

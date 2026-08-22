@@ -12,6 +12,7 @@ const routeLoaders = Object.freeze({
   "partners": () => require("../server/v3/routes/partners"),
   "content": () => require("../server/v3/routes/content"),
   "home": () => require("../server/v3/routes/home"),
+  "now-data": () => require("../server/v3/routes/now-data"),
   "livebar": () => require("../server/v3/routes/livebar"),
   "health": () => require("../server/v3/routes/health"),
   "setup": () => require("../server/v3/routes/setup"),

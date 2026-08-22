@@ -255,7 +255,9 @@ export async function renderHome() {
   };
   const academySlots = [...(data.academy?.slots || [])].filter(x => x.published !== false).sort((a,b)=>`${a.date||""} ${a.startTime||""}`.localeCompare(`${b.date||""} ${b.startTime||""}`)).slice(0, 4);
 
-  const keywords = (data.keywords?.items || []).filter(x => x.published !== false).slice(0, 8);
+  const nowSignals = data.nowSignals || { source:"none", keywords:[], rising:[] };
+  const manualKeywords = (data.keywords?.items || []).filter(x => x.published !== false).slice(0, 8);
+  const keywords = Array.isArray(nowSignals.keywords) && nowSignals.keywords.length ? nowSignals.keywords.slice(0, 8) : manualKeywords;
   const recentPeople = userSummary.recentPeople || [];
 
   const publishedNowRows = Array.isArray(data.nowRank?.ranked) ? data.nowRank.ranked : [];
@@ -268,12 +270,18 @@ export async function renderHome() {
         news: row.news || {}
       })).filter(p => p.id && p.name)
     : HOME_NOW_PREVIEW;
-  const trending = nowPeople.slice(0,5).map((p,i) => ({
-    title:p.name,
-    meta:[p.party,p.jurisdiction].filter(Boolean).join(" · "),
-    href:`/person/${p.id}`,
-    rank:i+1
-  }));
+  const trending = Array.isArray(nowSignals.rising) && nowSignals.rising.length
+    ? nowSignals.rising.slice(0,5).map(x => ({
+        ...x,
+        meta:[x.trendLabel, `NOW ${x.rank}위`, x.party, x.jurisdiction].filter(Boolean).join(" · ")
+      }))
+    : nowPeople.slice(0,5).map((p,i) => ({
+        title:p.name,
+        meta:[`NOW ${p.rank || i + 1}위`,p.party,p.jurisdiction].filter(Boolean).join(" · "),
+        href:`/person/${p.id}`,
+        rank:p.rank || i+1,
+        trendLabel:"NOW"
+      }));
   const partyToneClass = (party = "") => {
     const name = String(party || "");
     if (name.includes("더불어민주당") || name === "민주당") return "party-democratic";
@@ -392,7 +400,7 @@ export async function renderHome() {
           const person = typeof getPerson === "function" ? getPerson(id) : null;
           const recentPhoto = photoAsset(id, "tiny", info.name || `${info.group} ${info.number}`, { sizes:"54px" });
           return `<button type="button" class="recent-visual-card" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar ${recentPhoto.photo ? "has-photo" : ""}"${recentPhoto.photo ? ` style="--photo-position:${esc(recentPhoto.photo.focus)}"` : ""}>${recentPhoto.img}</span><b>${esc(info.name || `${info.group} ${info.number}`)}</b><small>${esc(person?.party || info.group)}</small></button>`;
-        }).join("")}</div></section><section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live politician-rising-row" role="button" tabindex="0" data-go="${esc(x.href)}"><span>${i + 1}</span><i><b>${esc(x.title)}</b><small>${esc(x.meta || "")}</small></i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}</section></aside>
+        }).join("")}</div></section><section class="side-card side-keywords live-signal-card"><div class="side-head"><b>실시간 정치키워드</b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid live-keyword-grid">${Array.from({ length: 8 }, (_, i) => { const x=keywords[i]; return x ? `<span class="live-keyword-chip" title="${esc(x.meta || "NOW 뉴스 기반")}"><b>${i+1}</b>${esc(x.label)}</span>` : `<span>${i+1}</span>`; }).join("")}</div><small class="signal-source-note">${nowSignals.source === "published-now" ? "게시된 NOW 뉴스 데이터 기반" : "관리자 등록 키워드"}</small></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising live-signal-card"><div class="side-head"><b>실시간 급상승 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live politician-rising-row" role="button" tabindex="0" data-go="${esc(x.href)}"><span>${i + 1}</span><i><b>${esc(x.title)}</b><small><em class="trend-signal ${Number(x.rankDelta)>0?"up":x.trendLabel==="NEW"?"new":""}">${esc(x.trendLabel || "NOW")}</em>${esc(x.meta ? ` ${x.meta.replace(x.trendLabel || "", "").replace(/^\s*·\s*/, "")}` : "")}</small></i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}<small class="signal-source-note">직전 게시 순위 + 최근 뉴스 가속도</small></section></aside>
     </div></div>
     ${footer()}
     ${drawer()}

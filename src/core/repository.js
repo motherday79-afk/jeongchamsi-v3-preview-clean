@@ -1,10 +1,12 @@
 const CACHE = new Map();
 const AUTHOR_CACHE = new Map();
+const NOW_PUBLIC_CACHE = new Map();
 let storageState = { available: true, error: "" };
 let homeRevision = 0;
 let homeSnapshotCache = null;
 const HOME_CACHE_TTL_MS = 10000;
 const AUTHOR_CACHE_TTL_MS = 15000;
+const NOW_PUBLIC_CACHE_TTL_MS = 10000;
 
 export const DEFAULT_ITSME_CATEGORIES = [
   "내가 대통령이라면",
@@ -173,6 +175,7 @@ export async function getHomeSnapshot({ fresh = false } = {}) {
 export function clearDomainCache(domain) {
   if (domain) CACHE.delete(domain);
   else { CACHE.clear(); invalidateHomeSnapshot(); }
+  NOW_PUBLIC_CACHE.clear();
 }
 
 
@@ -202,6 +205,27 @@ export async function getAuthorProfiles(ownerIds = []) {
     } catch {}
   }
   return profiles;
+}
+
+
+export async function getNowPublic(id = "", { fresh = false } = {}) {
+  const key = String(id || "").trim() || "__all__";
+  const now = Date.now();
+  const cached = NOW_PUBLIC_CACHE.get(key);
+  if (!fresh && cached && now - cached.at < NOW_PUBLIC_CACHE_TTL_MS) return clone(cached.data);
+  try {
+    const suffix = key === "__all__" ? "" : `?id=${encodeURIComponent(key)}`;
+    const body = await requestJSON(`/api/v3/now-data${suffix}`);
+    NOW_PUBLIC_CACHE.set(key, { at: now, data: body });
+    return clone(body);
+  } catch (error) {
+    return { ok:false, error:error.code || error.message, current:null, signals:{source:"none",keywords:[],rising:[]}, person:null };
+  }
+}
+
+export async function getNowPerson(id, options = {}) {
+  const body = await getNowPublic(id, options);
+  return body?.person || null;
 }
 
 export async function getPoliticianRequests() {
