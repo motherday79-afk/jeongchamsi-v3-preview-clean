@@ -1,0 +1,25 @@
+JCV3 0.36.35 NAVER DATA ENGINE QA
+
+[PASS] current real-person roster = 542
+[PASS] assembly = 299
+[PASS] metropolitan = 16
+[PASS] basic = 227
+[PASS] all 542 have non-empty office and NAVER news query
+[PASS] duplicate-name detection: 박지원 x2, 이용우 x2
+[PASS] Search Ads PC/mobile parser
+[PASS] Search Ads < 10 low-volume handling
+[PASS] local office-qualified query + unique-name fallback
+[PASS] ambiguous-name search volume not assigned to one individual
+[PASS] NAVER news dedupe and political-context filtering
+[PASS] NAVER news 6h/24h/7d aggregation
+[PASS] combined politician ID -> search + news adapter
+[PASS] /api/v3 gateway status route returns rosterTotal 542
+[PASS] new engine external sources: NAVER Search Ads + NAVER API HUB News only
+[PASS] no Google/YouTube/Daum/Kakao/BIG KINDS/X reference in new data engine
+[PASS] no v2 runtime/import/require dependency
+
+LOCAL ENV STATUS
+- NAVER Search Ads credentials: not present in this working container
+- NAVER News API credentials: not present in this working container
+Therefore live external calls cannot be verified here without the secret values.
+Mocked API contract tests passed.
