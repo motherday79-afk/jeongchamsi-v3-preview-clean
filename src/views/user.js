@@ -2,6 +2,7 @@ import { pageShell, esc } from "./layout.js";
 import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
 import { BADGE_CATALOG, badgeGemSvg } from "../data/badge-catalog.js";
+import { politicianPhoto } from "../data/politician-photo-index.js";
 
 function authHero(title, description) {
   return `<section class="page-hero"><span class="eyebrow">MEMBER</span><h1>${esc(title)}</h1><p>${esc(description)}</p></section>`;
@@ -30,6 +31,11 @@ function badgeList(activity, authoredCount, commentCount, itsmeCount = 0, role =
   return BADGE_CATALOG.map(x => ({ ...x, earned: earned.has(x.key), representative: String(activity.representativeBadge || "") === x.key, showcased:(activity.showcaseBadges || []).includes(x.key), adminGranted:(activity.grantedBadges || []).includes(x.key), adminOpen:role === "admin" }));
 }
 function roleLabel(role = "member") { return role === "admin" ? "관리자" : role === "partner" ? "정참시 PARTNER" : "일반회원"; }
+function recentPhotoMarkup(id = "", alt = "정치인 사진") {
+  const photo = politicianPhoto(id, "tiny");
+  if (!photo) return `<span class="recent-person-avatar"></span>`;
+  return `<span class="recent-person-avatar has-photo" style="--photo-position:${esc(photo.focus || "50% 28%")}"><img src="${esc(photo.url)}" alt="${esc(alt)}" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low" sizes="42px"></span>`;
+}
 
 function currentAge(birthYear) {
   const year = Number(birthYear || 0);
@@ -143,7 +149,7 @@ export async function renderMyRecent() {
   const recent = getRecentPeople();
   let getPersonSlotById = null;
   if (recent.length) ({ getPersonLiteById: getPersonSlotById } = await import("../data/person-lite.js"));
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">RECENT POLITICIANS</span><h1>최근 본 정치인</h1><p>비로그인 상태에서는 이 브라우저에만 기록하고, 로그인 상태에서는 계정에 저장합니다</p></section><section class="content-card"><div class="section-title"><h2>최근 본 목록</h2><span>${recent.length}명</span></div>${recent.length ? `<div class="recent-person-list">${recent.map((id, i) => `<button type="button" data-go="/person/${esc(id)}"><strong>${i + 1}</strong><span class="recent-person-avatar"></span><b>${esc(personLabel(getPersonSlotById, id))}</b><em>상세보기 →</em></button>`).join("")}</div>` : `<div class="empty-state"><h2>아직 본 정치인이 없습니다</h2><p>NOW Rank 전체 정치인에서 인물을 열어보면 이곳에 기록됩니다</p><button class="primary-btn" type="button" data-go="/now">NOW Rank 보기</button></div>`}</section></main>`);
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">RECENT POLITICIANS</span><h1>최근 본 정치인</h1><p>비로그인 상태에서는 이 브라우저에만 기록하고, 로그인 상태에서는 계정에 저장합니다</p></section><section class="content-card"><div class="section-title"><h2>최근 본 목록</h2><span>${recent.length}명</span></div>${recent.length ? `<div class="recent-person-list">${recent.map((id, i) => `<button type="button" data-go="/person/${esc(id)}"><strong>${i + 1}</strong>${recentPhotoMarkup(id, personLabel(getPersonSlotById, id))}<b>${esc(personLabel(getPersonSlotById, id))}</b><em>상세보기 →</em></button>`).join("")}</div>` : `<div class="empty-state"><h2>아직 본 정치인이 없습니다</h2><p>NOW Rank 전체 정치인에서 인물을 열어보면 이곳에 기록됩니다</p><button class="primary-btn" type="button" data-go="/now">NOW Rank 보기</button></div>`}</section></main>`);
 }
 
 export async function renderMyProfile() {

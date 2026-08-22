@@ -34,6 +34,18 @@ function safeImage(v = "") {
   return s.startsWith("data:image/") || s.startsWith("https://") ? s : "";
 }
 
+function photoAsset(id = "", variant = "mini", alt = "정치인 사진", options = {}) {
+  const photo = politicianPhoto(id, variant);
+  if (!photo) return { photo:null, img:"" };
+  const loading = options.loading || "lazy";
+  const fetchpriority = options.fetchpriority || "low";
+  const sizes = options.sizes ? ` sizes="${esc(options.sizes)}"` : "";
+  return {
+    photo,
+    img:`<img src="${esc(photo.url)}" alt="${esc(alt)}" width="${photo.width}" height="${photo.width}" loading="${loading}" decoding="async" fetchpriority="${fetchpriority}"${sizes}>`
+  };
+}
+
 function dateLabel(v) {
   if (!v) return "";
   try { return new Intl.DateTimeFormat("ko-KR", { month: "2-digit", day: "2-digit" }).format(new Date(v)); }
@@ -159,10 +171,14 @@ function nationalEvaluationHomeMarkup(data = {}, getPerson = null) {
     return `<div class="national-eval-layout"><div class="eval-person"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>아직 선택된 국회의원이 없습니다</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>관리자에서 평가 대상을 선택하면 메인에 바로 표시됩니다</p></div><div class="eval-score"><small>전국 평가</small><strong>—</strong><span>대상 선택 전</span></div></div>`;
   }
   const slot = Number(match[1]);
+  const person = typeof getPerson === "function" ? getPerson(subjectId) : null;
+  const subjectName = person?.name || `국회의원 ${String(slot).padStart(3, "0")}`;
+  const subjectPhoto = photoAsset(subjectId, "sidebar", subjectName, { sizes:"58px" });
+  const avatar = `<span class="eval-avatar ${subjectPhoto.photo ? "has-photo" : ""}"${subjectPhoto.photo ? ` style="--photo-position:${esc(subjectPhoto.photo.focus)}"` : ""}>${subjectPhoto.img}</span>`;
   const votes = nationalEvaluationDisplayVotes(data, subjectId);
   const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
   const positiveShare = total ? Math.round(Number(votes.positive || 0) * 100 / total) : 0;
-  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}"><span class="eval-avatar"></span><div><small>이번 평가 대상</small><b>${esc((typeof getPerson === "function" ? getPerson(subjectId)?.name : "")||`국회의원 ${String(slot).padStart(3, "0")}`)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다" : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다"}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
+  return `<div class="national-eval-layout"><div class="eval-person" role="button" tabindex="0" data-go="/person/${esc(subjectId)}">${avatar}<div><small>이번 평가 대상</small><b>${esc(subjectName)}</b></div></div><div class="eval-question"><strong>“전국 유권자가 이 의원을 평가한다면?”</strong><p>${data.enabled ? "현재 전국 평가가 진행 중입니다" : "평가 대상은 선택되었으며 참여는 현재 일시중지 상태입니다"}</p></div><div class="eval-score"><small>긍정 평가</small><strong>${total ? `${positiveShare}%` : "—"}</strong><span>${total ? `${total.toLocaleString("ko-KR")}명 참여` : "아직 참여 전"}</span></div></div>`;
 }
 
 function pollMarkup(poll) {
@@ -365,7 +381,8 @@ export async function renderHome() {
           if (!id) return `<span class="recent-visual-empty"><span class="recent-circle-empty"></span><b>최근 본 인물</b><small>기록 없음</small></span>`;
           const info = recentPersonSlotLabel(id, getPerson);
           const person = typeof getPerson === "function" ? getPerson(id) : null;
-          return `<button type="button" class="recent-visual-card" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar"></span><b>${esc(info.name || `${info.group} ${info.number}`)}</b><small>${esc(person?.party || info.group)}</small></button>`;
+          const recentPhoto = photoAsset(id, "tiny", info.name || `${info.group} ${info.number}`, { sizes:"54px" });
+          return `<button type="button" class="recent-visual-card" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar ${recentPhoto.photo ? "has-photo" : ""}"${recentPhoto.photo ? ` style="--photo-position:${esc(recentPhoto.photo.focus)}"` : ""}>${recentPhoto.img}</span><b>${esc(info.name || `${info.group} ${info.number}`)}</b><small>${esc(person?.party || info.group)}</small></button>`;
         }).join("")}</div></section><section class="side-card side-keywords"><div class="side-head"><b>실시간 정치키워드</b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising"><div class="side-head"><b>실시간 급상승 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live politician-rising-row" role="button" tabindex="0" data-go="${esc(x.href)}"><span>${i + 1}</span><i><b>${esc(x.title)}</b><small>${esc(x.meta || "")}</small></i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}</section></aside>
     </div></div>
     ${footer()}
