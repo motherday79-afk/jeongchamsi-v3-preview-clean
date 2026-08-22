@@ -238,11 +238,11 @@ async function nowDataPanel() {
   const ready = data.configured?.searchAds && data.configured?.news;
   const draftStatus = draft?.status || "대기";
   return `<section class="admin-panel now-data-center">
-    <div class="admin-panel-head"><div><h2>NOW 데이터 센터</h2><span class="status-pill"><b>NAVER ONLY</b>PC·모바일 검색 + 네이버 뉴스</span></div></div>
+    <div class="admin-panel-head"><div><h2>NOW 데이터 센터</h2><span class="status-pill"><b>LIVE DATA</b>검색광고 PC·모바일 + 뉴스 자동수집</span></div></div>
     <div class="now-data-kpis">
       <article><span>수집 대상</span><strong>${num(data.rosterTotal)}</strong><small>실제 정치인</small></article>
       <article><span>네이버 검색량 연결</span><strong>${data.configured?.searchAds ? "READY" : "연결필요"}</strong><small>검색광고 API · PC/모바일</small></article>
-      <article><span>네이버 뉴스 연결</span><strong>${data.configured?.news ? "READY" : "연결필요"}</strong><small>뉴스 검색 API · 6H/24H/7D</small></article>
+      <article><span>뉴스 수집</span><strong>${data.configured?.news ? "READY" : "확인필요"}</strong><small>${data.configured?.newsNaver ? "네이버 뉴스 API" : "Google News RSS fallback"} · 6H/24H/7D</small></article>
       <article><span>최근 게시</span><strong>${data.current?.publishedAt ? timeText(data.current.publishedAt).slice(5,16) : "—"}</strong><small>${data.current?.draftId || "게시 전"}</small></article>
     </div>
     <div class="now-speed-note"><b>FAST REFRESH</b><span>10명 배치 · 브라우저 2개 워커 · 서버 배치당 5명 병렬 · 검색/뉴스 동시 호출</span></div>
@@ -261,7 +261,7 @@ async function nowDataPanel() {
       <div class="now-progress-stats"><span>정상 <b data-now-success>${num(summary.success)}</b></span><span>부분성공 <b data-now-partial>${num(summary.partial)}</b></span><span>실패 <b data-now-failed>${num(summary.failed)}</b></span><span>남음 <b data-now-remaining>${num(summary.remaining)}</b></span></div>
       <small data-now-live-state>${draft ? `시작 ${timeText(draft.startedAt)}${draft.finalizedAt ? ` · 계산 ${timeText(draft.finalizedAt)}` : ""}` : "새로고침을 실행하면 배치별 진행상태가 이곳에 표시됩니다."}</small>
     </div>
-    ${!ready ? `<div class="notice-box">${!data.configured?.searchAds ? "네이버 검색량 연결 필요" : ""}${!data.configured?.searchAds && !data.configured?.news ? " · " : ""}${!data.configured?.news ? "네이버 뉴스 연결 필요" : ""}. 정참시는 이 두 데이터만 사용합니다.</div>` : ""}
+    ${!ready ? `<div class="notice-box">네이버 검색광고 API 연결이 필요합니다. 뉴스는 네이버 키가 없으면 Google News RSS로 자동 대체됩니다.</div>` : (!data.configured?.newsNaver ? `<div class="notice-box">네이버 뉴스 API 키가 없어 현재 뉴스는 Google News RSS fallback으로 수집합니다. 전체 새로고침은 정상 실행됩니다.</div>` : "")}
     <div class="now-preview-head"><div><h3>새 순위 미리보기</h3><span>${draft?.status === "preview" ? "현재 수집 초안" : data.current ? "최근 게시 스냅샷" : "수집 전"}</span></div>${draft?.failedBatchIndexes?.length ? `<em>오류 포함 배치 ${draft.failedBatchIndexes.length}개</em>` : ""}</div>
     <div class="now-preview-table"><table><thead><tr><th>순위</th><th>정치인</th><th>NOW</th><th>PC</th><th>모바일</th><th>6H 뉴스</th><th>24H 뉴스</th><th>언론사</th><th>상태</th></tr></thead><tbody>${top30.length ? top30.map(row => `<tr><td><b>${row.rank}</b></td><td><strong>${esc(row.person?.name || "")}</strong><small>${esc(row.person?.party || "")} · ${esc(row.person?.office || "")}</small></td><td><b>${Number(row.score || 0).toFixed(1)}</b></td><td>${num(row.search?.monthlyPcQcCnt)}</td><td>${num(row.search?.monthlyMobileQcCnt)}</td><td>${num(row.news?.count6)}</td><td>${num(row.news?.count24)}</td><td>${num(row.news?.sources24)}</td><td><span class="now-row-state ${esc(row.state || "")}">${row.state === "success" ? "정상" : row.state === "partial" ? "부분" : "실패"}</span></td></tr>`).join("") : `<tr><td colspan="9"><div class="empty-inline">아직 계산된 스냅샷이 없습니다.</div></td></tr>`}</tbody></table></div>
   </section>`;

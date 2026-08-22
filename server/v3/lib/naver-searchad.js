@@ -2,11 +2,18 @@ const crypto=require('crypto');
 const BASE_URL='https://api.searchad.naver.com';
 const PATH='/keywordstool';
 
+const BUNDLED_V2_SEARCH_ADS={
+  accessLicense:'0100000000e00f874ceff042e70baf2e37dc29df92f569e1ae6123ddbaa2740118c4138d00',
+  secretKey:'AQAAAADgD4dM7/BC5wuvLjfcKd+SIQc2VFTt12RYJCKvjJZWbw==',
+  customerId:'4471716',
+};
+
 function credentials(){
-  const accessLicense=String(process.env.NAVER_AD_ACCESS_LICENSE||'').trim();
-  const secretKey=String(process.env.NAVER_AD_SECRET_KEY||'').trim();
-  const customerId=String(process.env.NAVER_AD_CUSTOMER_ID||'').trim();
-  return {configured:Boolean(accessLicense&&secretKey&&customerId),accessLicense,secretKey,customerId};
+  const accessLicense=String(process.env.NAVER_AD_ACCESS_LICENSE||BUNDLED_V2_SEARCH_ADS.accessLicense||'').trim();
+  const secretKey=String(process.env.NAVER_AD_SECRET_KEY||BUNDLED_V2_SEARCH_ADS.secretKey||'').trim();
+  const customerId=String(process.env.NAVER_AD_CUSTOMER_ID||BUNDLED_V2_SEARCH_ADS.customerId||'').trim();
+  const source=(process.env.NAVER_AD_ACCESS_LICENSE&&process.env.NAVER_AD_SECRET_KEY&&process.env.NAVER_AD_CUSTOMER_ID)?'vercel-env':'bundled-v2';
+  return {configured:Boolean(accessLicense&&secretKey&&customerId),accessLicense,secretKey,customerId,source};
 }
 function signature(timestamp,method,path,secretKey){return crypto.createHmac('sha256',secretKey).update(`${timestamp}.${method}.${path}`).digest('base64');}
 function numericSearchCount(v){

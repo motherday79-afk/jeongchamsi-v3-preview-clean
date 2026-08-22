@@ -27,3 +27,20 @@ test('news module contains no API HUB endpoint or credential name',()=>{
   const s=fs.readFileSync(newsPath,'utf8');
   assert.equal(/naverapihub|NAVER_API_HUB|X-NCP-APIGW/i.test(s),false);
 });
+
+
+test('missing Naver news credentials falls back to Google News RSS',async()=>{
+  let seen='';
+  const oldFetch=global.fetch;
+  global.fetch=async(url)=>{seen=String(url);return {ok:true,status:200,text:async()=>`<?xml version="1.0"?><rss><channel><item><title>김민석 국회의원 현안 - 테스트신문</title><link>https://news.google.com/rss/articles/x</link><pubDate>${new Date().toUTCString()}</pubDate><description>김민석 국회의원 국회 현안</description><source url="https://example.com">테스트신문</source></item></channel></rss>`};};
+  try{
+    await withEnv({NAVER_NEWS_CLIENT_ID:null,NAVER_NEWS_CLIENT_SECRET:null,NAVER_CLIENT_ID:null,NAVER_CLIENT_SECRET:null},async()=>{
+      const {collectNaverNews}=fresh();
+      const person={name:'김민석',office:'국회의원',party:'더불어민주당',jurisdiction:'서울 영등포구을',region:'서울',entityType:'assembly',ambiguousName:false,disambiguation:[]};
+      const r=await collectNaverNews(person,{nowMs:Date.now()});
+      assert.match(seen,/^https:\/\/news\.google\.com\/rss\/search\?/);
+      assert.equal(r.provider,'google-news-rss-fallback');
+      assert.equal(r.configured,true);
+    });
+  } finally {global.fetch=oldFetch;}
+});
