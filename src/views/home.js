@@ -278,7 +278,18 @@ export async function renderHome() {
     if (name.includes("사회민주당")) return "party-socialdemocratic";
     return "party-independent";
   };
-  const rankTop10 = nowPeople.slice(0,10).map((p,i)=>`<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
+  const partyToneMark = (party = "") => {
+    const name = String(party || "");
+    if (name.includes("더불어민주당") || name === "민주당") return "민";
+    if (name.includes("국민의힘")) return "국";
+    if (name.includes("개혁신당")) return "개";
+    if (name.includes("조국혁신당")) return "조";
+    if (name.includes("진보당")) return "진";
+    if (name.includes("기본소득당")) return "기";
+    if (name.includes("사회민주당")) return "사";
+    return "무";
+  };
+  const rankTop10 = nowPeople.slice(0,10).map((p,i)=>`<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar"></div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`).join("");
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
   const loginMobile = !userReady

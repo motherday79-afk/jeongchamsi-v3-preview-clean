@@ -715,3 +715,117 @@ a,.more-btn{--jc-link:#087f74}
   border-color:#e3e8f0!important;
 }
 #generation-president .generation-result-empty .generation-bar{background:#e8edf4!important}
+
+
+/* JEONGCHAMSI alpha6.0.36.14 — DATA VISUAL RHYTHM REFINE
+   Scope lock: National Evaluation + Compare + NOW Rank only. */
+
+/* NATIONAL EVALUATION — brand mint in the label/title signature, color only on the score. */
+#national-eval .eyebrow{color:#087f74!important}
+#national-eval .module-header h2{
+  display:inline-block;
+  position:relative;
+  padding-bottom:10px;
+}
+#national-eval .module-header h2::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:0;
+  width:62%;
+  height:4px;
+  border-radius:999px;
+  background:var(--jc-teal);
+}
+#national-eval .national-eval-layout{
+  background:#fff!important;
+  border-color:#e3e7e9!important;
+  box-shadow:none!important;
+}
+#national-eval .eval-score strong{color:#568447!important}
+
+/* COMPARE — neutral shell; spectrum belongs to the four data dimensions only. */
+#compare .eyebrow{color:#087f74!important}
+#compare .compare-layout{
+  background:#fff!important;
+  border-color:#e3e7e9!important;
+  box-shadow:none!important;
+}
+#compare .compare-sample-badge{
+  display:flex!important;
+  align-items:baseline;
+  gap:5px;
+  margin:-1px 0 13px!important;
+  padding:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#182126!important;
+  font-size:12px!important;
+  font-weight:800!important;
+}
+#compare .compare-sample-badge::before{
+  content:"*";
+  color:var(--jc-red);
+  font-size:17px;
+  line-height:1;
+  font-weight:950;
+}
+#compare .compare-metrics b{color:#4f5a60!important}
+#compare .compare-metrics div:nth-child(1) em{background:var(--jc-blue)!important}
+#compare .compare-metrics div:nth-child(2) em{background:var(--jc-red)!important}
+#compare .compare-metrics div:nth-child(3) em{background:var(--jc-orange)!important}
+#compare .compare-metrics div:nth-child(4) em{background:var(--jc-green)!important}
+#compare .compare-summary b{color:#182126!important}
+
+/* NOW RANK — all cards neutral; party identity is one compact flag only.
+   The one-character mark distinguishes parties that share a similar hue. */
+#now .rank-top-grid-10 .rank-top-card,
+#now .rank-top-grid-10 .rank-top-card:first-child,
+#now .rank-top-grid-10 .rank-top-card.party-democratic,
+#now .rank-top-grid-10 .rank-top-card.party-peoplepower,
+#now .rank-top-grid-10 .rank-top-card.party-reform,
+#now .rank-top-grid-10 .rank-top-card.party-innovation,
+#now .rank-top-grid-10 .rank-top-card.party-progressive,
+#now .rank-top-grid-10 .rank-top-card.party-basicincome,
+#now .rank-top-grid-10 .rank-top-card.party-socialdemocratic,
+#now .rank-top-grid-10 .rank-top-card.party-independent{
+  background:#fff!important;
+  border-color:#e2e6e9!important;
+  color:#172026!important;
+}
+#now .rank-top-grid-10 .rank-top-card .rank-top-no,
+#now .rank-top-grid-10 .rank-top-card:first-child .rank-top-no,
+#now .rank-top-grid-10 .rank-top-card .rank-top-copy b,
+#now .rank-top-grid-10 .rank-top-card .rank-top-copy span,
+#now .rank-top-grid-10 .rank-top-card:first-child .rank-top-copy span{
+  color:#172026!important;
+}
+#now .rank-party-flag{
+  position:absolute;
+  top:-1px;
+  right:13px;
+  z-index:2;
+  width:22px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:0 0 7px 7px;
+  color:#fff;
+  font-size:10px;
+  line-height:1;
+  font-weight:950;
+  box-shadow:0 2px 6px rgba(24,33,38,.10);
+  pointer-events:none;
+}
+#now .party-democratic .rank-party-flag{background:#1f64b8}
+#now .party-peoplepower .rank-party-flag{background:#d9414a}
+#now .party-reform .rank-party-flag{background:#d97d24}
+#now .party-innovation .rank-party-flag{background:#344fa5}
+#now .party-progressive .rank-party-flag{background:#c93648}
+#now .party-basicincome .rank-party-flag{background:#138a80}
+#now .party-socialdemocratic .rank-party-flag{background:#568447}
+#now .party-independent .rank-party-flag{background:#747d82}
+#now .rank-top-card[role="button"]:hover{
+  background:#fbfcfd!important;
+  border-color:#d5dadd!important;
+}
