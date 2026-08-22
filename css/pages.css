@@ -1747,7 +1747,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   background:#fbfdfc;
   cursor:pointer;
 }
-.badge-home-preview button>span{
+.badge-home-preview button>span:not(.badge-gem){
   width:28px;
   height:28px;
   display:grid;
@@ -2280,3 +2280,15 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .badge-jewel-preview>span:has(.badge-gem-silver) small{color:#66737a!important}
 .badge-jewel-preview>span:has(.badge-gem-gold) small{color:#8a5d08!important}
 .badge-jewel-preview>span:has(.badge-gem-platinum) small{color:#087864!important}
+
+
+/* alpha6.0.36.21 — sidebar badge tier color isolation
+   Sidebar preview must never repaint a tier jewel with the brand/platinum tone. */
+.badge-home-jewels button>.badge-gem{
+  border-radius:0!important;
+  background:transparent!important;
+}
+.badge-home-jewels button>.badge-gem-bronze{color:#85563b!important}
+.badge-home-jewels button>.badge-gem-silver{color:#66737a!important}
+.badge-home-jewels button>.badge-gem-gold{color:#8a5d08!important}
+.badge-home-jewels button>.badge-gem-platinum{color:#075e50!important}
