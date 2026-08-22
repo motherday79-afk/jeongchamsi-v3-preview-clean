@@ -1,9 +1,10 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
-import { getHomeSnapshot } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { getHomeSnapshot, getAuthorProfiles } from "../core/repository.js";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.22-author-partner-hub";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
-import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.19-badge-tiers";
+import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.22-author-partner-hub";
+import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.22-author-partner-hub";
+import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.22-author-partner-hub";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -82,22 +83,17 @@ function brandHero(data = {}) {
   </section>`;
 }
 
-function productHero(nowPeople = [], poll = null) {
-  const top = nowPeople.slice(0,3);
-  const total = poll ? (poll.options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0) : 0;
-  const pollLabel = poll?.question || "오늘의 정치, 당신의 선택은?";
-  return `<section class="product-hero" aria-label="정참시 오늘의 정치">
+function productHero() {
+  return `<section class="product-hero product-hero-participation" aria-label="정참시 참여 허브">
     <div class="product-hero-copy">
       <div class="product-hero-kicker"><span>JEONGCHAMSI</span><em>정치에 참여할 시간</em></div>
       <h1>정치를 보는 것에서<br><strong>움직이는 것</strong>으로.</h1>
       <p>인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요.</p>
-      <div class="product-hero-actions"><button type="button" class="hero-action-primary" data-go="/now">지금 정치 보기 <span>→</span></button><button type="button" class="hero-action-secondary" data-go="/poll">시민 선택 참여</button></div>
-      <div class="product-hero-proof"><span><b>NOW</b> 실시간 주목도</span><span><b>CHOICE</b> 시민 설문</span><span><b>IT’S ME</b> 정책 제안</span></div>
+      <div class="product-hero-actions"><button type="button" class="hero-action-primary" data-go="/about">정참시 응원하기 <span>→</span></button><a class="hero-action-secondary" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer">정참시 후원하기 <span>♡</span></a></div>
     </div>
-    <div class="product-hero-live">
-      <div class="hero-live-head"><div><span class="live-dot"></span><b>지금 움직이는 정치</b></div><em>LIVE</em></div>
-      <div class="hero-rank-stack">${top.map((p,i)=>`<button type="button" data-go="/person/${esc(p.id)}"><span class="hero-rank-no">0${i+1}</span><span class="hero-rank-person"><b>${esc(p.name)}</b><small>${esc(p.party)} · ${esc(p.region)}</small></span><span class="hero-rank-arrow">↗</span></button>`).join("")}</div>
-      <div class="hero-poll-mini" role="button" tabindex="0" data-go="/poll"><span>오늘의 시민선택</span><b>${esc(pollLabel)}</b><small>${total ? `${total.toLocaleString("ko-KR")}명 참여 중` : "첫 선택을 기다리고 있어요"}</small><i>투표하기 →</i></div>
+    <div class="product-hero-live hero-participation-hub">
+      <button type="button" class="hero-hub-card hero-hub-request" data-go="/request-politician"><span class="hero-hub-label">POLITICIAN REQUEST</span><strong>찾는 정치인이 없나요?</strong><p>이름만 남겨주세요. 정보를 확인해 등록합니다.</p><em>정치인 등록 요청 →</em></button>
+      <button type="button" class="hero-hub-card hero-hub-partners" data-go="/partners"><span class="hero-hub-label">JEONGCHAMSI PARTNERS</span><strong>정참시와 함께 콘텐츠를 만들어주세요.</strong><p>PARTNER는 COLUMN·NEWS를 직접 작성할 수 있습니다.</p><em>파트너스 신청 →</em></button>
     </div>
   </section>`;
 }
@@ -107,7 +103,7 @@ function productLauncher() {
   return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시는 여러분의 참여로 만들어갑니다.</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(item=>`<button type="button" class="launcher-card launcher-${item.key === "poll" ? "choice" : item.key}" data-go="${item.href}" aria-label="${esc(item.label)} · ${esc(item.description)}"><span class="launcher-icon">${serviceIconSvg(item.key)}</span><span class="launcher-copy"><b>${esc(item.shortLabel || item.label)}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
 }
 
-function columnLead(item) {
+function columnLead(item, authorProfiles = {}) {
   if (!item) return `<div class="column-lead">
     <div class="column-lead-image"></div>
     <div class="column-lead-copy">
@@ -120,19 +116,19 @@ function columnLead(item) {
   return `<div class="column-lead" role="button" tabindex="0" data-go="/column/${esc(item.id)}">
     <div class="column-lead-image ${cover ? "has-cover" : ""}" ${cover ? `style="background-image:url('${cover}')"` : ""}></div>
     <div class="column-lead-copy live">
-      <span class="live-kicker">COLUMN · ${esc(item.author || "정참시")}</span>
+      <span class="live-kicker">COLUMN · ${authorIdentity(item.author || "정참시", item.ownerId, authorProfiles)}</span>
       <h3>${esc(item.title)}</h3>
       <p>${esc(item.summary || item.body || "")}</p>
     </div>
   </div>`;
 }
 
-function columnMini(item) {
+function columnMini(item, authorProfiles = {}) {
   if (!item) return `<article class="column-card"><div class="column-thumb"></div><div class="column-card-copy"><span class="skeleton small-title"></span><span class="skeleton mini"></span></div></article>`;
   const cover = safeImage(item.coverImage);
   return `<article class="column-card" role="button" tabindex="0" data-go="/column/${esc(item.id)}">
     <div class="column-thumb ${cover ? "has-cover" : ""}" ${cover ? `style="background-image:url('${cover}')"` : ""}></div>
-    <div class="column-card-copy live"><b>${esc(item.title)}</b><span>${esc(item.author || "정참시")} · ${dateLabel(item.createdAt)}</span></div>
+    <div class="column-card-copy live"><b>${esc(item.title)}</b><span>${authorIdentity(item.author || "정참시", item.ownerId, authorProfiles)} · ${dateLabel(item.createdAt)}</span></div>
   </article>`;
 }
 
@@ -141,9 +137,9 @@ function communityHot(item) {
   return `<article class="live" role="button" tabindex="0" data-go="/community/${esc(item.id)}"><span>HOT</span><b>${esc(item.title)}</b><p>${esc(item.summary || item.body || "")}</p></article>`;
 }
 
-function communityRow(item, index) {
+function communityRow(item, index, authorProfiles = {}) {
   if (!item) return `<div class="community-row"><span class="community-order">${String(index + 1).padStart(2, "0")}</span><span class="community-copy"><b>정뮤니티 게시물 제목 영역</b><em>말머리 · 작성자 · 시간</em></span><span class="community-stats">댓글 · 조회</span></div>`;
-  return `<div class="community-row live" role="button" tabindex="0" data-go="/community/${esc(item.id)}"><span class="community-order">${String(index + 1).padStart(2, "0")}</span><span class="community-copy"><b>${esc(item.title)}</b><em>${esc(item.author || "정참시")} · ${dateLabel(item.createdAt)}</em></span><span class="community-stats">좋아요 ${Number(item.likes || 0)} · 조회 ${Number(item.views || 0)}</span></div>`;
+  return `<div class="community-row live" role="button" tabindex="0" data-go="/community/${esc(item.id)}"><span class="community-order">${String(index + 1).padStart(2, "0")}</span><span class="community-copy"><b>${esc(item.title)}</b><em>${authorIdentity(item.author || "정참시", item.ownerId, authorProfiles)} · ${dateLabel(item.createdAt)}</em></span><span class="community-stats">좋아요 ${Number(item.likes || 0)} · 조회 ${Number(item.views || 0)}</span></div>`;
 }
 
 function sideNewsRow(item, i) {
@@ -231,6 +227,8 @@ export async function renderHome() {
 
   const news = published(data.news?.items || []).slice(0, 5);
   while (news.length < 5) news.push(null);
+
+  const homeAuthorProfiles = await getAuthorProfiles(authorOwnerIds([...columns, ...community, ...(data.itsme?.items || []), ...(data.news?.items || [])]));
 
   const poll = published(data.polls?.items || [])[0] || null;
   const itsmeHomeItems = published(data.itsme?.items || [])
@@ -325,19 +323,19 @@ export async function renderHome() {
 
   let generationAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.22-author-partner-hub");
     generationAdmin = adminTools.renderGenerationAdminEditor(data.generation || {}, { context:"home", open:false });
   }
   let nationalAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
+    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.22-author-partner-hub");
     nationalAdmin = adminTools.renderNationalEvaluationAdminEditor(nationalEvaluation, { context:"home", open:false });
   }
 
   return `<div class="site-shell">
     ${siteHeader({ memberCount:data.memberCount, liveBar:data.brand?.liveBar })}
 
-    <div class="page-wrap product-home-wrap">${productHero(nowPeople, poll)}${productLauncher()}<div class="portal-layout product-content-grid">
+    <div class="page-wrap product-home-wrap">${productHero()}${productLauncher()}<div class="portal-layout product-content-grid">
       <section class="mobile-utility" aria-label="모바일 빠른 정보">
         ${loginMobile}
         <div class="mobile-keywords"><div class="mobile-utility-head"><b>실시간 정치키워드</b><span role="button" data-go="/keywords">더보기</span></div><div class="mobile-keyword-track">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></div>
@@ -361,9 +359,9 @@ export async function renderHome() {
 
         <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow">NOW RANK</span><h2>지금 가장 주목받는 정치인</h2><p class="module-desc">상위 10명을 두 줄로 간결하게 확인하세요.</p></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="rank-top-grid rank-top-grid-10">${rankTop10}</div></section>
 
-        <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2><p class="module-desc">대표 COLUMN 1개 + 추가 COLUMN 4개 구조.</p></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div>${columnLead(lead)}<div class="column-grid">${minis.map(columnMini).join("")}</div></section>
+        <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2><p class="module-desc">대표 COLUMN 1개 + 추가 COLUMN 4개 구조.</p></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div>${columnLead(lead, homeAuthorProfiles)}<div class="column-grid">${minis.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 
-        <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티.</p></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map(communityRow).join("")}</div></section>
+        <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티.</p></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map((item, index) => communityRow(item, index, homeAuthorProfiles)).join("")}</div></section>
       </main>
 
       <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div><div class="participation-main participation-badge-main" role="button" tabindex="0" data-go="/mypage/activity?tab=badges">${representativeMarkup}</div>${badgePreview}</section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {

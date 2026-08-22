@@ -1,5 +1,5 @@
 const { put } = require("@vercel/blob");
-const { requireAdmin } = require("../../../lib/v3/access");
+const { currentUser } = require("../../../lib/v3/access");
 const { blobToken, blobConfigured } = require("../../../lib/v3/blob");
 
 function safePrefix(v) {
@@ -23,15 +23,18 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const admin = await requireAdmin(req);
-    if (!admin) return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
+    const user = await currentUser(req);
+    if (!user) return res.status(403).json({ ok: false, error: "USER_LOGIN_REQUIRED" });
+    const requestedPrefix = safePrefix(req.body?.prefix);
+    const canUpload = user.role === "admin" || (user.role === "partner" && requestedPrefix === "content-cover");
+    if (!canUpload) return res.status(403).json({ ok: false, error: "UPLOAD_PERMISSION_REQUIRED" });
     const token = blobToken();
     if (!token) return res.status(503).json({ ok: false, error: "BLOB_STORAGE_NOT_CONFIGURED" });
 
     const image = decodeDataUrl(req.body?.dataUrl);
     if (!image) return res.status(400).json({ ok: false, error: "INVALID_IMAGE_PAYLOAD" });
     const ext = image.contentType === "image/webp" ? "webp" : image.contentType === "image/png" ? "png" : "jpg";
-    const prefix = safePrefix(req.body?.prefix);
+    const prefix = requestedPrefix;
     const path = `jcv3/${prefix}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const blob = await put(path, image.buffer, {
       access: "public",

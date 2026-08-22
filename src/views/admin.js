@@ -1,13 +1,13 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.22-author-partner-hub";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.18-livebar-auth-generation";
-import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.19-badge-tiers";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.22-author-partner-hub";
+import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.22-author-partner-hub";
 
 const TABS = [
-  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["people", "인물 관리"], ["president", "대통령"],
+  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["president", "대통령"],
   ["columns", "COLUMN"], ["community", "정뮤니티"], ["itsme", "IT’S ME"], ["news", "정참시 NEWS"],
   ["polls", "시민들의 선택"], ["keywords", "정치키워드"], ["trending", "실시간 급상승"],
   ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["system", "시스템"]
@@ -43,7 +43,7 @@ async function membersPanel() {
   if (!result.ok) return `<section class="admin-panel"><h2>회원관리</h2><div class="notice-box">회원 데이터를 불러오지 못했습니다: ${esc(result.error)}</div></section>`;
   const users = result.users;
   const now = Date.now();
-  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>회원관리</h2><span class="status-pill"><b>MEMBERS</b>${users.length}명</span></div></div><div class="member-admin-note">회원정보 수정, 관리자 권한, 비밀번호 초기화, 기간제재를 한곳에서 관리합니다. 비밀번호 원문은 조회하지 않으며 관리자가 새 비밀번호를 지정하면 즉시 새 해시로 교체됩니다. 마지막 활성 관리자는 자동 보호됩니다.</div><div class="member-admin-search"><input type="search" placeholder="이름 · 아이디 · 닉네임 · 지역 검색" data-member-search></div><div class="member-admin-list member-admin-expanded">${users.map(user => {
+  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>회원관리</h2><span class="status-pill"><b>MEMBERS</b>${users.length}명</span></div></div><div class="member-admin-note">회원정보 수정, MEMBER · PARTNER · ADMIN 권한, 비밀번호 초기화, 기간제재를 한곳에서 관리합니다. 비밀번호 원문은 조회하지 않으며 관리자가 새 비밀번호를 지정하면 즉시 새 해시로 교체됩니다. 마지막 활성 관리자는 자동 보호됩니다.</div><div class="member-admin-search"><input type="search" placeholder="이름 · 아이디 · 닉네임 · 지역 검색" data-member-search></div><div class="member-admin-list member-admin-expanded">${users.map(user => {
     const until = Date.parse(user.suspendedUntil || "");
     const suspended = user.status === "suspended" && (!Number.isFinite(until) || until > now);
     const suspensionText = suspended ? (Number.isFinite(until) ? `정지 ~ ${String(user.suspendedUntil).slice(0,10)}` : "무기한 정지") : "정상";
@@ -63,7 +63,7 @@ async function membersPanel() {
       </div>
       <details class="member-badge-admin"><summary><span><b>배지 관리</b><small>관리자 직접 해금 · 현재 대표 ${esc(badgeByKey(user.representativeBadge)?.name || "미설정")}</small></span><em>${(user.grantedBadges || []).length}개 해금</em></summary><div class="member-badge-grid">${BADGE_CATALOG.map(badge => `<label class="member-badge-chip"><input type="checkbox" data-member-badge="${esc(user.id)}" value="${esc(badge.key)}" ${(user.grantedBadges || []).includes(badge.key) ? "checked" : ""}>${badgeGemSvg(badge.key)}<span><b>${esc(badge.name)}</b><small>${esc(badge.tier)}</small></span></label>`).join("")}</div><p class="field-help">조건을 달성하지 않은 배지도 관리자가 직접 열어줄 수 있습니다. 체크 해제 후 회원정보 저장 시 관리자 해금만 회수됩니다.</p></details>
       <div class="member-access-controls member-access-expanded">
-        <label>권한<select data-member-role="${esc(user.id)}"><option value="member" ${user.role !== "admin" ? "selected" : ""}>일반회원</option><option value="admin" ${user.role === "admin" ? "selected" : ""}>관리자</option></select></label>
+        <label>권한<select data-member-role="${esc(user.id)}"><option value="member" ${user.role === "member" || !user.role ? "selected" : ""}>일반회원</option><option value="partner" ${user.role === "partner" ? "selected" : ""}>정참시 PARTNER</option><option value="admin" ${user.role === "admin" ? "selected" : ""}>관리자</option></select></label>
         <label>상태<select data-member-status="${esc(user.id)}"><option value="active" ${!suspended ? "selected" : ""}>정상</option><option value="suspended" ${suspended ? "selected" : ""}>이용정지</option></select></label>
         <label>정지기간<select data-member-days="${esc(user.id)}"><option value="0" ${suspended && !Number.isFinite(until) ? "selected" : ""}>무기한</option><option value="2" ${durationPreset===2 ? "selected" : ""}>2일</option><option value="7" ${durationPreset===7 ? "selected" : ""}>7일</option><option value="30" ${durationPreset===30 ? "selected" : ""}>30일</option></select></label>
         <label class="member-reason">제재 사유<input data-member-reason="${esc(user.id)}" value="${esc(user.suspensionReason || "")}" maxlength="200" placeholder="선택 입력"></label>
@@ -209,12 +209,12 @@ async function presidentPanel() {
 }
 async function generationPanel() {
   const data = await getDomain("generation");
-  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
+  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.22-author-partner-hub");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>세대가 뽑은 대통령</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/generation-president">외부 페이지</button></div>${adminTools.renderGenerationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function nationalEvaluationPanel() {
   const data = await getDomain("nationalEvaluation");
-  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.18-livebar-auth-generation");
+  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.22-author-partner-hub");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>국회의원 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function systemPanel() {
@@ -237,6 +237,7 @@ export async function renderAdmin() {
   let panel;
   if (tab === "brand") panel = await brandPanel();
   else if (tab === "members") panel = await membersPanel();
+  else if (tab === "requests") panel = await (await import("./participation.js?v=alpha6.0.36.22-author-partner-hub")).renderParticipationAdminPanel();
   else if (tab === "people") panel = peoplePanel();
   else if (tab === "president") panel = await presidentPanel();
   else if (["columns", "community", "news"].includes(tab)) panel = await boardPanel(tab, edit);
@@ -315,7 +316,7 @@ export async function saveAdminForm(form) {
   }
   if (domain === "nationalEvaluation") { const data = await getDomain("nationalEvaluation"); const subjectId = String(fd.get("subjectId") || ""); const nextSubject = /^assembly-\d{3}$/.test(subjectId) ? subjectId : null; const previous = data.subjectId && data.subjectId !== nextSubject ? String(data.subjectId) : ""; data.history = Array.isArray(data.history) ? data.history : []; if (previous && !data.history.some(x => x.subjectId === previous)) data.history.unshift({ subjectId: previous, closedAt: new Date().toISOString() }); data.history = data.history.slice(0, 100); data.subjectId = nextSubject; data.enabled = fd.get("enabled") === "on" && !!data.subjectId; data.results = data.results || {}; return saveDomain("nationalEvaluation", data); }
   const data = await getDomain(domain); const id = form.dataset.itemId || `${domain}-${Date.now().toString(36)}`;
-  if (["columns", "community", "news"].includes(domain)) { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const cover = form.querySelector("[data-cover-preview]")?.dataset.coverData || old?.coverImage || ""; const next = { id, title: fd.get("title"), author: fd.get("author"), category: fd.get("category") || "", summary: fd.get("summary"), body: fd.get("body"), coverImage: cover, featured: fd.get("featured") === "on", published: fd.get("published") === "on", createdAt: old?.createdAt || now, updatedAt: now, likes: old?.likes || 0, views: old?.views || 0, ownerId: old?.ownerId || "" }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }
+  if (["columns", "community", "news"].includes(domain)) { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const cover = form.querySelector("[data-cover-preview]")?.dataset.coverData || old?.coverImage || ""; const next = { id, title: fd.get("title"), author: fd.get("author"), category: fd.get("category") || "", summary: fd.get("summary"), body: fd.get("body"), coverImage: cover, featured: fd.get("featured") === "on", published: fd.get("published") === "on", createdAt: old?.createdAt || now, updatedAt: now, likes: old?.likes || 0, views: old?.views || 0, ownerId: old?.ownerId || getUserSession().user?.id || "" }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }
   else if (domain === "polls") { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const oldVotes = Object.fromEntries((old?.options || []).map(x => [x.label, x.votes || 0])); const labels = splitLines(fd.get("options")).slice(0, 10); const startsRaw = String(fd.get("startsAt") || "").trim(); const endsRaw = String(fd.get("endsAt") || "").trim(); const startsAt = startsRaw ? new Date(startsRaw).toISOString() : ""; const endsAt = endsRaw ? new Date(endsRaw).toISOString() : ""; if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) return { ok: false, error: "POLL_END_MUST_BE_AFTER_START" }; const next = { id, question: fd.get("question"), description: fd.get("description"), options: labels.map((label, i) => ({ id: `${id}-o${i + 1}`, label, votes: oldVotes[label] || 0 })), published: fd.get("published") === "on", startsAt, endsAt, createdAt: old?.createdAt || now, updatedAt: now }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }
   else if (domain === "academy") {
     const list = data.slots || [];

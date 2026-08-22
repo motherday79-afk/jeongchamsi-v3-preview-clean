@@ -175,12 +175,12 @@ module.exports = async function handler(req, res) {
 
 
     if (action === "badge-representative-set") {
-      const validBadges = new Set(["noon-signal","midnight","weekman","superhero","first-participation","citizen-choice","first-penguin","influencer","policy-proposer","opinion-leader","top-community","top-itsme"]);
+      const validBadges = new Set(["noon-signal","midnight","weekman","superhero","first-participation","citizen-choice","first-penguin","influencer","policy-proposer","opinion-leader","top-community","top-itsme","jungchamsi-partner"]);
       const badgeKey = String(payload.badgeKey || "");
       if (badgeKey && !validBadges.has(badgeKey)) return res.status(400).json({ ok:false, error:"INVALID_BADGE" });
       if (badgeKey) {
         const granted = new Set(activity.grantedBadges || []);
-        let unlocked = granted.has(badgeKey);
+        let unlocked = user.role === "admin" || granted.has(badgeKey) || (badgeKey === "jungchamsi-partner" && user.role === "partner");
         if (badgeKey === "citizen-choice") unlocked = unlocked || Object.keys(activity.pollVotes || {}).length > 0;
         if (badgeKey === "first-participation") {
           unlocked = unlocked || Object.keys(activity.pollVotes || {}).length > 0 || Object.keys(activity.generationVotes || {}).length > 0 || Object.keys(activity.nationalEvaluationVotes || {}).length > 0;
@@ -215,8 +215,9 @@ module.exports = async function handler(req, res) {
     if (action === "user-post-save") {
       const domain = String(payload.domain || "");
       const isAdmin = user.role === "admin";
+      const isPartner = user.role === "partner";
       if (!["community", "itsme", "columns", "news"].includes(domain)) return res.status(400).json({ ok: false, error: "INVALID_DOMAIN" });
-      if (["columns", "news"].includes(domain) && !isAdmin) return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
+      if (["columns", "news"].includes(domain) && !isAdmin && !isPartner) return res.status(403).json({ ok: false, error: "PARTNER_REQUIRED" });
       const rawTitle = String(payload.title || "").trim();
       const rawSummary = String(payload.summary || "").trim();
       const rawBody = String(payload.body || "").trim();
@@ -253,8 +254,9 @@ module.exports = async function handler(req, res) {
       const domain = String(payload.domain || "");
       const id = String(payload.id || "");
       const isAdmin = user.role === "admin";
+      const isPartner = user.role === "partner";
       if (!["community", "itsme", "columns", "news"].includes(domain) || !id) return res.status(400).json({ ok: false, error: "INVALID_REQUEST" });
-      if (["columns", "news"].includes(domain) && !isAdmin) return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
+      if (["columns", "news"].includes(domain) && !isAdmin && !isPartner) return res.status(403).json({ ok: false, error: "PARTNER_REQUIRED" });
       const current = (await getJSON(domain)) || defaultDomain(domain);
       const old = (current.items || []).find(x => String(x.id) === id);
       if (!old) return res.status(404).json({ ok: false, error: "POST_NOT_FOUND" });

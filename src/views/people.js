@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.22-author-partner-hub";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
 

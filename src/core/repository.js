@@ -154,3 +154,38 @@ export function clearDomainCache(domain) {
   if (domain) CACHE.delete(domain);
   else CACHE.clear();
 }
+
+
+export async function getAuthorProfiles(ownerIds = []) {
+  const ids = [...new Set((Array.isArray(ownerIds) ? ownerIds : []).map(x => String(x || "").trim()).filter(Boolean))].slice(0, 120);
+  if (!ids.length) return {};
+  try {
+    const body = await requestJSON(`/api/v3/authors?ids=${encodeURIComponent(ids.join(","))}&r=${Date.now()}`);
+    return body?.profiles || {};
+  } catch { return {}; }
+}
+
+export async function getPoliticianRequests() {
+  try { return await requestJSON(`/api/v3/politician-requests?r=${Date.now()}`); }
+  catch (error) { return { ok:false, error:error.code || error.message, items:[] }; }
+}
+export async function submitPoliticianRequest(name) {
+  try { return await requestJSON("/api/v3/politician-requests", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ name }) }); }
+  catch (error) { return { ok:false, error:error.code || error.message }; }
+}
+export async function updatePoliticianRequest(id, status) {
+  try { return await requestJSON("/api/v3/politician-requests", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id, status }) }); }
+  catch (error) { return { ok:false, error:error.code || error.message }; }
+}
+export async function getPartnerApplications() {
+  try { return await requestJSON(`/api/v3/partners?r=${Date.now()}`); }
+  catch (error) { return { ok:false, error:error.code || error.message, items:[] }; }
+}
+export async function submitPartnerApplication(input = {}) {
+  try { return await requestJSON("/api/v3/partners", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(input || {}) }); }
+  catch (error) { return { ok:false, error:error.code || error.message }; }
+}
+export async function updatePartnerApplication(id, status, reviewNote = "") {
+  try { return await requestJSON("/api/v3/partners", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ id, status, reviewNote }) }); }
+  catch (error) { return { ok:false, error:error.code || error.message }; }
+}

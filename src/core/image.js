@@ -56,6 +56,8 @@ async function uploadCompressed(dataUrl, prefix) {
     const map = {
       BLOB_STORAGE_NOT_CONFIGURED: "Vercel Blob 연결이 필요합니다. 관리자 > 시스템에서 이미지 저장 상태를 확인해 주세요.",
       ADMIN_REQUIRED: "관리자 권한이 필요합니다.",
+      UPLOAD_PERMISSION_REQUIRED: "COLUMN·NEWS 이미지는 정참시 PARTNER 또는 관리자만 업로드할 수 있습니다.",
+      USER_LOGIN_REQUIRED: "로그인이 필요합니다.",
       INVALID_IMAGE_PAYLOAD: "이미지 형식을 처리할 수 없습니다."
     };
     throw new Error(map[body.error] || body.error || "이미지 업로드에 실패했습니다.");

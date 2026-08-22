@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.18-livebar-auth-generation";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.22-author-partner-hub";
 import { getDomain } from "../core/repository.js";
 
 function paragraphs(text = "") {

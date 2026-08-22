@@ -10,7 +10,8 @@ export const BADGE_CATALOG = Object.freeze([
   { key:"policy-proposer", tier:"GOLD", name:"정책 제안자", mission:"IT’S ME 정책 제안 작성", kind:"IT’S ME" },
   { key:"opinion-leader", tier:"GOLD", name:"의견 리더", mission:"정뮤니티·댓글 활동 상위 참여", kind:"COMMUNITY" },
   { key:"top-community", tier:"PLATINUM", name:"TOP 1% · 정뮤니티", mission:"정뮤니티 활동 상위 1% 시즌 배지", kind:"시즌" },
-  { key:"top-itsme", tier:"PLATINUM", name:"TOP 1% · IT’S ME", mission:"IT’S ME 활동 상위 1% 시즌 배지", kind:"시즌" }
+  { key:"top-itsme", tier:"PLATINUM", name:"TOP 1% · IT’S ME", mission:"IT’S ME 활동 상위 1% 시즌 배지", kind:"시즌" },
+  { key:"jungchamsi-partner", tier:"PLATINUM", name:"정참시 PARTNER", mission:"정참시 공식 파트너스 승인 회원에게 부여", kind:"공식 파트너" }
 ]);
 
 const ICON_PATHS = Object.freeze({
@@ -25,7 +26,8 @@ const ICON_PATHS = Object.freeze({
   "policy-proposer":`<path d="M5 5h14v10H9l-4 3V5Z"/><path d="m10 12 5-5 2 2-5 5h-2z"/>`,
   "opinion-leader":`<path d="M5 6h9v7H8l-3 2V6Z"/><path d="M13 10h6v6h-3l-3 2v-8Z"/>`,
   "top-community":`<path d="m12 4 2 4 4.5.7-3.2 3.1.8 4.5-4.1-2.1-4.1 2.1.8-4.5-3.2-3.1L10 8z"/><path d="M8 20h8"/>`,
-  "top-itsme":`<path d="M7 5h10l2 5-7 10-7-10z"/><path d="M7 10h10M10 5l2 5 2-5"/>`
+  "top-itsme":`<path d="M7 5h10l2 5-7 10-7-10z"/><path d="M7 10h10M10 5l2 5 2-5"/>`,
+  "jungchamsi-partner":`<path d="M6 7.5 12 4l6 3.5v7L12 20l-6-5.5z"/><path d="M8.8 12.2 11 14.4l4.4-5M4 10l-2 2 2 2M20 10l2 2-2 2"/>`
 });
 
 export function badgeByKey(key = "") { return BADGE_CATALOG.find(x => x.key === String(key || "")) || null; }
