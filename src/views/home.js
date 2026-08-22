@@ -1,10 +1,10 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
 import { getHomeSnapshot, getAuthorProfiles } from "../core/repository.js";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.24-showcase-hero-now";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
-import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
-import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
-import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
+import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
+import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.24-showcase-hero-now";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -83,17 +83,22 @@ function brandHero(data = {}) {
   </section>`;
 }
 
-function productHero() {
+function productHero(brand = {}) {
+  const productHeadline = String(brand?.hero?.productHeadline || "정치를 보는 것에서 움직이는 것으로!").trim() || "정치를 보는 것에서 움직이는 것으로!";
+  const safeHeadline = esc(productHeadline);
+  const headlineHtml = safeHeadline.includes("움직이는 것")
+    ? safeHeadline.replace("움직이는 것", '<br><strong>움직이는 것</strong>')
+    : safeHeadline.replace(/\n/g, "<br>");
   return `<section class="product-hero product-hero-participation" aria-label="정참시 참여 허브">
     <div class="product-hero-copy">
       <div class="product-hero-kicker"><span>JEONGCHAMSI</span><em>정치에 참여할 시간</em></div>
-      <h1>정치를 보는 것에서<br><strong>움직이는 것</strong>으로!</h1>
+      <h1>${headlineHtml}</h1>
       <p>인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요</p>
       <div class="product-hero-actions"><button type="button" class="hero-action-primary" data-go="/about">정참시 응원하기 <span>→</span></button><a class="hero-action-secondary" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer">정참시 후원하기 <span>♡</span></a></div>
     </div>
     <div class="product-hero-live hero-participation-hub">
       <button type="button" class="hero-hub-card hero-hub-request" data-go="/request-politician"><span class="hero-hub-label">POLITICIAN REQUEST</span><strong>찾는 정치인이 없나요?</strong><p>이름만 남겨주세요. 정보를 확인해 등록합니다</p><em>정치인 등록 요청 →</em></button>
-      <button type="button" class="hero-hub-card hero-hub-partners" data-go="/partners"><span class="hero-hub-label">JEONGCHAMSI PARTNERS</span><strong>정참시와 함께 콘텐츠를 만들어주세요.</strong><p>PARTNER는 COLUMN·NEWS를 직접 작성할 수 있습니다</p><em>파트너스 신청 →</em></button>
+      <button type="button" class="hero-hub-card hero-hub-partners" data-go="/partners"><span class="hero-hub-label">JEONGCHAMSI PARTNERS</span><strong>정참시와 함께 콘텐츠를 만들어주세요</strong><p>PARTNER는 COLUMN·NEWS를 직접 작성할 수 있습니다</p><em>파트너스 신청 →</em></button>
     </div>
   </section>`;
 }
@@ -309,33 +314,30 @@ export async function renderHome() {
     return `<article class="generation-card ${i === 1 ? "focus" : ""}" role="button" tabindex="0" data-go="/generation-president?age=${encodeURIComponent(age)}"><span class="generation-age">${age}</span><div class="generation-result"><b>${esc(name)}</b><div class="generation-bar"><i style="width:${share}%"></i></div><small>${Number(top[1]).toLocaleString("ko-KR")}표 · ${share}% · 총 ${total.toLocaleString("ko-KR")}명</small></div></article>`;
   }).join("");
 
-  const earnedHomeBadgeKeys = [];
-  if (userSession.authenticated && userSummary.pollVotes > 0) earnedHomeBadgeKeys.push("first-participation", "citizen-choice");
-  for (const key of userSummary.grantedBadges || []) if (!earnedHomeBadgeKeys.includes(key)) earnedHomeBadgeKeys.push(key);
-  const homeBadges = earnedHomeBadgeKeys.map(key => badgeByKey(key)).filter(Boolean).slice(0,3);
   const representativeBadge = badgeByKey(userSummary.representativeBadge || "");
-  const representativeMarkup = representativeBadge
-    ? `<span class="side-representative-jewel">${badgeGemSvg(representativeBadge.key)}</span><div><b>${esc(representativeBadge.name)}</b><p>대표 배지 · ${esc(representativeBadge.tier)}</p></div>`
-    : `<span class="side-representative-jewel badge-gem-empty"><span>◇</span></span><div><b>${userSession.authenticated ? "대표 배지를 선택하세요" : "대표 배지"}</b><p>${userSession.authenticated ? "배지함에서 원하는 배지를 대표로 설정" : "로그인 후 대표 배지 설정"}</p></div>`;
-  const badgePreview = homeBadges.length
-    ? `<div class="badge-home-preview badge-home-jewels">${homeBadges.map(x => `<button type="button" data-go="/mypage/activity?tab=badges">${badgeGemSvg(x.key)}<b>${esc(x.name)}</b><small>${esc(x.tier)}</small></button>`).join("")}<button type="button" class="badge-more-card" data-go="/mypage/activity?tab=badges"><span>+</span><b>배지함</b><small>전체보기</small></button></div>`
-    : `<button type="button" class="badge-empty-cta" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}"><span class="badge-empty-icon">◇</span><span><b>${userSession.authenticated ? "첫 배지를 획득해보세요" : "로그인하고 배지를 모아보세요"}</b><small>설문·글쓰기·참여 활동으로 시작</small></span><em>›</em></button>`;
+  const showcaseBadges = (userSummary.showcaseBadges || []).map(key => badgeByKey(key)).filter(Boolean).filter(x => x.key !== representativeBadge?.key).slice(0, 3);
+  const badgeSlots = [representativeBadge, ...showcaseBadges];
+  while (badgeSlots.length < 4) badgeSlots.push(null);
+  const badgePreview = `<div class="badge-home-preview badge-home-jewels badge-showcase-four">${badgeSlots.map((badge, index) => badge
+    ? `<button type="button" class="${index === 0 ? "is-representative" : "is-showcase"}" data-go="/mypage/activity?tab=badges" title="${esc(badge.name)}"><span class="badge-slot-label">${index === 0 ? "대표" : "전시"}</span>${badgeGemSvg(badge.key)}<b>${esc(badge.name)}</b><small>${esc(badge.tier)}</small></button>`
+    : `<button type="button" class="badge-showcase-empty" data-go="${userSession.authenticated ? "/mypage/activity?tab=badges" : "/login"}" aria-label="비어 있는 배지 전시 칸"><span class="badge-empty-mark">◇</span><b>${index === 0 ? "대표 배지" : ""}</b><small>${index === 0 && !userSession.authenticated ? "로그인" : ""}</small></button>`
+  ).join("")}</div>`;
 
   let generationAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.23-copy-scroll-hotfix");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
     generationAdmin = adminTools.renderGenerationAdminEditor(data.generation || {}, { context:"home", open:false });
   }
   let nationalAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.23-copy-scroll-hotfix");
+    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
     nationalAdmin = adminTools.renderNationalEvaluationAdminEditor(nationalEvaluation, { context:"home", open:false });
   }
 
   return `<div class="site-shell">
     ${siteHeader({ memberCount:data.memberCount, liveBar:data.brand?.liveBar })}
 
-    <div class="page-wrap product-home-wrap">${productHero()}${productLauncher()}<div class="portal-layout product-content-grid">
+    <div class="page-wrap product-home-wrap">${productHero(data.brand || {})}${productLauncher()}<div class="portal-layout product-content-grid">
       <section class="mobile-utility" aria-label="모바일 빠른 정보">
         ${loginMobile}
         <div class="mobile-keywords"><div class="mobile-utility-head"><b>실시간 정치키워드</b><span role="button" data-go="/keywords">더보기</span></div><div class="mobile-keyword-track">${Array.from({ length: 8 }, (_, i) => `<span>${esc(keywords[i]?.label || String(i + 1))}</span>`).join("")}</div></div>
@@ -364,7 +366,7 @@ export async function renderHome() {
         <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티</p></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map((item, index) => communityRow(item, index, homeAuthorProfiles)).join("")}</div></section>
       </main>
 
-      <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div><div class="participation-main participation-badge-main" role="button" tabindex="0" data-go="/mypage/activity?tab=badges">${representativeMarkup}</div>${badgePreview}</section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {
+      <aside class="side-column">${loginSide}<section class="side-card participation-card side-participation"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div>${badgePreview}</section><section class="side-card side-recent"><div class="side-head"><b>최근 본 정치인</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/recent">전체</span></div><div class="recent-visual-grid">${Array.from({ length: 4 }, (_, i) => {
           const id = recentPeople[i];
           if (!id) return `<span class="recent-visual-empty"><span class="recent-circle-empty"></span><b>최근 본 인물</b><small>기록 없음</small></span>`;
           const info = recentPersonSlotLabel(id, getPerson);

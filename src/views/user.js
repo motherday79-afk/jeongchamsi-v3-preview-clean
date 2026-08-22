@@ -1,9 +1,9 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.24-showcase-hero-now";
 import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { REGION_DATA } from "../data/regions.js";
-import { BADGE_CATALOG, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { BADGE_CATALOG, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
 
 function authHero(title, description) {
   return `<section class="page-hero"><span class="eyebrow">MEMBER</span><h1>${esc(title)}</h1><p>${esc(description)}</p></section>`;
@@ -21,13 +21,15 @@ function formatDate(v) {
 }
 function badgeList(activity, authoredCount, commentCount, itsmeCount = 0, role = "member") {
   const pollCount = Object.keys(activity.pollVotes || {}).length;
+  const generationCount = Object.keys(activity.generationVotes || {}).length;
+  const evaluationCount = Object.keys(activity.nationalEvaluationVotes || {}).length;
   const earned = new Set(activity.grantedBadges || []);
-  if (pollCount + commentCount + authoredCount > 0) earned.add("first-participation");
+  if (pollCount + generationCount + evaluationCount + commentCount + authoredCount > 0) earned.add("first-participation");
   if (pollCount > 0) earned.add("citizen-choice");
   if (itsmeCount > 0) earned.add("policy-proposer");
   if (role === "partner") earned.add("jungchamsi-partner");
   if (role === "admin") BADGE_CATALOG.forEach(x => earned.add(x.key));
-  return BADGE_CATALOG.map(x => ({ ...x, earned: earned.has(x.key), representative: String(activity.representativeBadge || "") === x.key, adminGranted:(activity.grantedBadges || []).includes(x.key), adminOpen:role === "admin" }));
+  return BADGE_CATALOG.map(x => ({ ...x, earned: earned.has(x.key), representative: String(activity.representativeBadge || "") === x.key, showcased:(activity.showcaseBadges || []).includes(x.key), adminGranted:(activity.grantedBadges || []).includes(x.key), adminOpen:role === "admin" }));
 }
 function roleLabel(role = "member") { return role === "admin" ? "관리자" : role === "partner" ? "정참시 PARTNER" : "일반회원"; }
 
@@ -110,7 +112,8 @@ export async function renderMyActivity(search = "") {
     const favorites = activity.favorites || [];
     detail = `<div class="section-title"><h2>즐겨찾기 정치인</h2><span>${favorites.length}명</span></div>${favorites.length ? `<div class="member-link-list">${favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">즐겨찾기한 정치인이 없습니다</div>`}`;
   } else if (tab === "badges") {
-    detail = `<div class="section-title"><h2>내 배지 컬렉션</h2><span>${badges.filter(x => x.earned).length}개 획득 · 총 ${badges.length}종</span></div><p class="badge-catalog-note">획득한 배지 중 하나를 대표 배지로 선택하면 메인 오른쪽 ‘내 참여 · 배지’에 바로 표시됩니다</p><div class="badge-detail-grid badge-jewel-grid">${badges.map(x => `<article class="${x.earned ? "earned" : "locked"} ${x.representative ? "representative" : ""}"><div class="badge-jewel-stage">${badgeGemSvg(x.key)}</div><div class="badge-jewel-copy"><small>${esc(x.tier)} · ${esc(x.kind)}${x.adminOpen ? " · 관리자 전체 개방" : (x.adminGranted ? " · 관리자 해금" : "")}</small><b>${esc(x.name)}</b><p>${esc(x.mission)}</p>${x.earned ? `<button class="ghost-btn badge-representative-btn ${x.representative ? "active" : ""}" type="button" data-badge-representative="${esc(x.key)}">${x.representative ? "대표 배지로 설정됨" : "대표 배지로 설정"}</button>` : `<span class="badge-locked-label">미획득</span>`}</div></article>`).join("")}</div>`;
+    const showcaseCount = badges.filter(x => x.showcased).length;
+    detail = `<div class="section-title"><h2>내 배지 컬렉션</h2><span>${badges.filter(x => x.earned).length}개 획득 · 총 ${badges.length}종</span></div><p class="badge-catalog-note">대표 배지 1개와 내가 보여주고 싶은 전시 배지 3개를 선택할 수 있습니다 · 현재 전시 ${showcaseCount}/3</p><div class="badge-detail-grid badge-jewel-grid">${badges.map(x => `<article class="${x.earned ? "earned" : "locked"} ${x.representative ? "representative" : ""} ${x.showcased ? "showcased" : ""}"><div class="badge-jewel-stage">${badgeGemSvg(x.key)}</div><div class="badge-jewel-copy"><small>${esc(x.tier)} · ${esc(x.kind)}${x.adminOpen ? " · 관리자 전체 개방" : (x.adminGranted ? " · 관리자 해금" : "")}</small><b>${esc(x.name)}</b><p>${esc(x.mission)}</p>${x.earned ? `<div class="badge-choice-actions"><button class="ghost-btn badge-representative-btn ${x.representative ? "active" : ""}" type="button" data-badge-representative="${esc(x.key)}">${x.representative ? "대표 배지" : "대표로 설정"}</button>${x.representative ? `<span class="badge-showcase-note">대표 칸에 노출 중</span>` : `<button class="ghost-btn badge-showcase-btn ${x.showcased ? "active" : ""}" type="button" data-badge-showcase="${esc(x.key)}" ${!x.showcased && showcaseCount >= 3 ? "disabled" : ""}>${x.showcased ? "전시 해제" : (showcaseCount >= 3 ? "전시 3개 선택됨" : "사이드바 전시")}</button>`}</div>` : `<span class="badge-locked-label">미획득</span>`}</div></article>`).join("")}</div>`;
   } else {
     detail = `<div class="section-title"><h2>활동 요약</h2><span>내 기록</span></div><div class="member-stat-grid activity-inner-stats"><article><small>작성 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article><small>좋아요</small><strong>${(activity.likedPosts || []).length}</strong><span>개</span></article><article><small>설문</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></div><div class="member-link-list top-gap"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글·댓글</b><span>${counts.authoredCount + counts.myComments.length}개 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>${getRecentPeople().length}명 →</span></button></div>`;
   }

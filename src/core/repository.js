@@ -48,6 +48,7 @@ const defaults = {
     hero: {
       kicker: "정참시 — 정치에 참여할 시간",
       headline: "바라볼 때가 아닌, 행동할 때 정치가 시작됩니다",
+      productHeadline: "정치를 보는 것에서 움직이는 것으로!",
       subline1: "알고, 비교하고, 선택하고, 평가하는 것",
       subline2: "한 사람의 작은 행동이 정치의 방향을 만듭니다",
       learnLabel: "정참시 더 알아보기",

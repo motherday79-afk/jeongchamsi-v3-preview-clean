@@ -6,7 +6,7 @@ let activity = emptyActivity();
 let initialized = false;
 
 function emptyActivity() {
-  return { favorites: [], recentPeople: [], likedPosts: [], pollVotes: {}, generationVotes: {}, nationalEvaluationVotes: {}, academyApplications: [], grantedBadges: [], representativeBadge: "", updatedAt: null };
+  return { favorites: [], recentPeople: [], likedPosts: [], pollVotes: {}, generationVotes: {}, nationalEvaluationVotes: {}, academyApplications: [], grantedBadges: [], representativeBadge: "", showcaseBadges: [], updatedAt: null };
 }
 function readGuestRecent() {
   try { return JSON.parse(localStorage.getItem(GUEST_RECENT_KEY) || "[]").filter(Boolean).slice(0, 20); }
@@ -162,6 +162,14 @@ export async function setRepresentativeBadge(badgeKey = "") {
   return result;
 }
 
+
+export async function toggleShowcaseBadge(badgeKey = "") {
+  if (!session.authenticated) return { ok:false, requiresLogin:true };
+  const result = await performAction("badge-showcase-toggle", { badgeKey:String(badgeKey || "") });
+  if (result.ok && result.activity) activity = { ...emptyActivity(), ...result.activity };
+  return result;
+}
+
 export async function refreshUserActivity() {
   if (!session.authenticated) return emptyActivity();
   const body = await apiJSON("/api/v3/user/activity");
@@ -182,7 +190,8 @@ export function getUserSummary() {
     nationalEvaluationVotes: Object.keys(activity.nationalEvaluationVotes || {}).length,
     academyApplications: activity.academyApplications?.length || 0,
     grantedBadges: [...(activity.grantedBadges || [])],
-    representativeBadge: String(activity.representativeBadge || "")
+    representativeBadge: String(activity.representativeBadge || ""),
+    showcaseBadges: [...(activity.showcaseBadges || [])].slice(0, 3)
   };
 }
 

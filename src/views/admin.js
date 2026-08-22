@@ -1,10 +1,10 @@
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.24-showcase-hero-now";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { uploadCoverImage, uploadProfileImage } from "../core/image.js";
 import { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS, listAllPoliticians } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
-import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.23-copy-scroll-hotfix";
-import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
+import { APP_VERSION, BUILD_NAME } from "../version.js?v=alpha6.0.36.24-showcase-hero-now";
+import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js?v=alpha6.0.36.24-showcase-hero-now";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["president", "대통령"],
@@ -151,6 +151,7 @@ async function brandPanel() {
   const hero = {
     kicker:"정참시 — 정치에 참여할 시간",
     headline:"바라볼 때가 아닌, 행동할 때 정치가 시작됩니다",
+    productHeadline:"정치를 보는 것에서 움직이는 것으로!",
     subline1:"알고, 비교하고, 선택하고, 평가하는 것",
     subline2:"한 사람의 작은 행동이 정치의 방향을 만듭니다",
     learnLabel:"정참시 더 알아보기",
@@ -181,7 +182,9 @@ async function brandPanel() {
     <form class="admin-form brand-admin-form" data-admin-form="brand-settings">
       <div class="section-title"><h2>상단 함께하는 사람 표시</h2><span>현재 가입 ${actualMemberCount.toLocaleString("ko-KR")}명</span></div>
       <div class="admin-form-row"><label class="check"><input type="checkbox" name="liveBarUseActual" ${liveBar.useActualCount !== false ? "checked" : ""}> 실제 가입 회원수 자동 사용</label><label>수동 표시 인원<input type="number" name="liveBarOverride" min="0" step="1" value="${Math.max(0,Number(liveBar.overrideCount||0))}"></label></div>
-      <div class="section-title top-gap"><h2>메인 타이틀 수정</h2><span>저장 즉시 메인 반영</span></div>
+      <div class="section-title top-gap"><h2>메인 히어로 메인멘트</h2><span>현재 메인 첫 화면에 바로 반영</span></div>
+      <label class="admin-hero-primary-copy">정치를 보는 것에서 움직이는 것으로 영역<textarea name="productHeadline" rows="2" maxlength="180" required>${esc(hero.productHeadline || "정치를 보는 것에서 움직이는 것으로!")}</textarea><small>느낌표·문장까지 입력한 그대로 메인 히어로에 표시됩니다</small></label>
+      <div class="section-title top-gap"><h2>브랜드 상세 문구</h2><span>더 알아보기 페이지용</span></div>
       <label>상단 문구<input name="kicker" maxlength="100" value="${esc(hero.kicker)}"></label>
       <label>메인 문구<textarea name="headline" rows="3" maxlength="180" required>${esc(hero.headline)}</textarea></label>
       <label>서브 1<input name="subline1" maxlength="180" value="${esc(hero.subline1)}"></label>
@@ -209,12 +212,12 @@ async function presidentPanel() {
 }
 async function generationPanel() {
   const data = await getDomain("generation");
-  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.23-copy-scroll-hotfix");
+  const adminTools = await import("./generation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>세대의 선택, 대통령</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/generation-president">외부 페이지</button></div>${adminTools.renderGenerationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function nationalEvaluationPanel() {
   const data = await getDomain("nationalEvaluation");
-  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.23-copy-scroll-hotfix");
+  const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.24-showcase-hero-now");
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>국회의원 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 async function systemPanel() {
@@ -237,7 +240,7 @@ export async function renderAdmin() {
   let panel;
   if (tab === "brand") panel = await brandPanel();
   else if (tab === "members") panel = await membersPanel();
-  else if (tab === "requests") panel = await (await import("./participation.js?v=alpha6.0.36.23-copy-scroll-hotfix")).renderParticipationAdminPanel();
+  else if (tab === "requests") panel = await (await import("./participation.js?v=alpha6.0.36.24-showcase-hero-now")).renderParticipationAdminPanel();
   else if (tab === "people") panel = peoplePanel();
   else if (tab === "president") panel = await presidentPanel();
   else if (["columns", "community", "news"].includes(tab)) panel = await boardPanel(tab, edit);
@@ -282,6 +285,7 @@ export async function saveAdminForm(form) {
       hero: {
         kicker:String(fd.get("kicker") || "").trim(),
         headline:String(fd.get("headline") || "").trim(),
+        productHeadline:String(fd.get("productHeadline") || "정치를 보는 것에서 움직이는 것으로!").trim(),
         subline1:String(fd.get("subline1") || "").trim(),
         subline2:String(fd.get("subline2") || "").trim(),
         learnLabel:String(fd.get("learnLabel") || "").trim(),

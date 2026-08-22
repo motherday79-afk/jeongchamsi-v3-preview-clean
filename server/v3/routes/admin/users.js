@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
       const users = await listUsers();
       const enriched = await Promise.all(users.map(async user => {
         const activity = await getActivity(user.id);
-        return { ...user, grantedBadges: activity.grantedBadges || [], representativeBadge: activity.representativeBadge || "" };
+        return { ...user, grantedBadges: activity.grantedBadges || [], representativeBadge: activity.representativeBadge || "", showcaseBadges: activity.showcaseBadges || [] };
       }));
       return res.status(200).json({ ok: true, users: enriched });
     }
@@ -39,13 +39,15 @@ module.exports = async function handler(req, res) {
         activity.grantedBadges = req.body.grantedBadges.map(String).filter(x => validBadges.has(x)).filter((x,i,a)=>a.indexOf(x)===i);
         const automaticKeys = new Set(["first-participation","citizen-choice","policy-proposer", ...(result.user?.role === "partner" ? ["jungchamsi-partner"] : [])]);
         if (activity.representativeBadge && !automaticKeys.has(activity.representativeBadge) && !activity.grantedBadges.includes(activity.representativeBadge)) activity.representativeBadge = "";
+        if (result.user?.role !== "admin") activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => automaticKeys.has(x) || activity.grantedBadges.includes(x)).slice(0,3);
       }
       if (result.user?.role === "partner" && !activity.grantedBadges.includes("jungchamsi-partner")) activity.grantedBadges.push("jungchamsi-partner");
       if (result.user?.role !== "partner" && result.user?.role !== "admin") {
         activity.grantedBadges = activity.grantedBadges.filter(x => x !== "jungchamsi-partner");
         if (activity.representativeBadge === "jungchamsi-partner") activity.representativeBadge = "";
+        activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => x !== "jungchamsi-partner");
       }
-      if (typeof req.body?.representativeBadge === "string" && (!req.body.representativeBadge || validBadges.has(req.body.representativeBadge))) activity.representativeBadge = req.body.representativeBadge;
+      if (typeof req.body?.representativeBadge === "string" && (!req.body.representativeBadge || validBadges.has(req.body.representativeBadge))) { activity.representativeBadge = req.body.representativeBadge; activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => x !== activity.representativeBadge).slice(0,3); }
       activity = await setActivity(req.body?.id, activity);
       return res.status(200).json({ ...result, activity });
     }
