@@ -99,6 +99,11 @@ const PHOTO_INDEX = Object.freeze({
 
 const ALLOWED_WIDTHS = new Set([64, 96, 128, 160, 256, 384]);
 const ALLOWED_QUALITIES = new Set([55, 65]);
+const PHOTO_COUNTS = Object.freeze({ assembly:300, metropolitan:16, basic:227 });
+const NON_PERSON_IDS = new Set(["assembly-300"]);
+const NEC_SOURCE_PAGE = "https://info.nec.go.kr/";
+const NEC_USAGE_PAGE = "https://info.nec.go.kr/main/help/helpMenu.xhtml?selectedName=copyrightpolicy";
+
 function optimizerUrl(sourceUrl, width, quality) {
   if (!sourceUrl) return "";
   const safeWidth = ALLOWED_WIDTHS.has(Number(width)) ? Number(width) : 160;
@@ -106,22 +111,51 @@ function optimizerUrl(sourceUrl, width, quality) {
   return `/_vercel/image?url=${encodeURIComponent(sourceUrl)}&w=${safeWidth}&q=${safeQuality}`;
 }
 
+function validPoliticianId(id = "") {
+  if (NON_PERSON_IDS.has(String(id || ""))) return false;
+  const match = String(id || "").match(/^(assembly|metropolitan|basic)-(\d{3})$/);
+  if (!match) return false;
+  const slot = Number(match[2]);
+  return slot >= 1 && slot <= Number(PHOTO_COUNTS[match[1]] || 0);
+}
+
+function necPhotoMeta(id = "") {
+  if (!validPoliticianId(id)) return null;
+  return Object.freeze({
+    id:String(id), name:"", focus:"50% 28%",
+    sourceUrl:"", sourcePage:NEC_SOURCE_PAGE,
+    attribution:"중앙선거관리위원회 선거통계시스템",
+    license:"선거통계시스템 이용지침 · 출처표시",
+    licenseUrl:NEC_USAGE_PAGE,
+    verification:["정참시 서버: 정확한 이름 + 선거종류 + 지역 교차검증", "중앙선거관리위원회 후보자/당선인 공개 사진"]
+  });
+}
+
 export function politicianPhotoMeta(id = "") {
-  return PHOTO_INDEX[String(id || "")] || null;
+  const key = String(id || "");
+  return PHOTO_INDEX[key] || necPhotoMeta(key);
 }
 
 export function politicianPhoto(id = "", variant = "card") {
-  const meta = politicianPhotoMeta(id);
+  const key = String(id || "");
+  const meta = politicianPhotoMeta(key);
   if (!meta) return null;
   const spec = VARIANTS[variant] || VARIANTS.card;
+  const staticVerified = Boolean(PHOTO_INDEX[key]);
+  const url = staticVerified
+    ? optimizerUrl(meta.sourceUrl, spec.width, spec.quality)
+    : `/api/v3/politician-photo?id=${encodeURIComponent(key)}&w=${spec.width}`;
   return Object.freeze({
     ...meta,
     variant,
     width:spec.width,
     quality:spec.quality,
-    url:optimizerUrl(meta.sourceUrl, spec.width, spec.quality),
-    modifiedNote:"정참시: 얼굴 중심 포커스 · 허용 규격 리사이즈 · WebP 저용량 캐시",
-    verified:true
+    url,
+    modifiedNote:staticVerified
+      ? "정참시: 얼굴 중심 포커스 · 허용 규격 리사이즈 · WebP 저용량 캐시"
+      : "정참시: 중앙선관위 사진 자동 매칭 · CDN 캐시 · 얼굴 중심 CSS 포커스",
+    verified:staticVerified,
+    resolver:staticVerified ? "verified-static" : "nec-auto"
   });
 }
 
@@ -130,8 +164,20 @@ export function politicianPhotoUrl(id = "", variant = "card") {
 }
 
 export function hasPoliticianPhoto(id = "") {
-  return Boolean(politicianPhotoMeta(id));
+  return validPoliticianId(id);
 }
 
-export const POLITICIAN_PHOTO_IDS = Object.freeze(Object.keys(PHOTO_INDEX));
+function allPoliticianPhotoIds() {
+  const ids=[];
+  for (const [type,count] of Object.entries(PHOTO_COUNTS)) {
+    for (let slot=1; slot<=count; slot += 1) {
+      const id=`${type}-${String(slot).padStart(3,"0")}`;
+      if (!NON_PERSON_IDS.has(id)) ids.push(id);
+    }
+  }
+  return ids;
+}
+
+export const POLITICIAN_PHOTO_IDS = Object.freeze(allPoliticianPhotoIds());
 export const POLITICIAN_PHOTO_VARIANTS = VARIANTS;
+export const POLITICIAN_PHOTO_COUNTS = PHOTO_COUNTS;

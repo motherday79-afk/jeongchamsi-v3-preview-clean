@@ -39,6 +39,15 @@ function build(type, rows) {
   }));
 }
 
+function attachPhoto(person) {
+  const photo=politicianPhoto(person.id,"card");
+  return Object.freeze({
+    ...person,
+    photo:photo?.url||"",
+    photoFocus:photo?.focus||"50% 28%"
+  });
+}
+
 const HOME_ASSEMBLY=HOME_NOW_PREVIEW.map(p=>{
   const photo=politicianPhoto(p.id,"card");
   return Object.freeze({
@@ -55,10 +64,10 @@ const HOME_ASSEMBLY=HOME_NOW_PREVIEW.map(p=>{
     source:"국회 공개정보 기반 정참시 현역 스냅샷"
   });
 });
-const REST_ASSEMBLY=build("assembly",S.assembly).map((p,i)=>Object.freeze({...p,id:`assembly-${pad(i+16)}`,slot:i+16}));
+const REST_ASSEMBLY=build("assembly",S.assembly).map((p,i)=>attachPhoto({...p,id:`assembly-${pad(i+16)}`,slot:i+16}));
 const ASSEMBLY=Object.freeze([...HOME_ASSEMBLY,...REST_ASSEMBLY]);
-const METROPOLITAN=build("metropolitan",S.metropolitan);
-const BASIC=build("basic",S.basic);
+const METROPOLITAN=Object.freeze(build("metropolitan",S.metropolitan).map(attachPhoto));
+const BASIC=Object.freeze(build("basic",S.basic).map(attachPhoto));
 const ALL=Object.freeze([...ASSEMBLY,...METROPOLITAN,...BASIC]);
 const BY_ID=new Map(ALL.map(x=>[x.id,x]));
 

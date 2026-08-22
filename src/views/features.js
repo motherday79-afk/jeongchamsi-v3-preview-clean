@@ -158,7 +158,7 @@ function nowCard(person) {
     ? [person?.terms, person?.committee].filter(Boolean).join(" · ")
     : [person?.office, person?.terms].filter(Boolean).join(" · ");
   const photo = person?.photo || "";
-  const photoMarkup = photo ? `<img src="${esc(photo)}" alt="${esc(title)}" width="160" height="160" loading="lazy" decoding="async" fetchpriority="low">` : "";
+  const photoMarkup = photo ? `<img data-politician-photo src="${esc(photo)}" alt="" width="160" height="160" loading="lazy" decoding="async" fetchpriority="low">` : "";
   return `<a class="person-slot-card data-connected" href="/person/${esc(person.id)}" data-route aria-label="${esc(title)} 상세페이지"><span class="slot-no">#${String(person.slot).padStart(3, "0")}</span><div class="person-photo-placeholder ${photo ? "has-photo" : ""}"${photo && person.photoFocus ? ` style="--photo-position:${esc(person.photoFocus)}"` : ""}>${photoMarkup}</div><div class="slot-lines"><b class="slot-data-name">${esc(title)}</b><span class="slot-data-meta">${esc(meta)}</span><span class="slot-data-short">${esc(short)}</span></div></a>`;
 }
 export async function renderNow(search = "") {

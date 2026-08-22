@@ -41,7 +41,7 @@ export async function renderPersonDetail(id){
   const favorite=session.authenticated&&isFavoritePerson(p.id);
   const activityTitle=p.type==="assembly"?"의정활동":"행정활동";
   const photo=politicianPhoto(p.id,"profile");
-  const photoMarkup=photo ? `<img src="${esc(photo.url)}" alt="${esc(p.name)}" width="${photo.width}" height="${photo.width}" loading="eager" decoding="async" fetchpriority="high">` : "";
+  const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="eager" decoding="async" fetchpriority="high">` : "";
   const photoNotice=photo
     ? ` · 사진: <a href="${esc(photo.sourcePage)}" target="_blank" rel="noopener noreferrer">${esc(photo.attribution)}</a> · <a href="${esc(photo.licenseUrl)}" target="_blank" rel="noopener noreferrer">${esc(photo.license)}</a> · 얼굴 중심 포커스/저용량 WebP 최적화`
     : " · 사진은 순차 연결 중";
