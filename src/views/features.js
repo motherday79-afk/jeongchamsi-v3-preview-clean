@@ -540,4 +540,3 @@ export async function renderSearch(query = "") {
   return pageShell(`<main class="subpage search-page"><section class="page-hero"><span class="eyebrow">SEARCH · INTEGRATED</span><h1>통합검색</h1><p>검색어: <b>${esc(rawQ || "—")}</b>${party ? ` · <span>${esc(partyLabel)}로 정규화해 검색했습니다</span>` : ""}</p></section>${peopleSection}${presidentSection}${contentMarkup}${rawQ ? evaluationMarkup : ""}${!rawQ ? `<section class="content-card"><div class="empty-state tall"><h2>검색어를 입력해 주세요</h2><p>정치인 이름·정당 별칭·지역·정책·게시글을 한 번에 검색할 수 있습니다</p></div></section>` : !hasResults ? `<section class="content-card"><div class="empty-state tall"><h2>검색 결과가 없습니다</h2><p>띄어쓰기와 정당 별칭도 함께 처리하지만 다른 검색어를 시도해 보세요</p></div></section>` : ""}</main>`);
 }
 
-export { trendingItems };
