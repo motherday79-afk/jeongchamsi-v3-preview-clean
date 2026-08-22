@@ -1,9 +1,9 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js?v=alpha6.0.20-function-detail";
-import { getHomeSnapshot } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
-import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
-import { getUserSummary, hasVotedPoll } from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
-import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.16-badge-eval-hero";
-import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getHomeSnapshot } from "../core/repository.js?v=alpha6.0.36.17-density-ux";
+import { drawer, siteHeader, footer } from "./layout.js?v=alpha6.0.36.17-density-ux";
+import { getUserSummary, hasVotedPoll } from "../core/user.js?v=alpha6.0.36.17-density-ux";
+import { launcherServices, serviceIconSvg } from "../data/service-catalog.js?v=alpha6.0.36.17-density-ux";
+import { badgeByKey, badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.17-density-ux";
 
 const esc = (v = "") => String(v).replace(/[&<>'"]/g, c => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -183,7 +183,7 @@ function pollMarkup(poll) {
     const pct = total ? Math.round(Number(opt.votes || 0) * 100 / total) : 0;
     return `<button type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}&option=${encodeURIComponent(opt.id)}" aria-label="${esc(opt.label)} 선택 후 전체 설문 보기"><span>${esc(opt.label)}</span><i><em style="width:${pct}%"></em></i><b>${pct}%</b></button>`;
   }).join("");
-  return `<div class="poll-main"><div class="poll-question"><span class="poll-status">설문 미리보기</span><h3>${esc(poll.question)}</h3><p>메인에서는 최대 3개만 표시 · 전체 선택지는 설문페이지에서 투표 · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-vote-panel"><div class="poll-options">${optionMarkup}</div><div class="poll-confirm-row"><span>항목을 누르면 전체 설문으로 이동합니다.</span><button class="ghost-btn" type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}">전체 선택지 보기</button></div></div></div>`;
+  return `<div class="poll-main"><div class="poll-question"><h3>${esc(poll.question)}</h3><p>메인에서는 최대 3개만 표시 · 전체 선택지는 설문페이지에서 투표 · ${total.toLocaleString("ko-KR")}명 참여</p></div><div class="poll-vote-panel"><div class="poll-options">${optionMarkup}</div><div class="poll-confirm-row"><span>항목을 누르면 전체 설문으로 이동합니다.</span><button class="ghost-btn" type="button" data-go="/poll?pollId=${encodeURIComponent(poll.id)}">전체 선택지 보기</button></div></div></div>`;
 }
 
 function academyRows(slots = []) {
@@ -325,12 +325,12 @@ export async function renderHome() {
 
   let generationAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.17-density-ux");
     generationAdmin = adminTools.renderGenerationAdminEditor(data.generation || {}, { context:"home", open:false });
   }
   let nationalAdmin = "";
   if (userSession.authenticated && userSession.user?.role === "admin") {
-    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+    const adminTools = await import("./national-evaluation-admin.js?v=alpha6.0.36.17-density-ux");
     nationalAdmin = adminTools.renderNationalEvaluationAdminEditor(nationalEvaluation, { context:"home", open:false });
   }
 

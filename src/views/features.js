@@ -1,5 +1,5 @@
-import { getDomain } from "../core/repository.js?v=alpha6.0.36.16-badge-eval-hero";
-import { pageShell, esc } from "./layout.js?v=alpha6.0.36.16-badge-eval-hero";
+import { getDomain } from "../core/repository.js?v=alpha6.0.36.17-density-ux";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.17-density-ux";
 import { GOVERNMENT_SEED } from "../data/government-seed.js?v=alpha6.0.20-function-detail";
 import {
   listAssemblyMembers,
@@ -17,7 +17,7 @@ import {
   generationVoteFor,
   hasNationalEvaluationVote,
   isPostLiked
-} from "../core/user.js?v=alpha6.0.36.16-badge-eval-hero";
+} from "../core/user.js?v=alpha6.0.36.17-density-ux";
 
 function pct(option, options) {
   const total = (options || []).reduce((sum, x) => sum + Number(x.votes || 0), 0);
@@ -324,7 +324,9 @@ export async function renderCompare(search = "") {
     const labels = Object.keys(ma);
     result = `<section class="content-card"><div class="section-title"><h2>비교 결과 요약</h2><span>검수용 예시 분석 · 실제 데이터 연결 전</span></div><div class="compare-demo"><div><span class="fake-avatar a"></span><h2>${esc(slotLabel(pa))}</h2><p>선택 정치인 A</p></div><div class="compare-demo-bars">${labels.map(label => `<label>${esc(label)} <i><em style="width:${ma[label]}%"></em></i>${ma[label]} / ${mb[label]}</label>`).join("")}</div><div><span class="fake-avatar b"></span><h2>${esc(slotLabel(pb))}</h2><p>선택 정치인 B</p></div></div><div class="compare-analysis-text">${compareNarrative(pa, ma, "A")}${compareNarrative(pb, mb, "B")}</div><div class="notice-box">현재 수치는 비교 기능 검수용 예시값입니다. 실제 정치인 공급자와 NOW 지표가 연결되면 같은 레이아웃에서 실데이터 분석 문장으로 교체됩니다.</div></section>`;
   }
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">COMPARE POLITICIANS</span><h1>정치인 비교분석</h1><p>543명 목록을 끝까지 내릴 필요 없이 검색어로 후보를 좁힌 뒤 선택할 수 있습니다.</p></section><section class="content-card"><form class="compare-picker compare-picker-searchable" data-compare-form><label>정치인 A 검색<input type="search" placeholder="이름·직위·슬롯 검색" data-person-select-filter="#compare-person-a"><select id="compare-person-a" name="a" required><option value="">정치인 A 선택</option>${personOptions(a)}</select></label><span class="compare-vs">VS</span><label>정치인 B 검색<input type="search" placeholder="이름·직위·슬롯 검색" data-person-select-filter="#compare-person-b"><select id="compare-person-b" name="b" required><option value="">정치인 B 선택</option>${personOptions(b)}</select></label><button class="primary-btn" type="submit">비교하기</button></form></section>${result}</main>`);
+  const aLabel = pa ? slotLabel(pa) : "";
+  const bLabel = pb ? slotLabel(pb) : "";
+  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">COMPARE POLITICIANS</span><h1>정치인 비교분석</h1><p>이름·정당·지역을 검색하고 결과에서 바로 선택해 비교하세요.</p></section><section class="content-card"><form class="compare-picker compare-picker-quick" data-compare-form><label class="person-quick-picker compare-person-quick-picker">정치인 A 검색<input type="search" id="compare-person-search-a" value="${esc(aLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-a" data-person-quick-results="#compare-person-results-a"><div class="person-quick-results" id="compare-person-results-a" hidden></div><select id="compare-person-a" name="a" required aria-hidden="true" tabindex="-1"><option value="">정치인 A 선택</option>${personOptions(a)}</select></label><span class="compare-vs">VS</span><label class="person-quick-picker compare-person-quick-picker">정치인 B 검색<input type="search" id="compare-person-search-b" value="${esc(bLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-b" data-person-quick-results="#compare-person-results-b"><div class="person-quick-results" id="compare-person-results-b" hidden></div><select id="compare-person-b" name="b" required aria-hidden="true" tabindex="-1"><option value="">정치인 B 선택</option>${personOptions(b)}</select></label><button class="primary-btn" type="submit">비교하기</button></form></section>${result}</main>`);
 }
 
 export async function renderGeneration() {
@@ -353,7 +355,7 @@ export async function renderGeneration() {
 
   let generationAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
-    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+    const adminTools = await import("./generation-admin.js?v=alpha6.0.36.17-density-ux");
     generationAdmin = adminTools.renderGenerationAdminEditor(data, { context:"detail", open:false });
   }
 
@@ -390,7 +392,7 @@ export async function renderNationalEvaluation() {
   const historyMarkup = `<section class="content-card"><div class="section-title"><h2>지난 전국 평가</h2><span>${history.length}건</span></div>${history.length ? `<div class="evaluation-history-list">${history.map(x => `<article><div><b>${esc(x.label)}</b><span>${x.count}명 참여</span></div><p>긍정 ${x.positive}% · 보통 ${x.neutral}% · 부정 ${x.negative}%</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 종료된 이전 평가가 없습니다.</div>`}</section>`;
   let nationalAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
-    const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.16-badge-eval-hero");
+    const tools = await import("./national-evaluation-admin.js?v=alpha6.0.36.17-density-ux");
     nationalAdmin = tools.renderNationalEvaluationAdminEditor(data, { context:"detail", open:false });
   }
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NATIONAL EVALUATION</span><h1>국회의원 전국 평가제</h1><p>현재 평가와 지난 평가 결과를 한 페이지에서 확인합니다.</p></section>${nationalAdmin}${person ? `<section class="person-detail-hero content-card"><div class="person-detail-photo"></div><div class="person-detail-title"><span class="eyebrow">CURRENT SUBJECT</span><h1>${esc(slotLabel(person))}</h1><p>${esc(person.party || "")} · ${esc(person.jurisdiction || "")}</p><div class="person-detail-badges"><span>전국 평가 대상</span><span>${data.enabled ? "평가 진행중" : "평가 일시중지"}</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세페이지</button></div></section><section class="content-card"><div class="section-title"><h2>현재 평가 결과</h2><span>${total}명 참여</span></div><div class="evaluation-result-grid"><article><small>긍정</small><strong>${share("positive")}%</strong><span>${Number(votes.positive || 0)}표</span></article><article><small>보통</small><strong>${share("neutral")}%</strong><span>${Number(votes.neutral || 0)}표</span></article><article><small>부정</small><strong>${share("negative")}%</strong><span>${Number(votes.negative || 0)}표</span></article></div></section><section class="content-card"><div class="section-title"><h2>전국 평가 참여</h2><span>${voted ? "참여 완료" : voting ? "평가 진행중" : "평가 중지"}</span></div>${!session.authenticated ? `<div class="member-login-prompt"><span>평가 참여는 로그인 후 가능합니다.</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>` : !voting ? `<div class="empty-inline">관리자가 평가를 활성화하면 참여할 수 있습니다.</div>` : voted ? `<div class="empty-inline">이 평가에 이미 참여했습니다.</div>` : `<form class="evaluation-vote-form" data-national-evaluation-form data-person-id="${esc(person.id)}"><label><input type="radio" name="rating" value="positive" required><b>긍정 평가</b><span>전반적으로 잘하고 있다고 봅니다.</span></label><label><input type="radio" name="rating" value="neutral" required><b>보통</b><span>긍정과 아쉬움이 비슷합니다.</span></label><label><input type="radio" name="rating" value="negative" required><b>부정 평가</b><span>전반적으로 아쉽다고 봅니다.</span></label><button class="primary-btn" type="submit">평가 제출</button><div class="save-state" data-national-evaluation-state></div></form>`}</section>` : `<section class="content-card"><div class="empty-state tall"><div class="empty-icon">評</div><h2>평가 대상 선택 전</h2><p>관리자에서 국회의원 300개 슬롯 중 한 명을 선택하면 이 페이지에서 바로 평가할 수 있습니다.</p></div></section>`}${historyMarkup}</main>`);
