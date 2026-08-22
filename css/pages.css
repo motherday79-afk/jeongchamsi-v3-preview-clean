@@ -2389,3 +2389,21 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .badge-showcase-secondary button>b{font-size:9px!important;line-height:1.2!important}
 .badge-showcase-secondary button>small{font-size:7px!important}
 .badge-showcase-secondary .badge-showcase-vacant{min-height:70px;border:1px dashed #e5ebe8;border-radius:11px;background:#fcfdfd}
+
+/* 0.36.30 PHOTO GLOBAL LINK ROOTFIX */
+.fake-avatar.has-photo,
+.search-person-avatar.has-photo{
+  overflow:hidden;
+  background-color:#edf5f2!important;
+  background-image:none!important;
+  background-position:center!important;
+}
+.fake-avatar.has-photo img,
+.search-person-avatar.has-photo img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:var(--photo-position,50% 28%);
+}
+.fake-avatar.has-photo img,.search-person-avatar.has-photo img{pointer-events:none}

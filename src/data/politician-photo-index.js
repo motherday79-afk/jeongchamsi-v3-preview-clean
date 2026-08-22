@@ -7,9 +7,9 @@
  */
 
 const VARIANTS = Object.freeze({
-  tiny: Object.freeze({ width: 72, quality: 50 }),
+  tiny: Object.freeze({ width: 72, quality: 55 }),
   mini: Object.freeze({ width: 96, quality: 55 }),
-  sidebar: Object.freeze({ width: 80, quality: 52 }),
+  sidebar: Object.freeze({ width: 80, quality: 55 }),
   card: Object.freeze({ width: 160, quality: 55 }),
   profile: Object.freeze({ width: 384, quality: 65 })
 });

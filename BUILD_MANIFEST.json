@@ -1,6 +1,6 @@
 {
-  "version": "v3.0.0-alpha6.0.36.27",
-  "build": "PERFORMANCE AUDIT + SAFE CLEANUP",
+  "version": "v3.0.0-alpha6.0.36.30",
+  "build": "PHOTO GLOBAL LINK ROOTFIX",
   "vercel_function_count": 1,
   "vercel_function": [
     "api/gateway.js"
@@ -42,6 +42,20 @@
       "manual_history_scroll_restore",
       "now_append_only_load_more",
       "mobile_foundation"
+    ]
+  },
+  "photo_global_link_rootfix": {
+    "optimizer_quality_fix": "tiny/sidebar q55 to match allowed production optimizer quality",
+    "identity_fix": "HOME top 15 lite identities are connected=true",
+    "linked_surfaces": [
+      "NOW",
+      "person detail",
+      "generation ranking",
+      "national evaluation home/detail",
+      "recent sidebar",
+      "MY recent",
+      "compare",
+      "search politician/evaluation"
     ]
   }
 }
