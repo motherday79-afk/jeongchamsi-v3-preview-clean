@@ -2521,3 +2521,8 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 
 /* 0.36.49 · politician detail readability */
 .person-live-detail-page .section-title>span{font-size:12px;line-height:1.45}.person-live-detail-page .person-detail-badges span{font-size:13px}.person-live-detail-page .info-list dt{font-size:14px}.person-live-detail-page .info-list dd{font-size:15px}.person-live-detail-page .timeline-copy span{font-size:12px}
+/* ---------- alpha6.0.36.50 MULTI-INTELLIGENCE DATA BINDING ---------- */
+.person-analysis-score-ring{position:relative;border-color:transparent!important;background:conic-gradient(currentColor var(--analysis-score,0%),#edf2f0 0)}
+.person-analysis-score-ring:before{content:"";position:absolute;inset:6px;border-radius:50%;background:#fff}
+.person-analysis-score-ring>strong,.person-analysis-score-ring>span{position:relative;z-index:1}
+.person-interest-axis-track em{transition:left .25s ease}

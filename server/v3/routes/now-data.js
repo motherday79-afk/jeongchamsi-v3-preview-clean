@@ -15,11 +15,11 @@ module.exports=async function nowDataPublic(req,res){
     ]);
 
     // One-time compatibility migration from the pre-0.36.46 full snapshot.
-    if(!publicHome||(id&&!person)){
+    if(!publicHome||(id&&(!person||!person?.analysis))){
       const [current,history]=await Promise.all([getJSON('nowDataCurrent'),getJSON('nowDataHistory')]);
       if(current?.ranked?.length){
         if(!publicHome){publicHome=buildHomePublicSnapshot(current,history);await setJSON('nowDataPublicHome',publicHome);}
-        if(id&&!person){person=derivePersonView(current,history,id);await setJSON(personDomain,person);}
+        if(id&&(!person||!person?.analysis)){person=derivePersonView(current,history,id);await setJSON(personDomain,person);}
       }
     }
 

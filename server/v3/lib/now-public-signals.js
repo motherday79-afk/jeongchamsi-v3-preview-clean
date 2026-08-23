@@ -74,6 +74,98 @@ function deriveRising(current,history,limit=10){
   }).filter(x=>x.id&&x.title);
   return items.sort((a,b)=>b.priority-a.priority||a.rank-b.rank).slice(0,limit).map(({priority,...x})=>x);
 }
+
+function clampScore(v){return Math.max(0,Math.min(100,Math.round((Number(v)||0)*10)/10));}
+function percentileScore(rows,getter,target){
+  const values=rows.map(x=>Math.max(0,Number(getter(x))||0)).sort((a,b)=>a-b);
+  if(!values.length)return 0;
+  const t=Math.max(0,Number(target)||0);
+  let less=0,equal=0;
+  for(const v of values){if(v<t)less++;else if(v===t)equal++;else break;}
+  return clampScore(((less+Math.max(0,equal-1)/2)/Math.max(1,values.length-1))*100);
+}
+function blend(parts){
+  let total=0,weight=0;
+  for(const [value,w] of parts){const ww=Math.max(0,Number(w)||0);total+=clampScore(value)*ww;weight+=ww;}
+  return clampScore(weight?total/weight:0);
+}
+function rateShiftScore(recentRate,baselineRate){
+  const recent=Math.max(0,Number(recentRate)||0),base=Math.max(0,Number(baselineRate)||0);
+  const ratio=(recent+.08)/(base+.08);
+  return clampScore(50+25*(Math.log(ratio)/Math.log(2)));
+}
+function grade(score){const s=clampScore(score);return s>=90?'매우 높음':s>=75?'높음':s>=60?'상승':s>=40?'보통':s>=25?'낮음':'매우 낮음';}
+function deriveIntelligenceAnalysis(current,row){
+  const rows=rowsOf(current),search=row?.search||{},news=row?.news||{};
+  const pc=num(search.monthlyPcQcCnt),mobile=num(search.monthlyMobileQcCnt),total=pc+mobile;
+  const c6=num(news.count6),c24=Math.max(c6,num(news.count24)),c7=Math.max(c24,num(news.count7d)),sources=num(news.sources24);
+  const pcScore=percentileScore(rows,x=>x?.search?.monthlyPcQcCnt,pc);
+  const mobileScore=percentileScore(rows,x=>x?.search?.monthlyMobileQcCnt,mobile);
+  const totalScore=percentileScore(rows,x=>x?.search?.monthlyTotalQcCnt,total);
+  const c6Score=percentileScore(rows,x=>x?.news?.count6,c6);
+  const c24Score=percentileScore(rows,x=>x?.news?.count24,c24);
+  const c7Score=percentileScore(rows,x=>x?.news?.count7d,c7);
+  const sourceScore=percentileScore(rows,x=>x?.news?.sources24,sources);
+  const mobileShare=total?mobile/total:.5;
+  const prior18=Math.max(0,c24-c6)/18,prior6d=Math.max(0,c7-c24)/144;
+  const newsAcceleration=rateShiftScore(c6/6,prior18);
+  const issueFreshness=rateShiftScore(c24/24,prior6d);
+  const diversityRatio=c24?Math.min(1,sources/c24)*100:0;
+  const overallInterest=blend([[pcScore,50],[mobileScore,50]]);
+  const highEngagement=pcScore;
+  const massExpansion=mobileScore;
+  const issueHeat=blend([[c6Score,50],[newsAcceleration,30],[c24Score,20]]);
+  const mediaDiversity=blend([[sourceScore,75],[diversityRatio,25]]);
+  const mediaSpread=blend([[c24Score,42],[sourceScore,43],[mediaDiversity,15]]);
+  const activity=blend([[c7Score,40],[c24Score,30],[sourceScore,15],[issueFreshness,15]]);
+  const audiencePosition=clampScore(50+(massExpansion-highEngagement)*.38+(mobileShare-.5)*35);
+  const audienceExpansion=blend([[massExpansion,55],[Math.max(0,50+(massExpansion-highEngagement)),25],[mobileShare*100,20]]);
+  const mobileResponse=blend([[massExpansion,72],[mobileShare*100,28]]);
+  const massPenetration=blend([[massExpansion,50],[overallInterest,30],[issueHeat,20]]);
+  const coreRetention=blend([[highEngagement,78],[overallInterest,22]]);
+  const activityAcceleration=blend([[newsAcceleration,62],[issueFreshness,38]]);
+  const activityConcentration=blend([[issueFreshness,68],[c24Score,32]]);
+  const stability=clampScore(100-Math.abs(newsAcceleration-50)*1.25);
+  const activityPersistence=blend([[c7Score,58],[c24Score,27],[stability,15]]);
+  const issuePersistence=blend([[c7Score,58],[c24Score,24],[sourceScore,18]]);
+  const newsPressure=blend([[c6Score,35],[c24Score,35],[c7Score,15],[sourceScore,15]]);
+  const alignment=clampScore(100-Math.abs(newsPressure-overallInterest));
+  const newsSearchTransition=clampScore(Math.sqrt((newsPressure/100)*(overallInterest/100))*80+alignment*.2);
+  const issueInflux=blend([[issueHeat,45],[massExpansion,30],[newsAcceleration,25]]);
+  const gap=Math.abs(newsPressure-overallInterest);
+  const mediaPublicGap=clampScore(gap*1.35);
+  const direction=newsPressure>overallInterest+7?'media-led':overallInterest>newsPressure+7?'public-led':'balanced';
+  const issueExplosiveness=blend([[issueHeat,45],[newsAcceleration,30],[massExpansion,25]]);
+  const scores={overallInterest,highEngagement,massExpansion,activity,issueHeat,mediaSpread,audienceExpansion,mobileResponse,massPenetration,coreRetention,activityAcceleration,activityConcentration,activityPersistence,newsAcceleration,issueFreshness,issuePersistence,mediaDiversity,newsSearchTransition,issueInflux,mediaPublicGap,issueExplosiveness};
+  let signalLabel='안정관심형';
+  if(overallInterest>=78&&activity>=72&&massExpansion>=75&&issueHeat>=72)signalLabel='전면 급상승형';
+  else if(issueExplosiveness>=78&&newsAcceleration>=70)signalLabel='이슈폭발형';
+  else if(massExpansion>=72&&issueInflux>=68)signalLabel='대중확산형';
+  else if(direction==='media-led'&&mediaPublicGap>=45)signalLabel='미디어 선행형';
+  else if(highEngagement>=72&&coreRetention>=68&&highEngagement>massExpansion+8)signalLabel='고관여 지속형';
+  else if(activity>=70&&activityPersistence>=65)signalLabel='활동지속형';
+  else if(overallInterest>=65)signalLabel='관심확대형';
+  const audienceLabel=audiencePosition>=61?'대중 확산 우세':audiencePosition<=39?'고관여 관심 우세':'균형 관심 구조';
+  const directionLabel=direction==='media-led'?'미디어 반응 우세':direction==='public-led'?'대중 검색 반응 우세':'미디어·대중 균형';
+  let diagnosis='검색 관심과 언론 노출을 함께 보면 현재 관심은 비교적 안정적인 흐름입니다.';
+  if(signalLabel==='전면 급상승형')diagnosis='검색 관심과 언론 노출이 함께 높은 수준이며, 모바일 대중 관심과 최근 이슈 강도가 동시에 확장되는 국면입니다.';
+  else if(signalLabel==='이슈폭발형')diagnosis='최근 뉴스 발생 속도가 빠르게 높아지고 모바일 반응도 강해, 단기 이슈가 대중 관심으로 번지는 신호가 강합니다.';
+  else if(signalLabel==='대중확산형')diagnosis='모바일 기반 관심이 상대적으로 강하고 최근 뉴스 흐름과 동반돼, 관심이 더 넓은 대중층으로 확장되는 신호가 관측됩니다.';
+  else if(signalLabel==='미디어 선행형')diagnosis='언론 노출 강도가 검색 반응보다 앞서 있습니다. 현재 이슈가 대중 검색 관심으로 이어지는지 지켜볼 구간입니다.';
+  else if(signalLabel==='고관여 지속형')diagnosis='PC 기반 정보탐색 관심이 상대적으로 강합니다. 단기 화제성보다 고관여 관심이 유지되는 성격이 두드러집니다.';
+  else if(signalLabel==='활동지속형')diagnosis='최근 7일 언론 노출이 꾸준하고 단기 집중보다 지속적인 활동 노출 흐름이 강하게 나타납니다.';
+  else if(signalLabel==='관심확대형')diagnosis='검색 관심과 뉴스 노출이 평균 이상으로 형성돼 있으며, 추가 이슈 발생 시 관심 확장 가능성이 있는 구간입니다.';
+  return {
+    schemaVersion:1,
+    scores,
+    grades:Object.fromEntries(Object.entries(scores).map(([k,v])=>[k,grade(v)])),
+    audience:{position:audiencePosition,label:audienceLabel,mobileShare:clampScore(mobileShare*100)},
+    mediaPublic:{direction,label:directionLabel,newsPressure,searchPressure:overallInterest},
+    signal:{label:signalLabel,diagnosis},
+    model:'JEONGCHAMSI MULTI-INTELLIGENCE DATA ANALYSIS'
+  };
+}
+
 function compactWhyHeadline(row){
   const h=(row?.news?.headlines||[])[0];
   return h?.title?cleanTitle(h.title):'';
@@ -95,10 +187,10 @@ function derivePersonView(current,history,id,nowMs=Date.now()){
   const trendLabel=prevRank?(rankDelta>0?`▲ ${rankDelta}`:rankDelta<0?`▼ ${Math.abs(rankDelta)}`:'—'):(prev?'NEW':'');
   const party=String(row?.person?.party||''),region=String(row?.person?.jurisdiction||'').split(/\s+/)[0]||'';
   const related=rows.filter(x=>String(x?.person?.id||'')!==String(id||'')).map(x=>({x,score:(party&&x?.person?.party===party?4:0)+(region&&String(x?.person?.jurisdiction||'').startsWith(region)?2:0)+(Math.abs(num(x.rank)-num(row.rank))<=5?1:0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||num(a.x.rank)-num(b.x.rank)).slice(0,4).map(({x})=>({rank:num(x.rank),score:num(x.score),person:{id:x?.person?.id||'',name:x?.person?.name||'',party:x?.person?.party||'',jurisdiction:x?.person?.jurisdiction||''}}));
-  return {row,rankDelta,previousRank:prevRank,trendLabel,whyNow:whyNowText(row,rankDelta),related,publishedAt:current?.publishedAt||null};
+  return {row,rankDelta,previousRank:prevRank,trendLabel,whyNow:whyNowText(row,rankDelta),related,publishedAt:current?.publishedAt||null,analysis:deriveIntelligenceAnalysis(current,row)};
 }
 function derivePublicSignals(current,history,nowMs=Date.now()){
   if(!rowsOf(current).length)return {source:'none',publishedAt:null,keywords:[],rising:[]};
   return {source:'published-now',publishedAt:current.publishedAt||null,keywords:deriveKeywords(current,nowMs,15),rising:deriveRising(current,history,10)};
 }
-module.exports={cleanTitle,deriveKeywords,deriveRising,derivePublicSignals,derivePersonView,previousSnapshot};
+module.exports={cleanTitle,deriveKeywords,deriveRising,derivePublicSignals,derivePersonView,deriveIntelligenceAnalysis,previousSnapshot};
