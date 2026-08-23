@@ -60,7 +60,9 @@ export const BADGE_CATALOG = Object.freeze([
   { key:"grand-connector", tier:"PLATINUM", name:"그랜드 커넥터", mission:"매우 넓은 이용자 연결과 토론 참여를 통해 커뮤니티의 큰 흐름을 만든 멤버에게 주어집니다.", kind:"연결", series:"EXPANSION_2026", icon:"connect" },
   { key:"elite-strategist", tier:"PLATINUM", name:"엘리트 스트래티지스트", mission:"장기 활동·콘텐츠·반응·다양한 참여영역을 모두 높은 수준으로 달성하면 획득합니다.", kind:"종합", series:"EXPANSION_2026", icon:"strategy" },
 
-  { key:"operator", tier:"BLACK", name:"운영자", mission:"정참시 운영 권한을 가진 관리자에게만 부여되는 최고 권위 배지입니다.", kind:"운영 권위", series:"EXPANSION_2026", icon:"operator" }
+  { key:"operator", tier:"BLACK", name:"운영자", mission:"정참시 운영 권한을 가진 관리자에게 부여되는 운영 역할 배지입니다.", kind:"운영", series:"EXPANSION_2026", icon:"operator" },
+  { key:"jeongcham-mayor", tier:"BLACK", name:"정참시장", mission:"운영자 배지를 제외한 모든 배지를 획득해 정참시민을 대표할 자격을 증명하면 획득합니다.", kind:"완주 명예", series:"BLACK_HONORS_2026", icon:"mayor" },
+  { key:"michael", tier:"BLACK", name:"미카엘", mission:"나의 추천인 번호로 가입한 유효 정참시민 1,000명을 달성하면 획득합니다.", kind:"확장 명예", series:"BLACK_HONORS_2026", icon:"michael" }
 ]);
 
 const ICON_PATHS = Object.freeze({
@@ -106,7 +108,9 @@ const ICON_LIBRARY = Object.freeze({
   agenda:`<path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h4"/><path d="m15 4 2 2"/>`, public:`<circle cx="12" cy="8" r="3"/><path d="M6 20c.5-5 2.5-8 6-8s5.5 3 6 8M4 7h2M18 7h2M5 12l2-1M19 12l-2-1"/>`,
   connect:`<circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M10 10 6 6M14 10l4-4M10 14l-4 4M14 14l4 4"/>`,
   strategy:`<path d="M5 19 19 5M6 7h5v5M13 13h5v5"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/>`,
-  operator:`<path d="m4 9 4 3 4-7 4 7 4-3-2 9H6z"/><path d="M7 18h10M9 8l3 2 3-2"/>`
+  operator:`<path d="m4 9 4 3 4-7 4 7 4-3-2 9H6z"/><path d="M7 18h10M9 8l3 2 3-2"/>`,
+  mayor:`<path d="M5 19h14M7 17V9l5-5 5 5v8M10 17v-5h4v5"/><path d="M4 9h16M9 7h6"/>`,
+  michael:`<path d="M12 5v14M12 8C8 4 5 5 4 9c3 0 5 1 8 4M12 8c4-4 7-3 8 1-3 0-5 1-8 4"/><path d="M7 19c2-2 3-3 5-3s3 1 5 3"/>`
 });
 
 export function badgeByKey(key = "") { return BADGE_CATALOG.find(x => x.key === String(key || "")) || null; }

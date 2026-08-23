@@ -10,7 +10,7 @@ async function loadBrowserCatalog(){
 
 test('badge catalog keeps 13 originals and adds exactly 41 expansion badges by requested tier counts',async()=>{
   const {BADGE_CATALOG}=await loadBrowserCatalog();
-  assert.equal(BADGE_CATALOG.length,54);
+  assert.equal(BADGE_CATALOG.length,56);
   const added=BADGE_CATALOG.filter(x=>x.series==='EXPANSION_2026');
   assert.equal(added.length,41);
   const counts=Object.fromEntries(['BRONZE','SILVER','GOLD','PLATINUM','BLACK'].map(t=>[t,added.filter(x=>x.tier===t).length]));
@@ -26,7 +26,7 @@ test('badge catalog keeps 13 originals and adds exactly 41 expansion badges by r
 
 test('server badge engine exposes all catalog keys and automatically awards different strengths',()=>{
   const engine=require('../lib/v3/badge-engine');
-  assert.equal(engine.VALID_BADGE_KEYS.size,54);
+  assert.equal(engine.VALID_BADGE_KEYS.size,56);
   const metrics={
     actionTotal:200, authoredPosts:70, comments:180, likesGiven:100, likesReceived:400, viewsReceived:25000,
     participationCount:20, participationTypes:7, activeDays:120, maxStreak:35, communityPosts:30, itsmePosts:30,
@@ -34,7 +34,7 @@ test('server badge engine exposes all catalog keys and automatically awards diff
     contentDomains:4, ownPostsWithResponses:25, noonSignals:3, midnightSignals:3
   };
   const member=engine.evaluateBadgeRules({id:'u1',role:'member'}, {pollVotes:{p:'1'},grantedBadges:[]}, metrics);
-  for(const key of engine.NEW_BADGE_KEYS.filter(k=>k!=='operator')) assert.ok(member.earned.has(key),`${key} should be earned by an exceptionally active member`);
+  for(const key of engine.NEW_BADGE_KEYS.filter(k=>!['operator','jeongcham-mayor','michael'].includes(k))) assert.ok(member.earned.has(key),`${key} should be earned by an exceptionally active member`);
   assert.equal(member.earned.has('operator'),false);
   const admin=engine.evaluateBadgeRules({id:'admin',role:'admin'}, {grantedBadges:[]}, metrics);
   assert.equal(admin.earned.has('operator'),true);

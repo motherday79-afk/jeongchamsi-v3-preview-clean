@@ -5,7 +5,7 @@ import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
 
 const TABS = [
-  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["president", "대통령"],
+  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["badges", "배지센터"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["president", "대통령"],
   ["columns", "COLUMN"], ["community", "정뮤니티"], ["itsme", "IT’S ME"], ["news", "정참시 NEWS"],
   ["polls", "시민들의 선택"], ["keywords", "정치키워드"], ["trending", "실시간 급상승"],
   ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["system", "시스템"]
@@ -45,15 +45,33 @@ async function dashboardPanel() {
 }
 
 function memberBadgeAdminCatalog(user = {}) {
-  const tiers=[["BRONZE","BRONZE"],["SILVER","SILVER"],["GOLD","GOLD"],["PLATINUM","PLATINUM"],["BLACK","BLACK · 운영 권위"]];
+  const tiers=[["BRONZE","BRONZE"],["SILVER","SILVER"],["GOLD","GOLD"],["PLATINUM","PLATINUM"],["BLACK","BLACK · 특별 명예"]];
   return tiers.map(([tier,label])=>{
     const items=BADGE_CATALOG.filter(x=>x.tier===tier);
     return `<section class="member-badge-tier member-badge-tier-${tier.toLowerCase()}"><div class="member-badge-tier-head"><b>${label}</b><span>${items.length}종</span></div><div class="member-badge-grid">${items.map(badge=>{
       const operator=badge.key==="operator";
       const roleUnlocked=operator && user.role==="admin";
-      return `<label class="member-badge-chip ${operator ? "member-badge-operator" : ""}"><input type="checkbox" data-member-badge="${esc(user.id)}" value="${esc(badge.key)}" ${operator ? (roleUnlocked ? "checked disabled" : "disabled") : ((user.grantedBadges || []).includes(badge.key) ? "checked" : "")}>${badgeGemSvg(badge.key)}<span><b>${esc(badge.name)}</b><small>${esc(badge.tier)} · ${operator ? "관리자 권한 전용" : esc(badge.kind)}</small></span></label>`;
+      return `<label class="member-badge-chip ${badge.tier==="BLACK" ? "member-badge-operator" : ""}"><input type="checkbox" data-member-badge="${esc(user.id)}" value="${esc(badge.key)}" ${operator ? (roleUnlocked ? "checked disabled" : "disabled") : ((user.grantedBadges || []).includes(badge.key) ? "checked" : "")}>${badgeGemSvg(badge.key)}<span><b>${esc(badge.name)}</b><small>${esc(badge.tier)} · ${operator ? "운영 역할" : esc(badge.kind)}</small></span></label>`;
     }).join("")}</div></section>`;
   }).join("");
+}
+
+
+async function badgeCenterPanel() {
+  let data={ok:false,summary:{members:0,totalBadges:BADGE_CATALOG.length,blackBadges:3},holders:{},records:[]};
+  try{
+    const r=await fetch("/api/v3/admin/badges",{credentials:"same-origin",headers:{Accept:"application/json"}});
+    const b=await r.json().catch(()=>({}));
+    if(r.ok) data={...data,...b,ok:true}; else data.error=b.error||"BADGE_CENTER_FAILED";
+  }catch{data.error="BADGE_CENTER_FAILED";}
+  if(!data.ok) return `<section class="admin-panel"><h2>배지센터</h2><div class="notice-box">배지 현황을 불러오지 못했습니다 · ${esc(data.error||"BADGE_CENTER_FAILED")}</div></section>`;
+  const tiers=[["BRONZE","BRONZE"],["SILVER","SILVER"],["GOLD","GOLD"],["PLATINUM","PLATINUM"],["BLACK","BLACK · 특별 명예"]];
+  const cards=tiers.map(([tier,label])=>{
+    const items=BADGE_CATALOG.filter(x=>x.tier===tier);
+    return `<section class="badge-center-tier badge-center-${tier.toLowerCase()}"><div class="badge-center-tier-head"><div><b>${esc(label)}</b><span>${items.length}종</span></div><small>현재 획득 현황</small></div><div class="badge-center-grid">${items.map(badge=>`<article>${badgeGemSvg(badge.key)}<div><small>${esc(badge.kind)}</small><b>${esc(badge.name)}</b><p>${esc(badge.mission)}</p><span>획득자 <strong>${Number(data.holders?.[badge.key]||0).toLocaleString("ko-KR")}</strong>명</span></div></article>`).join("")}</div></section>`;
+  }).join("");
+  const leaders=(data.records||[]).slice(0,12);
+  return `<section class="admin-panel badge-center-panel"><div class="admin-panel-head"><div><h2>배지센터</h2><span class="status-pill"><b>BADGES</b>${Number(data.summary?.totalBadges||BADGE_CATALOG.length)}종</span></div></div><div class="admin-stat-grid badge-center-stats"><article><b>MEMBERS</b><strong>${Number(data.summary?.members||0)}</strong><span>정참시민</span></article><article><b>BADGES</b><strong>${Number(data.summary?.totalBadges||0)}</strong><span>전체 배지</span></article><article><b>BLACK</b><strong>${Number(data.summary?.blackBadges||0)}</strong><span>특별 명예</span></article><article><b>MICHAEL</b><strong>${Number(data.holders?.michael||0)}</strong><span>1,000명 초대 달성</span></article></div><div class="member-admin-note">관리자는 운영을 위해 모든 배지를 사용할 수 있습니다. BLACK은 상하관계가 아니라 운영·완주·확장처럼 서로 다른 특별한 자격과 성취를 상징합니다.</div>${cards}<section class="badge-center-leaders"><div class="section-title"><h3>획득 현황 상위 회원</h3><span>추천 모집 현황 포함</span></div><div class="badge-center-leader-grid">${leaders.map((u,i)=>`<article><em>${i+1}</em><div><b>${esc(u.name||u.id)}</b><small>#${Number(u.referralNumber||0)} · 배지 ${Number(u.earnedCount||0)}개 · 모집 ${Number(u.recruitedCount||0).toLocaleString("ko-KR")}명</small></div><span>${(u.blackBadges||[]).length ? `${u.blackBadges.length} BLACK` : "—"}</span></article>`).join("")}</div></section></section>`;
 }
 
 async function membersPanel() {
@@ -79,7 +97,7 @@ async function membersPanel() {
         <label>출생연도<input inputmode="numeric" data-member-birth="${esc(user.id)}" value="${esc(user.birthYear || "")}" maxlength="4"></label>
         <label>새 비밀번호<input type="password" data-member-password="${esc(user.id)}" placeholder="변경할 때만 입력 · 8자 이상" autocomplete="new-password"></label>
       </div>
-      <details class="member-badge-admin"><summary><span><b>배지 관리</b><small>관리자 직접 해금 · 현재 대표 ${esc(badgeByKey(user.representativeBadge)?.name || "미설정")}</small></span><em>${(user.grantedBadges || []).length}개 해금</em></summary>${memberBadgeAdminCatalog(user)}<p class="field-help">조건을 달성하지 않은 일반 배지도 관리자가 직접 열어줄 수 있습니다. BLACK 운영자 배지는 관리자 권한에만 자동 부여됩니다. 체크 해제 후 저장 시 관리자 해금만 회수됩니다</p></details>
+      <details class="member-badge-admin"><summary><span><b>배지 관리</b><small>관리자 직접 해금 · 현재 대표 ${esc(badgeByKey(user.representativeBadge)?.name || "미설정")}</small></span><em>${(user.grantedBadges || []).length}개 해금</em></summary>${memberBadgeAdminCatalog(user)}<p class="field-help">조건을 달성하지 않은 일반 배지도 관리자가 직접 열어줄 수 있습니다. 운영자 배지는 관리자 권한으로 사용되며, 정참시장·미카엘 등 다른 BLACK 배지는 일반회원도 조건 달성 시 획득할 수 있습니다. 체크 해제 후 저장 시 관리자 해금만 회수됩니다</p></details>
       <div class="member-access-controls member-access-expanded">
         <label>권한<select data-member-role="${esc(user.id)}"><option value="member" ${user.role === "member" || !user.role ? "selected" : ""}>일반회원</option><option value="partner" ${user.role === "partner" ? "selected" : ""}>정참시 PARTNER</option><option value="admin" ${user.role === "admin" ? "selected" : ""}>관리자</option></select></label>
         <label>상태<select data-member-status="${esc(user.id)}"><option value="active" ${!suspended ? "selected" : ""}>정상</option><option value="suspended" ${suspended ? "selected" : ""}>이용정지</option></select></label>
@@ -355,6 +373,7 @@ export async function renderAdmin() {
   let panel;
   if (tab === "brand") panel = await brandPanel();
   else if (tab === "members") panel = await membersPanel();
+  else if (tab === "badges") panel = await badgeCenterPanel();
   else if (tab === "requests") panel = await (await import("./participation.js")).renderParticipationAdminPanel();
   else if (tab === "people") panel = await peoplePanel();
   else if (tab === "nowdata") panel = await nowDataPanel();

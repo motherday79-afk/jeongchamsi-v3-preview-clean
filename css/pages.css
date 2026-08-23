@@ -2675,3 +2675,26 @@ html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
 
 .member-badge-tier{padding:10px 12px 12px}.member-badge-tier+.member-badge-tier{border-top:1px solid #edf1ef}.member-badge-tier-head{display:flex;align-items:center;justify-content:space-between;padding:4px 1px 8px}.member-badge-tier-head b{font-size:10px;letter-spacing:.05em}.member-badge-tier-head span{color:var(--text-3);font-size:9px;font-weight:900}.member-badge-tier .member-badge-grid{padding:0}.member-badge-operator{background:#14191c!important;border-color:#343d42!important}.member-badge-operator span b{color:#f4f7f8}.member-badge-operator span small{color:#aab4b9!important}.member-badge-operator input:disabled{opacity:.75}
 @media(max-width:760px){.badge-tier-section{padding:13px}.badge-tier-head{display:grid;gap:5px}.badge-tier-head p{text-align:left}.badge-tier-head>div{justify-content:space-between}.badge-progress-copy{font-size:10.5px!important}}
+
+/* 0.36.56 referral citizens + BLACK honors + badge center */
+.referral-status-card{overflow:hidden}
+.referral-status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.referral-status-grid article{padding:16px;border:1px solid #e4ebe8;border-radius:14px;background:linear-gradient(145deg,#fbfdfc,#f4faf7)}
+.referral-status-grid small,.referral-status-grid strong,.referral-status-grid p{display:block}
+.referral-status-grid small{color:#6e7d77;font-size:11px;font-weight:900}
+.referral-status-grid strong{margin-top:6px;font-size:26px;letter-spacing:-.6px;color:#0a735f}
+.referral-status-grid p{margin:5px 0 0;color:#74817c;font-size:11px;line-height:1.5}
+.badge-center-tier{margin-top:16px;padding:14px;border:1px solid #e5ebe9;border-radius:16px;background:#fbfcfc}
+.badge-center-tier-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;padding-bottom:10px;border-bottom:1px solid #edf1ef}
+.badge-center-tier-head>div{display:flex;gap:9px;align-items:center}.badge-center-tier-head b{font-size:12px;letter-spacing:.045em}.badge-center-tier-head span,.badge-center-tier-head small{font-size:10px;color:#77847f;font-weight:850}
+.badge-center-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.badge-center-grid article{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;padding:12px;border:1px solid #e5ebe9;border-radius:12px;background:#fff}
+.badge-center-grid .badge-gem{width:48px;height:48px}.badge-center-grid small,.badge-center-grid b,.badge-center-grid p,.badge-center-grid span{display:block}
+.badge-center-grid small{font-size:9px;color:#7a8882;font-weight:900}.badge-center-grid b{margin-top:2px;font-size:13px}.badge-center-grid p{margin:4px 0;color:#68766f;font-size:10px;line-height:1.45}
+.badge-center-grid span{font-size:10px;color:#53625c}.badge-center-grid span strong{color:#087864;font-size:12px}
+.badge-center-black{background:#111518;border-color:#30383e}.badge-center-black .badge-center-tier-head{border-bottom-color:#2c353a}.badge-center-black .badge-center-tier-head b{color:#f4f7f8}.badge-center-black .badge-center-tier-head span,.badge-center-black .badge-center-tier-head small{color:#a8b2b7}
+.badge-center-black .badge-center-grid article{background:#171d21;border-color:#313a40}.badge-center-black .badge-center-grid b{color:#f5f7f8}.badge-center-black .badge-center-grid p,.badge-center-black .badge-center-grid span{color:#aab4b9}
+.badge-center-leaders{margin-top:18px}.badge-center-leader-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.badge-center-leader-grid article{display:grid;grid-template-columns:30px 1fr auto;gap:9px;align-items:center;padding:10px 12px;border:1px solid #e5ebe8;border-radius:11px;background:#fff}
+.badge-center-leader-grid em{font-style:normal;font-weight:950;color:#0a7b65}.badge-center-leader-grid b,.badge-center-leader-grid small{display:block}.badge-center-leader-grid b{font-size:12px}.badge-center-leader-grid small{margin-top:2px;color:#77847f;font-size:9px}.badge-center-leader-grid>article>span{font-size:10px;font-weight:900;color:#222}
+@media(max-width:760px){.referral-status-grid,.badge-center-grid,.badge-center-leader-grid{grid-template-columns:1fr}.badge-center-grid article{grid-template-columns:48px 1fr}}

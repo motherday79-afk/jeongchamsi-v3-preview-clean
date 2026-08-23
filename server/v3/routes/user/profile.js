@@ -1,5 +1,5 @@
 const { currentUser } = require("../../../../lib/v3/access");
-const { updateOwnProfile } = require("../../../../lib/v3/users");
+const { updateOwnProfile, getReferralStatus } = require("../../../../lib/v3/users");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
   try {
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ ok: false, error: "USER_LOGIN_REQUIRED" });
-    if (req.method === "GET") return res.status(200).json({ ok: true, user });
+    if (req.method === "GET") return res.status(200).json({ ok: true, user, referral: await getReferralStatus(user.id) });
     if (req.method !== "PATCH") { res.setHeader("Allow", "GET, PATCH"); return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" }); }
     const result = await updateOwnProfile(user.id, req.body || {});
     if (!result.ok) return res.status(400).json({ ok: false, error: result.error });
