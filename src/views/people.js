@@ -86,6 +86,37 @@ function relatedPeople(live){
     return `<button type="button" data-go="/person/${esc(person.id)}"><span class="related-person-avatar ${photo?"has-photo":""}"${photo?` style="--photo-position:${esc(photo.focus)}"`:""}>${img}</span><span><b>${esc(person.name||"")}</b><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</small></span><em>NOW ${fmt(row.rank)}위</em></button>`;
   }).join("")}</div></section>`;
 }
+function trendScoreValue(point,key){
+  const value=Number(point?.scores?.[key]);
+  return Number.isFinite(value)?Math.max(0,Math.min(100,value)):null;
+}
+function trendSparkline(points,key,tone="mint"){
+  const values=(Array.isArray(points)?points:[]).map(point=>trendScoreValue(point,key)).filter(value=>value!==null);
+  if(!values.length)return `<span class="person-analysis-trend-empty">관측 대기</span>`;
+  const width=220,height=48,pad=4;
+  const coords=values.map((value,index)=>{
+    const x=values.length===1?width/2:pad+(width-pad*2)*(index/(values.length-1));
+    const y=pad+(height-pad*2)*(1-value/100);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  const last=values[values.length-1],first=values[0],delta=Math.round((last-first)*10)/10;
+  const deltaLabel=values.length<2?"첫 관측":delta>0?`+${delta}`:String(delta);
+  return `<span class="person-analysis-trend-chart ${tone}"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(key)} 변화"><line x1="4" y1="24" x2="216" y2="24"></line><polyline points="${coords}"></polyline>${values.map((value,index)=>{const x=values.length===1?width/2:pad+(width-pad*2)*(index/(values.length-1));const y=pad+(height-pad*2)*(1-value/100);return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${index===values.length-1?3.2:2}"></circle>`;}).join("")}</svg><b>${Math.round(last)}</b><em>${esc(deltaLabel)}</em></span>`;
+}
+function rankHistoryMarkup(live){
+  const history=(Array.isArray(live?.rankHistory)?live.rankHistory:[]).slice(-8);
+  const trend=(Array.isArray(live?.trend?.points)?live.trend.points:[]).slice(-8);
+  const globalRows=history.length?history:trend.map(x=>({draftId:x.draftId,publishedAt:x.publishedAt,globalRank:x.globalRank}));
+  const categoryRows=trend.filter(x=>Number(x?.categoryRank)>0);
+  const chips=rows=>rows.map((x,index)=>`<span>${fmt(x.globalRank||x.categoryRank)}위${index<rows.length-1?`<i>→</i>`:""}</span>`).join("");
+  const categoryChips=categoryRows.map((x,index)=>`<span>${fmt(x.categoryRank)}위${index<categoryRows.length-1?`<i>→</i>`:""}</span>`).join("");
+  return `<div class="person-analysis-rank-history"><div><small>전체 NOW 이력</small><strong>${globalRows.length?chips(globalRows):"첫 공식 관측 대기"}</strong></div><div><small>${esc(live?.categoryLabel||"카테고리")} 이력</small><strong>${categoryRows.length?categoryChips:"다음 게시부터 누적"}</strong></div></div>`;
+}
+function analysisTrend(live){
+  const points=(Array.isArray(live?.trend?.points)?live.trend.points:[]).slice(-12);
+  const count=points.length;
+  return `<div class="person-analysis-trend-shell"><div class="person-analysis-trend-head"><span>ANALYSIS TREND</span><h3>관심 변화 · NOW 이력</h3><p>공식 게시 시점마다 정참시 분석지표와 순위 변화를 관측합니다.${count?` 현재 ${count}회 관측.`:""}</p></div><div class="person-analysis-trend-series"><div><small>종합 관심</small>${trendSparkline(points,"overallInterest","navy")}</div><div><small>심층 관심</small>${trendSparkline(points,"highEngagement","blue")}</div><div><small>대중 확산</small>${trendSparkline(points,"massExpansion","mint")}</div><div><small>활동성</small>${trendSparkline(points,"activity","orange")}</div><div><small>이슈 온도</small>${trendSparkline(points,"issueHeat","red")}</div><div><small>미디어 확산</small>${trendSparkline(points,"mediaSpread","violet")}</div></div>${rankHistoryMarkup(live)}</div>`;
+}
 function analysisReport(live){
   const row=live?.row||null;
   const analysis=live?.analysis||null;
@@ -138,7 +169,7 @@ function analysisReport(live){
 
     <details class="person-analysis-deep content-card">
       <summary><span><small>DEEP ANALYSIS</small><b>정참시 심층분석 더보기</b></span><em>+</em></summary>
-      <div class="person-analysis-deep-body"><div class="person-analysis-deep-grid"><article><h3>관심 전이</h3>${analysisAxis("미디어→대중 전이",gd("newsSearchTransition","이슈 노출이 능동적인 대중 관심으로 연결되는 정도"),scores.newsSearchTransition,"분리","전이","mint")}${analysisAxis("미디어·대중 괴리",gd("mediaPublicGap","정보 노출과 대중 관심 사이의 간격"),scores.mediaPublicGap,"낮은 괴리","큰 괴리","blue")}${analysisAxis("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"정체","확장","orange")}</article><article><h3>시간 흐름</h3>${analysisAxis("단기 가속",gd("newsAcceleration","최근 관심과 노출의 변화 속도"),scores.newsAcceleration,"둔화","가속","red")}${analysisAxis("일간 집중",gd("activityConcentration","최근 활동과 관심이 특정 시점에 집중되는 정도"),scores.activityConcentration,"분산","집중","orange")}${analysisAxis("주간 지속",gd("activityPersistence","관심과 활동 흐름이 연속적으로 유지되는 정도"),scores.activityPersistence,"단기","지속","navy")}</article><article><h3>이슈 구조</h3>${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 새로운 이슈에 집중되는 정도"),scores.issueFreshness,"누적","최신","violet")}${analysisAxis("대중 침투",gd("massPenetration","관심이 일반적인 대중 영역으로 확장되는 힘"),scores.massPenetration,"제한","침투","mint")}${analysisAxis("이슈 폭발",gd("issueExplosiveness","짧은 시간 안에 관심이 증폭되는 힘"),scores.issueExplosiveness,"안정","폭발","red")}</article></div><div class="person-analysis-trend-shell"><div><span>ANALYSIS TREND</span><h3>관심 변화 · NOW 이력</h3><p>관측 이력이 누적될수록 현재 분석지표와 순위 변화의 시간축을 확장할 수 있습니다.</p></div><div class="person-analysis-trend-placeholder"><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div>
+      <div class="person-analysis-deep-body"><div class="person-analysis-deep-grid"><article><h3>관심 전이</h3>${analysisAxis("미디어→대중 전이",gd("newsSearchTransition","이슈 노출이 능동적인 대중 관심으로 연결되는 정도"),scores.newsSearchTransition,"분리","전이","mint")}${analysisAxis("미디어·대중 괴리",gd("mediaPublicGap","정보 노출과 대중 관심 사이의 간격"),scores.mediaPublicGap,"낮은 괴리","큰 괴리","blue")}${analysisAxis("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"정체","확장","orange")}</article><article><h3>시간 흐름</h3>${analysisAxis("단기 가속",gd("newsAcceleration","최근 관심과 노출의 변화 속도"),scores.newsAcceleration,"둔화","가속","red")}${analysisAxis("일간 집중",gd("activityConcentration","최근 활동과 관심이 특정 시점에 집중되는 정도"),scores.activityConcentration,"분산","집중","orange")}${analysisAxis("주간 지속",gd("activityPersistence","관심과 활동 흐름이 연속적으로 유지되는 정도"),scores.activityPersistence,"단기","지속","navy")}</article><article><h3>이슈 구조</h3>${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 새로운 이슈에 집중되는 정도"),scores.issueFreshness,"누적","최신","violet")}${analysisAxis("대중 침투",gd("massPenetration","관심이 일반적인 대중 영역으로 확장되는 힘"),scores.massPenetration,"제한","침투","mint")}${analysisAxis("이슈 폭발",gd("issueExplosiveness","짧은 시간 안에 관심이 증폭되는 힘"),scores.issueExplosiveness,"안정","폭발","red")}</article></div><!-- ANALYSIS TREND -->${analysisTrend(live)}</div>
     </details>`;
 }
 
@@ -154,8 +185,8 @@ export async function renderPersonDetail(id){
   const photoNotice=photo
     ? ` · 사진: <a href="${esc(photo.sourcePage||"#")}" target="_blank" rel="noopener noreferrer">${esc(photo.attribution||"프로필 사진")}</a>${photo.licenseUrl?` · <a href="${esc(photo.licenseUrl)}" target="_blank" rel="noopener noreferrer">${esc(photo.license||"라이선스")}</a>`:""}`
     : " · 사진은 순차 연결 중";
-  const rank=n(row?.rank),score=n(row?.score),publishedAt=dateTime(live?.publishedAt);
-  const liveHero=row?`<div class="person-hero-now"><span>NOW RANK</span><strong>#${fmt(rank)}</strong>${trendMarkup(live)}<small>NOW 지수 ${score.toFixed(1)} · ${esc(publishedAt||"최근 게시")}</small></div>`:`<div class="person-hero-now is-empty"><span>NOW RANK</span><strong>—</strong><small>게시 데이터 대기</small></div>`;
+  const rank=n(row?.rank),categoryRank=n(live?.categoryRank),categoryLabel=live?.categoryLabel||p.roleLabel;
+  const liveHero=row?`<div class="person-hero-now person-hero-rank-split"><div class="person-hero-rank-cell"><span>전체 NOW</span><strong>${fmt(rank)}위</strong></div><div class="person-hero-rank-cell"><span>${esc(categoryLabel)}</span><strong>${categoryRank?`${fmt(categoryRank)}위`:"—"}</strong></div><div class="person-hero-rank-trend">${trendMarkup(live)}</div></div>`:`<div class="person-hero-now is-empty person-hero-rank-split"><div class="person-hero-rank-cell"><span>전체 NOW</span><strong>—</strong></div><div class="person-hero-rank-cell"><span>${esc(categoryLabel)}</span><strong>—</strong></div><div class="person-hero-rank-trend"><span class="person-trend neutral">게시 데이터 대기</span></div></div>`;
   const newsSection=row?`<section class="content-card person-recent-news"><div class="section-title"><h2>최근 뉴스</h2><span>분석 근거 · 최근 7일 최대 6건</span></div>${recentNews(news)}</section>`:"";
   return pageShell(`<main class="subpage person-live-detail-page person-analysis-report-page">
     <section class="person-detail-hero person-live-hero content-card">

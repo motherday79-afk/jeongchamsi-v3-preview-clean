@@ -167,18 +167,18 @@ function categoryRankCard(row, typeLabel) {
   const person = { ...local, ...live, photo:local.photo || "", photoFocus:local.photoFocus || "50% 28%" };
   const title = person.name || local.name || typeLabel;
   const meta = [person.party, person.jurisdiction].filter(Boolean).join(" · ");
+  const short = [person.office || person.roleLabel, person.terms].filter(Boolean).join(" · ");
   const photo = String(person.photo || "");
-  const photoMarkup = photo ? `<img data-politician-photo src="${esc(photo)}" alt="" width="72" height="72" loading="lazy" decoding="async" fetchpriority="low">` : "";
+  const photoMarkup = photo ? `<img data-politician-photo src="${esc(photo)}" alt="" width="160" height="160" loading="lazy" decoding="async" fetchpriority="low">` : "";
   const categoryRank = Math.max(1, Number(row?.categoryRank) || 1);
   const globalRank = Math.max(1, Number(row?.globalRank) || categoryRank);
-  const score = Number(row?.score || 0);
-  return `<a class="now-category-rank-card" href="/person/${esc(person.id)}" data-route aria-label="${esc(title)} 상세페이지">
-    <span class="now-category-rank-no"><b>${categoryRank}</b><small>위</small></span>
-    <span class="now-category-rank-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(person.photoFocus)}"` : ""}>${photoMarkup}</span>
-    <span class="now-category-rank-copy"><b>${esc(title)}</b><small>${esc(meta)}</small><em>${esc(typeLabel)} ${categoryRank}위 · 전체 NOW ${globalRank}위</em></span>
-    <span class="now-category-rank-score"><small>NOW</small><b>${score ? score.toFixed(1) : "—"}</b></span>
+  return `<a class="person-slot-card data-connected now-category-card" href="/person/${esc(person.id)}" data-route aria-label="${esc(title)} 상세페이지">
+    <span class="slot-no now-category-card-rank">#${categoryRank}</span>
+    <div class="person-photo-placeholder ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(person.photoFocus)}"` : ""}>${photoMarkup}</div>
+    <div class="slot-lines"><b class="slot-data-name">${esc(title)}</b><span class="slot-data-meta">${esc(meta)}</span><span class="slot-data-short">${esc(short)}</span><span class="now-category-card-meta"><b>${esc(typeLabel)} ${categoryRank}위</b><em>전체 NOW ${globalRank}위</em></span></div>
   </a>`;
 }
+
 export async function renderNow(search = "") {
   await ensurePersonProvider();
   const NOW_TYPES = nowTypes();
@@ -229,7 +229,7 @@ export async function renderNow(search = "") {
     nextLimit = Math.min(total,shownCount+30);
     nextBase = `/now?type=${type}&limit=`;
     filterDescription = `${meta.label} 안에서 현재 NOW 점수 기준으로 다시 매긴 독립 순위`;
-    bodyMarkup = rows.length ? `<div class="now-category-rank-list">${rows.map(row=>categoryRankCard(row,meta.label)).join("")}</div>` : "";
+    bodyMarkup = rows.length ? `<div class="person-grid now-category-card-grid">${rows.map(row=>categoryRankCard(row,meta.label)).join("")}</div>` : "";
   }
 
   const title = partyParam ? `${label} 전체보기` : searchParam ? `${label} 전체보기` : "NOW Rank · 분야별 순위";
@@ -243,7 +243,7 @@ export async function renderNow(search = "") {
 export async function appendNowRankMore(button) {
   const target = String(button?.dataset?.nowLoadMore || "");
   const section = button?.closest?.(".directory-section");
-  const currentGrid = section?.querySelector?.(".now-category-rank-list, .person-grid");
+  const currentGrid = section?.querySelector?.(".now-category-card-grid, .person-grid");
   if (!target || !section || !currentGrid) return { ok:false, error:"NOW_APPEND_TARGET_MISSING" };
 
   const url = new URL(target, location.origin);
@@ -251,7 +251,7 @@ export async function appendNowRankMore(button) {
   const template = document.createElement("template");
   template.innerHTML = String(html || "").trim();
   const nextPage = template.content.querySelector(".now-directory-page");
-  const nextGrid = nextPage?.querySelector(".now-category-rank-list, .person-grid");
+  const nextGrid = nextPage?.querySelector(".now-category-card-grid, .person-grid");
   if (!nextPage || !nextGrid) return { ok:false, error:"NOW_APPEND_RENDER_FAILED" };
 
   const currentCount = currentGrid.children.length;

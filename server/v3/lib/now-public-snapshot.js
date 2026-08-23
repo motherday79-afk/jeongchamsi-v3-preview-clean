@@ -36,6 +36,37 @@ function buildPersonPublicEntries(current,history,nowMs=Date.now()){
   }).filter(Boolean);
 }
 
+const TREND_SCORE_KEYS=['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread','audiencePosition','activityAcceleration','newsAcceleration','issueExplosiveness'];
+function personTrendPoint(view={}){
+  const scores=view?.analysis?.scores||{},audience=view?.analysis?.audience||{};
+  const compactScores={};
+  for(const key of TREND_SCORE_KEYS){
+    const source=key==='audiencePosition'?audience.position:scores[key];
+    compactScores[key]=Math.max(0,Math.min(100,Math.round((Number(source)||0)*10)/10));
+  }
+  return {
+    draftId:view?.draftId||'',publishedAt:view?.publishedAt||null,
+    globalRank:num(view?.row?.rank),categoryRank:num(view?.categoryRank),scores:compactScores
+  };
+}
+function mergePersonTrend(view={},previousView=null,limit=60){
+  const max=Math.max(2,Math.min(180,Number(limit)||60));
+  const points=Array.isArray(previousView?.trend?.points)?previousView.trend.points.slice():[];
+  const previousKey=String(previousView?.draftId||previousView?.publishedAt||'');
+  const currentKey=String(view?.draftId||view?.publishedAt||'');
+  if(!points.length&&previousKey&&previousKey!==currentKey)points.push(personTrendPoint(previousView));
+  const current=personTrendPoint(view);
+  if(current.draftId||current.publishedAt)points.push(current);
+  const dedup=[];const seen=new Set();
+  for(const point of points){
+    const key=String(point?.draftId||point?.publishedAt||'');
+    if(!key)continue;
+    if(seen.has(key)){const idx=dedup.findIndex(x=>String(x?.draftId||x?.publishedAt||'')===key);if(idx>=0)dedup[idx]=point;continue;}
+    seen.add(key);dedup.push(point);
+  }
+  return {...view,trend:{schemaVersion:1,points:dedup.slice(-max)}};
+}
+
 function buildAdminPublicSnapshot(current){
   const ranked=Array.isArray(current?.ranked)?current.ranked:[];
   return current?{draftId:current.draftId||null,publishedAt:current.publishedAt||null,weights:current.weights||{},total:ranked.length,top30:ranked.slice(0,30).map(compactPreviewRow)}:null;
@@ -64,4 +95,4 @@ function buildCategoryPublicSnapshots(current){
   return groups;
 }
 
-module.exports={compactPreviewRow,compactHistory,buildHomePublicSnapshot,buildAdminPublicSnapshot,buildPersonPublicEntries,compactCategoryRow,buildCategoryPublicSnapshots};
+module.exports={compactPreviewRow,compactHistory,buildHomePublicSnapshot,buildAdminPublicSnapshot,buildPersonPublicEntries,compactCategoryRow,buildCategoryPublicSnapshots,personTrendPoint,mergePersonTrend};

@@ -2585,3 +2585,54 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .now-category-rank-copy{min-width:0;display:flex;flex-direction:column;gap:3px}.now-category-rank-copy>b{font-size:16px;line-height:1.25;font-weight:900;color:#172b26}.now-category-rank-copy>small{font-size:12px;line-height:1.35;color:#687871;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now-category-rank-copy>em{font-size:11px;line-height:1.35;font-style:normal;font-weight:800;color:#0b7e69}
 .now-category-rank-score{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.now-category-rank-score small{font-size:9px;letter-spacing:.06em;font-weight:900;color:#8a9893}.now-category-rank-score b{font-size:16px;font-weight:950;color:#173f39;font-variant-numeric:tabular-nums}
 @media(max-width:640px){.now-category-rank-card{grid-template-columns:42px 52px minmax(0,1fr) 52px;gap:9px;min-height:78px;padding:9px 10px}.now-category-rank-avatar{width:50px;height:50px}.now-category-rank-no b{font-size:21px}.now-category-rank-copy>b{font-size:15px}.now-category-rank-copy>small{font-size:11px}.now-category-rank-copy>em{font-size:10px}.now-category-rank-score b{font-size:14px}}
+
+/* 0.36.54 · NOW card restore + person rank split + real analysis trend + PC view switch */
+.now-category-card-grid{margin-top:14px}
+.now-category-card{box-shadow:0 2px 10px rgba(22,55,45,.025)}
+.now-category-card:hover{border-color:#9fcfc2;box-shadow:0 9px 22px rgba(18,64,53,.08);transform:translateY(-2px)}
+.now-category-card-rank{color:#0b7e69;font-size:12px;font-variant-numeric:tabular-nums}
+.now-category-card-meta{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.now-category-card-meta b{color:#0b7e69;font-size:11px;line-height:1.35}
+.now-category-card-meta em{color:#7c8a85;font-size:10px;line-height:1.35;font-style:normal;font-weight:800}
+
+.person-hero-rank-split{display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:0;padding:0;overflow:hidden}
+.person-hero-rank-cell{display:grid;align-content:center;min-height:82px;padding:13px 12px;text-align:center}
+.person-hero-rank-cell+.person-hero-rank-cell{border-left:1px solid #e2ece8}
+.person-hero-rank-cell span{display:block;color:#70817b;font-size:10px;font-weight:900;letter-spacing:.04em}
+.person-hero-rank-cell strong{display:block;margin-top:6px;color:#173a31;font-size:25px;line-height:1;font-weight:950;letter-spacing:-.7px;font-variant-numeric:tabular-nums}
+.person-hero-rank-trend{grid-column:1/-1;display:flex;align-items:center;justify-content:center;min-height:34px;padding:6px 10px;border-top:1px solid #e8efec;background:#f8fbfa}
+.person-hero-rank-trend .person-trend{font-size:10px}
+
+.person-analysis-trend-shell{grid-template-columns:180px minmax(0,1fr);align-items:stretch;gap:14px}
+.person-analysis-trend-head{align-self:center}
+.person-analysis-trend-series{display:grid;gap:7px;min-width:0}
+.person-analysis-trend-series>div{display:grid;grid-template-columns:72px minmax(0,1fr);gap:9px;align-items:center;min-width:0;padding:6px 8px;border:1px solid #edf2f0;border-radius:11px;background:#fbfdfc}
+.person-analysis-trend-series>div>small{color:#566a63;font-size:10.5px;font-weight:900}
+.person-analysis-trend-chart{--trend-color:#12a47d;display:grid!important;grid-template-columns:minmax(90px,1fr) 27px 42px;gap:6px;align-items:center;min-width:0;color:var(--trend-color)!important}
+.person-analysis-trend-chart.navy{--trend-color:#2b435c}.person-analysis-trend-chart.blue{--trend-color:#5577ee}.person-analysis-trend-chart.mint{--trend-color:#12a47d}.person-analysis-trend-chart.orange{--trend-color:#ef9636}.person-analysis-trend-chart.red{--trend-color:#e85c68}.person-analysis-trend-chart.violet{--trend-color:#7864d8}
+.person-analysis-trend-chart svg{display:block;width:100%;height:34px;overflow:visible}
+.person-analysis-trend-chart svg line{stroke:#e1e8e5;stroke-width:1;stroke-dasharray:3 4}
+.person-analysis-trend-chart svg polyline{fill:none;stroke:var(--trend-color);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.person-analysis-trend-chart svg circle{fill:#fff;stroke:var(--trend-color);stroke-width:2}
+.person-analysis-trend-chart>b{color:var(--trend-color);font-size:12px;font-weight:950;text-align:right;font-variant-numeric:tabular-nums}
+.person-analysis-trend-chart>em{color:#778780;font-size:9px;font-style:normal;font-weight:900;text-align:right;white-space:nowrap}
+.person-analysis-trend-empty{display:block!important;color:#95a19d!important;font-size:10px!important;font-weight:750!important}
+.person-analysis-rank-history{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid #edf1ef}
+.person-analysis-rank-history>div{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;align-items:center;padding:9px 10px;border-radius:11px;background:#f8fbfa}
+.person-analysis-rank-history small{color:#657770;font-size:10px;font-weight:900}
+.person-analysis-rank-history strong{display:flex;align-items:center;gap:4px;overflow:auto;color:#1f3a31;font-size:11px;font-weight:900;white-space:nowrap;scrollbar-width:none}
+.person-analysis-rank-history strong::-webkit-scrollbar{display:none}
+.person-analysis-rank-history strong span{display:inline-flex!important;align-items:center;gap:4px;color:#1f3a31!important;font-size:11px!important;font-weight:900!important}
+.person-analysis-rank-history i{color:#9aa6a1;font-size:9px;font-style:normal}
+
+.jcv3-view-mode-switch{display:none;justify-content:center;padding:16px 12px 26px;background:#fff}
+.jcv3-view-mode-switch button{min-height:40px;padding:0 16px;border:1px solid #d9e5e1;border-radius:999px;background:#f8fbfa;color:#42584f;font:inherit;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(20,55,44,.05)}
+.jcv3-view-mode-switch button:hover{border-color:#a9d4c8;color:#08745e;background:#f1faf7}
+html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
+
+@media(max-width:640px){
+  .person-live-hero .person-hero-now.person-hero-rank-split{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;min-height:0;padding:0}
+  .person-hero-rank-cell{min-height:72px;padding:11px 8px}.person-hero-rank-cell strong{font-size:23px}.person-hero-rank-trend{min-height:32px}
+  .person-analysis-trend-shell{grid-template-columns:1fr}.person-analysis-trend-series>div{grid-template-columns:68px minmax(0,1fr)}
+  .person-analysis-trend-chart{grid-template-columns:minmax(72px,1fr) 25px 38px}.person-analysis-rank-history{grid-template-columns:1fr}.person-analysis-rank-history>div{grid-template-columns:86px minmax(0,1fr)}
+}

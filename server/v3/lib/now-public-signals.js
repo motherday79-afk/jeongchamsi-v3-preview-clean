@@ -1,3 +1,4 @@
+const CATEGORY_LABELS=Object.freeze({assembly:'국회의원',metropolitan:'광역단체장',basic:'기초단체장'});
 const STOPWORDS = new Set([
   '정치','정치인','국회','국회의원','의원','정부','관련','대한','통해','대해','오늘','이번','최근','현재','기자','뉴스','보도','발표','논의','입장','발언','인터뷰','단독','속보','종합','사진','영상','오전','오후','서울','한국','대한민국','위해','에서','으로','에게','까지','부터','하며','했다','한다','있는','없는','지난','오는','이날','것으로','가운데','제기','밝혀','밝혔다','말했다','전했다','예정','공개','진행','추진'
 ]);
@@ -10,6 +11,29 @@ function previousSnapshot(current,history){
 }
 function rankMap(snapshot){
   return new Map((snapshot?.top30||[]).map(row=>[String(row?.person?.id||''),num(row?.rank)]).filter(([id,rank])=>id&&rank));
+}
+function categoryRankForRow(rows,row){
+  const type=String(row?.person?.type||'');
+  if(!type)return 0;
+  let rank=0;
+  for(const candidate of rows){
+    if(String(candidate?.person?.type||'')!==type)continue;
+    rank+=1;
+    if(String(candidate?.person?.id||'')===String(row?.person?.id||''))return rank;
+  }
+  return 0;
+}
+function legacyRankHistory(current,history,id){
+  const target=String(id||'');
+  const prior=(Array.isArray(history?.items)?history.items:[]).slice().reverse().map(item=>{
+    const row=(Array.isArray(item?.top30)?item.top30:[]).find(x=>String(x?.person?.id||'')===target);
+    return row?{draftId:item?.draftId||'',publishedAt:item?.publishedAt||null,globalRank:num(row.rank)}:null;
+  }).filter(Boolean);
+  const currentRow=rowsOf(current).find(x=>String(x?.person?.id||'')===target);
+  if(currentRow)prior.push({draftId:current?.draftId||'',publishedAt:current?.publishedAt||null,globalRank:num(currentRow.rank)});
+  const dedup=[];const seen=new Set();
+  for(const point of prior){const key=String(point.draftId||point.publishedAt||'');if(!key||seen.has(key))continue;seen.add(key);dedup.push(point);}
+  return dedup.slice(-30);
 }
 function cleanTitle(title=''){
   return String(title||'').replace(/\s+-\s+[^-]{1,60}$/,'').replace(/[\[\]“”"'‘’]/g,' ').replace(/\s+/g,' ').trim();
@@ -181,16 +205,17 @@ function whyNowText(row,rankDelta){
 }
 function derivePersonView(current,history,id,nowMs=Date.now()){
   const rows=rowsOf(current),row=rows.find(x=>String(x?.person?.id||'')===String(id||''))||null;
-  if(!row)return {row:null,rankDelta:null,previousRank:null,trendLabel:'',whyNow:'아직 게시된 NOW 데이터가 없습니다.',related:[],publishedAt:current?.publishedAt||null};
+  if(!row)return {row:null,draftId:current?.draftId||null,rankDelta:null,previousRank:null,categoryRank:0,categoryLabel:'',rankHistory:[],trendLabel:'',whyNow:'아직 게시된 NOW 데이터가 없습니다.',related:[],publishedAt:current?.publishedAt||null};
   const prev=previousSnapshot(current,history),prevRank=rankMap(prev).get(String(id||''))||null;
   const rankDelta=prevRank?prevRank-num(row.rank):null;
   const trendLabel=prevRank?(rankDelta>0?`▲ ${rankDelta}`:rankDelta<0?`▼ ${Math.abs(rankDelta)}`:'—'):(prev?'NEW':'');
   const party=String(row?.person?.party||''),region=String(row?.person?.jurisdiction||'').split(/\s+/)[0]||'';
+  const categoryRank=categoryRankForRow(rows,row),categoryLabel=CATEGORY_LABELS[String(row?.person?.type||'')]||String(row?.person?.roleLabel||'분야');
   const related=rows.filter(x=>String(x?.person?.id||'')!==String(id||'')).map(x=>({x,score:(party&&x?.person?.party===party?4:0)+(region&&String(x?.person?.jurisdiction||'').startsWith(region)?2:0)+(Math.abs(num(x.rank)-num(row.rank))<=5?1:0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||num(a.x.rank)-num(b.x.rank)).slice(0,4).map(({x})=>({rank:num(x.rank),score:num(x.score),person:{id:x?.person?.id||'',name:x?.person?.name||'',party:x?.person?.party||'',jurisdiction:x?.person?.jurisdiction||''}}));
-  return {row,rankDelta,previousRank:prevRank,trendLabel,whyNow:whyNowText(row,rankDelta),related,publishedAt:current?.publishedAt||null,analysis:deriveIntelligenceAnalysis(current,row)};
+  return {row,draftId:current?.draftId||null,rankDelta,previousRank:prevRank,categoryRank,categoryLabel,rankHistory:legacyRankHistory(current,history,id),trendLabel,whyNow:whyNowText(row,rankDelta),related,publishedAt:current?.publishedAt||null,analysis:deriveIntelligenceAnalysis(current,row)};
 }
 function derivePublicSignals(current,history,nowMs=Date.now()){
   if(!rowsOf(current).length)return {source:'none',publishedAt:null,keywords:[],rising:[]};
   return {source:'published-now',publishedAt:current.publishedAt||null,keywords:deriveKeywords(current,nowMs,15),rising:deriveRising(current,history,10)};
 }
-module.exports={cleanTitle,deriveKeywords,deriveRising,derivePublicSignals,derivePersonView,deriveIntelligenceAnalysis,previousSnapshot};
+module.exports={cleanTitle,deriveKeywords,deriveRising,derivePublicSignals,derivePersonView,deriveIntelligenceAnalysis,previousSnapshot,categoryRankForRow,legacyRankHistory};

@@ -1,6 +1,6 @@
 const {getJSON,setJSON}=require('../../../lib/v3/redis');
 const {derivePersonView}=require('../lib/now-public-signals');
-const {buildHomePublicSnapshot,buildCategoryPublicSnapshots}=require('../lib/now-public-snapshot');
+const {buildHomePublicSnapshot,buildCategoryPublicSnapshots,mergePersonTrend}=require('../lib/now-public-snapshot');
 
 const CATEGORY_TYPES=new Set(['assembly','metropolitan','basic']);
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -34,11 +34,11 @@ module.exports=async function nowDataPublic(req,res){
     ]);
 
     // One-time compatibility migration from the pre-0.36.46 full snapshot.
-    if(!publicHome||(id&&(!person||!person?.analysis))){
+    if(!publicHome||(id&&(!person||!person?.analysis||!person?.categoryRank||!person?.trend))){
       const [current,history]=await Promise.all([getJSON('nowDataCurrent'),getJSON('nowDataHistory')]);
       if(current?.ranked?.length){
         if(!publicHome){publicHome=buildHomePublicSnapshot(current,history);await setJSON('nowDataPublicHome',publicHome);}
-        if(id&&(!person||!person?.analysis)){person=derivePersonView(current,history,id);await setJSON(personDomain,person);}
+        if(id&&(!person||!person?.analysis||!person?.categoryRank||!person?.trend)){const nextPerson=derivePersonView(current,history,id);person=mergePersonTrend(nextPerson,person||null,60);await setJSON(personDomain,person);}
       }
     }
 

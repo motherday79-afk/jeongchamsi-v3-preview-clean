@@ -4,7 +4,7 @@ const { allPeople } = require('../../lib/politician-live-roster');
 const { credentials: searchCredentials } = require('../../lib/naver-searchad');
 const { credentials: newsCredentials, availability: newsAvailability } = require('../../lib/naver-news');
 const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resultState, compactRankRow } = require('../../lib/now-data-engine');
-const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots } = require('../../lib/now-public-snapshot');
+const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots, mergePersonTrend } = require('../../lib/now-public-snapshot');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -114,11 +114,13 @@ module.exports=async function nowDataAdmin(req,res){
       const publicHome=buildHomePublicSnapshot(current,previousHistory,Date.parse(publishedAt));
       const publicAdmin=buildAdminPublicSnapshot(current);
       const personEntries=buildPersonPublicEntries(current,previousHistory,Date.parse(publishedAt));
+      const previousPersonEntries=await mgetJSON(personEntries.map(([key])=>key));
+      const trendedPersonEntries=personEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
       await Promise.all([setJSON(CURRENT,current),setJSON(HISTORY,history),setJSON(PUBLIC_HOME,publicHome),setJSON(PUBLIC_ADMIN,publicAdmin),setJSON(META,nextMeta),...Object.entries(categorySnapshots).map(([type,value])=>setJSON(categoryDomain(type),value))]);
-      await writePersonEntries(personEntries);
+      await writePersonEntries(trendedPersonEntries);
       return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
