@@ -2558,3 +2558,20 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .person-interest-axis-scale{display:grid;grid-template-columns:repeat(5,1fr);margin:0 0 13px;color:#81908b;font-size:10px;font-weight:800}
 .person-interest-axis-scale span{text-align:center}.person-interest-axis-scale span:first-child{text-align:left}.person-interest-axis-scale span:last-child{text-align:right}.person-interest-axis-scale span:nth-child(3){color:#42564f;font-weight:950}
 @media(max-width:560px){.person-interest-axis-scale{font-size:10.5px}.person-interest-axis-value{font-size:11px}.itsme-card[role="button"]:after{display:none}}
+
+/* ---------- alpha6.0.36.52 professional indicator language + centered analysis axes ---------- */
+.person-analysis-axis-metric{--analysis-color:#12a47d;position:relative;padding:13px 12px 11px;border:1px solid #e6eeeb;border-radius:14px;background:#fff;min-width:0}
+.person-analysis-axis-metric.mint{--analysis-color:#12a47d}.person-analysis-axis-metric.navy{--analysis-color:#2b435c}.person-analysis-axis-metric.blue{--analysis-color:#5577ee}.person-analysis-axis-metric.orange{--analysis-color:#ef9636}.person-analysis-axis-metric.red{--analysis-color:#e85c68}.person-analysis-axis-metric.violet{--analysis-color:#7864d8}
+.person-analysis-axis-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.person-analysis-axis-head b{color:#263a33;font-size:13px}.person-analysis-axis-head strong{color:var(--analysis-color);font-size:14px;font-weight:950;white-space:nowrap}
+.person-analysis-axis-desc{display:block;min-height:34px;margin-top:5px;color:#7f8e88;font-size:11.5px;line-height:1.5}
+.person-analysis-axis-labels{display:flex;justify-content:space-between;gap:12px;margin-top:11px;color:#73837d;font-size:10.5px;font-weight:850}.person-analysis-axis-labels span:last-child{text-align:right}
+.person-analysis-axis-track{position:relative;height:8px;margin:26px 2px 7px;border-radius:999px;background:linear-gradient(90deg,#e5eaee 0%,#edf1ef 50%,#e4f1ed 100%);overflow:visible}
+.person-analysis-axis-track:before,.person-analysis-axis-track:after{content:"";position:absolute;top:50%;width:1px;height:13px;background:#cad4d0;transform:translateY(-50%)}.person-analysis-axis-track:before{left:25%}.person-analysis-axis-track:after{left:75%}
+.person-analysis-axis-track>i{position:absolute;left:50%;top:50%;width:2px;height:18px;background:#98aaa4;transform:translate(-50%,-50%)}
+.person-analysis-axis-track>em{position:absolute;top:50%;width:15px;height:15px;border:3px solid #fff;border-radius:50%;background:var(--analysis-color);box-shadow:0 2px 8px rgba(24,54,45,.18);font-style:normal;transform:translate(-50%,-50%);transition:left .2s ease}
+.person-analysis-axis-value{position:absolute;left:50%;bottom:20px;min-width:36px;padding:3px 6px;border-radius:7px;background:#203a32;color:#fff;font-size:10.5px;font-weight:950;line-height:1;text-align:center;transform:translateX(-50%);white-space:nowrap}
+.person-analysis-axis-value:after{content:"";position:absolute;left:50%;top:100%;border:4px solid transparent;border-top-color:#203a32;transform:translateX(-50%)}
+.person-analysis-axis-scale{display:grid;grid-template-columns:repeat(5,1fr);color:#8a9893;font-size:9.5px;font-weight:800}.person-analysis-axis-scale span{text-align:center}.person-analysis-axis-scale span:first-child{text-align:left}.person-analysis-axis-scale span:last-child{text-align:right}.person-analysis-axis-scale span:nth-child(3){color:#41564e;font-weight:950}
+.person-analysis-panel .person-analysis-axis-metric+.person-analysis-axis-metric{margin-top:8px}
+.person-analysis-deep-grid .person-analysis-axis-metric{margin-top:7px;padding:11px 10px 10px}.person-analysis-deep-grid .person-analysis-axis-desc{min-height:0;font-size:11px}.person-analysis-deep-grid .person-analysis-axis-track{margin-top:24px}
+@media(max-width:560px){.person-analysis-axis-head b{font-size:13px}.person-analysis-axis-desc{font-size:11.5px}.person-analysis-axis-labels{font-size:10.5px}.person-analysis-axis-scale{font-size:10px}.person-analysis-axis-value{font-size:10.5px}}

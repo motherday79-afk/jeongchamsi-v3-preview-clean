@@ -142,19 +142,19 @@ function deriveIntelligenceAnalysis(current,row){
   else if(issueExplosiveness>=78&&newsAcceleration>=70)signalLabel='이슈폭발형';
   else if(massExpansion>=72&&issueInflux>=68)signalLabel='대중확산형';
   else if(direction==='media-led'&&mediaPublicGap>=45)signalLabel='미디어 선행형';
-  else if(highEngagement>=72&&coreRetention>=68&&highEngagement>massExpansion+8)signalLabel='고관여 지속형';
+  else if(highEngagement>=72&&coreRetention>=68&&highEngagement>massExpansion+8)signalLabel='심층관심 지속형';
   else if(activity>=70&&activityPersistence>=65)signalLabel='활동지속형';
   else if(overallInterest>=65)signalLabel='관심확대형';
-  const audienceLabel=audiencePosition>=61?'대중 확산 우세':audiencePosition<=39?'고관여 관심 우세':'균형 관심 구조';
-  const directionLabel=direction==='media-led'?'미디어 반응 우세':direction==='public-led'?'대중 검색 반응 우세':'미디어·대중 균형';
-  let diagnosis='검색 관심과 언론 노출을 함께 보면 현재 관심은 비교적 안정적인 흐름입니다.';
-  if(signalLabel==='전면 급상승형')diagnosis='검색 관심과 언론 노출이 함께 높은 수준이며, 모바일 대중 관심과 최근 이슈 강도가 동시에 확장되는 국면입니다.';
-  else if(signalLabel==='이슈폭발형')diagnosis='최근 뉴스 발생 속도가 빠르게 높아지고 모바일 반응도 강해, 단기 이슈가 대중 관심으로 번지는 신호가 강합니다.';
-  else if(signalLabel==='대중확산형')diagnosis='모바일 기반 관심이 상대적으로 강하고 최근 뉴스 흐름과 동반돼, 관심이 더 넓은 대중층으로 확장되는 신호가 관측됩니다.';
-  else if(signalLabel==='미디어 선행형')diagnosis='언론 노출 강도가 검색 반응보다 앞서 있습니다. 현재 이슈가 대중 검색 관심으로 이어지는지 지켜볼 구간입니다.';
-  else if(signalLabel==='고관여 지속형')diagnosis='PC 기반 정보탐색 관심이 상대적으로 강합니다. 단기 화제성보다 고관여 관심이 유지되는 성격이 두드러집니다.';
-  else if(signalLabel==='활동지속형')diagnosis='최근 7일 언론 노출이 꾸준하고 단기 집중보다 지속적인 활동 노출 흐름이 강하게 나타납니다.';
-  else if(signalLabel==='관심확대형')diagnosis='검색 관심과 뉴스 노출이 평균 이상으로 형성돼 있으며, 추가 이슈 발생 시 관심 확장 가능성이 있는 구간입니다.';
+  const audienceLabel=audiencePosition>=61?'대중 확산 우세':audiencePosition<=39?'심층 탐색 우세':'균형 관심 구조';
+  const directionLabel=direction==='media-led'?'미디어 반응 우세':direction==='public-led'?'대중 반응 우세':'미디어·대중 균형';
+  let diagnosis='현재 관측된 관심과 활동 신호는 비교적 안정적인 균형 구간에 위치합니다.';
+  if(signalLabel==='전면 급상승형')diagnosis='다수의 관측 신호가 동시에 높은 수준으로 확장되며 활동성과 대중 관심이 함께 상승하는 국면입니다.';
+  else if(signalLabel==='이슈폭발형')diagnosis='최근 관심 신호의 가속도가 빠르게 높아지며 단기 이슈가 넓은 대중 관심으로 확산되는 흐름이 강합니다.';
+  else if(signalLabel==='대중확산형')diagnosis='관심의 확장성이 상대적으로 강하고 최근 이슈 흐름과 동반되며 더 넓은 관심층으로 확산되는 신호가 관측됩니다.';
+  else if(signalLabel==='미디어 선행형')diagnosis='정보 노출 강도가 대중 반응보다 앞서는 구간입니다. 현재 이슈가 능동적 관심으로 전환되는 흐름을 관찰할 필요가 있습니다.';
+  else if(signalLabel==='심층관심 지속형')diagnosis='일시적 화제보다 추가 정보 탐색으로 이어지는 관심의 깊이가 상대적으로 강하고 안정적으로 유지되는 국면입니다.';
+  else if(signalLabel==='활동지속형')diagnosis='단기 집중보다 연속적인 활동 노출과 관심 흐름이 안정적으로 유지되는 국면입니다.';
+  else if(signalLabel==='관심확대형')diagnosis='관심 강도가 기준 구간을 넘어 형성돼 있으며 추가 이슈 발생 시 확장 가능성이 높은 구간입니다.';
   return {
     schemaVersion:1,
     scores,
@@ -173,11 +173,11 @@ function compactWhyHeadline(row){
 function whyNowText(row,rankDelta){
   if(!row)return '아직 게시된 NOW 데이터가 없습니다.';
   const latest=compactWhyHeadline(row),n=row.news||{},search=row.search||{};
-  if(rankDelta>0)return `직전 게시 대비 NOW 순위가 ${rankDelta}계단 상승했습니다.${latest?` 최근 ‘${latest}’ 관련 보도가 이어지고 있습니다.`:''}`;
-  if(num(n.count6)>0)return `최근 6시간 뉴스가 ${num(n.count6)}건 집계됐습니다.${latest?` ‘${latest}’ 이슈가 현재 관심을 끌고 있습니다.`:''}`;
-  if(num(n.count24)>0)return `최근 24시간 뉴스가 ${num(n.count24)}건 집계됐습니다.${latest?` ‘${latest}’ 관련 흐름을 확인해 보세요.`:''}`;
-  if(num(search.monthlyTotalQcCnt)>0)return `네이버 월간 검색량 ${num(search.monthlyTotalQcCnt).toLocaleString('ko-KR')}회가 집계됐습니다. 현재 검색 관심을 기준으로 NOW 상태를 보여줍니다.`;
-  return '최근 검색량과 뉴스 데이터를 기준으로 NOW 상태를 계산하고 있습니다.';
+  if(rankDelta>0)return `직전 관측 대비 NOW 순위가 ${rankDelta}계단 상승했습니다.${latest?` 최근 ‘${latest}’ 관련 이슈 흐름이 이어지고 있습니다.`:''}`;
+  if(num(n.count6)>0)return `최근 관심 신호가 빠르게 집중되고 있습니다.${latest?` ‘${latest}’ 이슈가 현재 흐름을 주도하고 있습니다.`:''}`;
+  if(num(n.count24)>0)return `최근 관심과 활동 신호가 기준 구간보다 활발하게 형성되고 있습니다.${latest?` ‘${latest}’ 관련 흐름이 이어지고 있습니다.`:''}`;
+  if(num(search.monthlyTotalQcCnt)>0)return '현재 대중 관심 신호가 유의미하게 관측되고 있습니다. 정참시 분석지표에서 현재 국면을 확인할 수 있습니다.';
+  return '현재 관측 신호를 기준으로 NOW 상태를 분석하고 있습니다.';
 }
 function derivePersonView(current,history,id,nowMs=Date.now()){
   const rows=rowsOf(current),row=rows.find(x=>String(x?.person?.id||'')===String(id||''))||null;
