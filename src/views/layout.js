@@ -25,7 +25,8 @@ export function siteHeader({ memberCount = null, liveBar = null, badgeCelebratio
   const session = getUserSession();
   const celebrationsEnabled = Array.isArray(badgeCelebrations);
   const config = { useActualCount:true, overrideCount:0, ...(liveBar || {}) };
-  const actual = Number(memberCount);
+  const hasActualMemberCount = memberCount !== null && memberCount !== undefined && memberCount !== "";
+  const actual = hasActualMemberCount ? Number(memberCount) : NaN;
   const displayCount = config.useActualCount !== false
     ? (Number.isFinite(actual) ? Math.max(0, actual) : null)
     : Math.max(0, Number(config.overrideCount || 0));
