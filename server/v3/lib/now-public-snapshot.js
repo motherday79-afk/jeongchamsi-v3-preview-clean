@@ -40,4 +40,28 @@ function buildAdminPublicSnapshot(current){
   const ranked=Array.isArray(current?.ranked)?current.ranked:[];
   return current?{draftId:current.draftId||null,publishedAt:current.publishedAt||null,weights:current.weights||{},total:ranked.length,top30:ranked.slice(0,30).map(compactPreviewRow)}:null;
 }
-module.exports={compactPreviewRow,compactHistory,buildHomePublicSnapshot,buildAdminPublicSnapshot,buildPersonPublicEntries};
+
+function compactCategoryRow(row={},categoryRank=0){
+  const person=row.person||{};
+  return {
+    categoryRank:num(categoryRank),globalRank:num(row.rank),score:num(row.score),state:row.state||'',
+    person:{
+      id:person.id||'',name:person.name||'',type:person.type||'',roleLabel:person.roleLabel||'',
+      party:person.party||'',jurisdiction:person.jurisdiction||'',office:person.office||''
+    }
+  };
+}
+function buildCategoryPublicSnapshots(current){
+  const ranked=Array.isArray(current?.ranked)?current.ranked:[];
+  const groups={};
+  for(const type of ['assembly','metropolitan','basic']){
+    const rows=ranked.filter(row=>String(row?.person?.type||'')===type);
+    groups[type]={
+      draftId:current?.draftId||null,publishedAt:current?.publishedAt||null,weights:current?.weights||{},
+      type,total:rows.length,rows:rows.map((row,index)=>compactCategoryRow(row,index+1))
+    };
+  }
+  return groups;
+}
+
+module.exports={compactPreviewRow,compactHistory,buildHomePublicSnapshot,buildAdminPublicSnapshot,buildPersonPublicEntries,compactCategoryRow,buildCategoryPublicSnapshots};

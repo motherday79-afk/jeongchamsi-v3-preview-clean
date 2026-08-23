@@ -1,4 +1,4 @@
-import { getDomain, getAuthorProfiles, getNowPublic } from "../core/repository.js";
+import { getDomain, getAuthorProfiles, getNowPublic, getNowCategory } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js";
 import {
@@ -161,6 +161,24 @@ function nowCard(person) {
   const photoMarkup = photo ? `<img data-politician-photo src="${esc(photo)}" alt="" width="160" height="160" loading="lazy" decoding="async" fetchpriority="low">` : "";
   return `<a class="person-slot-card data-connected" href="/person/${esc(person.id)}" data-route aria-label="${esc(title)} 상세페이지"><span class="slot-no">#${String(person.slot).padStart(3, "0")}</span><div class="person-photo-placeholder ${photo ? "has-photo" : ""}"${photo && person.photoFocus ? ` style="--photo-position:${esc(person.photoFocus)}"` : ""}>${photoMarkup}</div><div class="slot-lines"><b class="slot-data-name">${esc(title)}</b><span class="slot-data-meta">${esc(meta)}</span><span class="slot-data-short">${esc(short)}</span></div></a>`;
 }
+function categoryRankCard(row, typeLabel) {
+  const live = row?.person || {};
+  const local = getPersonSlotById(live.id) || {};
+  const person = { ...local, ...live, photo:local.photo || "", photoFocus:local.photoFocus || "50% 28%" };
+  const title = person.name || local.name || typeLabel;
+  const meta = [person.party, person.jurisdiction].filter(Boolean).join(" · ");
+  const photo = String(person.photo || "");
+  const photoMarkup = photo ? `<img data-politician-photo src="${esc(photo)}" alt="" width="72" height="72" loading="lazy" decoding="async" fetchpriority="low">` : "";
+  const categoryRank = Math.max(1, Number(row?.categoryRank) || 1);
+  const globalRank = Math.max(1, Number(row?.globalRank) || categoryRank);
+  const score = Number(row?.score || 0);
+  return `<a class="now-category-rank-card" href="/person/${esc(person.id)}" data-route aria-label="${esc(title)} 상세페이지">
+    <span class="now-category-rank-no"><b>${categoryRank}</b><small>위</small></span>
+    <span class="now-category-rank-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(person.photoFocus)}"` : ""}>${photoMarkup}</span>
+    <span class="now-category-rank-copy"><b>${esc(title)}</b><small>${esc(meta)}</small><em>${esc(typeLabel)} ${categoryRank}위 · 전체 NOW ${globalRank}위</em></span>
+    <span class="now-category-rank-score"><small>NOW</small><b>${score ? score.toFixed(1) : "—"}</b></span>
+  </a>`;
+}
 export async function renderNow(search = "") {
   await ensurePersonProvider();
   const NOW_TYPES = nowTypes();
@@ -168,12 +186,12 @@ export async function renderNow(search = "") {
   const partyParam = String(params.get("party") || "").trim();
   const searchParam = String(params.get("search") || "").trim();
   const type = NOW_TYPES[params.get("type")] ? params.get("type") : "assembly";
-  const requested = Number(params.get("limit") || 50);
+  const requested = Number(params.get("limit") || 30);
 
-  let all, label, total, nextBase, filterDescription;
+  let label, total, nextBase, filterDescription, bodyMarkup, shownCount = 0, remaining = 0, nextLimit = 0;
   if (partyParam) {
     const party = resolvePartyAlias(partyParam)?.canonical || partyParam;
-    all = listAllPoliticians().filter(p => searchNorm(p.party) === searchNorm(party));
+    const all = listAllPoliticians().filter(p => searchNorm(p.party) === searchNorm(party));
     label = `${party} 정치인`;
     total = all.length;
     nextBase = `/now?party=${encodeURIComponent(party)}&limit=`;
@@ -183,37 +201,49 @@ export async function renderNow(search = "") {
       basic: all.filter(x=>x.type==="basic").length
     };
     filterDescription = `국회의원 ${counts.assembly}명 · 광역단체장 ${counts.metropolitan}명 · 기초단체장 ${counts.basic}명`;
+    const limit = Math.min(total, Math.max(50, Math.ceil(requested / 50) * 50));
+    const shown = all.slice(0, limit);
+    shownCount = shown.length; remaining = Math.max(0,total-shownCount); nextLimit = Math.min(total,shownCount+50);
+    bodyMarkup = shown.length ? `<div class="person-grid">${shown.map(nowCard).join("")}</div>` : "";
   } else if (searchParam) {
     const {terms}=searchTerms(searchParam);
-    all = listAllPoliticians().filter(p => textMatches(personSearchText(p), terms));
+    const all = listAllPoliticians().filter(p => textMatches(personSearchText(p), terms));
     label = `‘${searchParam}’ 정치인`;
     total = all.length;
     nextBase = `/now?search=${encodeURIComponent(searchParam)}&limit=`;
     filterDescription = `이름·정당·지역·직책 기준 검색 결과`;
+    const limit = Math.min(total, Math.max(50, Math.ceil(requested / 50) * 50));
+    const shown = all.slice(0, limit);
+    shownCount = shown.length; remaining = Math.max(0,total-shownCount); nextLimit = Math.min(total,shownCount+50);
+    bodyMarkup = shown.length ? `<div class="person-grid">${shown.map(nowCard).join("")}</div>` : "";
   } else {
     const meta = NOW_TYPES[type];
-    all = meta.get();
-    label = meta.label;
-    total = meta.count;
+    label = `${meta.label} NOW Rank`;
+    const limit = type === "metropolitan" ? 30 : Math.max(30, Math.ceil(requested / 30) * 30);
+    const live = await getNowCategory(type, { offset:0, limit });
+    const category = live?.category || { total:0, rows:[], hasMore:false };
+    total = Number(category.total || 0);
+    const rows = Array.isArray(category.rows) ? category.rows : [];
+    shownCount = rows.length;
+    remaining = Math.max(0,total-shownCount);
+    nextLimit = Math.min(total,shownCount+30);
     nextBase = `/now?type=${type}&limit=`;
-    filterDescription = `543명 텍스트 기본정보 연결 완료 · 사진은 경량 벡터 아바타로 표시`;
+    filterDescription = `${meta.label} 안에서 현재 NOW 점수 기준으로 다시 매긴 독립 순위`;
+    bodyMarkup = rows.length ? `<div class="now-category-rank-list">${rows.map(row=>categoryRankCard(row,meta.label)).join("")}</div>` : "";
   }
 
-  const limit = (!partyParam && !searchParam && type === "metropolitan")
-    ? total
-    : Math.min(total, Math.max(50, Math.ceil(requested / 50) * 50));
-  const shown = all.slice(0, limit);
-  const remaining = Math.max(0, total - shown.length);
-  const nextLimit = Math.min(total, shown.length + 50);
-  const title = partyParam ? `${label} 전체보기` : searchParam ? `${label} 전체보기` : "NOW Rank 전체 정치인";
+  const title = partyParam ? `${label} 전체보기` : searchParam ? `${label} 전체보기` : "NOW Rank · 분야별 순위";
+  const isCategory = !partyParam && !searchParam;
+  const loadStep = isCategory ? 30 : 50;
+  const footer = remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-now-load-more="${nextBase}${nextLimit}">${isCategory ? "30명 더 불러오기" : "50명 더 불러오기"} <span>남은 ${remaining}명</span></button></div>` : shownCount ? `<div class="directory-complete">${esc(label)} ${total}명 전체를 불러왔습니다</div>` : "";
 
-  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · ALL POLITICIANS</span><h1>${esc(title)}</h1><p>${partyParam || searchParam ? esc(filterDescription) : "메인의 TOP 15는 요약입니다. 전체페이지에서는 국회의원 300명, 광역단체장 16명, 기초단체장 227명 등 총 543명을 탐색합니다"}</p><div class="capacity-line"><span>${esc(filterDescription)}</span><b>총 ${total}명</b></div></section>${!partyParam && !searchParam ? `<nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key,x])=>`<button type="button" class="${type===key?"active":""}" data-go="/now?type=${key}&limit=50"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav>` : `<div class="directory-filter-actions"><button class="ghost-btn" type="button" data-go="/now">전체 정치인 분류로 돌아가기</button><button class="ghost-btn" type="button" data-go="/search?q=${encodeURIComponent(partyParam||searchParam)}">통합검색 결과</button></div>`}<section class="content-card directory-section"><div class="section-title"><h2>${esc(label)}</h2><span>${shown.length} / ${total}명 표시</span></div>${shown.length ? `<div class="person-grid">${shown.map(nowCard).join("")}</div>${remaining ? `<div class="load-more-wrap"><button class="primary-btn load-more-btn" type="button" data-now-load-more="${nextBase}${nextLimit}">50명 더 불러오기 <span>남은 ${remaining}명</span></button></div>` : `<div class="directory-complete">${esc(label)} ${total}명 전체를 불러왔습니다</div>`}` : `<div class="empty-state"><h2>해당 정치인이 없습니다</h2><p>검색어나 정당명을 다시 확인해 주세요</p></div>`}</section></main>`);
+  return pageShell(`<main class="subpage now-directory-page"><section class="page-hero"><span class="eyebrow">NOW RANK · CATEGORY LEAGUE</span><h1>${esc(title)}</h1><p>${partyParam || searchParam ? esc(filterDescription) : "메인 TOP10은 전체 정치인 통합 순위입니다. 전체보기에서는 국회의원·광역단체장·기초단체장별로 같은 NOW 점수를 다시 정렬해 각 분야의 독립 순위를 보여줍니다"}</p><div class="capacity-line"><span>${esc(filterDescription)}</span><b>${isCategory ? `현재 ${total}명` : `총 ${total}명`}</b></div></section>${isCategory ? `<nav class="now-category-tabs" aria-label="정치인 분류">${Object.entries(NOW_TYPES).map(([key,x])=>`<button type="button" class="${type===key?"active":""}" data-go="/now?type=${key}&limit=${key==="metropolitan"?30:30}"><b>${x.label}</b><span>${x.count}명</span></button>`).join("")}</nav>` : `<div class="directory-filter-actions"><button class="ghost-btn" type="button" data-go="/now">분야별 NOW Rank로 돌아가기</button><button class="ghost-btn" type="button" data-go="/search?q=${encodeURIComponent(partyParam||searchParam)}">통합검색 결과</button></div>`}<section class="content-card directory-section"><div class="section-title"><h2>${esc(label)}</h2><span>${shownCount} / ${total}명 표시</span></div>${bodyMarkup || `<div class="empty-state"><h2>게시된 NOW 순위 데이터가 없습니다</h2><p>관리자에서 NOW 데이터를 게시하면 분야별 순위가 자동으로 구성됩니다</p></div>`}${footer}</section></main>`);
 }
 
 export async function appendNowRankMore(button) {
   const target = String(button?.dataset?.nowLoadMore || "");
   const section = button?.closest?.(".directory-section");
-  const currentGrid = section?.querySelector?.(".person-grid");
+  const currentGrid = section?.querySelector?.(".now-category-rank-list, .person-grid");
   if (!target || !section || !currentGrid) return { ok:false, error:"NOW_APPEND_TARGET_MISSING" };
 
   const url = new URL(target, location.origin);
@@ -221,7 +251,7 @@ export async function appendNowRankMore(button) {
   const template = document.createElement("template");
   template.innerHTML = String(html || "").trim();
   const nextPage = template.content.querySelector(".now-directory-page");
-  const nextGrid = nextPage?.querySelector(".person-grid");
+  const nextGrid = nextPage?.querySelector(".now-category-rank-list, .person-grid");
   if (!nextPage || !nextGrid) return { ok:false, error:"NOW_APPEND_RENDER_FAILED" };
 
   const currentCount = currentGrid.children.length;
@@ -238,7 +268,6 @@ export async function appendNowRankMore(button) {
   else if (currentFooter && !nextFooter) currentFooter.remove();
   else if (!currentFooter && nextFooter) section.append(nextFooter.cloneNode(true));
 
-  // This is not navigation. Keep the same history entry and never ask the router to render.
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
   return { ok:true, appended:nextCards.length };
 }

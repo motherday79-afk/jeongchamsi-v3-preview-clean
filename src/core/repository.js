@@ -228,6 +228,23 @@ export async function getNowPerson(id, options = {}) {
   return body?.person || null;
 }
 
+export async function getNowCategory(type = "assembly", { offset = 0, limit = 30, fresh = false } = {}) {
+  const safeType = ["assembly","metropolitan","basic"].includes(String(type)) ? String(type) : "assembly";
+  const safeOffset = Math.max(0, Number(offset) || 0);
+  const safeLimit = Math.min(300, Math.max(1, Number(limit) || 30));
+  const key = `category:${safeType}:${safeOffset}:${safeLimit}`;
+  const now = Date.now();
+  const cached = NOW_PUBLIC_CACHE.get(key);
+  if (!fresh && cached && now - cached.at < NOW_PUBLIC_CACHE_TTL_MS) return clone(cached.data);
+  try {
+    const body = await requestJSON(`/api/v3/now-data?type=${encodeURIComponent(safeType)}&offset=${safeOffset}&limit=${safeLimit}`);
+    NOW_PUBLIC_CACHE.set(key, { at: now, data: body });
+    return clone(body);
+  } catch (error) {
+    return { ok:false, error:error.code || error.message, current:null, category:{ type:safeType, total:0, offset:safeOffset, limit:safeLimit, hasMore:false, rows:[] } };
+  }
+}
+
 export async function getPoliticianRequests() {
   try { return await requestJSON(`/api/v3/politician-requests?r=${Date.now()}`); }
   catch (error) { return { ok:false, error:error.code || error.message, items:[] }; }
