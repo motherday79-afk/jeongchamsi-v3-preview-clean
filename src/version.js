@@ -1,3 +1,3 @@
-export const APP_VERSION = "v3.0.0-alpha6.0.36.58";
-export const BUILD_NAME = "LIVE MEMBER COUNT ROUTE HOTFIX";
-export const ADMIN_VERSION = "0.36.58";
+export const APP_VERSION = "v3.0.0-alpha6.0.36.59";
+export const BUILD_NAME = "COMPARE 2.0 LIVE MULTI-INTELLIGENCE";
+export const ADMIN_VERSION = "0.36.59";

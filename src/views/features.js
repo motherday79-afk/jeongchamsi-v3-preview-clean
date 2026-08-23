@@ -1,4 +1,4 @@
-import { getDomain, getAuthorProfiles, getNowPublic, getNowCategory } from "../core/repository.js";
+import { getDomain, getAuthorProfiles, getNowPublic, getNowCategory, getNowPerson } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js";
 import { GOVERNMENT_SEED } from "../data/government-seed.js";
 import {
@@ -11,6 +11,10 @@ import {
   isPostLiked
 } from "../core/user.js";
 import { authorIdentity, authorOwnerIds } from "./author-identity.js";
+import {
+  CORE_COMPARE_METRICS, AUDIENCE_COMPARE_METRICS, ACTIVITY_COMPARE_METRICS, FLOW_COMPARE_METRICS,
+  scoreFor, buildDifferences, buildCompareInsight, trendScoreDelta, trendRankDelta
+} from "./compare-intelligence.js";
 
 let personProvider = null;
 async function ensurePersonProvider() {
@@ -370,21 +374,106 @@ export async function renderItsmeDetail(id) {
   return pageShell(`<main class="subpage"><article class="content-card article-detail"><span class="eyebrow">IT’S ME · ${esc(item.category || "정책 제안")}</span><h1>${esc(item.title)}</h1><div class="article-meta"><span>${authorIdentity(item.author || "정참시 회원", item.ownerId, authorProfiles)}</span><span>${formatDate(item.createdAt)}</span><span>좋아요 ${Number(item.likes || 0)}</span></div>${item.summary ? `<div class="article-lead">${esc(item.summary)}</div>` : ""}<div class="article-body">${bodyHtml(item.body)}</div><div class="article-actions"><button type="button" class="ghost-btn ${liked ? "active" : ""}" data-post-like="itsme" data-post-id="${esc(id)}">${liked ? "♥ 좋아요 취소" : "♡ 좋아요"}</button>${canManage ? `<button type="button" class="ghost-btn" data-go="/itsme/write?id=${encodeURIComponent(id)}">수정</button><button type="button" class="danger-btn" data-user-post-delete="itsme" data-id="${esc(id)}">삭제</button>` : ""}<button type="button" class="primary-btn" data-go="/itsme">IT’S ME 목록으로</button></div></article><section class="content-card comment-section"><div class="section-title"><h2>댓글</h2><span>${comments.length}개</span></div>${session.authenticated ? `<form class="comment-form" data-comment-form="itsme" data-post-id="${esc(id)}"><textarea name="comment" rows="3" maxlength="1000" required placeholder="의견을 남겨보세요"></textarea><div class="admin-form-actions"><button class="primary-btn" type="submit">댓글 등록</button><span data-comment-state></span></div></form>` : `<div class="member-login-prompt"><span>댓글은 로그인 후 작성할 수 있습니다</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>`}${comments.length ? `<div class="comment-list">${comments.map(c => `<article><div><b>${authorIdentity(c.author, c.ownerId, authorProfiles)}</b><span>${formatDate(c.createdAt)}</span></div><p>${esc(c.text)}</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 댓글이 없습니다</div>`}</section></main>`);
 }
 
-function compareSampleMetrics(person) {
-  const slot = Number(person?.slot || 1);
-  const typeSeed = person?.type === "assembly" ? 7 : person?.type === "metropolitan" ? 13 : 19;
-  return {
-    활동도: 55 + ((slot * 7 + typeSeed) % 36),
-    관심도: 52 + ((slot * 11 + typeSeed) % 39),
-    참여도: 50 + ((slot * 13 + typeSeed) % 41),
-    정책주목도: 54 + ((slot * 17 + typeSeed) % 37)
-  };
+function compareScoreText(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? String(Math.round(n * 10) / 10) : "—";
 }
-function compareNarrative(person, metrics, side) {
-  const entries = Object.entries(metrics).sort((a, b) => b[1] - a[1]);
-  const strong = entries[0];
-  const weak = entries[entries.length - 1];
-  return `<article><span>${side} 분석</span><h3>${esc(slotLabel(person))}</h3><p><b>${esc(strong[0])}</b>가 ${strong[1]}점으로 가장 강하게 나타납니다. 반면 <b>${esc(weak[0])}</b>는 ${weak[1]}점으로 상대적으로 약합니다. 강점은 유지하면서 ${esc(weak[0])} 관련 활동·정책 설명·시민 접점을 보완하면 균형 잡힌 평가로 이어질 수 있습니다</p></article>`;
+function compareRankText(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? `${Math.round(n).toLocaleString("ko-KR")}위` : "—";
+}
+function comparePersonHero(person, live, side) {
+  const avatar = personPhotoMarkup(person, "compare-live-avatar", { side, eager:true, size:180 });
+  const signal = live?.analysis?.signal?.label || "분석 데이터 대기";
+  const rank = live?.row?.rank;
+  const categoryRank = live?.categoryRank;
+  const categoryLabel = live?.categoryLabel || person?.roleLabel || "분야";
+  return `<article class="compare-live-person ${side}">
+    ${avatar}
+    <span class="compare-live-side">POLITICIAN ${side.toUpperCase()}</span>
+    <h2>${esc(person?.name || "")}</h2>
+    <p>${esc([person?.party, person?.jurisdiction].filter(Boolean).join(" · "))}</p>
+    <div class="compare-rank-split"><span><small>전체 NOW</small><strong>${compareRankText(rank)}</strong></span><span><small>${esc(categoryLabel)}</small><strong>${compareRankText(categoryRank)}</strong></span></div>
+    <div class="compare-person-signal"><small>JEONGCHAMSI SIGNAL</small><b>${esc(signal)}</b></div>
+  </article>`;
+}
+function compareMetricRow(metric, liveA, liveB, personA, personB) {
+  const diff = buildDifferences(liveA, liveB, [metric], 4)[0];
+  const a = diff?.a, b = diff?.b;
+  const abs = diff?.delta === null ? 0 : Math.abs(diff.delta);
+  const difference = diff?.leader === "a" ? `${esc(personA.name)} +${compareScoreText(abs)}` : diff?.leader === "b" ? `${esc(personB.name)} +${compareScoreText(abs)}` : "근접";
+  const aWidth = a === null ? 0 : Math.max(0, Math.min(100, a));
+  const bWidth = b === null ? 0 : Math.max(0, Math.min(100, b));
+  return `<article class="compare-metric-row">
+    <div class="compare-metric-side a"><small>${esc(personA.name)}</small><div><strong>${compareScoreText(a)}</strong><span class="compare-metric-track"><i style="width:${aWidth}%"></i></span></div></div>
+    <div class="compare-metric-center"><b>${esc(metric.label)}</b><small>${esc(metric.description)}</small><em>${difference}</em></div>
+    <div class="compare-metric-side b"><small>${esc(personB.name)}</small><div><span class="compare-metric-track"><i style="width:${bWidth}%"></i></span><strong>${compareScoreText(b)}</strong></div></div>
+  </article>`;
+}
+function compareMetricSection(eyebrow, title, subtitle, metrics, liveA, liveB, personA, personB, className="") {
+  return `<section class="content-card compare-analysis-section ${className}"><div class="section-title"><div><span class="eyebrow">${esc(eyebrow)}</span><h2>${esc(title)}</h2></div><span>${esc(subtitle)}</span></div><div class="compare-metric-list">${metrics.map(metric=>compareMetricRow(metric,liveA,liveB,personA,personB)).join("")}</div></section>`;
+}
+function compareTrendPoints(live, key, rankMode=false) {
+  const points = Array.isArray(live?.trend?.points) ? live.trend.points : [];
+  return points.map(point => rankMode ? Number(point?.[key]) : Number(point?.scores?.[key])).filter(value => Number.isFinite(value) && (!rankMode || value > 0));
+}
+function compareTrendSvg(live, key, rankMode=false) {
+  const values = compareTrendPoints(live,key,rankMode);
+  if (!values.length) return `<span class="compare-trend-empty">관측 대기</span>`;
+  const width=150,height=38,pad=3;
+  const min=rankMode?Math.min(...values):0;
+  const max=rankMode?Math.max(...values):100;
+  const span=Math.max(1,max-min);
+  const coords=values.map((value,index)=>{
+    const x=values.length===1?width/2:pad+(width-pad*2)*(index/(values.length-1));
+    const y=rankMode ? pad+(height-pad*2)*((value-min)/span) : pad+(height-pad*2)*(1-value/100);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  return `<svg class="compare-trend-spark" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true"><line x1="3" y1="19" x2="147" y2="19"></line><polyline points="${coords}"></polyline></svg>`;
+}
+function compareTrendCurrent(live,key,rankMode=false) {
+  const values=compareTrendPoints(live,key,rankMode);
+  if(values.length)return values[values.length-1];
+  if(rankMode)return key==="globalRank"?Number(live?.row?.rank)||null:Number(live?.categoryRank)||null;
+  return scoreFor(live,key);
+}
+function compareTrendDeltaLabel(live,key,rankMode=false) {
+  const delta=rankMode?trendRankDelta(live,key):trendScoreDelta(live,key);
+  if(delta===null)return "첫 관측";
+  if(rankMode)return delta>0?`▲ ${compareScoreText(delta)}`:delta<0?`▼ ${compareScoreText(Math.abs(delta))}`:"유지";
+  return delta>0?`+${compareScoreText(delta)}`:compareScoreText(delta);
+}
+function compareTrendCard(label,key,liveA,liveB,personA,personB,rankMode=false) {
+  const a=compareTrendCurrent(liveA,key,rankMode),b=compareTrendCurrent(liveB,key,rankMode);
+  const current=value=>rankMode?compareRankText(value):compareScoreText(value);
+  return `<article class="compare-trend-card"><h3>${esc(label)}</h3><div class="compare-trend-person a"><span><b>${esc(personA.name)}</b><strong>${current(a)}</strong><em>${compareTrendDeltaLabel(liveA,key,rankMode)}</em></span>${compareTrendSvg(liveA,key,rankMode)}</div><div class="compare-trend-person b"><span><b>${esc(personB.name)}</b><strong>${current(b)}</strong><em>${compareTrendDeltaLabel(liveB,key,rankMode)}</em></span>${compareTrendSvg(liveB,key,rankMode)}</div></article>`;
+}
+function compareTrendSection(liveA, liveB, personA, personB) {
+  return `<section class="content-card compare-analysis-trend"><div class="section-title"><div><span class="eyebrow">ANALYSIS TREND</span><h2>관심 변화 · NOW 이력 비교</h2></div><span>공식 게시 스냅샷 기준 변화</span></div><div class="compare-trend-grid">
+    ${compareTrendCard("전체 NOW 순위","globalRank",liveA,liveB,personA,personB,true)}
+    ${compareTrendCard("카테고리 순위","categoryRank",liveA,liveB,personA,personB,true)}
+    ${compareTrendCard("종합 관심","overallInterest",liveA,liveB,personA,personB)}
+    ${compareTrendCard("대중 확산","massExpansion",liveA,liveB,personA,personB)}
+    ${compareTrendCard("활동성","activity",liveA,liveB,personA,personB)}
+    ${compareTrendCard("미디어 확산","mediaSpread",liveA,liveB,personA,personB)}
+  </div></section>`;
+}
+function compareLiveResult(personA,liveA,personB,liveB) {
+  if(!liveA?.analysis || !liveB?.analysis) return `<section class="content-card empty-state compare-live-wait"><h2>비교 분석 데이터가 준비되지 않았습니다</h2><p>두 정치인의 최신 NOW 게시 데이터가 모두 준비되면 같은 기준으로 비교합니다.</p></section>`;
+  const insight=buildCompareInsight(personA,liveA,personB,liveB);
+  return `<div class="compare-live-report">
+    <section class="content-card compare-live-hero">
+      ${comparePersonHero(personA,liveA,"a")}
+      <div class="compare-live-signal"><span class="eyebrow">COMPARE SIGNAL</span><strong>VS</strong><h2>${esc(insight.headline)}</h2><p>${esc(insight.summary)}</p><div class="compare-signal-counts"><span><b>${insight.advantageA}</b>${esc(personA.name)} 상대강세</span><span><b>${insight.balanced}</b>근접</span><span><b>${insight.advantageB}</b>${esc(personB.name)} 상대강세</span></div></div>
+      ${comparePersonHero(personB,liveB,"b")}
+    </section>
+    ${compareMetricSection("CORE INTELLIGENCE","핵심 관심지표 비교","현재 관측 신호 · 0–100 상대지표",CORE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-core-section")}
+    ${compareMetricSection("AUDIENCE LANDSCAPE","관심 구조 비교","관심의 깊이와 확장 방향",AUDIENCE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-audience-section")}
+    ${compareMetricSection("ACTIVITY & MEDIA","활동 · 미디어 비교","속도 · 집중 · 지속 · 확산",ACTIVITY_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-activity-section")}
+    ${compareMetricSection("ATTENTION FLOW","관심 전이 비교","이슈 노출이 실제 관심으로 연결되는 흐름",FLOW_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-flow-section")}
+    ${compareTrendSection(liveA,liveB,personA,personB)}
+    <section class="content-card compare-final-diagnosis"><span class="eyebrow">JEONGCHAMSI COMPARE DIAGNOSIS</span><h2>${esc(insight.headline)}</h2><p>${esc(insight.summary)}</p><div><button class="ghost-btn" type="button" data-go="/person/${esc(personA.id)}">${esc(personA.name)} 상세분석</button><button class="ghost-btn" type="button" data-go="/person/${esc(personB.id)}">${esc(personB.name)} 상세분석</button></div><small>지표의 상대강세는 정치적 우열이나 지지율을 의미하지 않으며, 동일한 정참시 분석기준에서 현재 관측된 관심·활동 신호의 차이를 보여줍니다.</small></section>
+  </div>`;
 }
 
 export async function renderCompare(search = "") {
@@ -395,17 +484,15 @@ export async function renderCompare(search = "") {
   const pa = getPersonSlotById(a);
   const pb = getPersonSlotById(b);
   let result = "";
-  if (pa && pb) {
-    const ma = compareSampleMetrics(pa);
-    const mb = compareSampleMetrics(pb);
-    const labels = Object.keys(ma);
-    const avatarA = personPhotoMarkup(pa, "fake-avatar", { side:"a", eager:true, size:160 });
-    const avatarB = personPhotoMarkup(pb, "fake-avatar", { side:"b", eager:true, size:160 });
-    result = `<section class="content-card"><div class="section-title"><h2>비교 결과 요약</h2><span>검수용 예시 분석 · 실제 데이터 연결 전</span></div><div class="compare-demo"><div>${avatarA}<h2>${esc(slotLabel(pa))}</h2><p>선택 정치인 A</p></div><div class="compare-demo-bars">${labels.map(label => `<label>${esc(label)} <i><em style="width:${ma[label]}%"></em></i>${ma[label]} / ${mb[label]}</label>`).join("")}</div><div>${avatarB}<h2>${esc(slotLabel(pb))}</h2><p>선택 정치인 B</p></div></div><div class="compare-analysis-text">${compareNarrative(pa, ma, "A")}${compareNarrative(pb, mb, "B")}</div><div class="notice-box">현재 수치는 비교 기능 검수용 예시값입니다. 실제 정치인 공급자와 NOW 지표가 연결되면 같은 레이아웃에서 실데이터 분석 문장으로 교체됩니다</div></section>`;
+  if (pa && pb && pa.id === pb.id) {
+    result = `<section class="content-card empty-state"><h2>서로 다른 정치인을 선택해주세요</h2><p>같은 기준에서 두 정치인의 현재 흐름을 비교합니다.</p></section>`;
+  } else if (pa && pb) {
+    const [liveA,liveB] = await Promise.all([getNowPerson(pa.id), getNowPerson(pb.id)]);
+    result = compareLiveResult(pa,liveA,pb,liveB);
   }
   const aLabel = pa ? slotLabel(pa) : "";
   const bLabel = pb ? slotLabel(pb) : "";
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">COMPARE POLITICIANS</span><h1>정치인 비교분석</h1><p>이름·정당·지역을 검색하고 결과에서 바로 선택해 비교하세요</p></section><section class="content-card"><form class="compare-picker compare-picker-quick" data-compare-form><label class="person-quick-picker compare-person-quick-picker">정치인 A 검색<input type="search" id="compare-person-search-a" value="${esc(aLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-a" data-person-quick-results="#compare-person-results-a"><div class="person-quick-results" id="compare-person-results-a" hidden></div><select id="compare-person-a" name="a" required aria-hidden="true" tabindex="-1"><option value="">정치인 A 선택</option>${personOptions(a)}</select></label><span class="compare-vs">VS</span><label class="person-quick-picker compare-person-quick-picker">정치인 B 검색<input type="search" id="compare-person-search-b" value="${esc(bLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-b" data-person-quick-results="#compare-person-results-b"><div class="person-quick-results" id="compare-person-results-b" hidden></div><select id="compare-person-b" name="b" required aria-hidden="true" tabindex="-1"><option value="">정치인 B 선택</option>${personOptions(b)}</select></label><button class="primary-btn" type="submit">비교하기</button></form></section>${result}</main>`);
+  return pageShell(`<main class="subpage compare-live-page"><section class="page-hero"><span class="eyebrow">COMPARE POLITICIANS · MULTI-INTELLIGENCE</span><h1>정치인 비교분석</h1><p>두 정치인의 NOW 순위와 관심·활동·미디어 흐름을 동일한 정참시 분석기준으로 비교합니다.</p></section><section class="content-card compare-picker-card"><form class="compare-picker compare-picker-quick" data-compare-form><label class="person-quick-picker compare-person-quick-picker">정치인 A 검색<input type="search" id="compare-person-search-a" value="${esc(aLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-a" data-person-quick-results="#compare-person-results-a"><div class="person-quick-results" id="compare-person-results-a" hidden></div><select id="compare-person-a" name="a" required aria-hidden="true" tabindex="-1"><option value="">정치인 A 선택</option>${personOptions(a)}</select></label><span class="compare-vs">VS</span><label class="person-quick-picker compare-person-quick-picker">정치인 B 검색<input type="search" id="compare-person-search-b" value="${esc(bLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-b" data-person-quick-results="#compare-person-results-b"><div class="person-quick-results" id="compare-person-results-b" hidden></div><select id="compare-person-b" name="b" required aria-hidden="true" tabindex="-1"><option value="">정치인 B 선택</option>${personOptions(b)}</select></label><button class="primary-btn" type="submit">비교하기</button></form></section>${result}</main>`);
 }
 
 export async function renderGeneration(search = "") {
