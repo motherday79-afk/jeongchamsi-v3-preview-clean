@@ -363,7 +363,7 @@ export async function renderHome() {
   }
 
   return `<div class="site-shell">
-    ${siteHeader({ memberCount:data.memberCount, liveBar:data.brand?.liveBar })}
+    ${siteHeader({ memberCount:data.memberCount, liveBar:data.brand?.liveBar, badgeCelebrations:data.badgeCelebrations || [] })}
 
     <div class="page-wrap product-home-wrap">${productHero(data.brand || {})}${productLauncher()}<div class="portal-layout product-content-grid">
       <section class="mobile-utility" aria-label="모바일 내 정참시">

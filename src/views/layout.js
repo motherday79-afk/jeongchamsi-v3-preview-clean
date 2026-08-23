@@ -16,8 +16,14 @@ function drawerListItem(key, label, href, meta = "") {
   return `<a class="drawer-list-item" href="${href}" data-route><span class="drawer-list-icon">${iconSvg(key)}</span><span><b>${esc(label)}</b>${meta ? `<small>${esc(meta)}</small>` : ""}</span><em>›</em></a>`;
 }
 
-export function siteHeader({ memberCount = null, liveBar = null } = {}) {
+function liveBarCelebrations(items = []) {
+  const rows=(Array.isArray(items)?items:[]).slice(0,6);
+  return `<div class="live-community-celebrations" data-livebar-celebrations ${rows.length ? "" : "hidden"} aria-live="polite">${rows.map((item,i)=>`<span class="live-community-celebration ${i===0 ? "is-active" : ""}" data-livebar-celebration><b>${esc(item.nickname || "정참시민")}님께서</b><strong>${esc(item.badgeName || "배지")}</strong><em>배지를 획득하셨습니다.</em></span>`).join("")}</div>`;
+}
+
+export function siteHeader({ memberCount = null, liveBar = null, badgeCelebrations = null } = {}) {
   const session = getUserSession();
+  const celebrationsEnabled = Array.isArray(badgeCelebrations);
   const config = { useActualCount:true, overrideCount:0, ...(liveBar || {}) };
   const actual = Number(memberCount);
   const displayCount = config.useActualCount !== false
@@ -34,8 +40,8 @@ export function siteHeader({ memberCount = null, liveBar = null } = {}) {
       <form class="product-search" data-search-form><input name="q" aria-label="통합검색" placeholder="정치인, 정당, 이슈를 검색하세요"><button type="submit" aria-label="검색"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></button></form>
       <div class="product-account-tools"><button type="button" aria-label="내 참여" data-go="/mypage/activity"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button type="button" aria-label="최근 본 정치인" data-go="/mypage/recent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></button></div>
     </div>
-    <div class="product-service-bar live-community-bar" data-livebar data-member-count="${displayCount === null ? "" : displayCount}">
-      <div class="live-community-inner"><div class="live-community-count"><b data-livebar-count>${countText}</b><span>명이 정참시와 함께합니다</span></div><div class="live-community-actions"><a class="live-community-cta is-active" href="/about" data-route data-livebar-cta="about">정참시 응원하기 <span>→</span></a><a class="live-community-cta" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer" data-livebar-cta="support">정참시 후원하기 <span>♡</span></a></div>${adminEditor}</div>
+    <div class="product-service-bar live-community-bar" data-livebar data-member-count="${displayCount === null ? "" : displayCount}" data-celebrations-enabled="${celebrationsEnabled ? "1" : "0"}">
+      <div class="live-community-inner"><div class="live-community-count"><b data-livebar-count>${countText}</b><span>명이 정참시와 함께합니다</span></div>${liveBarCelebrations(celebrationsEnabled ? badgeCelebrations : [])}<div class="live-community-actions"><a class="live-community-cta is-active" href="/about" data-route data-livebar-cta="about">정참시 응원하기 <span>→</span></a><a class="live-community-cta" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer" data-livebar-cta="support">정참시 후원하기 <span>♡</span></a></div>${adminEditor}</div>
     </div>
   </header>`;
 }

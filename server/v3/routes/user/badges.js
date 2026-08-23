@@ -1,7 +1,8 @@
 const { currentUser } = require('../../../../lib/v3/access');
-const { getActivity } = require('../../../../lib/v3/activity');
+const { getActivity, setActivity } = require('../../../../lib/v3/activity');
 const { loadBadgeStatus } = require('../../../../lib/v3/badge-engine');
 const { getReferralStatus } = require('../../../../lib/v3/users');
+const { reconcileBadgeRecognition, recordBadgeCelebrations } = require('../../../../lib/v3/badge-celebrations');
 
 module.exports = async function handler(req,res){
   res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -16,7 +17,17 @@ module.exports = async function handler(req,res){
     const activity=await getActivity(user.id);
     const referral=await getReferralStatus(user.id);
     const status=await loadBadgeStatus(user,activity,{referralsRecruited:Number(referral?.recruitedCount||0)});
-    return res.status(200).json({ok:true,status});
+    const recognized=reconcileBadgeRecognition(activity.badgeRecognition,status.earnedBadges);
+    const prior=JSON.stringify(activity.badgeRecognition||{});
+    const next=JSON.stringify(recognized.recognition);
+    if(prior!==next){
+      activity.badgeRecognition=recognized.recognition;
+      await setActivity(user.id,activity);
+    }
+    if(recognized.newBadgeKeys.length){
+      try{await recordBadgeCelebrations(user,recognized.newBadgeKeys);}catch{}
+    }
+    return res.status(200).json({ok:true,status,newlyRecognizedBadges:recognized.newBadgeKeys});
   }catch(error){
     return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'BADGE_STATUS_FAILED'});
   }

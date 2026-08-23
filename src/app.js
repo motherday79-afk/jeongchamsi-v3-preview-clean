@@ -8,6 +8,7 @@ import {
 const app = document.querySelector("#app");
 let renderEpoch = 0;
 let liveBarRotationTimer = 0;
+let liveBarCelebrationTimer = 0;
 
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
@@ -73,6 +74,22 @@ function restoreScrollInstant(point) {
   window.scrollTo(target.x, target.y);
 }
 
+function renderLiveBarCelebrations(container, items = []) {
+  if (!container) return;
+  const rows=(Array.isArray(items)?items:[]).slice(0,6);
+  container.replaceChildren(...rows.map((item,index)=>{
+    const row=document.createElement("span");
+    row.className=`live-community-celebration${index===0?" is-active":""}`;
+    row.dataset.livebarCelebration="";
+    const who=document.createElement("b"); who.textContent=`${String(item?.nickname||"정참시민")}님께서`;
+    const badge=document.createElement("strong"); badge.textContent=String(item?.badgeName||"배지");
+    const tail=document.createElement("em"); tail.textContent="배지를 획득하셨습니다.";
+    row.append(who,badge,tail);
+    return row;
+  }));
+  container.hidden=!rows.length;
+}
+
 async function hydrateLiveCommunityBar() {
   const bar = document.querySelector("[data-livebar]");
   if (!bar) return;
@@ -98,6 +115,7 @@ async function hydrateLiveCommunityBar() {
       if (useActual) useActual.checked = config.useActualCount !== false;
       if (override) override.value = String(Math.max(0, Number(config.overrideCount || 0)));
     }
+    if (bar.dataset.celebrationsEnabled === "1") renderLiveBarCelebrations(bar.querySelector("[data-livebar-celebrations]"), data.badgeCelebrations || []);
   }
   if (liveBarRotationTimer) window.clearInterval(liveBarRotationTimer);
   const ctas = Array.from(bar.querySelectorAll("[data-livebar-cta]"));
@@ -108,6 +126,16 @@ async function hydrateLiveCommunityBar() {
       activeIndex = (activeIndex + 1) % ctas.length;
       ctas[activeIndex]?.classList.add("is-active");
     }, 4200);
+  }
+  if (liveBarCelebrationTimer) window.clearInterval(liveBarCelebrationTimer);
+  const celebrations=Array.from(bar.querySelectorAll("[data-livebar-celebration]"));
+  if (celebrations.length > 1) {
+    let celebrationIndex=Math.max(0,celebrations.findIndex(x=>x.classList.contains("is-active")));
+    liveBarCelebrationTimer=window.setInterval(()=>{
+      celebrations[celebrationIndex]?.classList.remove("is-active");
+      celebrationIndex=(celebrationIndex+1)%celebrations.length;
+      celebrations[celebrationIndex]?.classList.add("is-active");
+    },5200);
   }
 }
 
@@ -492,6 +520,14 @@ document.addEventListener("submit", async event => {
     return;
   }
   if (form.matches("[data-national-evaluation-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("national-evaluation-vote", { personId: form.dataset.personId, rating: fd.get("rating") }); const st=form.querySelector("[data-national-evaluation-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이미 이 평가에 참여했습니다":`평가 저장 실패 · ${r.error||""}`;return;} await rerenderNoScroll(r.activity); return; }
+  if (form.matches("[data-badge-celebration-form]")) {
+    event.preventDefault();
+    const r=await (await import("./views/admin.js")).saveBadgeCelebrationConfig(form);
+    const st=form.querySelector("[data-badge-celebration-state]");
+    if(!r.ok){if(st)st.textContent=`저장 실패 · ${r.error||""}`;return;}
+    if(st)st.textContent="저장 완료";
+    return;
+  }
   if (form.matches("[data-livebar-admin-form]")) {
     event.preventDefault();
     const current = await getDomain("brand", { fresh:true });

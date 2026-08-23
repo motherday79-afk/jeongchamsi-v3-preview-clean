@@ -66,12 +66,15 @@ async function badgeCenterPanel() {
   }catch{data.error="BADGE_CENTER_FAILED";}
   if(!data.ok) return `<section class="admin-panel"><h2>배지센터</h2><div class="notice-box">배지 현황을 불러오지 못했습니다 · ${esc(data.error||"BADGE_CENTER_FAILED")}</div></section>`;
   const tiers=[["BRONZE","BRONZE"],["SILVER","SILVER"],["GOLD","GOLD"],["PLATINUM","PLATINUM"],["BLACK","BLACK · 특별 명예"]];
+  const celebrationEnabled=new Set(data.celebration?.enabledBadgeKeys||[]);
+  const celebrationCandidates=BADGE_CATALOG.filter(x=>["GOLD","PLATINUM","BLACK"].includes(x.tier)&&x.key!=="operator");
+  const celebrationControl=`<form class="badge-celebration-control" data-badge-celebration-form><div class="section-title"><div><h3>메인 축하 노출</h3><span>GOLD 이상 중 메인 상단에서 함께 축하할 배지를 선택합니다.</span></div></div><div class="badge-celebration-choice-grid">${celebrationCandidates.map(badge=>`<label><input type="checkbox" name="badgeKey" value="${esc(badge.key)}" ${celebrationEnabled.has(badge.key)?"checked":""}><span><b>${esc(badge.name)}</b><small>${esc(badge.tier)} · ${esc(badge.kind)}</small></span></label>`).join("")}</div><div class="admin-form-actions"><button class="primary-btn" type="submit">축하 노출 설정 저장</button><span class="save-state" data-badge-celebration-state></span></div></form>`;
   const cards=tiers.map(([tier,label])=>{
     const items=BADGE_CATALOG.filter(x=>x.tier===tier);
     return `<section class="badge-center-tier badge-center-${tier.toLowerCase()}"><div class="badge-center-tier-head"><div><b>${esc(label)}</b><span>${items.length}종</span></div><small>현재 획득 현황</small></div><div class="badge-center-grid">${items.map(badge=>`<article>${badgeGemSvg(badge.key)}<div><small>${esc(badge.kind)}</small><b>${esc(badge.name)}</b><p>${esc(badge.mission)}</p><span>획득자 <strong>${Number(data.holders?.[badge.key]||0).toLocaleString("ko-KR")}</strong>명</span></div></article>`).join("")}</div></section>`;
   }).join("");
   const leaders=(data.records||[]).slice(0,12);
-  return `<section class="admin-panel badge-center-panel"><div class="admin-panel-head"><div><h2>배지센터</h2><span class="status-pill"><b>BADGES</b>${Number(data.summary?.totalBadges||BADGE_CATALOG.length)}종</span></div></div><div class="admin-stat-grid badge-center-stats"><article><b>MEMBERS</b><strong>${Number(data.summary?.members||0)}</strong><span>정참시민</span></article><article><b>BADGES</b><strong>${Number(data.summary?.totalBadges||0)}</strong><span>전체 배지</span></article><article><b>BLACK</b><strong>${Number(data.summary?.blackBadges||0)}</strong><span>특별 명예</span></article><article><b>MICHAEL</b><strong>${Number(data.holders?.michael||0)}</strong><span>1,000명 초대 달성</span></article></div><div class="member-admin-note">관리자는 운영을 위해 모든 배지를 사용할 수 있습니다. BLACK은 상하관계가 아니라 운영·완주·확장처럼 서로 다른 특별한 자격과 성취를 상징합니다.</div>${cards}<section class="badge-center-leaders"><div class="section-title"><h3>획득 현황 상위 회원</h3><span>추천 모집 현황 포함</span></div><div class="badge-center-leader-grid">${leaders.map((u,i)=>`<article><em>${i+1}</em><div><b>${esc(u.name||u.id)}</b><small>#${Number(u.referralNumber||0)} · 배지 ${Number(u.earnedCount||0)}개 · 모집 ${Number(u.recruitedCount||0).toLocaleString("ko-KR")}명</small></div><span>${(u.blackBadges||[]).length ? `${u.blackBadges.length} BLACK` : "—"}</span></article>`).join("")}</div></section></section>`;
+  return `<section class="admin-panel badge-center-panel"><div class="admin-panel-head"><div><h2>배지센터</h2><span class="status-pill"><b>BADGES</b>${Number(data.summary?.totalBadges||BADGE_CATALOG.length)}종</span></div></div><div class="admin-stat-grid badge-center-stats"><article><b>MEMBERS</b><strong>${Number(data.summary?.members||0)}</strong><span>정참시민</span></article><article><b>BADGES</b><strong>${Number(data.summary?.totalBadges||0)}</strong><span>전체 배지</span></article><article><b>BLACK</b><strong>${Number(data.summary?.blackBadges||0)}</strong><span>특별 명예</span></article><article><b>MICHAEL</b><strong>${Number(data.holders?.michael||0)}</strong><span>1,000명 초대 달성</span></article></div><div class="member-admin-note">관리자는 운영을 위해 모든 배지를 사용할 수 있습니다. BLACK은 상하관계가 아니라 운영·완주·확장처럼 서로 다른 특별한 자격과 성취를 상징합니다.</div>${celebrationControl}${cards}<section class="badge-center-leaders"><div class="section-title"><h3>획득 현황 상위 회원</h3><span>추천 모집 현황 포함</span></div><div class="badge-center-leader-grid">${leaders.map((u,i)=>`<article><em>${i+1}</em><div><b>${esc(u.name||u.id)}</b><small>#${Number(u.referralNumber||0)} · 배지 ${Number(u.earnedCount||0)}개 · 모집 ${Number(u.recruitedCount||0).toLocaleString("ko-KR")}명</small></div><span>${(u.blackBadges||[]).length ? `${u.blackBadges.length} BLACK` : "—"}</span></article>`).join("")}</div></section></section>`;
 }
 
 async function membersPanel() {
@@ -478,6 +481,14 @@ export async function updateMemberAccess(id, patch = {}) {
     const b = await r.json().catch(() => ({}));
     return r.ok ? { ok:true, user:b.user } : { ok:false, error:b.error || "MEMBER_UPDATE_FAILED" };
   } catch { return { ok:false, error:"MEMBER_UPDATE_FAILED" }; }
+}
+export async function saveBadgeCelebrationConfig(form) {
+  const enabledBadgeKeys=Array.from(form.querySelectorAll('input[name="badgeKey"]:checked')).map(input=>input.value);
+  try {
+    const r=await fetch("/api/v3/admin/badges",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({enabledBadgeKeys})});
+    const b=await r.json().catch(()=>({}));
+    return r.ok?{ok:true,celebration:b.celebration}:{ok:false,error:b.error||"BADGE_CELEBRATION_SAVE_FAILED"};
+  } catch { return {ok:false,error:"BADGE_CELEBRATION_SAVE_FAILED"}; }
 }
 export async function submitFirstAdmin(form) {
   const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) return { ok: false, error: "비밀번호 확인이 일치하지 않습니다" };

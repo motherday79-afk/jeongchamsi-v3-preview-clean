@@ -4,17 +4,22 @@ const { getActivities } = require('../../../../lib/v3/activity');
 const { getJSON } = require('../../../../lib/v3/redis');
 const { defaultDomain } = require('../../../../lib/v3/schema');
 const { VALID_BADGE_KEYS, computeBadgeMetrics, evaluateBadgeRules } = require('../../../../lib/v3/badge-engine');
+const { getCelebrationConfig, setCelebrationConfig, getRecentBadgeCelebrations } = require('../../../../lib/v3/badge-celebrations');
 
 module.exports = async function handler(req,res){
   res.setHeader('Content-Type','application/json; charset=utf-8');
   res.setHeader('Cache-Control','no-store');
-  if(req.method!=='GET'){
-    res.setHeader('Allow','GET');
+  if(!['GET','PATCH'].includes(req.method)){
+    res.setHeader('Allow','GET, PATCH');
     return res.status(405).json({ok:false,error:'METHOD_NOT_ALLOWED'});
   }
   try{
     const admin=await requireAdmin(req);
     if(!admin) return res.status(401).json({ok:false,error:'ADMIN_LOGIN_REQUIRED'});
+    if(req.method==='PATCH'){
+      const celebration=await setCelebrationConfig(req.body?.enabledBadgeKeys||[]);
+      return res.status(200).json({ok:true,celebration});
+    }
 
     const users=await listUsers();
     const ids=users.map(u=>u.id);
@@ -50,11 +55,14 @@ module.exports = async function handler(req,res){
       });
     }
 
+    const [celebration,recentCelebrations]=await Promise.all([getCelebrationConfig(),getRecentBadgeCelebrations(8)]);
     return res.status(200).json({
       ok:true,
       summary:{members:users.length,totalBadges:VALID_BADGE_KEYS.size,blackBadges:3},
       holders,
-      records:records.sort((a,b)=>b.earnedCount-a.earnedCount||b.recruitedCount-a.recruitedCount)
+      records:records.sort((a,b)=>b.earnedCount-a.earnedCount||b.recruitedCount-a.recruitedCount),
+      celebration,
+      recentCelebrations
     });
   }catch(error){
     return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'BADGE_CENTER_FAILED'});
