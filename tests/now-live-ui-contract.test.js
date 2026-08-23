@@ -18,12 +18,15 @@ test('public NOW API route is wired in gateway',()=>{
   assert.ok(fs.existsSync(path.join(root,'server/v3/routes/now-data.js')));
 });
 
-test('politician detail renders live NOW, search and news sections',()=>{
+test('politician detail renders live NOW intelligence and evidence sections without raw search counts',()=>{
   const people=fs.readFileSync(path.join(root,'src/views/people.js'),'utf8');
   assert.match(people,/getNowPerson/);
-  assert.match(people,/지금 이 인물/);
-  assert.match(people,/PC 검색량/);
-  assert.match(people,/모바일 검색량/);
+  assert.match(people,/정참시 SIGNAL/);
+  assert.match(people,/종합 관심/);
+  assert.match(people,/심층 관심/);
+  assert.match(people,/대중 확산/);
   assert.match(people,/최근 뉴스/);
-  assert.match(people,/왜 지금 주목받나요/);
+  assert.match(people,/정참시 종합진단/);
+  assert.doesNotMatch(people,/PC 검색량/);
+  assert.doesNotMatch(people,/모바일 검색량/);
 });

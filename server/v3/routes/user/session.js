@@ -1,6 +1,6 @@
 const { authenticateUser, getUser } = require("../../../../lib/v3/users");
 const { issueSession, sessionFromRequest, setCookie, clearCookie } = require("../../../../lib/v3/user-auth");
-const { getActivity, emptyActivity } = require("../../../../lib/v3/activity");
+const { getActivity, emptyActivity, setActivity, recordBadgeEvent } = require("../../../../lib/v3/activity");
 
 async function readActivitySafe(userId) {
   try { return await getActivity(userId); }
@@ -43,7 +43,9 @@ module.exports = async function handler(req, res) {
       const user = await authenticateUser(req.body?.id, req.body?.password, stored);
       if (!user) return res.status(401).json({ ok: false, error: "INVALID_CREDENTIALS" });
       setCookie(res, issueSession(user.id), req);
-      const activity = await readActivitySafe(user.id);
+      let activity = await readActivitySafe(user.id);
+      activity = recordBadgeEvent(activity, "login");
+      activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, authenticated: true, user, activity });
     } catch (error) {
       {

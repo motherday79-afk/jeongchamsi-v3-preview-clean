@@ -6,7 +6,7 @@ let activity = emptyActivity();
 let initialized = false;
 
 function emptyActivity() {
-  return { favorites: [], recentPeople: [], likedPosts: [], pollVotes: {}, generationVotes: {}, nationalEvaluationVotes: {}, academyApplications: [], grantedBadges: [], representativeBadge: "", showcaseBadges: [], updatedAt: null };
+  return { favorites: [], recentPeople: [], likedPosts: [], pollVotes: {}, generationVotes: {}, nationalEvaluationVotes: {}, academyApplications: [], grantedBadges: [], representativeBadge: "", showcaseBadges: [], badgeSignals: { events: [] }, updatedAt: null };
 }
 function readGuestRecent() {
   try { return JSON.parse(localStorage.getItem(GUEST_RECENT_KEY) || "[]").filter(Boolean).slice(0, 20); }
@@ -182,6 +182,13 @@ export async function refreshUserActivity() {
   const body = await apiJSON("/api/v3/user/activity");
   if (body.ok && body.activity) activity = { ...emptyActivity(), ...body.activity };
   return getUserActivity();
+}
+
+export async function getBadgeStatus() {
+  if (!session.authenticated) return { ok:false, requiresLogin:true, status:null };
+  const body = await apiJSON("/api/v3/user/badges");
+  if (!body.ok) return { ok:false, error:body.error || "BADGE_STATUS_FAILED", status:null };
+  return { ok:true, status:body.status || null };
 }
 
 export function getUserSummary() {

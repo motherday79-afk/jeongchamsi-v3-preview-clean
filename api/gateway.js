@@ -21,6 +21,7 @@ const routeLoaders = Object.freeze({
   "admin/dashboard": () => require("../server/v3/routes/admin/dashboard"),
   "admin/now-data": () => require("../server/v3/routes/admin/now-data"),
   "user/activity": () => require("../server/v3/routes/user/activity"),
+  "user/badges": () => require("../server/v3/routes/user/badges"),
   "user/profile": () => require("../server/v3/routes/user/profile"),
   "user/register": () => require("../server/v3/routes/user/register"),
   "user/session": () => require("../server/v3/routes/user/session")

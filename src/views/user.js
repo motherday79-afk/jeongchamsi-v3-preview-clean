@@ -1,5 +1,5 @@
 import { pageShell, esc } from "./layout.js";
-import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
+import { getUserSession, getUserActivity, getRecentPeople, getBadgeStatus } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
 import { BADGE_CATALOG, badgeGemSvg } from "../data/badge-catalog.js";
 import { politicianPhoto } from "../data/politician-photo-index.js";
@@ -18,17 +18,45 @@ function formatDate(v) {
   try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(v)); }
   catch { return ""; }
 }
-function badgeList(activity, authoredCount, commentCount, itsmeCount = 0, role = "member") {
-  const pollCount = Object.keys(activity.pollVotes || {}).length;
-  const generationCount = Object.keys(activity.generationVotes || {}).length;
-  const evaluationCount = Object.keys(activity.nationalEvaluationVotes || {}).length;
-  const earned = new Set(activity.grantedBadges || []);
-  if (pollCount + generationCount + evaluationCount + commentCount + authoredCount > 0) earned.add("first-participation");
-  if (pollCount > 0) earned.add("citizen-choice");
-  if (itsmeCount > 0) earned.add("policy-proposer");
+function badgeList(activity, badgeStatus = null, role = "member") {
+  const earned = new Set([...(activity.grantedBadges || []), ...((badgeStatus?.earnedBadges || []))]);
   if (role === "partner") earned.add("jungchamsi-partner");
   if (role === "admin") BADGE_CATALOG.forEach(x => earned.add(x.key));
-  return BADGE_CATALOG.map(x => ({ ...x, earned: earned.has(x.key), representative: String(activity.representativeBadge || "") === x.key, showcased:(activity.showcaseBadges || []).includes(x.key), adminGranted:(activity.grantedBadges || []).includes(x.key), adminOpen:role === "admin" }));
+  return BADGE_CATALOG.map(x => ({
+    ...x,
+    earned: earned.has(x.key),
+    representative: String(activity.representativeBadge || "") === x.key,
+    showcased:(activity.showcaseBadges || []).includes(x.key),
+    adminGranted:(activity.grantedBadges || []).includes(x.key),
+    adminOpen:role === "admin",
+    progress:badgeStatus?.progress?.[x.key] || null
+  }));
+}
+function badgeProgressText(item) {
+  const p=item?.progress;
+  if (!p) {
+    if (item?.key === "operator") return "운영자 권한 전용";
+    if (["first-penguin","influencer","top-community","top-itsme"].includes(item?.key)) return "운영진 심사 · 직접 부여";
+    if (item?.key === "jungchamsi-partner") return "공식 파트너 승인 시 획득";
+    return "활동 조건을 달성하면 자동 획득";
+  }
+  if (p.ratio) return `${p.label} · ${Math.round(Math.min(1, Number(p.current || 0)) * 100)}%`;
+  return `${p.label} · ${Number(p.current || 0)}/${Number(p.target || 0)}`;
+}
+function badgeTierSections(badges = []) {
+  const order=[
+    ["BRONZE","BRONZE · 시작과 발견"],
+    ["SILVER","SILVER · 꾸준함과 강점"],
+    ["GOLD","GOLD · 영향력과 중심성"],
+    ["PLATINUM","PLATINUM · 상징과 최고 성취"],
+    ["BLACK","BLACK · 운영 권위"]
+  ];
+  const showcaseCount=badges.filter(x=>x.showcased).length;
+  return order.map(([tier,label])=>{
+    const items=badges.filter(x=>x.tier===tier);
+    if(!items.length) return "";
+    return `<section class="badge-tier-section badge-tier-${tier.toLowerCase()}"><div class="badge-tier-head"><div><span>${esc(label)}</span><b>${items.filter(x=>x.earned).length}/${items.length} 획득</b></div><p>${tier === "BRONZE" ? "첫 참여와 작은 성취를 기록합니다." : tier === "SILVER" ? "꾸준함과 서로 다른 강점을 인정합니다." : tier === "GOLD" ? "다른 사람에게 영향을 만들어낸 성취를 인정합니다." : tier === "PLATINUM" ? "장기적이고 상징적인 영향력을 인정하는 최고 성취군입니다." : "정참시 운영 권한을 상징하는 관리자 전용 배지입니다."}</p></div><div class="badge-detail-grid badge-jewel-grid">${items.map(x => `<article class="${x.earned ? "earned" : "locked"} ${x.representative ? "representative" : ""} ${x.showcased ? "showcased" : ""}"><div class="badge-jewel-stage">${badgeGemSvg(x.key)}</div><div class="badge-jewel-copy"><small>${esc(x.tier)} · ${esc(x.kind)}${x.adminOpen ? " · 관리자 전체 개방" : (x.adminGranted ? " · 관리자 해금" : "")}</small><b>${esc(x.name)}</b><p>${esc(x.mission)}</p><span class="badge-progress-copy">${esc(badgeProgressText(x))}</span>${x.earned ? `<div class="badge-choice-actions"><button class="ghost-btn badge-representative-btn ${x.representative ? "active" : ""}" type="button" data-badge-representative="${esc(x.key)}">${x.representative ? "대표 배지" : "대표로 설정"}</button>${x.representative ? `<span class="badge-showcase-note">대표 칸에 노출 중</span>` : `<button class="ghost-btn badge-showcase-btn ${x.showcased ? "active" : ""}" type="button" data-badge-showcase="${esc(x.key)}" ${!x.showcased && showcaseCount >= 3 ? "disabled" : ""}>${x.showcased ? "전시 해제" : (showcaseCount >= 3 ? "전시 3개 선택됨" : "사이드바 전시")}</button>`}</div>` : `<span class="badge-locked-label">미획득</span>`}</div></article>`).join("")}</div></section>`;
+  }).join("");
 }
 function roleLabel(role = "member") { return role === "admin" ? "관리자" : role === "partner" ? "정참시 PARTNER" : "일반회원"; }
 function recentPhotoMarkup(id = "", alt = "정치인 사진") {
@@ -102,8 +130,7 @@ export async function renderMyActivity(search = "") {
   if (!session.authenticated) return renderLogin();
   const tab = new URLSearchParams(search || "").get("tab") || "summary";
   const activity = getUserActivity();
-  const counts = await myContentCounts(session.user.id);
-  const badges = badgeList(activity, counts.authoredCount, counts.myComments.length, counts.itsmePosts.length, session.user.role);
+  let counts = null;
   let detail = "";
 
   if (tab === "likes") {
@@ -121,9 +148,12 @@ export async function renderMyActivity(search = "") {
     if (favorites.length) ({ getPersonLiteById: getPersonSlotById } = await import("../data/person-lite.js"));
     detail = `<div class="section-title"><h2>즐겨찾기 정치인</h2><span>${favorites.length}명</span></div>${favorites.length ? `<div class="member-link-list">${favorites.map(id => `<button type="button" data-go="/person/${esc(id)}"><b>${esc(personLabel(getPersonSlotById, id))}</b><span>상세보기 →</span></button>`).join("")}</div>` : `<div class="empty-inline">즐겨찾기한 정치인이 없습니다</div>`}`;
   } else if (tab === "badges") {
+    const badgeResponse = await getBadgeStatus();
+    const badges = badgeList(activity, badgeResponse.ok ? badgeResponse.status : null, session.user.role);
     const showcaseCount = badges.filter(x => x.showcased).length;
-    detail = `<div class="section-title"><h2>내 배지 컬렉션</h2><span>${badges.filter(x => x.earned).length}개 획득 · 총 ${badges.length}종</span></div><p class="badge-catalog-note">대표 배지 1개와 내가 보여주고 싶은 전시 배지 3개를 선택할 수 있습니다 · 현재 전시 ${showcaseCount}/3</p><div class="badge-detail-grid badge-jewel-grid">${badges.map(x => `<article class="${x.earned ? "earned" : "locked"} ${x.representative ? "representative" : ""} ${x.showcased ? "showcased" : ""}"><div class="badge-jewel-stage">${badgeGemSvg(x.key)}</div><div class="badge-jewel-copy"><small>${esc(x.tier)} · ${esc(x.kind)}${x.adminOpen ? " · 관리자 전체 개방" : (x.adminGranted ? " · 관리자 해금" : "")}</small><b>${esc(x.name)}</b><p>${esc(x.mission)}</p>${x.earned ? `<div class="badge-choice-actions"><button class="ghost-btn badge-representative-btn ${x.representative ? "active" : ""}" type="button" data-badge-representative="${esc(x.key)}">${x.representative ? "대표 배지" : "대표로 설정"}</button>${x.representative ? `<span class="badge-showcase-note">대표 칸에 노출 중</span>` : `<button class="ghost-btn badge-showcase-btn ${x.showcased ? "active" : ""}" type="button" data-badge-showcase="${esc(x.key)}" ${!x.showcased && showcaseCount >= 3 ? "disabled" : ""}>${x.showcased ? "전시 해제" : (showcaseCount >= 3 ? "전시 3개 선택됨" : "사이드바 전시")}</button>`}</div>` : `<span class="badge-locked-label">미획득</span>`}</div></article>`).join("")}</div>`;
+    detail = `<div class="section-title"><h2>내 배지 컬렉션</h2><span>${badges.filter(x => x.earned).length}개 획득 · 총 ${badges.length}종</span></div><p class="badge-catalog-note">사람마다 잘하는 영역이 다릅니다. 정참시는 활동·성장·소통·신뢰·영향력의 서로 다른 강점을 배지로 인정합니다. · 대표 1개 / 전시 ${showcaseCount}/3</p>${badgeTierSections(badges)}`;
   } else {
+    counts = await myContentCounts(session.user.id);
     detail = `<div class="section-title"><h2>활동 요약</h2><span>내 기록</span></div><div class="member-stat-grid activity-inner-stats"><article><small>작성 글</small><strong>${counts.authoredCount}</strong><span>개</span></article><article><small>댓글</small><strong>${counts.myComments.length}</strong><span>개</span></article><article><small>좋아요</small><strong>${(activity.likedPosts || []).length}</strong><span>개</span></article><article><small>설문</small><strong>${Object.keys(activity.pollVotes || {}).length}</strong><span>건</span></article></div><div class="member-link-list top-gap"><button type="button" data-go="/mypage/posts"><b>내가 쓴 글·댓글</b><span>${counts.authoredCount + counts.myComments.length}개 →</span></button><button type="button" data-go="/mypage/recent"><b>최근 본 정치인</b><span>${getRecentPeople().length}명 →</span></button></div>`;
   }
 

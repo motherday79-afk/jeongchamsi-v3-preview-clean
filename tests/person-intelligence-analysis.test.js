@@ -46,7 +46,7 @@ test('detail UI consumes intelligence scores instead of placeholder dashes',()=>
   const people=fs.readFileSync('src/views/people.js','utf8');
   assert.match(people,/live\?\.analysis/);
   assert.match(people,/analysisMetric\("종합 관심"[\s\S]*scores\.overallInterest/);
-  assert.match(people,/analysisBar\("활동 가속도"[\s\S]*scores\.activityAcceleration/);
+  assert.match(people,/analysisAxis\("활동 가속도"[\s\S]*scores\.activityAcceleration/);
   assert.doesNotMatch(people,/function analysisMetric\(label,desc,tone="mint"\)\{[\s\S]*<strong>—<\/strong>/);
 });
 

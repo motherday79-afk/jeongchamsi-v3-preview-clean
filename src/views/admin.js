@@ -43,6 +43,19 @@ async function dashboardPanel() {
   const storage = getStorageState();
   return `<section class="admin-panel"><div class="admin-panel-head"><h2>v3 운영 대시보드</h2><button type="button" class="ghost-btn" data-user-logout>로그아웃</button></div><div class="admin-stat-grid"><article><b>MEMBERS</b><strong>${counts.members}</strong><span>가입 회원</span></article><article><b>PERSON SLOTS</b><strong>543</strong><span>300 + 16 + 227</span></article><article><b>COLUMN</b><strong>${counts.columns}</strong><span>등록 글</span></article><article><b>COMMUNITY</b><strong>${counts.community}</strong><span>등록 글</span></article><article><b>IT’S ME</b><strong>${counts.itsme}</strong><span>정책 제안</span></article><article><b>NEWS</b><strong>${counts.news}</strong><span>등록 글</span></article><article><b>POLLS</b><strong>${counts.polls}</strong><span>등록 설문</span></article><article><b>ACADEMY</b><strong>${counts.academy}</strong><span>등록 일정</span></article></div><div class="notice-box">서버 Source of Truth: ${error ? `확인 필요 · ${esc(error)}` : storage.available ? "정상" : `오류 · ${esc(storage.error)}`}. 브라우저 저장 fallback은 사용하지 않습니다. PC·모바일·Fold 메인 레이아웃과 폰트는 LOCK 상태입니다</div></section>`;
 }
+
+function memberBadgeAdminCatalog(user = {}) {
+  const tiers=[["BRONZE","BRONZE"],["SILVER","SILVER"],["GOLD","GOLD"],["PLATINUM","PLATINUM"],["BLACK","BLACK · 운영 권위"]];
+  return tiers.map(([tier,label])=>{
+    const items=BADGE_CATALOG.filter(x=>x.tier===tier);
+    return `<section class="member-badge-tier member-badge-tier-${tier.toLowerCase()}"><div class="member-badge-tier-head"><b>${label}</b><span>${items.length}종</span></div><div class="member-badge-grid">${items.map(badge=>{
+      const operator=badge.key==="operator";
+      const roleUnlocked=operator && user.role==="admin";
+      return `<label class="member-badge-chip ${operator ? "member-badge-operator" : ""}"><input type="checkbox" data-member-badge="${esc(user.id)}" value="${esc(badge.key)}" ${operator ? (roleUnlocked ? "checked disabled" : "disabled") : ((user.grantedBadges || []).includes(badge.key) ? "checked" : "")}>${badgeGemSvg(badge.key)}<span><b>${esc(badge.name)}</b><small>${esc(badge.tier)} · ${operator ? "관리자 권한 전용" : esc(badge.kind)}</small></span></label>`;
+    }).join("")}</div></section>`;
+  }).join("");
+}
+
 async function membersPanel() {
   const result = await fetchMembers();
   if (!result.ok) return `<section class="admin-panel"><h2>회원관리</h2><div class="notice-box">회원 데이터를 불러오지 못했습니다: ${esc(result.error)}</div></section>`;
@@ -66,7 +79,7 @@ async function membersPanel() {
         <label>출생연도<input inputmode="numeric" data-member-birth="${esc(user.id)}" value="${esc(user.birthYear || "")}" maxlength="4"></label>
         <label>새 비밀번호<input type="password" data-member-password="${esc(user.id)}" placeholder="변경할 때만 입력 · 8자 이상" autocomplete="new-password"></label>
       </div>
-      <details class="member-badge-admin"><summary><span><b>배지 관리</b><small>관리자 직접 해금 · 현재 대표 ${esc(badgeByKey(user.representativeBadge)?.name || "미설정")}</small></span><em>${(user.grantedBadges || []).length}개 해금</em></summary><div class="member-badge-grid">${BADGE_CATALOG.map(badge => `<label class="member-badge-chip"><input type="checkbox" data-member-badge="${esc(user.id)}" value="${esc(badge.key)}" ${(user.grantedBadges || []).includes(badge.key) ? "checked" : ""}>${badgeGemSvg(badge.key)}<span><b>${esc(badge.name)}</b><small>${esc(badge.tier)}</small></span></label>`).join("")}</div><p class="field-help">조건을 달성하지 않은 배지도 관리자가 직접 열어줄 수 있습니다. 체크 해제 후 회원정보 저장 시 관리자 해금만 회수됩니다</p></details>
+      <details class="member-badge-admin"><summary><span><b>배지 관리</b><small>관리자 직접 해금 · 현재 대표 ${esc(badgeByKey(user.representativeBadge)?.name || "미설정")}</small></span><em>${(user.grantedBadges || []).length}개 해금</em></summary>${memberBadgeAdminCatalog(user)}<p class="field-help">조건을 달성하지 않은 일반 배지도 관리자가 직접 열어줄 수 있습니다. BLACK 운영자 배지는 관리자 권한에만 자동 부여됩니다. 체크 해제 후 저장 시 관리자 해금만 회수됩니다</p></details>
       <div class="member-access-controls member-access-expanded">
         <label>권한<select data-member-role="${esc(user.id)}"><option value="member" ${user.role === "member" || !user.role ? "selected" : ""}>일반회원</option><option value="partner" ${user.role === "partner" ? "selected" : ""}>정참시 PARTNER</option><option value="admin" ${user.role === "admin" ? "selected" : ""}>관리자</option></select></label>
         <label>상태<select data-member-status="${esc(user.id)}"><option value="active" ${!suspended ? "selected" : ""}>정상</option><option value="suspended" ${suspended ? "selected" : ""}>이용정지</option></select></label>

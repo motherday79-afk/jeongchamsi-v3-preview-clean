@@ -1,37 +1,13 @@
 const { getJSON, setJSON, command } = require("../../../lib/v3/redis");
 const { defaultDomain, sanitize } = require("../../../lib/v3/schema");
 const { currentUser } = require("../../../lib/v3/access");
-const { getActivity, setActivity } = require("../../../lib/v3/activity");
+const { getActivity, setActivity, recordBadgeEvent } = require("../../../lib/v3/activity");
+const { VALID_BADGE_KEYS, isBadgeUnlocked } = require("../../../lib/v3/badge-engine");
 
 function toggle(list, value, max = 300) {
   const id = String(value || "");
   const exists = list.includes(id);
   return { active: !exists, list: exists ? list.filter(x => x !== id) : [id, ...list].slice(0, max) };
-}
-
-const VALID_BADGES = new Set(["noon-signal","midnight","weekman","superhero","first-participation","citizen-choice","first-penguin","influencer","policy-proposer","opinion-leader","top-community","top-itsme","jungchamsi-partner"]);
-
-async function badgeUnlocked(user, activity, badgeKey) {
-  if (!badgeKey || !VALID_BADGES.has(badgeKey)) return false;
-  const granted = new Set(activity.grantedBadges || []);
-  let unlocked = user.role === "admin" || granted.has(badgeKey) || (badgeKey === "jungchamsi-partner" && user.role === "partner");
-  if (badgeKey === "citizen-choice") unlocked = unlocked || Object.keys(activity.pollVotes || {}).length > 0;
-  if (badgeKey === "first-participation") {
-    unlocked = unlocked || Object.keys(activity.pollVotes || {}).length > 0 || Object.keys(activity.generationVotes || {}).length > 0 || Object.keys(activity.nationalEvaluationVotes || {}).length > 0;
-    if (!unlocked) {
-      const [comments, community, itsme] = await Promise.all([
-        getJSON("comments").then(x => x || defaultDomain("comments")),
-        getJSON("community").then(x => x || defaultDomain("community")),
-        getJSON("itsme").then(x => x || defaultDomain("itsme"))
-      ]);
-      unlocked = (comments.items || []).some(x => String(x.ownerId || "") === String(user.id)) || (community.items || []).some(x => String(x.ownerId || "") === String(user.id)) || (itsme.items || []).some(x => String(x.ownerId || "") === String(user.id));
-    }
-  }
-  if (badgeKey === "policy-proposer" && !unlocked) {
-    const itsme = (await getJSON("itsme")) || defaultDomain("itsme");
-    unlocked = (itsme.items || []).some(x => String(x.ownerId || "") === String(user.id));
-  }
-  return unlocked;
 }
 
 function generationAgeGroup(birthYear) {
@@ -67,6 +43,7 @@ module.exports = async function handler(req, res) {
     if (action === "favorite-toggle") {
       const t = toggle(activity.favorites || [], payload.personId, 100);
       activity.favorites = t.list;
+      activity = recordBadgeEvent(activity, "favorite");
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, active: t.active, activity });
     }
@@ -97,6 +74,7 @@ module.exports = async function handler(req, res) {
       post.likes = Math.max(0, Number(post.likes || 0) + (t.active ? 1 : -1));
       await setJSON(domain, sanitize(domain, current));
       activity.likedPosts = t.list;
+      activity = recordBadgeEvent(activity, "post-like");
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, active: t.active, activity });
     }
@@ -114,7 +92,9 @@ module.exports = async function handler(req, res) {
       };
       current.items = [comment, ...(current.items || [])].slice(0, 3000);
       await setJSON("comments", sanitize("comments", current));
-      return res.status(200).json({ ok: true, comment });
+      activity = recordBadgeEvent(activity, "comment");
+      activity = await setActivity(user.id, activity);
+      return res.status(200).json({ ok: true, comment, activity });
     }
 
     if (action === "poll-vote") {
@@ -143,6 +123,7 @@ module.exports = async function handler(req, res) {
       option.votes = Number(option.votes || 0) + 1;
       await setJSON("polls", sanitize("polls", current));
       activity.pollVotes = { ...(activity.pollVotes || {}), [pollId]: optionId };
+      activity = recordBadgeEvent(activity, "poll-vote");
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, activity });
     }
@@ -171,6 +152,7 @@ module.exports = async function handler(req, res) {
       generation.results[ageGroup][personId] = Number(generation.results[ageGroup][personId] || 0) + 1;
       await setJSON("generation", sanitize("generation", generation));
       activity.generationVotes = { ...(activity.generationVotes || {}), [ageGroup]: personId };
+      activity = recordBadgeEvent(activity, "generation-vote");
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, activity });
     }
@@ -194,6 +176,7 @@ module.exports = async function handler(req, res) {
       evaluation.results[personId][rating] = Number(evaluation.results[personId][rating] || 0) + 1;
       await setJSON("nationalEvaluation", sanitize("nationalEvaluation", evaluation));
       activity.nationalEvaluationVotes = { ...(activity.nationalEvaluationVotes || {}), [personId]: rating };
+      activity = recordBadgeEvent(activity, "national-evaluation");
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, activity });
     }
@@ -201,20 +184,20 @@ module.exports = async function handler(req, res) {
 
     if (action === "badge-representative-set") {
       const badgeKey = String(payload.badgeKey || "");
-      if (badgeKey && !VALID_BADGES.has(badgeKey)) return res.status(400).json({ ok:false, error:"INVALID_BADGE" });
-      if (badgeKey && !(await badgeUnlocked(user, activity, badgeKey))) return res.status(403).json({ ok:false, error:"BADGE_LOCKED" });
+      if (badgeKey && !VALID_BADGE_KEYS.has(badgeKey)) return res.status(400).json({ ok:false, error:"INVALID_BADGE" });
+      if (badgeKey && !(await isBadgeUnlocked(user, activity, badgeKey))) return res.status(403).json({ ok:false, error:"BADGE_LOCKED" });
       activity.representativeBadge = badgeKey;
-      activity.showcaseBadges = (activity.showcaseBadges || []).map(String).filter(x => VALID_BADGES.has(x) && x !== badgeKey).filter((x,i,a)=>a.indexOf(x)===i).slice(0,3);
+      activity.showcaseBadges = (activity.showcaseBadges || []).map(String).filter(x => VALID_BADGE_KEYS.has(x) && x !== badgeKey).filter((x,i,a)=>a.indexOf(x)===i).slice(0,3);
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok:true, activity });
     }
 
     if (action === "badge-showcase-toggle") {
       const badgeKey = String(payload.badgeKey || "");
-      if (!VALID_BADGES.has(badgeKey)) return res.status(400).json({ ok:false, error:"INVALID_BADGE" });
+      if (!VALID_BADGE_KEYS.has(badgeKey)) return res.status(400).json({ ok:false, error:"INVALID_BADGE" });
       if (badgeKey === String(activity.representativeBadge || "")) return res.status(409).json({ ok:false, error:"BADGE_IS_REPRESENTATIVE" });
-      if (!(await badgeUnlocked(user, activity, badgeKey))) return res.status(403).json({ ok:false, error:"BADGE_LOCKED" });
-      const current = (activity.showcaseBadges || []).map(String).filter(x => VALID_BADGES.has(x) && x !== activity.representativeBadge).filter((x,i,a)=>a.indexOf(x)===i).slice(0,3);
+      if (!(await isBadgeUnlocked(user, activity, badgeKey))) return res.status(403).json({ ok:false, error:"BADGE_LOCKED" });
+      const current = (activity.showcaseBadges || []).map(String).filter(x => VALID_BADGE_KEYS.has(x) && x !== activity.representativeBadge).filter((x,i,a)=>a.indexOf(x)===i).slice(0,3);
       if (current.includes(badgeKey)) activity.showcaseBadges = current.filter(x => x !== badgeKey);
       else {
         if (current.length >= 3) return res.status(409).json({ ok:false, error:"BADGE_SHOWCASE_FULL" });
@@ -228,6 +211,7 @@ module.exports = async function handler(req, res) {
       const slotId = String(payload.slotId || "");
       if (!slotId) return res.status(400).json({ ok: false, error: "INVALID_SLOT" });
       activity.academyApplications = [slotId, ...(activity.academyApplications || []).filter(x => x !== slotId)].slice(0, 100);
+      activity = recordBadgeEvent(activity, "academy-apply");
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, activity });
     }
@@ -267,7 +251,9 @@ module.exports = async function handler(req, res) {
       };
       current.items = old ? items.map(x => String(x.id) === id ? next : x) : [next, ...items];
       await setJSON(domain, sanitize(domain, current));
-      return res.status(200).json({ ok: true, item: next });
+      activity = recordBadgeEvent(activity, "post-save");
+      activity = await setActivity(user.id, activity);
+      return res.status(200).json({ ok: true, item: next, activity });
     }
 
     if (action === "user-post-delete") {
