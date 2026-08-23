@@ -79,6 +79,10 @@ function analysisReport(live){
   const score=n(row?.score);
   const signal=analysis?.signal||{};
   const audience=analysis?.audience||{};
+  const audiencePosition=Number.isFinite(Number(audience.position))?Number(audience.position):50;
+  const audienceAxisValue=Math.round(Math.max(-50,Math.min(50,audiencePosition-50)));
+  const audienceAxisLeft=audienceAxisValue+50;
+  const audienceAxisLabel=audienceAxisValue>0?`+${audienceAxisValue}`:String(audienceAxisValue);
   const mediaPublic=analysis?.mediaPublic||{};
   const signalCopy=analysis?.signal?.diagnosis||(row?(live?.whyNow||"현재 검색·뉴스 흐름을 정참시 분석지표로 해석합니다."):"게시 데이터가 연결되면 정참시 분석지표가 표시됩니다.");
   const status=signal.label||(row?"분석 중":"데이터 대기");
@@ -103,7 +107,7 @@ function analysisReport(live){
 
     <section class="content-card person-analysis-landscape">
       <div class="section-title person-analysis-title"><div><span class="eyebrow">AUDIENCE LANDSCAPE</span><h2>관심 구조 분석</h2></div><span>검색 행동의 상대적 구조 분석</span></div>
-      <div class="person-analysis-landscape-grid"><div class="person-interest-axis"><div class="person-interest-axis-labels"><span>고관여 관심</span><span>대중 확산</span></div><div class="person-interest-axis-track"><i></i><em style="left:${Math.max(2,Math.min(98,n(audience.position)||50))}%"></em></div><strong>${esc(audience.label||"관심 구조 분석")}</strong><p>PC·모바일 검색의 절대량은 노출하지 않고 전체 정치인 대비 상대점수와 구성 차이로 관심 성격을 해석합니다.</p></div><div class="person-analysis-mini-grid">${analysisBar("관심층 확장",gd("audienceExpansion","기존 관심층 밖으로 확장되는 신호"),scores.audienceExpansion,"blue")}${analysisBar("모바일 반응",gd("mobileResponse","모바일 중심 대중 반응 강도"),scores.mobileResponse,"mint")}${analysisBar("대중 침투력",gd("massPenetration","대중적 검색 반응의 강도"),scores.massPenetration,"orange")}${analysisBar("고관여 유지력",gd("coreRetention","지속적 정보탐색 관심"),scores.coreRetention,"navy")}</div></div>
+      <div class="person-analysis-landscape-grid"><div class="person-interest-axis"><div class="person-interest-axis-labels"><span>고관여 관심</span><span>대중 확산</span></div><div class="person-interest-axis-track"><i></i><em style="left:${audienceAxisLeft}%"><b class="person-interest-axis-value">${audienceAxisLabel}</b></em></div><div class="person-interest-axis-scale" aria-label="관심 구조 상대축"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div><strong>${esc(audience.label||"관심 구조 분석")}</strong><p>PC·모바일 검색의 절대량은 노출하지 않고 전체 정치인 대비 상대점수와 구성 차이로 관심 성격을 해석합니다.</p></div><div class="person-analysis-mini-grid">${analysisBar("관심층 확장",gd("audienceExpansion","기존 관심층 밖으로 확장되는 신호"),scores.audienceExpansion,"blue")}${analysisBar("모바일 반응",gd("mobileResponse","모바일 중심 대중 반응 강도"),scores.mobileResponse,"mint")}${analysisBar("대중 침투력",gd("massPenetration","대중적 검색 반응의 강도"),scores.massPenetration,"orange")}${analysisBar("고관여 유지력",gd("coreRetention","지속적 정보탐색 관심"),scores.coreRetention,"navy")}</div></div>
     </section>
 
     <section class="content-card person-analysis-activity">
