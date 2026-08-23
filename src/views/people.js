@@ -71,17 +71,16 @@ function relatedPeople(live){
 function analysisReport(live){
   const row=live?.row||null;
   const score=n(row?.score);
-  const publishedAt=dateTime(live?.publishedAt);
   const signalCopy=row?(live?.whyNow||"현재 게시된 검색·뉴스 데이터를 정참시 분석지표로 재해석하는 영역입니다."):"게시 데이터가 연결되면 정참시 분석지표가 이 영역에 표시됩니다.";
   const status=row?"분석모델 연결 준비":"데이터 대기";
   return `
     <section class="content-card person-analysis-signal">
-      <div class="person-analysis-signal-head"><div><span class="eyebrow">JEONGCHAMSI SIGNAL</span><h2>정참시 SIGNAL</h2></div><span class="person-analysis-status">${esc(status)}</span></div>
-      <div class="person-analysis-signal-body"><div class="person-analysis-signal-mark"><small>NOW INDEX</small><strong>${row?score.toFixed(1):"—"}</strong><span>${row?`NOW ${fmt(row.rank)}위`:`게시 데이터 대기`}</span></div><div><h3>이 인물의 현재 정치적 관심 국면</h3><p>${esc(signalCopy)}</p><small>${esc(publishedAt?`${publishedAt} 게시 스냅샷 기준` : "정참시 분석지표 레이아웃")}</small></div></div>
+      <div class="person-analysis-signal-head"><div><h2>정참시 SIGNAL</h2></div><span class="person-analysis-status">${esc(status)}</span></div>
+      <div class="person-analysis-signal-body"><div class="person-analysis-signal-mark"><small>NOW INDEX</small><strong>${row?score.toFixed(1):"—"}</strong><span>${row?`NOW ${fmt(row.rank)}위`:`게시 데이터 대기`}</span></div><div><h3>이 인물의 현재 정치적 관심 국면</h3><p>${esc(signalCopy)}</p></div></div>
     </section>
 
     <section class="content-card person-analysis-core">
-      <div class="section-title person-analysis-title"><div><span class="eyebrow">CORE INDICATORS</span><h2>핵심 분석지표</h2></div><span>검색 · 뉴스 데이터를 점수체계로 재해석</span></div>
+      <div class="section-title person-analysis-title"><div><span class="eyebrow">CORE INDICATORS</span><h2>핵심 분석지표</h2></div><span>JEONGCHAMSI MULTI-INTELLIGENCE DATA ANALYSIS</span></div>
       <div class="person-analysis-core-grid">
         ${analysisMetric("종합 관심","전체 관심 강도","navy")}
         ${analysisMetric("고관여 관심","PC 기반 정보탐색 성향","mint")}

@@ -46,3 +46,18 @@ test('analysis layout has dedicated mobile rules and lightweight visual primitiv
   assert.match(css,/\.person-analysis-score-ring/);
   assert.match(css,/@media\(max-width:560px\)[\s\S]*\.person-analysis-core-grid/);
 });
+
+test('signal header keeps one label and removes timestamp/meta AI copy',()=>{
+  assert.doesNotMatch(people,/<span class="eyebrow">JEONGCHAMSI SIGNAL<\/span>/);
+  assert.doesNotMatch(people,/게시 스냅샷 기준/);
+  assert.match(people,/JEONGCHAMSI MULTI-INTELLIGENCE DATA ANALYSIS/);
+});
+
+test('analysis report raises small type for readable V3 detail presentation',()=>{
+  assert.match(css,/\.person-analysis-metric>div:last-child b\{[^}]*font-size:13px/);
+  assert.match(css,/\.person-analysis-metric>div:last-child small\{[^}]*font-size:11px/);
+  assert.match(css,/\.person-analysis-bar b\{[^}]*font-size:12px/);
+  assert.match(css,/\.person-analysis-bar small\{[^}]*font-size:11px/);
+  assert.match(css,/\.person-live-news-list a span small\{[^}]*font-size:11px/);
+  assert.match(css,/\.person-related-grid button>span:nth-child\(2\) small\{[^}]*font-size:11px/);
+});
