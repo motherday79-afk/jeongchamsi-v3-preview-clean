@@ -9,7 +9,7 @@ const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["badges", "배지센터"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["president", "대통령"],
   ["columns", "COLUMN"], ["community", "정뮤니티"], ["itsme", "IT’S ME"], ["news", "정참시 NEWS"],
   ["polls", "시민들의 선택"], ["keywords", "정치키워드"], ["trending", "실시간 급상승"],
-  ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["system", "시스템"]
+  ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["push", "푸시 알림"], ["system", "시스템"]
 ];
 const BOARD_NAMES = { columns: "COLUMN", community: "정뮤니티", news: "정참시 NEWS" };
 function params() { const p = new URLSearchParams(location.search); return { tab: p.get("tab") || "dashboard", edit: p.get("edit") || "", person: p.get("person") || "" }; }
@@ -380,6 +380,34 @@ export async function retryNowDataFailures() {
 export async function finalizeNowData() { const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return {ok:false,error:"NOW_DRAFT_NOT_FOUND"}; return nowApi({ action:"finalize", draftId:status.draft.draftId }); }
 export async function publishNowData() { const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return {ok:false,error:"NOW_DRAFT_NOT_FOUND"}; return nowApi({ action:"publish", draftId:status.draft.draftId }); }
 
+
+async function pushPanel() {
+  let status = { ok:false, configured:false, devices:0, latest:[], history:[] };
+  try {
+    const r = await fetch("/api/v3/action", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json",Accept:"application/json"}, body:JSON.stringify({action:"push-status",payload:{}}) });
+    const b = await r.json().catch(()=>({}));
+    if (r.ok) status = { ...status, ...b, ok:true }; else status.error = b.error || "PUSH_STATUS_FAILED";
+  } catch { status.error = "PUSH_STATUS_FAILED"; }
+  const history = (status.history || []).map(item => `<article><div><b>${esc(item.title || "")}</b><span>${esc(String(item.createdAt || "").slice(0,16).replace("T"," "))} · ${item.scope === "test" ? "테스트" : "전체"}</span></div><strong>${Number(item.success || 0)} 성공${Number(item.failed || 0) ? ` · ${Number(item.failed)} 실패` : ""}</strong></article>`).join("");
+  return `<section class="admin-panel push-admin-panel">
+    <div class="admin-panel-head"><div><h2>푸시 알림 관리</h2><span class="status-pill"><b>FCM</b>${status.configured ? "연결 준비" : "환경변수 필요"}</span></div></div>
+    <div class="admin-stat-grid"><article><b>REGISTERED</b><strong>${Number(status.devices || 0)}</strong><span>최근 등록 테스트 기기</span></article><article><b>FIREBASE</b><strong>${status.configured ? "READY" : "SETUP"}</strong><span>${status.configured ? "발송 가능" : "Firebase 연결 전"}</span></article></div>
+    <div class="notice-box">첫 테스트는 <b>최근 등록기기 1대 테스트 발송</b>으로 확인한 뒤 전체 테스트기기 발송을 사용하세요. 이미지 없이 텍스트만 보내는 것도 가능합니다.</div>
+    <form class="admin-form push-compose-grid" data-push-form>
+      <div class="push-compose-fields">
+        <label>알림 제목<input name="title" maxlength="80" required value="정참시 새로운 소식"></label>
+        <label>알림 내용<textarea name="body" rows="4" maxlength="240" required>정참시에서 새로운 콘텐츠를 확인해보세요.</textarea></label>
+        <label>클릭 후 이동 경로<input name="targetUrl" placeholder="/ 또는 /person/assembly-001" value="/"><small>정참시 V3 내부 경로만 허용합니다.</small></label>
+        <label>푸시 대표 이미지 · 선택<input type="file" accept="image/jpeg,image/png,image/webp" data-push-image-input></label>
+        <div class="push-image-preview" data-push-image-preview data-cover-data=""><span>이미지를 선택하면 큰 이미지 알림으로 미리봅니다</span></div>
+        <div class="admin-form-actions"><button class="ghost-btn" type="submit" name="scope" value="test">테스트 발송</button><button class="primary-btn" type="submit" name="scope" value="all">전체 테스트기기 발송</button><span class="save-state" data-push-state></span></div>
+      </div>
+      <aside class="push-phone-preview"><span>ANDROID PREVIEW</span><div class="push-preview-card" data-push-preview><div class="push-preview-app">정참시 · 지금</div><b data-push-preview-title>정참시 새로운 소식</b><p data-push-preview-body>정참시에서 새로운 콘텐츠를 확인해보세요.</p><div class="push-preview-image" data-push-preview-image hidden></div></div></aside>
+    </form>
+    <section class="push-history"><div class="section-title"><h3>최근 발송 기록</h3><span>최대 10건 표시</span></div>${history || `<div class="notice-box">아직 발송 기록이 없습니다.</div>`}</section>
+  </section>`;
+}
+
 async function systemPanel() {
   let health = { storage: "unknown", blob: "unknown" };
   try {
@@ -413,6 +441,7 @@ export async function renderAdmin() {
   else if (tab === "generation") panel = await generationPanel();
   else if (tab === "national") panel = await nationalEvaluationPanel();
   else if (tab === "academy") panel = await academyPanel();
+  else if (tab === "push") panel = await pushPanel();
   else if (tab === "system") panel = await systemPanel();
   else panel = await dashboardPanel();
   return pageShell(`<main class="subpage admin-page"><section class="page-hero"><span class="eyebrow">ADMIN · V3 CLEAN CORE</span><h1>정참시 관리자</h1><p>회원·콘텐츠·참여기능을 동일한 서버 Source of Truth에서 관리합니다</p></section>${adminTabs(tab)}${panel}</main>`);
@@ -582,4 +611,32 @@ export async function submitFirstAdmin(form) {
   const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) return { ok: false, error: "비밀번호 확인이 일치하지 않습니다" };
   try { const r = await fetch("/api/v3/setup", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ setupKey: fd.get("setupKey"), id: fd.get("id"), nickname: fd.get("nickname"), password: fd.get("password") }) }); const b = await r.json().catch(() => ({})); if (!r.ok) return { ok: false, error: b.error || "SETUP_FAILED" }; await initializeUserState(); return { ok: true }; }
   catch { return { ok: false, error: "SETUP_FAILED" }; }
+}
+
+
+export async function preparePushImage(file, previewEl) {
+  const { uploadCoverImage } = await import("../core/image.js");
+  const data = await uploadCoverImage(file);
+  if (previewEl) {
+    previewEl.style.backgroundImage = `url('${data}')`;
+    previewEl.dataset.coverData = data;
+    previewEl.innerHTML = "";
+  }
+  return data;
+}
+
+export async function sendPushNotification(form, scope = "test") {
+  const fd = new FormData(form);
+  const payload = {
+    title:String(fd.get("title") || ""),
+    body:String(fd.get("body") || ""),
+    targetUrl:String(fd.get("targetUrl") || "/"),
+    image:String(form.querySelector("[data-push-image-preview]")?.dataset.coverData || ""),
+    scope:scope === "all" ? "all" : "test"
+  };
+  try {
+    const r = await fetch("/api/v3/action", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json",Accept:"application/json"}, body:JSON.stringify({action:"push-send",payload}) });
+    const b = await r.json().catch(()=>({}));
+    return r.ok ? {ok:true,...b} : {ok:false,error:b.error || "PUSH_SEND_FAILED"};
+  } catch { return {ok:false,error:"PUSH_SEND_FAILED"}; }
 }

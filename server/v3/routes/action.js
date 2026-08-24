@@ -3,6 +3,7 @@ const { defaultDomain, sanitize } = require("../../../lib/v3/schema");
 const { currentUser } = require("../../../lib/v3/access");
 const { getActivity, setActivity, recordBadgeEvent } = require("../../../lib/v3/activity");
 const { VALID_BADGE_KEYS, isBadgeUnlocked } = require("../../../lib/v3/badge-engine");
+const push = require("../../../lib/v3/push");
 
 function toggle(list, value, max = 300) {
   const id = String(value || "");
@@ -72,8 +73,24 @@ module.exports = async function handler(req, res) {
   const payload = req.body?.payload || {};
 
   try {
+    if (action === "push-register") {
+      const result = await push.registerDevice(payload);
+      return res.status(result.ok ? 200 : 400).json(result);
+    }
+
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ ok: false, error: "USER_LOGIN_REQUIRED" });
+
+    if (action === "push-status") {
+      if (user.role !== "admin") return res.status(403).json({ ok:false, error:"ADMIN_REQUIRED" });
+      return res.status(200).json(await push.status());
+    }
+    if (action === "push-send") {
+      if (user.role !== "admin") return res.status(403).json({ ok:false, error:"ADMIN_REQUIRED" });
+      const result = await push.sendPush(payload, user.id);
+      return res.status(result.ok ? 200 : 400).json(result);
+    }
+
     let activity = await getActivity(user.id);
 
     if (action === "favorite-toggle") {

@@ -494,6 +494,28 @@ document.addEventListener("input", async event => {
       if (q && first && !select.value) first.scrollIntoView?.({ block: "nearest" });
     }
   }
+  const pushForm = event.target.closest("[data-push-form]");
+  if (pushForm) {
+    const title = pushForm.querySelector('[name="title"]')?.value || "정참시";
+    const body = pushForm.querySelector('[name="body"]')?.value || "";
+    const preview = pushForm.querySelector("[data-push-preview]");
+    if (preview) {
+      const t = preview.querySelector("[data-push-preview-title]");
+      const b = preview.querySelector("[data-push-preview-body]");
+      if (t) t.textContent = title;
+      if (b) b.textContent = body;
+    }
+  }
+  const pushImage = event.target.closest("[data-push-image-input]");
+  if (pushImage?.files?.[0]) {
+    try {
+      const form = pushImage.closest("[data-push-form]");
+      const holder = form?.querySelector("[data-push-image-preview]");
+      const url = await (await import("./views/admin.js")).preparePushImage(pushImage.files[0], holder);
+      const visual = form?.querySelector("[data-push-preview-image]");
+      if (visual) { visual.hidden = false; visual.style.backgroundImage = `url('${url}')`; }
+    } catch (e) { alert(e.message || "푸시 이미지 처리 실패"); pushImage.value = ""; }
+  }
   const cover = event.target.closest("[data-cover-input]");
   if (cover?.files?.[0]) { try { await (await import("./views/admin.js")).prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
   const profile = event.target.closest("[data-profile-input]");
@@ -569,6 +591,18 @@ document.addEventListener("submit", async event => {
     if (st) st.textContent = "저장 완료";
     clearDomainCache("brand");
     setTimeout(() => render(currentRoute(), { resetScroll:false }), 120);
+    return;
+  }
+  if (form.matches("[data-push-form]")) {
+    event.preventDefault();
+    const scope = event.submitter?.value === "all" ? "all" : "test";
+    if (scope === "all" && !confirm("등록된 테스트 기기 전체에 이 푸시를 발송할까요?")) return;
+    const st = form.querySelector("[data-push-state]");
+    if (st) st.textContent = scope === "all" ? "전체 발송 중" : "테스트 발송 중";
+    const r = await (await import("./views/admin.js")).sendPushNotification(form, scope);
+    if (!r.ok) { if (st) st.textContent = `발송 실패 · ${r.error || ""}`; return; }
+    if (st) st.textContent = `발송 완료 · ${Number(r.success || 0)}대 성공${Number(r.failed || 0) ? ` · ${Number(r.failed)}대 실패` : ""}`;
+    await render(currentRoute(), { resetScroll:false });
     return;
   }
   if (form.matches("[data-politician-photo-form]")) {
