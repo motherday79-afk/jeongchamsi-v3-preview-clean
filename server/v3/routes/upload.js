@@ -1,4 +1,4 @@
-const { put } = require("@vercel/blob");
+const { put, del } = require("@vercel/blob");
 const { currentUser } = require("../../../lib/v3/access");
 const { blobToken, blobConfigured } = require("../../../lib/v3/blob");
 
@@ -12,25 +12,39 @@ function decodeDataUrl(value) {
   if (!buffer.length || buffer.length > 900 * 1024) return null;
   return { contentType: match[1], buffer };
 }
+function safePoliticianBlobUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "https:" && url.hostname.endsWith(".blob.vercel-storage.com") && url.pathname.startsWith("/jcv3/politician/") ? url.toString() : "";
+  } catch { return ""; }
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
   if (req.method === "GET") return res.status(200).json({ ok: true, configured: blobConfigured() });
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "GET, POST");
+  if (!["POST", "DELETE"].includes(req.method)) {
+    res.setHeader("Allow", "GET, POST, DELETE");
     return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
 
   try {
     const user = await currentUser(req);
     if (!user) return res.status(403).json({ ok: false, error: "USER_LOGIN_REQUIRED" });
-    const requestedPrefix = safePrefix(req.body?.prefix);
-    const canUpload = user.role === "admin" || (user.role === "partner" && requestedPrefix === "content-cover");
-    if (!canUpload) return res.status(403).json({ ok: false, error: "UPLOAD_PERMISSION_REQUIRED" });
     const token = blobToken();
     if (!token) return res.status(503).json({ ok: false, error: "BLOB_STORAGE_NOT_CONFIGURED" });
 
+    if (req.method === "DELETE") {
+      if (user.role !== "admin") return res.status(403).json({ ok: false, error: "ADMIN_REQUIRED" });
+      const urls = [...new Set((Array.isArray(req.body?.urls) ? req.body.urls : []).map(safePoliticianBlobUrl).filter(Boolean))].slice(0, 6);
+      if (!urls.length) return res.status(400).json({ ok: false, error: "INVALID_BLOB_URLS" });
+      await del(urls, { token });
+      return res.status(200).json({ ok: true, deleted: urls.length });
+    }
+
+    const requestedPrefix = safePrefix(req.body?.prefix);
+    const canUpload = user.role === "admin" || (user.role === "partner" && requestedPrefix === "content-cover");
+    if (!canUpload) return res.status(403).json({ ok: false, error: "UPLOAD_PERMISSION_REQUIRED" });
     const image = decodeDataUrl(req.body?.dataUrl);
     if (!image) return res.status(400).json({ ok: false, error: "INVALID_IMAGE_PAYLOAD" });
     const ext = image.contentType === "image/webp" ? "webp" : image.contentType === "image/png" ? "png" : "jpg";

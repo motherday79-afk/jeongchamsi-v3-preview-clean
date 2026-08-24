@@ -12,7 +12,7 @@ const TABS = [
   ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["system", "시스템"]
 ];
 const BOARD_NAMES = { columns: "COLUMN", community: "정뮤니티", news: "정참시 NEWS" };
-function params() { const p = new URLSearchParams(location.search); return { tab: p.get("tab") || "dashboard", edit: p.get("edit") || "" }; }
+function params() { const p = new URLSearchParams(location.search); return { tab: p.get("tab") || "dashboard", edit: p.get("edit") || "", person: p.get("person") || "" }; }
 function adminTabs(active) { return `<nav class="admin-tabs">${TABS.map(([key, label]) => `<button type="button" class="${active === key ? "active" : ""}" data-admin-tab="${key}">${label}</button>`).join("")}</nav>`; }
 async function setupStatus() {
   try { const r = await fetch("/api/v3/setup", { credentials: "same-origin", headers: { Accept: "application/json" } }); return await r.json(); }
@@ -112,9 +112,32 @@ async function membersPanel() {
     </article>`;
   }).join("")}</div><div class="save-state" data-member-save-state></div></section>`;
 }
+function photoKb(bytes = 0) { return `${Math.max(0, Number(bytes || 0) / 1024).toFixed(1)}KB`; }
+function politicianTypeName(type = "") { return type === "assembly" ? "국회의원" : type === "metropolitan" ? "광역단체장" : "기초단체장"; }
 async function peoplePanel() {
-  const { PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS } = await import("../data/person-meta.js");
-  return `<section class="admin-panel"><h2>인물 관리</h2><div class="people-admin-grid"><article><b>국회의원</b><strong>${PERSON_COUNTS.assembly} / 300</strong><span>텍스트 연결</span></article><article><b>광역단체장</b><strong>${PERSON_COUNTS.metropolitan} / 16</strong><span>텍스트 연결</span></article><article><b>기초단체장</b><strong>${PERSON_COUNTS.basic} / 227</strong><span>텍스트 연결</span></article><article><b>인물 공급자</b><strong>${PERSON_PROVIDER_STATUS}</strong><span>앱 내부 Seed · 즉시 노출</span></article><article><b>사진 공급자</b><strong>${PHOTO_PROVIDER_STATUS}</strong><span>1차에서 제외</span></article><article><b>NOW ENGINE</b><strong>DEFERRED</strong><span>뉴스·키워드 후속</span></article></div><div class="notice-box">543개 전원 이름·정당·지역·직책·기본 임기 텍스트를 앱 내부에 저장했습니다. 사용자 페이지에서 외부 정치인 API 호출은 없습니다</div></section>`;
+  const [{ PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS }, provider] = await Promise.all([import("../data/person-meta.js"), import("../data/person-provider.js")]);
+  const people = provider.listAllPoliticians();
+  const photos = await getDomain("politicianPhotos", { fresh:true });
+  const manual = new Map((photos.items || []).map(x => [String(x.id), x]));
+  const selectedId = params().person && people.some(x => x.id === params().person) ? params().person : (people[0]?.id || "");
+  const person = people.find(x => x.id === selectedId) || null;
+  const record = manual.get(selectedId) || null;
+  const preview = record?.variants?.profile || person?.photo || "";
+  const options = people.map(x => `<option value="${esc(x.id)}" ${x.id === selectedId ? "selected" : ""}>${esc(x.name)} · ${esc(politicianTypeName(x.type))} · ${esc(x.party || "")} · ${esc(x.jurisdiction || x.region || "")}</option>`).join("");
+  const stored = record ? `${photoKb(record.bytes?.total)} · ${record.updatedAt ? String(record.updatedAt).slice(0,16).replace("T"," ") : "수동 등록"}` : "Wikimedia 자동사진 사용 중";
+  return `<section class="admin-panel politician-photo-admin">
+    <div class="admin-panel-head"><div><h2>인물 관리 · 정치인 사진</h2><span class="status-pill"><b>MANUAL PHOTO</b>${manual.size}명 수동 등록</span></div></div>
+    <div class="people-admin-grid"><article><b>국회의원</b><strong>${PERSON_COUNTS.assembly} / 300</strong><span>텍스트 연결</span></article><article><b>광역단체장</b><strong>${PERSON_COUNTS.metropolitan} / 16</strong><span>텍스트 연결</span></article><article><b>기초단체장</b><strong>${PERSON_COUNTS.basic} / 227</strong><span>텍스트 연결</span></article><article><b>인물 공급자</b><strong>${PERSON_PROVIDER_STATUS}</strong><span>앱 내부 Seed</span></article><article><b>사진 공급자</b><strong>${PHOTO_PROVIDER_STATUS}</strong><span>Wikimedia + 관리자 수동사진</span></article><article><b>수동사진</b><strong>${manual.size}</strong><span>관리자 우선 적용</span></article></div>
+    <div class="politician-photo-picker"><label>정치인 찾기<input type="search" placeholder="이름 · 정당 · 지역 검색" data-person-select-filter="#politician-photo-person-select"></label><label>정치인 선택<select id="politician-photo-person-select" data-politician-photo-select>${options}</select></label></div>
+    ${person ? `<div class="politician-photo-workspace">
+      <form class="admin-form politician-photo-form" data-politician-photo-form data-person-id="${esc(person.id)}">
+        <div class="politician-photo-person-head"><div class="politician-photo-preview" data-politician-photo-preview ${preview ? `style="background-image:url('${esc(preview)}')"` : ""}>${preview ? "" : "사진 미리보기"}</div><div><span>${esc(politicianTypeName(person.type))}</span><h3>${esc(person.name)}</h3><p>${esc(person.party || "")} · ${esc(person.jurisdiction || person.region || "")}</p><small>현재 상태 · ${esc(stored)}</small></div></div>
+        <label>새 사진 선택<input type="file" accept="image/jpeg,image/png,image/webp" data-politician-photo-input></label>
+        <div class="politician-photo-save-row"><button class="primary-btn" type="submit">사진 저장 · 수동사진 우선 적용</button>${record ? `<button class="ghost-btn danger" type="button" data-politician-photo-reset="${esc(person.id)}">수동사진 삭제 · Wikimedia 복귀</button>` : ""}<span class="save-state" data-politician-photo-state></span></div>
+      </form>
+      <aside class="politician-photo-guide"><div><b>권장 원본</b><strong>3:4 · 800×1067 이상</strong><span>JPG · PNG · WebP · 1.5MB 이하 권장 / 최대 5MB</span></div><div><b>자동 최적화</b><strong>정치인 1명당 목표 약 100KB</strong><span>원본을 그대로 서비스하지 않고 3종으로 분리 저장 · 최적화 상한 128KB</span></div><div class="politician-photo-variant-grid"><span><b>MINI 12KB</b><small>96px · 사이드/초소형</small></span><span><b>CARD 24KB</b><small>192px · 목록/NOW</small></span><span><b>PROFILE 64KB</b><small>480px · 상세/평가</small></span></div><p>얼굴은 사진 상단 1/3~중앙에 두고, 배경이 너무 넓거나 단체사진은 피해주세요. 542명 전원을 수동 등록해도 최적화 목표 기준 저장량은 약 53MB 수준입니다.</p></aside>
+    </div>` : `<div class="empty-inline">정치인을 선택해 주세요</div>`}
+  </section>`;
 }
 function formButtons(domain) { return `<div class="admin-form-actions"><button type="submit" class="primary-btn">저장</button><button type="button" class="ghost-btn" data-admin-cancel data-domain="${domain}">취소</button><span class="save-state" data-save-state></span></div>`; }
 function boardEditor(domain, item = null) {
@@ -491,6 +514,55 @@ export async function saveAdminForm(form) {
   return saveDomain(domain, data);
 }
 export async function deleteAdminItem(domain, id) { const data = await getDomain(domain); if (domain === "academy") data.slots = (data.slots || []).filter(x => String(x.id) !== String(id)); else data.items = (data.items || []).filter(x => String(x.id) !== String(id)); return saveDomain(domain, data); }
+export function preparePoliticianPhotoPreview(file, previewEl, stateEl) {
+  if (!file) return { ok:false, error:"사진을 선택해 주세요" };
+  if (!["image/jpeg","image/png","image/webp"].includes(String(file.type || "").toLowerCase())) throw new Error("JPG · PNG · WebP만 사용할 수 있습니다");
+  if (file.size > 5 * 1024 * 1024) throw new Error("원본 이미지는 5MB 이하만 사용할 수 있습니다");
+  const url = URL.createObjectURL(file);
+  if (previewEl) { previewEl.style.backgroundImage = `url('${url}')`; previewEl.textContent = ""; }
+  if (stateEl) stateEl.textContent = `선택 완료 · 원본 ${photoKb(file.size)} · 저장 시 자동 최적화`;
+  return { ok:true };
+}
+
+export async function savePoliticianPhotoForm(form) {
+  const id = String(form?.dataset?.personId || "").trim();
+  const file = form?.querySelector("[data-politician-photo-input]")?.files?.[0];
+  if (!id || !file) return { ok:false, error:"새 사진을 선택해 주세요" };
+  try {
+    const { uploadPoliticianPhotoSet, deletePoliticianPhotoBlobs } = await import("../core/image.js");
+    const data = await getDomain("politicianPhotos", { fresh:true });
+    const list = Array.isArray(data.items) ? data.items : [];
+    const previous = list.find(x => String(x.id) === id);
+    const oldUrls = Object.values(previous?.variants || {}).filter(Boolean);
+    const uploaded = await uploadPoliticianPhotoSet(file, id);
+    const newUrls = Object.values(uploaded?.variants || {}).filter(Boolean);
+    const now = new Date().toISOString();
+    const record = { id, ...uploaded, focus:"50% 28%", updatedAt:now };
+    data.items = list.some(x => String(x.id) === id) ? list.map(x => String(x.id) === id ? record : x) : [record, ...list];
+    const saved = await saveDomain("politicianPhotos", data);
+    if (!saved.ok) {
+      await deletePoliticianPhotoBlobs(newUrls);
+      return saved;
+    }
+    const cleanup = oldUrls.length ? await deletePoliticianPhotoBlobs(oldUrls) : { ok:true, deleted:0 };
+    return { ok:true, record, cleanup, message:`저장 완료 · 최적화 ${photoKb(uploaded.bytes.total)}` };
+  } catch (error) { return { ok:false, error:error?.message || "정치인 사진 저장 실패" }; }
+}
+
+export async function resetPoliticianPhoto(id) {
+  const key = String(id || "").trim();
+  if (!key) return { ok:false, error:"정치인 ID가 없습니다" };
+  const data = await getDomain("politicianPhotos", { fresh:true });
+  const previous = (data.items || []).find(x => String(x.id) === key);
+  const oldUrls = Object.values(previous?.variants || {}).filter(Boolean);
+  data.items = (data.items || []).filter(x => String(x.id) !== key);
+  const saved = await saveDomain("politicianPhotos", data);
+  if (!saved.ok || !oldUrls.length) return saved;
+  const { deletePoliticianPhotoBlobs } = await import("../core/image.js");
+  const cleanup = await deletePoliticianPhotoBlobs(oldUrls);
+  return { ...saved, cleanup };
+}
+
 export async function updateMemberAccess(id, patch = {}) {
   try {
     const r = await fetch("/api/v3/admin/users", { method:"PATCH", credentials:"same-origin", headers:{ "Content-Type":"application/json", Accept:"application/json" }, body:JSON.stringify({ id, ...patch }) });

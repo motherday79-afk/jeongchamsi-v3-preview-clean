@@ -74,3 +74,85 @@ export async function uploadProfileImage(file) {
   const data = await compress(file, 900, 1200, 720, 960);
   return uploadCompressed(data, "president-profile");
 }
+
+
+const POLITICIAN_PHOTO_VARIANTS = Object.freeze({
+  mini: Object.freeze({ maxWidth: 96, maxHeight: 128, targetBytes: 12 * 1024, quality: 0.68 }),
+  card: Object.freeze({ maxWidth: 192, maxHeight: 256, targetBytes: 24 * 1024, quality: 0.72 }),
+  profile: Object.freeze({ maxWidth: 480, maxHeight: 640, targetBytes: 64 * 1024, quality: 0.76 })
+});
+
+function dataUrlBytes(value = "") {
+  const base64 = String(value || "").split(",")[1] || "";
+  if (!base64) return 0;
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor(base64.length * 3 / 4) - padding);
+}
+
+function politicianVariantData(img, spec) {
+  let best = "";
+  let bestBytes = Number.POSITIVE_INFINITY;
+  for (const scale of [1, 0.9, 0.8, 0.7]) {
+    for (const q of [spec.quality, 0.66, 0.58, 0.5]) {
+      const data = canvasData(img, Math.max(1, Math.round(spec.maxWidth * scale)), Math.max(1, Math.round(spec.maxHeight * scale)), q);
+      const bytes = dataUrlBytes(data);
+      if (bytes && bytes < bestBytes) { best = data; bestBytes = bytes; }
+      if (bytes && bytes <= spec.targetBytes) return { dataUrl:data, bytes };
+    }
+  }
+  return { dataUrl:best, bytes:Number.isFinite(bestBytes) ? bestBytes : 0 };
+}
+
+function validPoliticianUploadId(id = "") {
+  const value = String(id || "").trim();
+  return value !== "assembly-300" && /^(assembly|metropolitan|basic)-\d{3}$/.test(value);
+}
+
+export async function deletePoliticianPhotoBlobs(urls = []) {
+  const clean = [...new Set((Array.isArray(urls) ? urls : []).map(value => String(value || "").trim()).filter(Boolean))].slice(0, 6);
+  if (!clean.length) return { ok:true, deleted:0 };
+  try {
+    const response = await fetch("/api/v3/upload", {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers: { "Content-Type":"application/json", "Accept":"application/json" },
+      body: JSON.stringify({ urls:clean })
+    });
+    const body = await response.json().catch(() => ({}));
+    return response.ok ? { ok:true, deleted:Number(body.deleted || 0) } : { ok:false, error:body.error || "BLOB_DELETE_FAILED" };
+  } catch { return { ok:false, error:"BLOB_DELETE_FAILED" }; }
+}
+
+export async function uploadPoliticianPhotoSet(file, politicianId) {
+  if (!file) throw new Error("정치인 사진을 선택해 주세요");
+  if (!validPoliticianUploadId(politicianId)) throw new Error("정치인 ID를 확인해 주세요");
+  if (!["image/jpeg","image/png","image/webp"].includes(String(file.type || "").toLowerCase())) throw new Error("정치인 사진은 JPG · PNG · WebP만 사용할 수 있습니다");
+  if (file.size > 5 * 1024 * 1024) throw new Error("정치인 사진 원본은 5MB 이하만 업로드할 수 있습니다");
+
+  const src = await readAsDataURL(file);
+  const img = await loadImage(src);
+  if (img.naturalWidth < 320 || img.naturalHeight < 400) throw new Error("사진 해상도가 너무 작습니다. 세로 800×1067 이상을 권장합니다");
+
+  const prepared = Object.fromEntries(Object.entries(POLITICIAN_PHOTO_VARIANTS).map(([key, spec]) => [key, politicianVariantData(img, spec)]));
+  const optimizedTotal = Object.values(prepared).reduce((sum, item) => sum + Number(item?.bytes || 0), 0);
+  if (!optimizedTotal || optimizedTotal > 128 * 1024) throw new Error("자동 최적화 후 용량이 큽니다. 배경이 단순한 인물 사진으로 다시 선택해 주세요");
+  const variantKeys = ["mini", "card", "profile"];
+  const results = await Promise.allSettled(variantKeys.map(key => uploadCompressed(prepared[key].dataUrl, `politician/${politicianId}/${key}`)));
+  const uploadedUrls = results.filter(result => result.status === "fulfilled").map(result => result.value).filter(Boolean);
+  const failed = results.find(result => result.status === "rejected");
+  if (failed) {
+    await deletePoliticianPhotoBlobs(uploadedUrls);
+    throw failed.reason instanceof Error ? failed.reason : new Error("정치인 사진 업로드에 실패했습니다");
+  }
+  const [mini, card, profile] = results.map(result => result.value);
+  const bytes = { mini:prepared.mini.bytes, card:prepared.card.bytes, profile:prepared.profile.bytes };
+  bytes.total = bytes.mini + bytes.card + bytes.profile;
+  return {
+    variants:{ mini, card, profile },
+    bytes,
+    original:{ width:img.naturalWidth, height:img.naturalHeight, size:Number(file.size || 0) },
+    focus:"50% 28%"
+  };
+}
+
+export { POLITICIAN_PHOTO_VARIANTS };

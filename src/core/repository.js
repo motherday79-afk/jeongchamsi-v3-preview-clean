@@ -50,6 +50,7 @@ const defaults = {
   comments: { items: [] },
   keywords: { items: [] },
   trending: { items: [] },
+  politicianPhotos: { items: [] },
   brand: {
     hero: {
       kicker: "정참시 — 정치에 참여할 시간",

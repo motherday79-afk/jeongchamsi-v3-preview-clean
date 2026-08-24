@@ -427,6 +427,14 @@ document.addEventListener("click", async event => {
     await render(currentRoute(), { resetScroll:false });
     return;
   }
+  const politicianPhotoReset = event.target.closest("[data-politician-photo-reset]");
+  if (politicianPhotoReset) {
+    if (!confirm("이 정치인의 수동사진을 삭제하고 Wikimedia 자동사진으로 되돌릴까요?")) return;
+    const r = await (await import("./views/admin.js")).resetPoliticianPhoto(politicianPhotoReset.dataset.politicianPhotoReset);
+    if (!r.ok) alert(`사진 초기화 실패 · ${r.error || ""}`);
+    else { clearDomainCache("politicianPhotos"); await render(currentRoute(), { resetScroll:false }); }
+    return;
+  }
   const tab = event.target.closest("[data-admin-tab]"); if (tab) return route(`/admin?tab=${encodeURIComponent(tab.dataset.adminTab)}`);
   const add = event.target.closest("[data-admin-new]"); if (add) return route(`/admin?tab=${encodeURIComponent(add.dataset.adminNew)}&edit=new`);
   const edit = event.target.closest("[data-admin-edit]"); if (edit) return route(`/admin?tab=${encodeURIComponent(edit.dataset.adminEdit)}&edit=${encodeURIComponent(edit.dataset.id)}`);
@@ -490,9 +498,18 @@ document.addEventListener("input", async event => {
   if (cover?.files?.[0]) { try { await (await import("./views/admin.js")).prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
   const profile = event.target.closest("[data-profile-input]");
   if (profile?.files?.[0]) { try { await (await import("./views/admin.js")).prepareProfilePreview(profile.files[0], profile.closest("form")?.querySelector("[data-profile-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); profile.value = ""; } }
+  const politicianPhoto = event.target.closest("[data-politician-photo-input]");
+  if (politicianPhoto?.files?.[0]) {
+    try {
+      const form = politicianPhoto.closest("[data-politician-photo-form]");
+      (await import("./views/admin.js")).preparePoliticianPhotoPreview(politicianPhoto.files[0], form?.querySelector("[data-politician-photo-preview]"), form?.querySelector("[data-politician-photo-state]"));
+    } catch (e) { alert(e.message || "이미지 처리 실패"); politicianPhoto.value = ""; }
+  }
 });
 
 document.addEventListener("change", async event => {
+  const politicianPhotoSelect = event.target.closest("[data-politician-photo-select]");
+  if (politicianPhotoSelect?.value) return route(`/admin?tab=people&person=${encodeURIComponent(politicianPhotoSelect.value)}`);
   const region = event.target.closest("[data-region-province],[data-region-city]");
   if (region) (await import("./data/regions.js")).handleRegionChange(region);
 });
@@ -552,6 +569,17 @@ document.addEventListener("submit", async event => {
     if (st) st.textContent = "저장 완료";
     clearDomainCache("brand");
     setTimeout(() => render(currentRoute(), { resetScroll:false }), 120);
+    return;
+  }
+  if (form.matches("[data-politician-photo-form]")) {
+    event.preventDefault();
+    const st = form.querySelector("[data-politician-photo-state]");
+    if (st) st.textContent = "사진 최적화 · 업로드 중";
+    const r = await (await import("./views/admin.js")).savePoliticianPhotoForm(form);
+    if (!r.ok) { if (st) st.textContent = `저장 실패 · ${r.error || ""}`; return; }
+    if (st) st.textContent = r.message || "사진 저장 완료";
+    clearDomainCache("politicianPhotos");
+    await render(currentRoute(), { resetScroll:false });
     return;
   }
   if (form.matches("[data-admin-form]")) { event.preventDefault(); const r = await (await import("./views/admin.js")).saveAdminForm(form); const st=form.querySelector("[data-save-state]"); if (!r.ok) { if(st) st.textContent=`저장 실패 · ${r.error || "서버 저장소 오류"}`; return; } if(st)st.textContent="저장 완료"; clearDomainCache(); const rawTab=form.dataset.adminForm.replace(/-(settings|list)$/,''); const targetTab=rawTab==="nationalEvaluation"?"national":rawTab==="academy"?"academy":rawTab; setTimeout(()=>route(`/admin?tab=${encodeURIComponent(targetTab)}`,{replace:true}),150); return; }
