@@ -24,6 +24,42 @@ function generationAgeGroup(birthYear) {
   return "";
 }
 
+function allowedNationalEvaluationSubject(slotKey, personId) {
+  const id = String(personId || "");
+  if (slotKey === "assembly") return /^assembly-\d{3}$/.test(id);
+  if (slotKey === "local") return /^metropolitan-\d{3}$/.test(id) || /^basic-\d{3}$/.test(id);
+  return false;
+}
+
+function normalizeNationalEvaluation(data = {}) {
+  const rawSlots = data.slots && typeof data.slots === "object" ? data.slots : {};
+  const makeSlot = (slotKey, raw = {}, fallbackId = "", fallbackEnabled = false) => {
+    const candidate = String(raw.subjectId || fallbackId || "");
+    const subjectId = allowedNationalEvaluationSubject(slotKey, candidate) ? candidate : "";
+    return {
+      slot: slotKey,
+      evaluationId: subjectId ? String(raw.evaluationId || `legacy-${slotKey}-${subjectId}`) : "",
+      subjectId: subjectId || null,
+      enabled: !!subjectId && (typeof raw.enabled === "boolean" ? raw.enabled : fallbackEnabled === true),
+      startedAt: String(raw.startedAt || ""),
+      updatedAt: String(raw.updatedAt || ""),
+      closedAt: String(raw.closedAt || "")
+    };
+  };
+  const legacyAssembly = /^assembly-\d{3}$/.test(String(data.subjectId || "")) ? String(data.subjectId) : "";
+  const assembly = makeSlot("assembly", rawSlots.assembly || {}, legacyAssembly, legacyAssembly ? data.enabled === true : false);
+  const local = makeSlot("local", rawSlots.local || {});
+  return {
+    ...data,
+    enabled: assembly.enabled,
+    subjectId: assembly.subjectId,
+    slots: { assembly, local },
+    results: data.results && typeof data.results === "object" ? data.results : {},
+    history: Array.isArray(data.history) ? data.history : [],
+    demoResults: data.demoResults && typeof data.demoResults === "object" ? data.demoResults : {}
+  };
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
@@ -159,23 +195,38 @@ module.exports = async function handler(req, res) {
 
     if (action === "national-evaluation-vote") {
       const personId = String(payload.personId || "");
+      const evaluationId = String(payload.evaluationId || "");
       const rating = String(payload.rating || "");
       const ratings = new Set(["positive", "neutral", "negative"]);
-      if (!/^assembly-\d{3}$/.test(personId) || !ratings.has(rating)) return res.status(400).json({ ok: false, error: "INVALID_NATIONAL_EVALUATION" });
-      if (activity.nationalEvaluationVotes?.[personId]) return res.status(409).json({ ok: false, error: "ALREADY_VOTED" });
+      const validPersonId = /^assembly-\d{3}$/.test(personId) || /^metropolitan-\d{3}$/.test(personId) || /^basic-\d{3}$/.test(personId);
+      if (!validPersonId || !evaluationId || !ratings.has(rating)) return res.status(400).json({ ok: false, error: "INVALID_NATIONAL_EVALUATION" });
 
-      const evaluation = (await getJSON("nationalEvaluation")) || defaultDomain("nationalEvaluation");
-      if (evaluation.enabled !== true || String(evaluation.subjectId || "") !== personId) return res.status(403).json({ ok: false, error: "EVALUATION_CLOSED" });
+      let evaluation = normalizeNationalEvaluation((await getJSON("nationalEvaluation")) || defaultDomain("nationalEvaluation"));
+      const activeSlot = Object.values(evaluation.slots || {}).find(slot =>
+        String(slot?.evaluationId || "") === evaluationId &&
+        String(slot?.subjectId || "") === personId &&
+        slot?.enabled === true &&
+        !String(slot?.closedAt || "") &&
+        allowedNationalEvaluationSubject(String(slot?.slot || ""), personId)
+      );
+      if (!activeSlot) return res.status(403).json({ ok: false, error: "EVALUATION_CLOSED" });
 
-      const voteKey = `jcv3:nationaleval:v1:${personId}:${user.id}`;
+      const priorVotes = activity.nationalEvaluationVotes || {};
+      const legacyAlreadyVoted = evaluationId.startsWith("legacy-") && !!priorVotes[personId];
+      if (priorVotes[evaluationId] || legacyAlreadyVoted) return res.status(409).json({ ok: false, error: "ALREADY_VOTED" });
+
+      const voteKey = `jcv3:nationaleval:v2:${evaluationId}:${user.id}`;
       const reserved = await command(["SET", voteKey, rating, "NX", "EX", 31536000]);
       if (!reserved) return res.status(409).json({ ok: false, error: "ALREADY_VOTED" });
 
       evaluation.results = evaluation.results || {};
-      evaluation.results[personId] = { positive: 0, neutral: 0, negative: 0, ...(evaluation.results[personId] || {}) };
-      evaluation.results[personId][rating] = Number(evaluation.results[personId][rating] || 0) + 1;
+      const legacySeed = evaluationId.startsWith("legacy-") ? evaluation.results[personId] : null;
+      evaluation.results[evaluationId] = { positive: 0, neutral: 0, negative: 0, ...(legacySeed || {}), ...(evaluation.results[evaluationId] || {}) };
+      evaluation.results[evaluationId][rating] = Number(evaluation.results[evaluationId][rating] || 0) + 1;
+      evaluation.enabled = evaluation.slots.assembly?.enabled === true;
+      evaluation.subjectId = evaluation.slots.assembly?.subjectId || null;
       await setJSON("nationalEvaluation", sanitize("nationalEvaluation", evaluation));
-      activity.nationalEvaluationVotes = { ...(activity.nationalEvaluationVotes || {}), [personId]: rating };
+      activity.nationalEvaluationVotes = { ...priorVotes, [evaluationId]: rating };
       activity = recordBadgeEvent(activity, "national-evaluation");
       activity = await setActivity(user.id, activity);
       return res.status(200).json({ ok: true, activity });

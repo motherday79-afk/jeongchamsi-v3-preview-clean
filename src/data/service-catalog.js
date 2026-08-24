@@ -7,7 +7,7 @@ export const SERVICE_CATALOG = Object.freeze([
   { key:"community", tone:"green", label:"정뮤니티", shortLabel:"정뮤니티", description:"지금 시민들이 하는 말", href:"/community", launcher:true, serviceBar:false, group:"콘텐츠" },
   { key:"president", tone:"gold", label:"대통령", shortLabel:"대통령", description:"대통령 정보와 기록", href:"/president", launcher:false, serviceBar:true, group:"정치 보기" },
   { key:"news", tone:"red", label:"정참시 NEWS", shortLabel:"NEWS", description:"정치 뉴스 모아보기", href:"/news", launcher:false, serviceBar:true, group:"콘텐츠" },
-  { key:"evaluation", tone:"teal", label:"국회의원 전국 평가제", shortLabel:"전국 평가제", description:"전국 참여자 평가", href:"/national-evaluation", launcher:false, serviceBar:true, group:"분석" },
+  { key:"evaluation", tone:"teal", label:"정참시민 전국 평가제", shortLabel:"전국 평가제", description:"정참시민 정치인 평가", href:"/national-evaluation", launcher:false, serviceBar:true, group:"분석" },
   { key:"academy", tone:"orange", label:"정참시 아카데미", shortLabel:"아카데미", description:"정치 교육 일정과 수강신청", href:"/academy", launcher:false, serviceBar:true, group:"참여" },
   { key:"column", tone:"navy", label:"COLUMN", shortLabel:"COLUMN", description:"오늘 정치에서 읽어야 할 것", href:"/column", launcher:false, serviceBar:false, group:"콘텐츠" },
   { key:"keywords", tone:"green", label:"실시간 정치키워드", shortLabel:"정치키워드", description:"지금 많이 언급되는 정치어", href:"/keywords", launcher:false, serviceBar:true, group:"정치 보기" },

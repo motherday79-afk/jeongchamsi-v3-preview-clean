@@ -45,7 +45,7 @@ const defaults = {
     slots: []
   },
   generation: { enabled: true, candidates: [], results: {}, demoMode: false, demoResults: {} },
-  nationalEvaluation: { enabled: false, subjectId: null, results: {}, history: [], demoMode: false, demoResults: {} },
+  nationalEvaluation: { enabled:false, subjectId:null, slots:{ assembly:{ slot:"assembly", evaluationId:"", subjectId:null, enabled:false, startedAt:"", updatedAt:"", closedAt:"" }, local:{ slot:"local", evaluationId:"", subjectId:null, enabled:false, startedAt:"", updatedAt:"", closedAt:"" } }, results:{}, history:[], demoMode:false, demoResults:{} },
   itsme: { categories: DEFAULT_ITSME_CATEGORIES, items: [] },
   comments: { items: [] },
   keywords: { items: [] },

@@ -260,6 +260,19 @@ document.addEventListener("click", async event => {
     return;
   }
 
+  const nationalClose = event.target.closest("[data-national-evaluation-close]");
+  if (nationalClose) {
+    const slotKey = String(nationalClose.dataset.slotKey || "");
+    if (!confirm("이 평가를 종료할까요? 현재 결과는 지난 평가 이력에 보존됩니다.")) return;
+    nationalClose.disabled = true;
+    const tools = await import("./views/national-evaluation-admin.js");
+    const r = await tools.closeNationalEvaluationSlot(slotKey);
+    if (!r.ok) { nationalClose.disabled = false; alert(`평가 종료 실패 · ${r.error || "저장소 오류"}`); return; }
+    clearDomainCache("nationalEvaluation");
+    await render(currentRoute(), { resetScroll:false });
+    return;
+  }
+
   const nowMore = event.target.closest("[data-now-load-more]");
   if (nowMore) {
     if (nowMore.disabled) return;
@@ -519,7 +532,7 @@ document.addEventListener("submit", async event => {
     setTimeout(() => render(currentRoute(), { resetScroll:false }), 120);
     return;
   }
-  if (form.matches("[data-national-evaluation-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("national-evaluation-vote", { personId: form.dataset.personId, rating: fd.get("rating") }); const st=form.querySelector("[data-national-evaluation-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이미 이 평가에 참여했습니다":`평가 저장 실패 · ${r.error||""}`;return;} await rerenderNoScroll(r.activity); return; }
+  if (form.matches("[data-national-evaluation-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("national-evaluation-vote", { evaluationId:form.dataset.evaluationId, personId:form.dataset.personId, rating:fd.get("rating") }); const st=form.querySelector("[data-national-evaluation-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이미 이 평가에 참여했습니다":r.error==="EVALUATION_CLOSED"?"이 평가는 종료되었거나 현재 참여할 수 없습니다":`평가 저장 실패 · ${r.error||""}`;return;} await rerenderNoScroll(r.activity); return; }
   if (form.matches("[data-badge-celebration-form]")) {
     event.preventDefault();
     const r=await (await import("./views/admin.js")).saveBadgeCelebrationConfig(form);

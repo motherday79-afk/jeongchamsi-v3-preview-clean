@@ -3,6 +3,7 @@ import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
 import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
+import { normalizeNationalEvaluation, makeNationalEvaluationId, votesForEvaluationSlot } from "./national-evaluation-model.js";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["badges", "배지센터"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["president", "대통령"],
@@ -258,7 +259,7 @@ async function generationPanel() {
 async function nationalEvaluationPanel() {
   const data = await getDomain("nationalEvaluation");
   const tools = await import("./national-evaluation-admin.js");
-  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>국회의원 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 상세 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
+  return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>정참시민 전국 평가제</h2><span class="status-pill"><b>SYNC</b>어드민 · 메인 · 평가페이지 공통 편집기</span></div><button class="ghost-btn" data-go="/national-evaluation">외부 페이지</button></div>${tools.renderNationalEvaluationAdminEditor(data, { context:"admin", open:true })}</section>`;
 }
 
 function num(v) { return Number(v || 0).toLocaleString("ko-KR"); }
@@ -458,7 +459,22 @@ export async function saveAdminForm(form) {
     };
     return saveDomain("academy", data);
   }
-  if (domain === "nationalEvaluation") { const data = await getDomain("nationalEvaluation"); const subjectId = String(fd.get("subjectId") || ""); const nextSubject = /^assembly-\d{3}$/.test(subjectId) ? subjectId : null; const previous = data.subjectId && data.subjectId !== nextSubject ? String(data.subjectId) : ""; data.history = Array.isArray(data.history) ? data.history : []; if (previous && !data.history.some(x => x.subjectId === previous)) data.history.unshift({ subjectId: previous, closedAt: new Date().toISOString() }); data.history = data.history.slice(0, 100); data.subjectId = nextSubject; data.enabled = fd.get("enabled") === "on" && !!data.subjectId; data.results = data.results || {}; return saveDomain("nationalEvaluation", data); }
+  if (domain === "nationalEvaluation") {
+    const data = normalizeNationalEvaluation(await getDomain("nationalEvaluation"));
+    const subjectId = String(fd.get("subjectId") || "");
+    const nextSubject = /^assembly-\d{3}$/.test(subjectId) ? subjectId : null;
+    const current = data.slots.assembly;
+    const nowIso = new Date().toISOString();
+    if (current?.subjectId && current.subjectId !== nextSubject && current.evaluationId) {
+      const votes = votesForEvaluationSlot(data, current);
+      data.history = [{ evaluationId:current.evaluationId, slot:"assembly", subjectId:current.subjectId, ...votes, startedAt:current.startedAt || "", closedAt:nowIso }, ...(data.history || []).filter(x=>String(x?.evaluationId||"")!==String(current.evaluationId))].slice(0,200);
+    }
+    const changed = current?.subjectId !== nextSubject || !!current?.closedAt;
+    data.slots.assembly = nextSubject ? { slot:"assembly", evaluationId:changed ? makeNationalEvaluationId("assembly",Date.now(),nextSubject) : current.evaluationId, subjectId:nextSubject, enabled:fd.get("enabled") === "on", startedAt:changed ? nowIso : (current.startedAt || nowIso), updatedAt:nowIso, closedAt:"" } : { slot:"assembly", evaluationId:"", subjectId:null, enabled:false, startedAt:"", updatedAt:nowIso, closedAt:"" };
+    data.subjectId = data.slots.assembly.subjectId;
+    data.enabled = data.slots.assembly.enabled;
+    return saveDomain("nationalEvaluation", data);
+  }
   const data = await getDomain(domain); const id = form.dataset.itemId || `${domain}-${Date.now().toString(36)}`;
   if (["columns", "community", "news"].includes(domain)) { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const cover = form.querySelector("[data-cover-preview]")?.dataset.coverData || old?.coverImage || ""; const next = { id, title: fd.get("title"), author: fd.get("author"), category: fd.get("category") || "", summary: fd.get("summary"), body: fd.get("body"), coverImage: cover, featured: fd.get("featured") === "on", published: fd.get("published") === "on", createdAt: old?.createdAt || now, updatedAt: now, likes: old?.likes || 0, views: old?.views || 0, ownerId: old?.ownerId || getUserSession().user?.id || "" }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }
   else if (domain === "polls") { const list = data.items || []; const old = list.find(x => String(x.id) === String(id)); const oldVotes = Object.fromEntries((old?.options || []).map(x => [x.label, x.votes || 0])); const labels = splitLines(fd.get("options")).slice(0, 10); const startsRaw = String(fd.get("startsAt") || "").trim(); const endsRaw = String(fd.get("endsAt") || "").trim(); const startsAt = startsRaw ? new Date(startsRaw).toISOString() : ""; const endsAt = endsRaw ? new Date(endsRaw).toISOString() : ""; if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) return { ok: false, error: "POLL_END_MUST_BE_AFTER_START" }; const next = { id, question: fd.get("question"), description: fd.get("description"), options: labels.map((label, i) => ({ id: `${id}-o${i + 1}`, label, votes: oldVotes[label] || 0 })), published: fd.get("published") === "on", startsAt, endsAt, createdAt: old?.createdAt || now, updatedAt: now }; data.items = old ? list.map(x => x.id === id ? next : x) : [next, ...list]; }

@@ -15,6 +15,11 @@ import {
   CORE_COMPARE_METRICS, AUDIENCE_COMPARE_METRICS, ACTIVITY_COMPARE_METRICS, FLOW_COMPARE_METRICS,
   scoreFor, buildDifferences, buildCompareInsight, trendScoreDelta, trendRankDelta
 } from "./compare-intelligence.js";
+import {
+  normalizeNationalEvaluation,
+  votesForEvaluationSlot,
+  nationalEvaluationTypeLabel
+} from "./national-evaluation-model.js";
 
 let personProvider = null;
 async function ensurePersonProvider() {
@@ -545,44 +550,70 @@ export async function renderGeneration(search = "") {
   return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">GENERATION CHOICE · MOCK VOTE</span><h1>세대의 선택, 대통령</h1><p>세대를 선택하면 현재 투표수 기준 상위 15명까지 확인할 수 있습니다. 정치인을 누르면 사진과 전체 인물정보가 있는 상세페이지로 이동합니다</p></section>${generationAdmin}<section class="content-card generation-ranking-card"><div class="section-title"><h2>${esc(selectedAge)}가 선택한 대통령</h2><span>TOP 15 · 총 ${selectedTotal.toLocaleString("ko-KR")}표</span></div><div class="generation-age-tabs">${tabs}</div><div class="generation-top15-list">${ranking}</div></section><section class="content-card"><div class="section-title"><h2>모의투표 참여</h2><span>${session.authenticated ? "회원 출생연도 기준 세대 자동 적용" : "로그인 필요"}</span></div>${voteArea}</section></main>`);
 }
 
-function nationalEvaluationDisplayVotes(data = {}, personId = "") {
-  const id = String(personId || data.subjectId || "");
-  if (!id) return { positive:0, neutral:0, negative:0 };
-  const source = data.demoMode === true ? data.demoResults : data.results;
-  return { positive:0, neutral:0, negative:0, ...((source || {})[id] || {}) };
+function nationalEvaluationShare(votes, key) {
+  const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
+  return total ? Math.round(Number(votes[key] || 0) * 100 / total) : 0;
+}
+function nationalEvaluationSlotMarkup(data, slotKey, session) {
+  const slot = data.slots?.[slotKey] || {};
+  const person = slot.subjectId ? getPersonSlotById(slot.subjectId) : null;
+  const slotName = slotKey === "assembly" ? "국회의원" : "광역·기초단체장";
+  const slotCode = slotKey === "assembly" ? "SLOT A" : "SLOT B";
+  if (!person) {
+    return `<section class="content-card national-evaluation-public-slot empty"><div class="national-evaluation-slot-kicker"><span>${slotCode}</span><b>${slotName}</b></div><div class="empty-state"><div class="empty-icon">評</div><h2>평가 대상 선택 전</h2><p>${slotKey === "assembly" ? "관리자가 국회의원 한 명을 선택하면 이곳에서 평가가 시작됩니다" : "관리자가 광역단체장 또는 기초단체장 한 명을 선택하면 이곳에서 평가가 시작됩니다"}</p></div></section>`;
+  }
+  const votes = votesForEvaluationSlot(data, slot);
+  const total = votes.positive + votes.neutral + votes.negative;
+  const active = slot.enabled === true && !slot.closedAt;
+  const ended = !!slot.closedAt;
+  const typeLabel = nationalEvaluationTypeLabel(person.id);
+  const voted = hasNationalEvaluationVote(slot.evaluationId, String(slot.evaluationId || "").startsWith("legacy-") ? person.id : "");
+  const photo = person?.photo
+    ? `<div class="national-evaluation-person-photo has-photo" style="--photo-position:${esc(person.photoFocus || "50% 28%")}"><img data-politician-photo src="${esc(person.photo)}" alt="" width="112" height="112" loading="eager" decoding="async" fetchpriority="high"></div>`
+    : `<div class="national-evaluation-person-photo"></div>`;
+  const stateLabel = ended ? "평가 종료" : active ? "평가 진행중" : "평가 일시중지";
+  let participation = "";
+  if (!session.authenticated) participation = `<div class="member-login-prompt"><span>평가 참여는 로그인 후 가능합니다</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>`;
+  else if (!active) participation = `<div class="empty-inline">${ended ? "이 평가는 종료되었습니다. 최종 결과를 확인할 수 있습니다" : "현재 평가 참여가 일시중지되어 있습니다"}</div>`;
+  else if (voted) participation = `<div class="empty-inline">이 평가에 이미 참여했습니다</div>`;
+  else participation = `<form class="evaluation-vote-form" data-national-evaluation-form data-evaluation-id="${esc(slot.evaluationId)}" data-person-id="${esc(person.id)}"><label><input type="radio" name="rating" value="positive" required><b>긍정 평가</b><span>전반적으로 잘하고 있다고 봅니다</span></label><label><input type="radio" name="rating" value="neutral" required><b>보통</b><span>긍정과 아쉬움이 비슷합니다</span></label><label><input type="radio" name="rating" value="negative" required><b>부정 평가</b><span>전반적으로 아쉽다고 봅니다</span></label><button class="primary-btn" type="submit">평가 제출</button><div class="save-state" data-national-evaluation-state></div></form>`;
+  return `<section class="content-card national-evaluation-public-slot ${ended ? "ended" : active ? "active" : "paused"}">
+    <div class="national-evaluation-slot-kicker"><span>${slotCode}</span><b>${esc(typeLabel)}</b><em>${esc(stateLabel)}</em></div>
+    <div class="national-evaluation-person-head">${photo}<div><small>현재 평가 대상</small><h2>${esc(person.name)}</h2><p>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</p><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세페이지</button></div></div>
+    <div class="section-title national-evaluation-result-title"><h2>${ended ? "최종 평가 결과" : "현재 평가 결과"}</h2><span>${total.toLocaleString("ko-KR")}명 참여</span></div>
+    <div class="evaluation-result-grid"><article><small>긍정</small><strong>${nationalEvaluationShare(votes,"positive")}%</strong><span>${votes.positive.toLocaleString("ko-KR")}표</span></article><article><small>보통</small><strong>${nationalEvaluationShare(votes,"neutral")}%</strong><span>${votes.neutral.toLocaleString("ko-KR")}표</span></article><article><small>부정</small><strong>${nationalEvaluationShare(votes,"negative")}%</strong><span>${votes.negative.toLocaleString("ko-KR")}표</span></article></div>
+    <div class="national-evaluation-participation"><div class="section-title"><h2>정참시민 평가 참여</h2><span>${voted ? "참여 완료" : stateLabel}</span></div>${participation}</div>
+  </section>`;
+}
+function nationalEvaluationHistoryMarkup(data) {
+  const currentEvaluationIds = new Set(Object.values(data.slots || {}).map(x=>String(x?.evaluationId || "")).filter(Boolean));
+  const rows = (Array.isArray(data.history) ? data.history : []).map((item, index) => {
+    const subjectId = String(item?.subjectId || "");
+    const person = subjectId ? getPersonSlotById(subjectId) : null;
+    if (!person) return null;
+    const evaluationId = String(item?.evaluationId || "");
+    const stored = (evaluationId && data.results?.[evaluationId]) || data.results?.[subjectId] || {};
+    const votes = {
+      positive: Math.max(0, Number(item?.positive ?? stored.positive ?? 0) || 0),
+      neutral: Math.max(0, Number(item?.neutral ?? stored.neutral ?? 0) || 0),
+      negative: Math.max(0, Number(item?.negative ?? stored.negative ?? 0) || 0)
+    };
+    const total = votes.positive + votes.neutral + votes.negative;
+    return { key:evaluationId || `${subjectId}-${item?.closedAt || index}`, subjectId, person, type:nationalEvaluationTypeLabel(subjectId), votes, total, closedAt:item?.closedAt || "" };
+  }).filter(Boolean).filter(x=>!currentEvaluationIds.has(String(x.key || ""))).filter((x,i,arr)=>arr.findIndex(y=>y.key===x.key)===i);
+  return `<section class="content-card"><div class="section-title"><h2>지난 전국 평가</h2><span>${rows.length}건</span></div>${rows.length ? `<div class="evaluation-history-list">${rows.map(x=>`<article><div><b>${esc(x.person.name)} <small>${esc(x.type)}</small></b><span>${x.total.toLocaleString("ko-KR")}명 참여${x.closedAt ? ` · ${esc(formatDate(x.closedAt))}` : ""}</span></div><p>긍정 ${nationalEvaluationShare(x.votes,"positive")}% · 보통 ${nationalEvaluationShare(x.votes,"neutral")}% · 부정 ${nationalEvaluationShare(x.votes,"negative")}%</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 종료된 이전 평가가 없습니다</div>`}</section>`;
 }
 
 export async function renderNationalEvaluation() {
   await ensurePersonProvider();
-  const data = await getDomain("nationalEvaluation");
+  const data = normalizeNationalEvaluation(await getDomain("nationalEvaluation"));
   const session = getUserSession();
-  const person = data.subjectId ? getPersonSlotById(data.subjectId) : null;
-  const votes = person ? nationalEvaluationDisplayVotes(data, person.id) : { positive: 0, neutral: 0, negative: 0 };
-  const total = Number(votes.positive || 0) + Number(votes.neutral || 0) + Number(votes.negative || 0);
-  const share = key => total ? Math.round(Number(votes[key] || 0) * 100 / total) : 0;
-  const voted = person && hasNationalEvaluationVote(person.id);
-  const voting = data.enabled === true && person;
-  const explicitHistory = Array.isArray(data.history) ? data.history : [];
-  const historyIds = [...explicitHistory.map(x => x.subjectId), ...Object.keys(data.results || {})]
-    .filter(id => /^assembly-\d{3}$/.test(String(id || "")) && id !== data.subjectId)
-    .filter((id, i, arr) => arr.indexOf(id) === i);
-  const history = historyIds.map(id => {
-    const p = getPersonSlotById(id);
-    const v = { positive: 0, neutral: 0, negative: 0, ...(data.results?.[id] || {}) };
-    const count = Number(v.positive || 0) + Number(v.neutral || 0) + Number(v.negative || 0);
-    const percent = key => count ? Math.round(Number(v[key] || 0) * 100 / count) : 0;
-    return { id, label: p ? slotLabel(p) : id, count, positive: percent("positive"), neutral: percent("neutral"), negative: percent("negative") };
-  });
-  const historyMarkup = `<section class="content-card"><div class="section-title"><h2>지난 전국 평가</h2><span>${history.length}건</span></div>${history.length ? `<div class="evaluation-history-list">${history.map(x => `<article><div><b>${esc(x.label)}</b><span>${x.count}명 참여</span></div><p>긍정 ${x.positive}% · 보통 ${x.neutral}% · 부정 ${x.negative}%</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 종료된 이전 평가가 없습니다</div>`}</section>`;
-  const currentPhotoMarkup = person?.photo
-    ? `<div class="person-detail-photo has-photo" style="--photo-position:${esc(person.photoFocus || "50% 28%")}"><img data-politician-photo src="${esc(person.photo)}" alt="" width="160" height="160" loading="eager" decoding="async" fetchpriority="high" sizes="116px"></div>`
-    : `<div class="person-detail-photo"></div>`;
   let nationalAdmin = "";
   if (session.authenticated && session.user?.role === "admin") {
     const tools = await import("./national-evaluation-admin.js");
-    nationalAdmin = tools.renderNationalEvaluationAdminEditor(data, { context:"detail", open:false });
+    nationalAdmin = tools.renderNationalEvaluationAdminEditor(data, { context:"detail", open:true });
   }
-  return pageShell(`<main class="subpage"><section class="page-hero"><span class="eyebrow">NATIONAL EVALUATION</span><h1>국회의원 전국 평가제</h1><p>현재 평가와 지난 평가 결과를 한 페이지에서 확인합니다</p></section>${nationalAdmin}${person ? `<section class="person-detail-hero content-card">${currentPhotoMarkup}<div class="person-detail-title"><span class="eyebrow">CURRENT SUBJECT</span><h1>${esc(slotLabel(person))}</h1><p>${esc(person.party || "")} · ${esc(person.jurisdiction || "")}</p><div class="person-detail-badges"><span>전국 평가 대상</span><span>${data.enabled ? "평가 진행중" : "평가 일시중지"}</span></div></div><div class="detail-action-bar"><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세페이지</button></div></section><section class="content-card"><div class="section-title"><h2>현재 평가 결과</h2><span>${total}명 참여</span></div><div class="evaluation-result-grid"><article><small>긍정</small><strong>${share("positive")}%</strong><span>${Number(votes.positive || 0)}표</span></article><article><small>보통</small><strong>${share("neutral")}%</strong><span>${Number(votes.neutral || 0)}표</span></article><article><small>부정</small><strong>${share("negative")}%</strong><span>${Number(votes.negative || 0)}표</span></article></div></section><section class="content-card"><div class="section-title"><h2>전국 평가 참여</h2><span>${voted ? "참여 완료" : voting ? "평가 진행중" : "평가 중지"}</span></div>${!session.authenticated ? `<div class="member-login-prompt"><span>평가 참여는 로그인 후 가능합니다</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>` : !voting ? `<div class="empty-inline">관리자가 평가를 활성화하면 참여할 수 있습니다</div>` : voted ? `<div class="empty-inline">이 평가에 이미 참여했습니다</div>` : `<form class="evaluation-vote-form" data-national-evaluation-form data-person-id="${esc(person.id)}"><label><input type="radio" name="rating" value="positive" required><b>긍정 평가</b><span>전반적으로 잘하고 있다고 봅니다</span></label><label><input type="radio" name="rating" value="neutral" required><b>보통</b><span>긍정과 아쉬움이 비슷합니다</span></label><label><input type="radio" name="rating" value="negative" required><b>부정 평가</b><span>전반적으로 아쉽다고 봅니다</span></label><button class="primary-btn" type="submit">평가 제출</button><div class="save-state" data-national-evaluation-state></div></form>`}</section>` : `<section class="content-card"><div class="empty-state tall"><div class="empty-icon">評</div><h2>평가 대상 선택 전</h2><p>관리자에서 국회의원 300개 슬롯 중 한 명을 선택하면 이 페이지에서 바로 평가할 수 있습니다</p></div></section>`}${historyMarkup}</main>`);
+  return pageShell(`<main class="subpage national-evaluation-page"><section class="page-hero"><span class="eyebrow">NATIONAL EVALUATION · JEONGCHAMSI CITIZENS</span><h1>정참시민 전국 평가제</h1><p>국회의원 한 명과 광역단체장·기초단체장 중 한 명을 정참시민이 각각 독립적으로 평가합니다</p></section>${nationalAdmin}<div class="national-evaluation-two-slot-page">${nationalEvaluationSlotMarkup(data,"assembly",session)}${nationalEvaluationSlotMarkup(data,"local",session)}</div>${nationalEvaluationHistoryMarkup(data)}</main>`);
 }
 
 export async function renderSearch(query = "") {
@@ -605,13 +636,16 @@ export async function renderSearch(query = "") {
   })) : [];
   const searchAuthorProfiles = await getAuthorProfiles(authorOwnerIds(contentGroups.flatMap(g => g.matches || [])));
 
-  const evaluationData = rawQ ? await getDomain("nationalEvaluation") : { results:{}, history:[] };
-  const evaluationPeople = rawQ ? [evaluationData.subjectId, ...(evaluationData.history || []).map(x=>x.subjectId), ...Object.keys(evaluationData.results || {})]
-    .filter(Boolean)
-    .filter((id,i,arr)=>arr.indexOf(id)===i)
+  const evaluationData = rawQ ? normalizeNationalEvaluation(await getDomain("nationalEvaluation")) : normalizeNationalEvaluation({});
+  const evaluationPersonIds = rawQ ? [
+    ...Object.values(evaluationData.slots || {}).map(x=>x?.subjectId),
+    ...(evaluationData.history || []).map(x=>x?.subjectId),
+    ...Object.keys(evaluationData.results || {}).filter(id=>/^(?:assembly|metropolitan|basic)-\d{3}$/.test(id))
+  ].filter(Boolean).filter((id,i,arr)=>arr.indexOf(id)===i) : [];
+  const evaluationPeople = evaluationPersonIds
     .map(id=>getPersonSlotById(id))
     .filter(Boolean)
-    .filter(person => party ? searchNorm(person.party) === searchNorm(party.canonical) : textMatches(personSearchText(person),terms)) : [];
+    .filter(person => party ? searchNorm(person.party) === searchNorm(party.canonical) : textMatches(personSearchText(person),terms));
 
 
   const allPeople = rawQ ? listAllPoliticians().filter(p => {
@@ -651,7 +685,7 @@ export async function renderSearch(query = "") {
   }[label] || "관련 콘텐츠가 등록되면 이곳에 표시됩니다");
 
   const contentMarkup = contentGroups.map(g=>`<section class="content-card search-board-group"><div class="section-title"><h2>${esc(g.label)}</h2><span>${g.matches.length}건</span></div>${g.matches.length ? `<div class="board-list">${g.matches.slice(0,5).map(x=>`<article class="no-thumb"><a href="/${g.route}/${esc(x.id)}" data-route><span class="type">${esc(g.label)}</span><h2>${esc(x.title)}</h2><p>${esc(x.summary||x.body||"")}</p></a><small>${authorIdentity(x.author||"정참시", x.ownerId, searchAuthorProfiles)} · ${formatDate(x.createdAt)}</small></article>`).join("")}</div>${g.matches.length>5?`<div class="search-group-more"><button class="ghost-btn" type="button" data-go="/${g.route}?q=${encodeURIComponent(rawQ)}">관련 ${esc(g.label)} 전체보기 →</button></div>`:""}` : `<div class="search-empty-example"><b>아직 ‘${esc(rawQ)}’ 관련 ${esc(g.label)}가 없습니다.</b><p>향후 관련 콘텐츠가 등록되면 이 카테고리에 자동으로 표시됩니다</p><article><span>노출 예시</span><strong>${esc(exampleCopy(g.label))}</strong></article></div>`}</section>`).join("");
-  const evaluationMarkup = `<section class="content-card search-board-group"><div class="section-title"><h2>전국평가제</h2><span>${evaluationPeople.length}건</span></div>${evaluationPeople.length ? `<div class="search-evaluation-list">${evaluationPeople.slice(0,5).map(p=>`<button type="button" data-go="/national-evaluation">${personPhotoMarkup(p, "search-person-avatar", { size:72 })}<div><b>${esc(p.name)}</b><small>${esc(p.party)} · ${esc(p.jurisdiction)}</small></div><em>평가 보기 →</em></button>`).join("")}</div>` : `<div class="search-empty-example"><b>아직 ‘${esc(rawQ)}’ 관련 전국평가 데이터가 없습니다.</b><p>해당 정치인이 전국평가 대상으로 등록되면 이곳에 표시됩니다</p><article><span>노출 예시</span><strong>정치인 이름 · 긍정/보통/부정 평가 · 참여자 수</strong></article></div>`}</section>`;
+  const evaluationMarkup = `<section class="content-card search-board-group"><div class="section-title"><h2>정참시민 전국평가제</h2><span>${evaluationPeople.length}건</span></div>${evaluationPeople.length ? `<div class="search-evaluation-list">${evaluationPeople.slice(0,5).map(p=>`<button type="button" data-go="/national-evaluation">${personPhotoMarkup(p, "search-person-avatar", { size:72 })}<div><b>${esc(p.name)}</b><small>${esc(p.party)} · ${esc(p.jurisdiction)}</small></div><em>평가 보기 →</em></button>`).join("")}</div>` : `<div class="search-empty-example"><b>아직 ‘${esc(rawQ)}’ 관련 전국평가 데이터가 없습니다.</b><p>해당 정치인이 전국평가 대상으로 등록되면 이곳에 표시됩니다</p><article><span>노출 예시</span><strong>정치인 이름 · 긍정/보통/부정 평가 · 참여자 수</strong></article></div>`}</section>`;
 
   return pageShell(`<main class="subpage search-page"><section class="page-hero"><span class="eyebrow">SEARCH · INTEGRATED</span><h1>통합검색</h1><p>검색어: <b>${esc(rawQ || "—")}</b>${party ? ` · <span>${esc(partyLabel)}로 정규화해 검색했습니다</span>` : ""}</p></section>${peopleSection}${presidentSection}${contentMarkup}${rawQ ? evaluationMarkup : ""}${!rawQ ? `<section class="content-card"><div class="empty-state tall"><h2>검색어를 입력해 주세요</h2><p>정치인 이름·정당 별칭·지역·정책·게시글을 한 번에 검색할 수 있습니다</p></div></section>` : !hasResults ? `<section class="content-card"><div class="empty-state tall"><h2>검색 결과가 없습니다</h2><p>띄어쓰기와 정당 별칭도 함께 처리하지만 다른 검색어를 시도해 보세요</p></div></section>` : ""}</main>`);
 }

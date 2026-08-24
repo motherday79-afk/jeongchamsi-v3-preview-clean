@@ -160,7 +160,7 @@ export async function applyAcademy(slotId) {
 export function hasVotedPoll(pollId) { return !!activity.pollVotes?.[String(pollId || "")]; }
 export function hasGenerationVote(ageGroup) { return !!activity.generationVotes?.[String(ageGroup || "")]; }
 export function generationVoteFor(ageGroup) { return activity.generationVotes?.[String(ageGroup || "")] || ""; }
-export function hasNationalEvaluationVote(personId) { return !!activity.nationalEvaluationVotes?.[String(personId || "")]; }
+export function hasNationalEvaluationVote(evaluationId, legacyPersonId = "") { const votes = activity.nationalEvaluationVotes || {}; return !!votes[String(evaluationId || "")] || (!!legacyPersonId && !!votes[String(legacyPersonId)]); }
 
 export async function setRepresentativeBadge(badgeKey = "") {
   if (!session.authenticated) return { ok:false, requiresLogin:true };
