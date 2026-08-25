@@ -429,11 +429,34 @@ document.addEventListener("click", async event => {
   }
   const politicianPhotoHarvest = event.target.closest("[data-politician-photo-harvest]");
   if (politicianPhotoHarvest) {
-    if (!confirm("검증 가능한 정치인 사진을 자동수집해 정참시 자산으로 저장할까요? 이미 등록된 사진은 덮어쓰지 않습니다.")) return;
+    if (!confirm("미자산화 정치인을 Wikimedia + 국회·지자체 공식기관까지 2단계 자동수집할까요? 기존 정참시 자산은 덮어쓰지 않습니다.")) return;
     const stateEl = document.querySelector("[data-politician-photo-harvest-state]");
-    const r = await (await import("./views/admin.js")).harvestPoliticianPhotos(stateEl, politicianPhotoHarvest);
-    if (!r.ok) { if (stateEl) stateEl.textContent = `자동수집 중단 · ${r.error || "오류"}`; return; }
-    if (stateEl) stateEl.textContent = r.message || "자동수집 완료";
+    const photoTools = await import("./views/admin.js");
+    const stage2Runner = photoTools.discoverPoliticianPhotosStage2 || photoTools.harvestPoliticianPhotos;
+    const r = await stage2Runner(stateEl, politicianPhotoHarvest);
+    if (!r.ok) { if (stateEl) stateEl.textContent = `2단계 자동수집 중단 · ${r.error || "오류"}`; return; }
+    if (stateEl) stateEl.textContent = r.message || "2단계 자동수집 완료";
+    clearDomainCache("politicianPhotos");
+    await render(currentRoute(), { resetScroll:false });
+    return;
+  }
+  const politicianPhotoCandidate = event.target.closest("[data-politician-photo-candidate-apply]");
+  if (politicianPhotoCandidate) {
+    const id = politicianPhotoCandidate.dataset.politicianPhotoCandidateApply || "";
+    const candidateIndex = Number(politicianPhotoCandidate.dataset.candidateIndex || 0);
+    if (!confirm("이 공식기관 후보사진을 정참시 자산으로 적용할까요? 출처와 이용조건을 확인했다면 진행하세요.")) return;
+    const original = politicianPhotoCandidate.textContent;
+    politicianPhotoCandidate.disabled = true;
+    politicianPhotoCandidate.textContent = "적용 중...";
+    const stateEl = document.querySelector("[data-politician-photo-review-state]");
+    const r = await (await import("./views/admin.js")).applyPoliticianPhotoCandidate(id, candidateIndex);
+    if (!r.ok) {
+      politicianPhotoCandidate.disabled = false;
+      politicianPhotoCandidate.textContent = original;
+      if (stateEl) stateEl.textContent = `후보 적용 실패 · ${r.error || "오류"}`;
+      return;
+    }
+    if (stateEl) stateEl.textContent = "후보사진 자산화 완료";
     clearDomainCache("politicianPhotos");
     await render(currentRoute(), { resetScroll:false });
     return;
