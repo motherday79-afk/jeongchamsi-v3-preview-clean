@@ -8,6 +8,7 @@ const { requireAdmin } = require("../../../lib/v3/access");
 const { blobToken } = require("../../../lib/v3/blob");
 const { sanitize } = require("../../../lib/v3/schema");
 const { mergePoliticianPhotoAssets } = require("../lib/politician-photo-assets");
+const { assetizeAssemblyPerson } = require("../lib/politician-photo-assembly-assetizer");
 
 const ALLOWED_WIDTHS = new Set([64,96,128,160,256,384]);
 const MAX_ASSET_BYTES = 128 * 1024;
@@ -20,6 +21,7 @@ const AUTO_VARIANT_PLANS = [
   { mini:80, card:144, profile:256 }
 ];
 const PHOTO_TARGETS = ROSTER.filter((person) => person?.id && person.id !== "assembly-300");
+const ASSEMBLY_PHOTO_TARGETS = ROSTER.filter((person) => person?.type === "assembly" && person?.id && person.id !== "assembly-300");
 const TARGET_BY_ID = new Map(PHOTO_TARGETS.map(person => [person.id,person]));
 
 const manualCache = globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__ || { at:0, items:new Map() };
@@ -195,6 +197,37 @@ async function harvestBatch(req,res) {
   const nextCursor=Math.min(PHOTO_TARGETS.length,cursor + batch.length);
   const summary=results.reduce((acc,item)=>{acc[item.status]=(acc[item.status] || 0)+1; return acc;},{});
   return res.status(200).json({ok:true,cursor,nextCursor,total:PHOTO_TARGETS.length,done:nextCursor >= PHOTO_TARGETS.length,summary,results});
+}
+
+async function assetizeAssemblyBatch(req,res) {
+  const admin=await requireAdmin(req);
+  if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
+  const token=blobToken();
+  if (!token) return res.status(503).json({ok:false,error:"BLOB_STORAGE_NOT_CONFIGURED"});
+  const cursor=Math.max(0,Math.min(ASSEMBLY_PHOTO_TARGETS.length,Math.floor(Number(req.body?.cursor || 0))));
+  const limit=Math.max(1,Math.min(2,Math.floor(Number(req.body?.limit || 1))));
+  const batch=ASSEMBLY_PHOTO_TARGETS.slice(cursor,cursor + limit);
+  const known=await getPhotoAssets();
+  const existing=new Set((known.items || []).map(item=>String(item?.id || '')));
+  const results=[];
+  for (const person of batch) {
+    if (existing.has(person.id)) {
+      results.push({id:person.id,name:person.name,status:"existing"});
+      continue;
+    }
+    try {
+      const result=await assetizeAssemblyPerson(person,token);
+      if (result?.status === 'assetized' || result?.status === 'existing') existing.add(person.id);
+      results.push({id:person.id,name:person.name,status:String(result?.status || 'unresolved')});
+    } catch (error) {
+      console.warn('[JCV3_ASSEMBLY_PHOTO_ASSETIZE]',person.id,error?.message || error);
+      results.push({id:person.id,name:person.name,status:'failed',error:String(error?.message || 'ASSEMBLY_ASSETIZE_FAILED')});
+    }
+  }
+  manualCache.at=0;
+  const nextCursor=Math.min(ASSEMBLY_PHOTO_TARGETS.length,cursor + batch.length);
+  const summary=results.reduce((acc,item)=>{acc[item.status]=(acc[item.status] || 0)+1;return acc;},{});
+  return res.status(200).json({ok:true,cursor,nextCursor,total:ASSEMBLY_PHOTO_TARGETS.length,done:nextCursor >= ASSEMBLY_PHOTO_TARGETS.length,summary,results});
 }
 
 async function discoverBatch(req,res) {
@@ -426,6 +459,7 @@ module.exports = async function politicianPhotoRoute(req,res) {
     res.setHeader("Content-Type","application/json; charset=utf-8");
     res.setHeader("Cache-Control","no-store");
     const action=String(req.body?.action || "");
+    if (action === "assetize-assembly-batch") return assetizeAssemblyBatch(req,res);
     if (action === "harvest-batch") return harvestBatch(req,res);
     if (action === "discover-batch") return discoverBatch(req,res);
     if (action === "direct-discover-batch") return directDiscoverBatch(req,res);
