@@ -1241,6 +1241,223 @@
       ],
       "assetizedAt": "2026-08-26T03:42:33+09:00",
       "updatedAt": "2026-08-26T03:42:33+09:00"
+    },
+    {
+      "id": "basic-058",
+      "variants": {
+        "mini": "/assets/politicians/basic-058-mini.webp",
+        "card": "/assets/politicians/basic-058-card.webp",
+        "profile": "/assets/politicians/basic-058-profile.webp"
+      },
+      "bytes": {
+        "mini": 1460,
+        "card": 2498,
+        "profile": 6898,
+        "total": 10856
+      },
+      "original": {
+        "width": 173,
+        "height": 216,
+        "size": 6714
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:김보라(1).jpg",
+      "sourceUrl": "user-upload:김보라(1).jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 김보라 기초단체장 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:59:16+09:00",
+      "updatedAt": "2026-08-26T03:59:16+09:00"
+    },
+    {
+      "id": "basic-038",
+      "variants": {
+        "mini": "/assets/politicians/basic-038-mini.webp",
+        "card": "/assets/politicians/basic-038-card.webp",
+        "profile": "/assets/politicians/basic-038-profile.webp"
+      },
+      "bytes": {
+        "mini": 1368,
+        "card": 2492,
+        "profile": 6700,
+        "total": 10560
+      },
+      "original": {
+        "width": 173,
+        "height": 216,
+        "size": 8659
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:신상진(1).jpg",
+      "sourceUrl": "user-upload:신상진(1).jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 신상진 기초단체장 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:59:16+09:00",
+      "updatedAt": "2026-08-26T03:59:16+09:00"
+    },
+    {
+      "id": "basic-102",
+      "variants": {
+        "mini": "/assets/politicians/basic-102-mini.webp",
+        "card": "/assets/politicians/basic-102-card.webp",
+        "profile": "/assets/politicians/basic-102-profile.webp"
+      },
+      "bytes": {
+        "mini": 1710,
+        "card": 2790,
+        "profile": 7192,
+        "total": 11692
+      },
+      "original": {
+        "width": 173,
+        "height": 216,
+        "size": 8946
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:장기수(1).jpg",
+      "sourceUrl": "user-upload:장기수(1).jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 장기수 기초단체장 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:59:16+09:00",
+      "updatedAt": "2026-08-26T03:59:16+09:00"
+    },
+    {
+      "id": "basic-039",
+      "variants": {
+        "mini": "/assets/politicians/basic-039-mini.webp",
+        "card": "/assets/politicians/basic-039-card.webp",
+        "profile": "/assets/politicians/basic-039-profile.webp"
+      },
+      "bytes": {
+        "mini": 1782,
+        "card": 3166,
+        "profile": 7642,
+        "total": 12590
+      },
+      "original": {
+        "width": 173,
+        "height": 216,
+        "size": 10218
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:김원기(1).jpg",
+      "sourceUrl": "user-upload:김원기(1).jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 김원기 기초단체장 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:59:16+09:00",
+      "updatedAt": "2026-08-26T03:59:16+09:00"
+    },
+    {
+      "id": "basic-107",
+      "variants": {
+        "mini": "/assets/politicians/basic-107-mini.webp",
+        "card": "/assets/politicians/basic-107-card.webp",
+        "profile": "/assets/politicians/basic-107-profile.webp"
+      },
+      "bytes": {
+        "mini": 2120,
+        "card": 4038,
+        "profile": 10314,
+        "total": 16472
+      },
+      "original": {
+        "width": 173,
+        "height": 216,
+        "size": 14041
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:백성현(1).jpg",
+      "sourceUrl": "user-upload:백성현(1).jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 백성현 기초단체장 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:59:16+09:00",
+      "updatedAt": "2026-08-26T03:59:16+09:00"
+    },
+    {
+      "id": "basic-105",
+      "variants": {
+        "mini": "/assets/politicians/basic-105-mini.webp",
+        "card": "/assets/politicians/basic-105-card.webp",
+        "profile": "/assets/politicians/basic-105-profile.webp"
+      },
+      "bytes": {
+        "mini": 1768,
+        "card": 3148,
+        "profile": 8082,
+        "total": 12998
+      },
+      "original": {
+        "width": 173,
+        "height": 216,
+        "size": 12593
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:오세현(1).jpg",
+      "sourceUrl": "user-upload:오세현(1).jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 오세현 기초단체장 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:59:16+09:00",
+      "updatedAt": "2026-08-26T03:59:16+09:00"
+    },
+    {
+      "id": "basic-059",
+      "variants": {
+        "mini": "/assets/politicians/basic-059-mini.webp",
+        "card": "/assets/politicians/basic-059-card.webp",
+        "profile": "/assets/politicians/basic-059-profile.webp"
+      },
+      "bytes": {
+        "mini": 2160,
+        "card": 3528,
+        "profile": 9086,
+        "total": 14774
+      },
+      "original": {
+        "width": 173,
+        "height": 216,
+        "size": 10862
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:이기형(1).jpg",
+      "sourceUrl": "user-upload:이기형(1).jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 이기형 기초단체장 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:59:16+09:00",
+      "updatedAt": "2026-08-26T03:59:16+09:00"
     }
   ]
 }
