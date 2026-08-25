@@ -77,7 +77,6 @@ body{background:#f4f6f7;color:var(--ps-ink)}
 
 #poll{background:var(--jc-red-soft);border-color:#f1d7da}
 #poll .poll-status{color:#c63d49}
-#poll .poll-question p{color:#806d70}
 #poll .poll-options em{background:var(--jc-red)}
 #poll .poll-options b{color:#c63d49}
 
@@ -96,7 +95,6 @@ body{background:#f4f6f7;color:var(--ps-ink)}
 #generation-president .module-desc{color:#7b6c6f}
 #generation-president .more-btn{color:#b83d48}
 #generation-president .generation-intro{background:#e96570;color:#fff}
-#generation-president .generation-intro p{color:#fff1f2}
 #generation-president .generation-intro button{background:#fff;color:#b83d48}
 #generation-president .generation-card{background:#fff;border-color:#efd9dc;color:var(--ps-ink)}
 #generation-president .generation-card.focus{background:#ffe7ea;border-color:#e9aeb5}
@@ -354,7 +352,6 @@ a,.more-btn{--jc-link:#087f74}
   border:1px solid #eadfe1;
   box-shadow:inset 4px 0 0 #e65a66;
 }
-#generation-president .generation-intro p{color:#70797e}
 #generation-president .generation-intro button{background:#e65a66;color:#fff}
 #generation-president .generation-card,
 #generation-president .generation-card.focus{
@@ -394,7 +391,6 @@ a,.more-btn{--jc-link:#087f74}
   border:1px solid #eee2d5;
   box-shadow:inset 4px 0 0 var(--jc-orange);
 }
-#academy .academy-intro p{color:#70797e}
 #academy .academy-intro button{background:var(--jc-orange);color:#fff}
 #academy .academy-mark{color:#c87627}
 
@@ -550,7 +546,6 @@ a,.more-btn{--jc-link:#087f74}
   background:#fff;
   border-color:#e5e9ec;
 }
-#poll .poll-question p{color:#6f787d}
 #poll .poll-vote-panel{
   background:transparent;
   padding:0;
@@ -590,7 +585,6 @@ a,.more-btn{--jc-link:#087f74}
   background:#eef6f3;
   color:#087f74;
 }
-#generation-president .generation-intro p{color:#6f787d}
 #generation-president .generation-intro button{
   background:var(--ps-blue);
   color:#fff;
