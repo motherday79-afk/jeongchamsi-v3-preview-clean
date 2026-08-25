@@ -1,6 +1,6 @@
 {
-  "version": "local-seed-32-20260826",
-  "updatedAt": "2026-08-26T03:04:07+09:00",
+  "version": "local-seed-21-20260826",
+  "updatedAt": "2026-08-26T01:46:00+09:00",
   "items": [
     {
       "id": "assembly-127",
@@ -681,8 +681,8 @@
         "윤용근 · 국민의힘 · 충남 공주시부여군청양군 인물명/정당/선거구 교차확인",
         "정참시 국회의원 지정 사진 자산"
       ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
+      "assetizedAt": "2026-08-26T03:10:00+09:00",
+      "updatedAt": "2026-08-26T03:10:00+09:00"
     },
     {
       "id": "assembly-027",
@@ -712,8 +712,8 @@
         "이진숙 · 국민의힘 · 대구 달성군 인물명/정당/선거구 교차확인",
         "정참시 국회의원 지정 사진 자산"
       ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
+      "assetizedAt": "2026-08-26T03:10:00+09:00",
+      "updatedAt": "2026-08-26T03:10:00+09:00"
     },
     {
       "id": "assembly-126",
@@ -743,8 +743,8 @@
         "박용갑 · 더불어민주당 · 대전 중구 인물명/정당/선거구 교차확인",
         "정참시 국회의원 지정 사진 자산"
       ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
+      "assetizedAt": "2026-08-26T03:10:00+09:00",
+      "updatedAt": "2026-08-26T03:10:00+09:00"
     },
     {
       "id": "assembly-189",
@@ -774,8 +774,8 @@
         "박정하 · 국민의힘 · 강원 원주시갑 인물명/정당/선거구 교차확인",
         "정참시 국회의원 지정 사진 자산"
       ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
+      "assetizedAt": "2026-08-26T03:10:00+09:00",
+      "updatedAt": "2026-08-26T03:10:00+09:00"
     },
     {
       "id": "assembly-155",
@@ -805,194 +805,8 @@
         "김현정 · 더불어민주당 · 경기 평택시병 인물명/정당/선거구 교차확인",
         "정참시 국회의원 지정 사진 자산"
       ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
-    },
-    {
-      "id": "assembly-101",
-      "variants": {
-        "mini": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/47.jpg",
-        "card": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/47.jpg",
-        "profile": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/47.jpg"
-      },
-      "bytes": {
-        "mini": 0,
-        "card": 0,
-        "profile": 0,
-        "total": 0
-      },
-      "original": {
-        "width": 0,
-        "height": 0,
-        "size": 0
-      },
-      "focus": "50% 28%",
-      "sourceType": "seed-external",
-      "verified": true,
-      "sourcePage": "https://tokpyo.com/assembly/47",
-      "sourceUrl": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/47.jpg",
-      "matchScore": 100,
-      "verification": [
-        "김승수 · 국민의힘 · 대구 북구을 인물명/정당/선거구 교차확인",
-        "정참시 국회의원 지정 사진 자산"
-      ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
-    },
-    {
-      "id": "assembly-147",
-      "variants": {
-        "mini": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/90.jpg",
-        "card": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/90.jpg",
-        "profile": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/90.jpg"
-      },
-      "bytes": {
-        "mini": 0,
-        "card": 0,
-        "profile": 0,
-        "total": 0
-      },
-      "original": {
-        "width": 0,
-        "height": 0,
-        "size": 0
-      },
-      "focus": "50% 28%",
-      "sourceType": "seed-external",
-      "verified": true,
-      "sourcePage": "https://tokpyo.com/assembly/90",
-      "sourceUrl": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/90.jpg",
-      "matchScore": 100,
-      "verification": [
-        "민병덕 · 더불어민주당 · 경기 안양시동안구갑 인물명/정당/선거구 교차확인",
-        "정참시 국회의원 지정 사진 자산"
-      ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
-    },
-    {
-      "id": "assembly-176",
-      "variants": {
-        "mini": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/146.jpg",
-        "card": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/146.jpg",
-        "profile": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/146.jpg"
-      },
-      "bytes": {
-        "mini": 0,
-        "card": 0,
-        "profile": 0,
-        "total": 0
-      },
-      "original": {
-        "width": 0,
-        "height": 0,
-        "size": 0
-      },
-      "focus": "50% 28%",
-      "sourceType": "seed-external",
-      "verified": true,
-      "sourcePage": "https://tokpyo.com/assembly/146",
-      "sourceUrl": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/146.jpg",
-      "matchScore": 100,
-      "verification": [
-        "송석준 · 국민의힘 · 경기 이천시 인물명/정당/선거구 교차확인",
-        "정참시 국회의원 지정 사진 자산"
-      ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
-    },
-    {
-      "id": "assembly-225",
-      "variants": {
-        "mini": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/135.jpg",
-        "card": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/135.jpg",
-        "profile": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/135.jpg"
-      },
-      "bytes": {
-        "mini": 0,
-        "card": 0,
-        "profile": 0,
-        "total": 0
-      },
-      "original": {
-        "width": 0,
-        "height": 0,
-        "size": 0
-      },
-      "focus": "50% 28%",
-      "sourceType": "seed-external",
-      "verified": true,
-      "sourcePage": "https://tokpyo.com/assembly/135",
-      "sourceUrl": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/135.jpg",
-      "matchScore": 100,
-      "verification": [
-        "서삼석 · 더불어민주당 · 전남 영암군무안군신안군 인물명/정당/선거구 교차확인",
-        "정참시 국회의원 지정 사진 자산"
-      ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
-    },
-    {
-      "id": "assembly-296",
-      "variants": {
-        "mini": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/138.jpg",
-        "card": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/138.jpg",
-        "profile": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/138.jpg"
-      },
-      "bytes": {
-        "mini": 0,
-        "card": 0,
-        "profile": 0,
-        "total": 0
-      },
-      "original": {
-        "width": 0,
-        "height": 0,
-        "size": 0
-      },
-      "focus": "50% 28%",
-      "sourceType": "seed-external",
-      "verified": true,
-      "sourcePage": "https://tokpyo.com/assembly/138",
-      "sourceUrl": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/138.jpg",
-      "matchScore": 100,
-      "verification": [
-        "서왕진 · 조국혁신당 · 비례대표 인물명/정당/선거구 교차확인",
-        "정참시 국회의원 지정 사진 자산"
-      ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
-    },
-    {
-      "id": "assembly-063",
-      "variants": {
-        "mini": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/51.jpg",
-        "card": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/51.jpg",
-        "profile": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/51.jpg"
-      },
-      "bytes": {
-        "mini": 0,
-        "card": 0,
-        "profile": 0,
-        "total": 0
-      },
-      "original": {
-        "width": 0,
-        "height": 0,
-        "size": 0
-      },
-      "focus": "50% 28%",
-      "sourceType": "seed-external",
-      "verified": true,
-      "sourcePage": "https://tokpyo.com/assembly/51",
-      "sourceUrl": "https://d3fasyv1e4u2pt.cloudfront.net/aff-img/51.jpg",
-      "matchScore": 100,
-      "verification": [
-        "김영호 · 더불어민주당 · 서울 서대문구을 인물명/정당/선거구 교차확인",
-        "정참시 국회의원 지정 사진 자산"
-      ],
-      "assetizedAt": "2026-08-26T03:04:07+09:00",
-      "updatedAt": "2026-08-26T03:04:07+09:00"
+      "assetizedAt": "2026-08-26T03:10:00+09:00",
+      "updatedAt": "2026-08-26T03:10:00+09:00"
     }
   ]
 }
