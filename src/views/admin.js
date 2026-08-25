@@ -126,7 +126,8 @@ async function fetchPoliticianPhotoReviewStatus() {
 }
 function photoReviewCandidateCard(item, candidate, index) {
   const preview = `/api/v3/politician-photo?reviewImage=${encodeURIComponent(item.id)}&candidate=${index}`;
-  return `<article class="politician-photo-candidate"><div class="politician-photo-candidate-image"><img src="${preview}" alt="${esc(item.name)} 후보사진 ${index + 1}" loading="lazy" decoding="async"></div><div class="politician-photo-candidate-copy"><b>후보 ${index + 1}</b><span>${esc(candidate.provider || "공식기관")}</span><p>${esc(candidate.verification?.join(" · ") || "공식기관 페이지 신원 문맥 확인")}</p><small>${esc(candidate.licenseHint || "이미지 이용조건 확인 필요")}</small><div class="politician-photo-candidate-actions"><a class="ghost-btn" href="${esc(candidate.sourcePage || "#")}" target="_blank" rel="noopener noreferrer">출처 확인</a><button class="primary-btn" type="button" data-politician-photo-candidate-apply="${esc(item.id)}" data-candidate-index="${index}">이 사진 적용</button></div></div></article>`;
+  const confidence = candidate.confidence === "visual-review" ? "육안확인" : "강한검증";
+  return `<article class="politician-photo-candidate"><div class="politician-photo-candidate-image"><img src="${preview}" alt="${esc(item.name)} 후보사진 ${index + 1}" loading="lazy" decoding="async"></div><div class="politician-photo-candidate-copy"><div class="politician-photo-candidate-title"><b>후보 ${index + 1}</b><em class="${candidate.confidence === "visual-review" ? "is-visual" : "is-strong"}">${confidence}</em></div><span>${esc(candidate.provider || "공식기관")}</span><p>${esc(candidate.verification?.join(" · ") || "공식기관 페이지 신원 문맥 확인")}</p><small>${esc(candidate.licenseHint || "이미지 이용조건 확인 필요")}</small><div class="politician-photo-candidate-actions"><a class="ghost-btn" href="${esc(candidate.sourcePage || "#")}" target="_blank" rel="noopener noreferrer">출처 확인</a><button class="primary-btn" type="button" data-politician-photo-candidate-apply="${esc(item.id)}" data-candidate-index="${index}">이 사진 적용</button></div></div></article>`;
 }
 async function peoplePanel() {
   const [{ PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS }, provider] = await Promise.all([import("../data/person-meta.js"), import("../data/person-provider.js")]);
@@ -141,10 +142,15 @@ async function peoplePanel() {
   const summary = review?.summary || {};
   const candidateImages = Number(summary.candidateImages || 0);
   const reviewRequired = Number(summary.reviewRequired || 0);
-  const noCandidate = Number(summary.noCandidate || 0);
+  const strongCandidates = Number(summary.strongCandidates || 0);
+  const visualReviewCandidates = Number(summary.visualReviewCandidates || 0);
+  const directNoCandidate = Number(summary.directNoCandidate || 0);
+  const noCandidate = directNoCandidate || Number(summary.noCandidate || 0);
   const identityRejected = Number(summary.identityRejected || 0);
-  const collectionErrors = Number(summary.sourceFetchFailed || 0) + Number(summary.imageFetchFailed || 0) + Number(summary.imageTooLarge || 0) + Number(summary.blobFailed || 0);
+  const collectionErrors = Number(summary.sourceFetchFailed || 0) + Number(summary.sourceNotConfigured || 0) + Number(summary.imageFetchFailed || 0) + Number(summary.imageTooLarge || 0) + Number(summary.blobFailed || 0);
   const unchecked = Number(summary.unchecked ?? Math.max(0,targetCount-assets.size-reviewRequired-noCandidate-identityRejected-collectionErrors));
+  const stage3Unchecked = Number(summary.stage3Unchecked ?? Math.max(0,targetCount-assets.size));
+  const naverConfigured = Boolean(summary.naverConfigured);
   const selectedId = params().person && people.some(x => x.id === params().person) ? params().person : (people[0]?.id || "");
   const person = people.find(x => x.id === selectedId) || null;
   const record = assets.get(selectedId) || null;
@@ -152,15 +158,15 @@ async function peoplePanel() {
   const options = people.map(x => `<option value="${esc(x.id)}" ${x.id === selectedId ? "selected" : ""}>${esc(x.name)} · ${esc(politicianTypeName(x.type))} · ${esc(x.party || "")} · ${esc(x.jurisdiction || x.region || "")}</option>`).join("");
   const sourceType = String(record?.sourceType || "manual");
   const recordType = sourceType === "auto-wikimedia" ? "Wikimedia 자동확정 · 정참시 자산" : sourceType === "auto-official-review" ? "공식후보 승인 · 정참시 자산" : "수기등록 · 정참시 자산";
-  const stored = record ? `${recordType} · ${photoKb(record.bytes?.total)} · ${record.updatedAt ? String(record.updatedAt).slice(0,16).replace("T"," ") : "등록됨"}` : "미자산화 · 2단계 자동수집 또는 수기등록 대상";
+  const stored = record ? `${recordType} · ${photoKb(record.bytes?.total)} · ${record.updatedAt ? String(record.updatedAt).slice(0,16).replace("T"," ") : "등록됨"}` : "미자산화 · 3단계 직접소스 수집 또는 수기등록 대상";
   const resetLabel = sourceType === "auto-wikimedia" || sourceType === "auto-official-review" ? "자동 자산 삭제 · 재수집 가능" : "수기사진 삭제 · 자동사진 복귀";
   const reviewItems = Array.isArray(review?.items) ? review.items : [];
-  const reviewInbox = `<section class="politician-photo-review"><div class="section-title"><div><h3>후보 검수함</h3><span>공식기관에서 신원 문맥이 확인된 사진만 표시 · 적용 전 출처와 이용조건을 확인하세요</span></div><b>${reviewRequired}명 · ${candidateImages}장</b></div>${reviewItems.length ? `<div class="politician-photo-review-list">${reviewItems.map(item => `<article class="politician-photo-review-person"><div class="politician-photo-review-person-head"><div><span>${esc(politicianTypeName(item.type))}</span><h4>${esc(item.name)}</h4><p>${esc(item.party || "")} · ${esc(item.jurisdiction || "")}</p></div><em>검토 필요</em></div><div class="politician-photo-review-candidates">${(item.candidates || []).map((candidate,index)=>photoReviewCandidateCard(item,candidate,index)).join("")}</div></article>`).join("")}</div>` : `<div class="empty-inline">현재 검토 대기 중인 공식 사진 후보가 없습니다.</div>`}<span class="save-state" data-politician-photo-review-state></span></section>`;
+  const reviewInbox = `<section class="politician-photo-review"><div class="section-title"><div><h3>후보 검수함</h3><span>강한검증은 공식페이지 신원 문맥 확인 · 육안확인은 공식기관 이미지 호스트 후보이므로 적용 전 얼굴·출처·이용조건을 직접 확인하세요</span></div><b>${reviewRequired}명 · ${candidateImages}장</b></div>${reviewItems.length ? `<div class="politician-photo-review-list">${reviewItems.map(item => `<article class="politician-photo-review-person"><div class="politician-photo-review-person-head"><div><span>${esc(politicianTypeName(item.type))}</span><h4>${esc(item.name)}</h4><p>${esc(item.party || "")} · ${esc(item.jurisdiction || "")}</p></div><em>검토 필요</em></div><div class="politician-photo-review-candidates">${(item.candidates || []).map((candidate,index)=>photoReviewCandidateCard(item,candidate,index)).join("")}</div></article>`).join("")}</div>` : `<div class="empty-inline">현재 검토 대기 중인 직접소스 사진 후보가 없습니다.</div>`}<span class="save-state" data-politician-photo-review-state></span></section>`;
   return `<section class="admin-panel politician-photo-admin">
     <div class="admin-panel-head"><div><h2>인물 관리 · 정치인 사진</h2><span class="status-pill"><b>PHOTO ASSETS</b>${assets.size}명 정참시 자산</span></div></div>
     <div class="people-admin-grid"><article><b>국회의원</b><strong>${PERSON_COUNTS.assembly} / 300</strong><span>텍스트 연결</span></article><article><b>광역단체장</b><strong>${PERSON_COUNTS.metropolitan} / 16</strong><span>텍스트 연결</span></article><article><b>기초단체장</b><strong>${PERSON_COUNTS.basic} / 227</strong><span>텍스트 연결</span></article><article><b>인물 공급자</b><strong>${PERSON_PROVIDER_STATUS}</strong><span>앱 내부 Seed</span></article><article><b>사진 공급자</b><strong>${PHOTO_PROVIDER_STATUS}</strong><span>Wikimedia + 공식기관 + 정참시 Blob</span></article><article><b>정참시 자산</b><strong>${assets.size} / ${targetCount}</strong><span>자동 ${autoCount} · 수기 ${manualCount}</span></article></div>
-    <div class="politician-photo-stage2-stats"><article><b>정참시 자산</b><strong>${assets.size}</strong><span>${targetCount}명 중 자산화</span></article><article><b>후보발견</b><strong>${candidateImages}</strong><span>검토필요 ${reviewRequired}명</span></article><article><b>신원불일치</b><strong>${identityRejected}</strong><span>동명이인·문맥 탈락</span></article><article><b>사진없음</b><strong>${noCandidate}</strong><span>공식 후보 미발견</span></article><article><b>수집오류</b><strong>${collectionErrors}</strong><span>네트워크·이미지·Blob</span></article><article><b>미확인</b><strong>${unchecked}</strong><span>2단계 수집 대기</span></article></div>
-    <div class="politician-photo-harvest"><div><b>사진 수집 2단계 · 공식기관 확장</b><p>기존 Wikimedia 엄격 검증 뒤 국회·지자체 공식 페이지까지 탐색합니다. 기존 정참시 자산은 절대 덮어쓰지 않고, 자동확정이 어려운 사진은 후보 검수함으로 보냅니다.</p></div><button class="primary-btn" type="button" data-politician-photo-harvest>2단계 자동수집 시작</button><span data-politician-photo-harvest-state>정참시 자산 ${assets.size}/${targetCount} · 후보 ${reviewRequired}명 · 미확인 ${unchecked}명</span></div>
+    <div class="politician-photo-stage2-stats"><article><b>정참시 자산</b><strong>${assets.size}</strong><span>${targetCount}명 중 자산화</span></article><article><b>직접소스 후보</b><strong>${candidateImages}</strong><span>검토필요 ${reviewRequired}명</span></article><article><b>강한검증</b><strong>${strongCandidates}</strong><span>공식페이지 신원확인</span></article><article><b>육안확인</b><strong>${visualReviewCandidates}</strong><span>공식호스트 이미지 후보</span></article><article><b>미발견</b><strong>${noCandidate}</strong><span>직접소스 후보 없음</span></article><article><b>수집오류</b><strong>${collectionErrors}</strong><span>검색·페이지·이미지</span></article></div>
+    <div class="politician-photo-harvest"><div><b>사진 수집 3단계 · 직접소스 공략</b><p>국회의원은 국회 공식페이지, 광역·기초단체장은 열린시장실·도지사실·군수실·구청장실을 직접 탐색합니다. 공식페이지의 프로필·약력 링크를 한 단계 더 따라가고, 마지막에는 NAVER 이미지 검색에서 공식기관 호스트 후보까지 검수함으로 가져옵니다.</p></div><button class="primary-btn" type="button" data-politician-photo-harvest>3단계 직접소스 수집 시작</button><span data-politician-photo-harvest-state>NAVER WEB/IMAGE ${naverConfigured ? "OK" : "연결확인"} · 정참시 자산 ${assets.size}/${targetCount} · 후보 ${reviewRequired}명 · 3단계 미확인 ${stage3Unchecked}명</span></div>
     ${reviewInbox}
     <div class="politician-photo-picker"><label>정치인 찾기<input type="search" placeholder="이름 · 정당 · 지역 검색" data-person-select-filter="#politician-photo-person-select"></label><label>정치인 선택<select id="politician-photo-person-select" data-politician-photo-select>${options}</select></label></div>
     ${person ? `<div class="politician-photo-workspace">
@@ -673,6 +679,40 @@ export async function discoverPoliticianPhotosStage2(stateEl = null, buttonEl = 
     return {ok:true,cursor,total,counts,message:`2단계 완료 · 신규 자산 ${counts.assetized}명 · 후보발견 ${counts["candidate-review"]}명 · 사진없음 ${counts["no-candidate"]}명 · 신원불일치 ${counts["identity-rejected"]}명`};
   } catch (error) {
     return {ok:false,error:error?.message || "PHOTO_STAGE2_FAILED",cursor,counts};
+  } finally { if (buttonEl) buttonEl.disabled = false; }
+}
+
+export async function discoverPoliticianPhotosStage3(stateEl = null, buttonEl = null) {
+  let cursor = 0;
+  let total = 542;
+  const counts = { existing:0, "candidate-review":0, "direct-no-candidate":0, "source-fetch-failed":0, "source-not-configured":0, strong:0, visualReview:0 };
+  const label = () => `3단계 ${Math.min(cursor,total)}/${total} · 후보 ${counts["candidate-review"]}명 · 강한검증 ${counts.strong}장 · 육안확인 ${counts.visualReview}장 · 미발견 ${counts["direct-no-candidate"]}명 · 오류 ${counts["source-fetch-failed"] + counts["source-not-configured"]}`;
+  if (buttonEl) buttonEl.disabled = true;
+  if (stateEl) stateEl.textContent = "3단계 직접소스 수집 준비 중";
+  try {
+    while (cursor < total) {
+      const r = await fetch("/api/v3/politician-photo", {
+        method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json",Accept:"application/json"},
+        body:JSON.stringify({action:"direct-discover-batch",cursor,limit:1})
+      });
+      const b = await r.json().catch(()=>({}));
+      if (!r.ok || !b.ok) return {ok:false,error:b.error || `PHOTO_STAGE3_${r.status}`,cursor,counts};
+      total = Number(b.total || total);
+      for (const [key,value] of Object.entries(b.summary || {})) counts[key] = Number(counts[key] || 0) + Number(value || 0);
+      for (const item of b.results || []) {
+        counts.strong += Number(item.strong || 0);
+        counts.visualReview += Number(item.visualReview || 0);
+      }
+      const next = Number(b.nextCursor);
+      if (!Number.isFinite(next) || next <= cursor) return {ok:false,error:"PHOTO_STAGE3_CURSOR_STALLED",cursor,counts};
+      cursor = next;
+      if (stateEl) stateEl.textContent = label();
+      if (b.done) break;
+      await new Promise(resolve => setTimeout(resolve, 35));
+    }
+    return {ok:true,cursor,total,counts,message:`3단계 완료 · 후보 ${counts["candidate-review"]}명 · 강한검증 ${counts.strong}장 · 육안확인 ${counts.visualReview}장 · 미발견 ${counts["direct-no-candidate"]}명`};
+  } catch (error) {
+    return {ok:false,error:error?.message || "PHOTO_STAGE3_FAILED",cursor,counts};
   } finally { if (buttonEl) buttonEl.disabled = false; }
 }
 

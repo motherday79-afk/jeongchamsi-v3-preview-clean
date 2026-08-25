@@ -63,15 +63,15 @@ test('photo route exposes stage2 discovery, review status and candidate approval
   assert.match(route, /if \(existing\.has\(person\.id\)\)/);
 });
 
-test('admin exposes stage2 failure buckets and a candidate review inbox with apply buttons', () => {
+test('candidate review inbox remains available after stage3 replaces the visible stage2 launcher', () => {
   const admin = read('src/views/admin.js');
   const app = read('src/app.js');
-  assert.match(admin, /2단계 자동수집 시작/);
-  assert.match(admin, /후보발견/);
-  assert.match(admin, /신원불일치/);
+  assert.match(admin, /사진 수집 3단계/);
+  assert.match(admin, /직접소스 후보/);
+  assert.match(admin, /미발견/);
   assert.match(admin, /후보 검수함/);
   assert.match(admin, /data-politician-photo-candidate-apply/);
-  assert.match(admin, /discoverPoliticianPhotosStage2/);
+  assert.match(admin, /discoverPoliticianPhotosStage3/);
   assert.match(app, /data-politician-photo-candidate-apply/);
   assert.match(app, /applyPoliticianPhotoCandidate/);
 });
@@ -89,12 +89,9 @@ test('stage2 official-review assets survive politician photo schema sanitization
   assert.match(schema, /auto-official-review/);
 });
 
-test('stage2 build markers identify 0.36.67 photo collection build', () => {
-  const pkg = JSON.parse(read('package.json'));
-  const version = read('src/version.js');
-  const index = read('index.html');
-  assert.equal(pkg.version, '3.0.0-alpha6.0.36.67');
-  assert.match(version, /v3\.0\.0-alpha6\.0\.36\.67/);
-  assert.match(version, /POLITICIAN PHOTO COLLECTION STAGE 2/);
-  assert.match(index, /alpha6\.0\.36\.67-photo-stage2/);
+test('stage2 discovery remains available as a compatibility path after stage3', () => {
+  const route = read('server/v3/routes/politician-photo.js');
+  const admin = read('src/views/admin.js');
+  assert.match(route, /action\s*===\s*"discover-batch"/);
+  assert.match(admin, /discoverPoliticianPhotosStage2/);
 });

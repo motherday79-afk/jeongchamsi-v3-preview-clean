@@ -46,11 +46,11 @@ test('existing photo assets are locked out of automatic replacement and manual s
   assert.match(schema, /verified/);
 });
 
-test('people admin exposes automatic collection progress and app wires the action', () => {
+test('people admin exposes current photo collection progress and app wires the active stage3 action', () => {
   assert.match(admin, /data-politician-photo-harvest/);
-  assert.match(admin, /자동수집 시작/);
+  assert.match(admin, /3단계 직접소스 수집 시작/);
   assert.match(admin, /정참시 자산/);
-  assert.match(admin, /harvestPoliticianPhotos/);
+  assert.match(admin, /discoverPoliticianPhotosStage3/);
   assert.match(app, /data-politician-photo-harvest/);
-  assert.match(app, /harvestPoliticianPhotos/);
+  assert.match(app, /discoverPoliticianPhotosStage3/);
 });

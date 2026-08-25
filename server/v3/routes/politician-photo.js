@@ -1,7 +1,8 @@
 const { put, del } = require("@vercel/blob");
 const ROSTER = require("../data/politician-photo-roster.json");
 const { getPoliticianById, fetchPoliticianPhoto, resolvePoliticianPhotoSource } = require("../lib/politician-photo-resolver");
-const { discoverOfficialCandidates, fetchWithTimeout, publicHttpsUrl, officialHostAllowed } = require("../lib/politician-photo-official");
+const { discoverOfficialCandidates, fetchWithTimeout, publicHttpsUrl, officialHostAllowed, naverCredentials } = require("../lib/politician-photo-official");
+const { discoverDirectCandidates } = require("../lib/politician-photo-direct");
 const { getJSON, setJSON } = require("../../../lib/v3/redis");
 const { requireAdmin } = require("../../../lib/v3/access");
 const { blobToken } = require("../../../lib/v3/blob");
@@ -10,7 +11,8 @@ const { sanitize } = require("../../../lib/v3/schema");
 const ALLOWED_WIDTHS = new Set([64,96,128,160,256,384]);
 const MAX_ASSET_BYTES = 128 * 1024;
 const MAX_REVIEW_SOURCE_BYTES = 5 * 1024 * 1024;
-const REVIEW_KEY = "politicianPhotoReview03667";
+const REVIEW_KEY = "politicianPhotoReview03668";
+const LEGACY_REVIEW_KEY = "politicianPhotoReview03667";
 const AUTO_VARIANT_PLANS = [
   { mini:96, card:192, profile:384 },
   { mini:96, card:160, profile:320 },
@@ -121,18 +123,24 @@ function cleanReviewCandidate(candidate = {}) {
   const sourcePage=String(candidate.sourcePage || "").slice(0,1400);
   if (!publicHttpsUrl(url) || !publicHttpsUrl(sourcePage) || !officialHostAllowed(sourcePage)) return null;
   return {
-    url, sourcePage, provider:String(candidate.provider || "official-web").slice(0,60), score:Math.max(0,Math.round(Number(candidate.score || 0))),
+    url, sourcePage, provider:String(candidate.provider || "official-web").slice(0,80), score:Math.max(0,Math.round(Number(candidate.score || 0))),
+    sourceKind:String(candidate.sourceKind || "official-profile-page").slice(0,60),
+    confidence:["strong","visual-review"].includes(String(candidate.confidence || "")) ? String(candidate.confidence) : "strong",
     licenseHint:String(candidate.licenseHint || "").slice(0,260),
     verification:(Array.isArray(candidate.verification) ? candidate.verification : []).slice(0,8).map(x=>String(x || "").slice(0,260)).filter(Boolean)
   };
 }
 
 async function reviewState() {
-  const raw=await getJSON(REVIEW_KEY).catch(()=>null);
-  return { version:"03667", updatedAt:String(raw?.updatedAt || ""), items:Array.isArray(raw?.items) ? raw.items.slice(0,542) : [] };
+  let raw=await getJSON(REVIEW_KEY).catch(()=>null);
+  if (!raw?.items?.length) {
+    const legacy=await getJSON(LEGACY_REVIEW_KEY).catch(()=>null);
+    if (legacy?.items?.length) raw=legacy;
+  }
+  return { version:"03668", updatedAt:String(raw?.updatedAt || ""), items:Array.isArray(raw?.items) ? raw.items.slice(0,542) : [] };
 }
 async function saveReviewMap(map) {
-  const data={version:"03667",updatedAt:new Date().toISOString(),items:[...map.values()].slice(0,542)};
+  const data={version:"03668",updatedAt:new Date().toISOString(),items:[...map.values()].slice(0,542)};
   await setJSON(REVIEW_KEY,data);
   return data;
 }
@@ -231,6 +239,54 @@ async function discoverBatch(req,res) {
   return res.status(200).json({ok:true,cursor,nextCursor,total:PHOTO_TARGETS.length,done:nextCursor>=PHOTO_TARGETS.length,summary,results});
 }
 
+async function directDiscoverBatch(req,res) {
+  const admin=await requireAdmin(req);
+  if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
+  const cursor=Math.max(0,Math.min(PHOTO_TARGETS.length,Math.floor(Number(req.body?.cursor || 0))));
+  const limit=Math.max(1,Math.min(2,Math.floor(Number(req.body?.limit || 1))));
+  const batch=PHOTO_TARGETS.slice(cursor,cursor + limit);
+  const assets=await getJSON("politicianPhotos") || {items:[]};
+  const existing=new Map((assets.items || []).map(item=>[String(item.id || ""),item]));
+  const review=await reviewState();
+  const reviewMap=new Map(review.items.map(item=>[String(item.id || ""),item]));
+  const results=[];
+
+  for (const person of batch) {
+    if (existing.has(person.id)) {
+      reviewMap.set(person.id,reviewRecord(person,"existing",{reason:"existing-asset"}));
+      results.push({id:person.id,name:person.name,status:"existing"});
+      continue;
+    }
+    try {
+      const direct=await discoverDirectCandidates(person);
+      const status=direct?.candidates?.length ? "candidate-review" : String(direct?.reason || "direct-no-candidate");
+      const record=reviewRecord(person,status,{
+        reason:status,candidates:direct?.candidates || [],detail:direct?.detail || ""
+      });
+      record.stage="direct-source-03668";
+      record.pagesChecked=Math.max(0,Math.round(Number(direct?.pagesChecked || 0)));
+      record.sourceFailures=Math.max(0,Math.round(Number(direct?.sourceFailures || 0)));
+      record.identityRejected=Math.max(0,Math.round(Number(direct?.identityRejected || 0)));
+      reviewMap.set(person.id,record);
+      results.push({
+        id:person.id,name:person.name,status,candidateCount:record.candidates.length,
+        strong:record.candidates.filter(x=>x.confidence==="strong").length,
+        visualReview:record.candidates.filter(x=>x.confidence==="visual-review").length,
+        pagesChecked:record.pagesChecked
+      });
+    } catch (error) {
+      const record=reviewRecord(person,"source-fetch-failed",{detail:error?.message || "STAGE3_DIRECT_DISCOVERY_FAILED"});
+      record.stage="direct-source-03668";
+      reviewMap.set(person.id,record);
+      results.push({id:person.id,name:person.name,status:"source-fetch-failed"});
+    }
+  }
+  await saveReviewMap(reviewMap);
+  const nextCursor=Math.min(PHOTO_TARGETS.length,cursor + batch.length);
+  const summary=results.reduce((acc,item)=>{acc[item.status]=(acc[item.status] || 0)+1; return acc;},{});
+  return res.status(200).json({ok:true,cursor,nextCursor,total:PHOTO_TARGETS.length,done:nextCursor>=PHOTO_TARGETS.length,summary,results,naverConfigured:naverCredentials().configured});
+}
+
 async function reviewStatus(req,res) {
   const admin=await requireAdmin(req);
   if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
@@ -239,13 +295,21 @@ async function reviewStatus(req,res) {
   const active=review.items.filter(item=>!assetIds.has(String(item.id || "")));
   const count=status=>active.filter(item=>item.status===status || item.lastFailure===status).length;
   const candidates=active.filter(item=>item.status==="candidate-review" && item.candidates?.length);
+  const allCandidates=candidates.flatMap(item=>item.candidates || []);
+  const stage3Processed=active.filter(item=>item.stage==="direct-source-03668").length;
   const summary={
-    total:PHOTO_TARGETS.length,assetized:assetIds.size,candidateImages:candidates.reduce((s,x)=>s+(x.candidates?.length || 0),0),reviewRequired:candidates.length,
-    noCandidate:count("no-candidate"),identityRejected:count("identity-rejected"),sourceFetchFailed:count("source-fetch-failed"),
-    imageFetchFailed:count("image-fetch-failed"),imageTooLarge:count("image-too-large"),blobFailed:count("blob-failed")
+    total:PHOTO_TARGETS.length,assetized:assetIds.size,candidateImages:allCandidates.length,reviewRequired:candidates.length,
+    strongCandidates:allCandidates.filter(item=>item.confidence==="strong").length,
+    visualReviewCandidates:allCandidates.filter(item=>item.confidence==="visual-review").length,
+    noCandidate:count("no-candidate"),directNoCandidate:count("direct-no-candidate"),identityRejected:count("identity-rejected"),sourceFetchFailed:count("source-fetch-failed"),
+    sourceNotConfigured:count("source-not-configured"),
+    imageFetchFailed:count("image-fetch-failed"),imageTooLarge:count("image-too-large"),blobFailed:count("blob-failed"),
+    naverConfigured:naverCredentials().configured,
+    stage3Processed
   };
+  summary.stage3Unchecked=Math.max(0,summary.total-summary.assetized-summary.stage3Processed);
   summary.unchecked=Math.max(0,summary.total-summary.assetized-active.length);
-  return res.status(200).json({ok:true,summary,items:candidates.slice(0,80),updatedAt:review.updatedAt});
+  return res.status(200).json({ok:true,summary,items:candidates.slice(0,120),updatedAt:review.updatedAt});
 }
 
 function validUploadedSet(uploaded={}) {
@@ -330,7 +394,9 @@ async function candidateImage(req,res) {
   const candidate=state?.status==="candidate-review" ? state?.candidates?.[index] : null;
   if (!candidate?.url || !publicHttpsUrl(candidate.url)) return res.status(404).json({ok:false,error:"CANDIDATE_NOT_FOUND"});
   try {
-    const r=await fetchWithTimeout(candidate.url,{headers:{accept:"image/avif,image/webp,image/apng,image/*,*/*;q=0.8",referer:candidate.sourcePage || ""}},12000);
+    const headers={accept:"image/avif,image/webp,image/apng,image/*,*/*;q=0.8"};
+    if(candidate.sourcePage && candidate.sourcePage!==candidate.url) headers.referer=candidate.sourcePage;
+    const r=await fetchWithTimeout(candidate.url,{headers},12000);
     const type=String(r.headers.get("content-type") || "").toLowerCase().split(";")[0];
     const declared=Number(r.headers.get("content-length") || 0);
     if (!r.ok || !type.startsWith("image/") || !publicHttpsUrl(r.url || candidate.url)) return res.status(502).json({ok:false,error:"IMAGE_FETCH_FAILED"});
@@ -352,6 +418,7 @@ module.exports = async function politicianPhotoRoute(req,res) {
     const action=String(req.body?.action || "");
     if (action === "harvest-batch") return harvestBatch(req,res);
     if (action === "discover-batch") return discoverBatch(req,res);
+    if (action === "direct-discover-batch") return directDiscoverBatch(req,res);
     if (action === "review-status") return reviewStatus(req,res);
     if (action === "report-candidate-failure") return reportCandidateFailure(req,res);
     if (action === "approve-candidate") return approveCandidate(req,res);

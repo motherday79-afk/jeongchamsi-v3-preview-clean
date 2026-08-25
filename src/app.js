@@ -429,13 +429,12 @@ document.addEventListener("click", async event => {
   }
   const politicianPhotoHarvest = event.target.closest("[data-politician-photo-harvest]");
   if (politicianPhotoHarvest) {
-    if (!confirm("미자산화 정치인을 Wikimedia + 국회·지자체 공식기관까지 2단계 자동수집할까요? 기존 정참시 자산은 덮어쓰지 않습니다.")) return;
+    if (!confirm("미자산화 정치인을 국회·지자체 직접소스까지 3단계 수집할까요? 기존 정참시 자산은 절대 덮어쓰지 않고 발견 사진은 후보 검수함에만 넣습니다.")) return;
     const stateEl = document.querySelector("[data-politician-photo-harvest-state]");
     const photoTools = await import("./views/admin.js");
-    const stage2Runner = photoTools.discoverPoliticianPhotosStage2 || photoTools.harvestPoliticianPhotos;
-    const r = await stage2Runner(stateEl, politicianPhotoHarvest);
-    if (!r.ok) { if (stateEl) stateEl.textContent = `2단계 자동수집 중단 · ${r.error || "오류"}`; return; }
-    if (stateEl) stateEl.textContent = r.message || "2단계 자동수집 완료";
+    const r = await photoTools.discoverPoliticianPhotosStage3(stateEl, politicianPhotoHarvest);
+    if (!r.ok) { if (stateEl) stateEl.textContent = `3단계 직접소스 수집 중단 · ${r.error || "오류"}`; return; }
+    if (stateEl) stateEl.textContent = r.message || "3단계 직접소스 수집 완료";
     clearDomainCache("politicianPhotos");
     await render(currentRoute(), { resetScroll:false });
     return;
