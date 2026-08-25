@@ -109,26 +109,6 @@ function productLauncher() {
   return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시는 여러분의 참여로 만들어갑니다</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(item=>`<button type="button" class="launcher-card launcher-${item.key === "poll" ? "choice" : item.key}" data-go="${item.href}" aria-label="${esc(item.label)} · ${esc(item.description)}"><span class="launcher-icon">${serviceIconSvg(item.key)}</span><span class="launcher-copy"><b>${esc(item.shortLabel || item.label)}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;
 }
 
-function columnLead(item, authorProfiles = {}) {
-  if (!item) return `<div class="column-lead">
-    <div class="column-lead-image"></div>
-    <div class="column-lead-copy">
-      <span class="skeleton kicker"></span><span class="skeleton title"></span><span class="skeleton title short"></span>
-      <span class="skeleton body"></span><span class="skeleton body"></span><span class="skeleton body short"></span>
-    </div>
-  </div>`;
-
-  const cover = safeImage(item.coverImage);
-  return `<div class="column-lead" role="button" tabindex="0" data-go="/column/${esc(item.id)}">
-    <div class="column-lead-image ${cover ? "has-cover" : ""}" ${cover ? `style="background-image:url('${cover}')"` : ""}></div>
-    <div class="column-lead-copy live">
-      <span class="live-kicker">COLUMN · ${authorIdentity(item.author || "정참시", item.ownerId, authorProfiles)}</span>
-      <h3>${esc(item.title)}</h3>
-      <p>${esc(item.summary || item.body || "")}</p>
-    </div>
-  </div>`;
-}
-
 function columnMini(item, authorProfiles = {}) {
   if (!item) return `<article class="column-card"><div class="column-thumb"></div><div class="column-card-copy"><span class="skeleton small-title"></span><span class="skeleton mini"></span></div></article>`;
   const cover = safeImage(item.coverImage);
@@ -222,9 +202,8 @@ export async function renderHome() {
     getPerson = provider.getPersonLiteById;
   }
   const columns = published(data.columns?.items || []);
-  const lead = columns.find(x => x.featured) || columns[0] || null;
-  const minis = columns.filter(x => x !== lead).slice(0, 4);
-  while (minis.length < 4) minis.push(null);
+  const columnCards = columns.slice(0, 4);
+  while (columnCards.length < 4) columnCards.push(null);
 
   const community = published(data.community?.items || []);
   const hot = [...community].sort((a, b) => Number(b.likes || 0) - Number(a.likes || 0)).slice(0, 2);
@@ -235,7 +214,7 @@ export async function renderHome() {
   const news = published(data.news?.items || []).slice(0, 5);
   while (news.length < 5) news.push(null);
 
-  const homeAuthorProfiles = await getAuthorProfiles(authorOwnerIds([lead, ...minis, ...general].filter(Boolean)));
+  const homeAuthorProfiles = await getAuthorProfiles(authorOwnerIds([...columnCards, ...general].filter(Boolean)));
 
   const poll = published(data.polls?.items || [])[0] || null;
   const itsmeHomeItems = published(data.itsme?.items || [])
@@ -384,7 +363,7 @@ export async function renderHome() {
 
         <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow">NOW RANK</span><h2>지금 가장 주목받는 정치인</h2><p class="module-desc">상위 10명을 두 줄로 간결하게 확인하세요</p></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="rank-top-grid rank-top-grid-10">${rankTop10}</div></section>
 
-        <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2><p class="module-desc">대표 COLUMN 1개 + 추가 COLUMN 4개 구조</p></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div>${columnLead(lead, homeAuthorProfiles)}<div class="column-grid">${minis.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
+        <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div><div class="column-grid">${columnCards.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 
         <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티</p></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map((item, index) => communityRow(item, index, homeAuthorProfiles)).join("")}</div></section>
 

@@ -427,9 +427,20 @@ document.addEventListener("click", async event => {
     await render(currentRoute(), { resetScroll:false });
     return;
   }
+  const politicianPhotoHarvest = event.target.closest("[data-politician-photo-harvest]");
+  if (politicianPhotoHarvest) {
+    if (!confirm("검증 가능한 정치인 사진을 자동수집해 정참시 자산으로 저장할까요? 이미 등록된 사진은 덮어쓰지 않습니다.")) return;
+    const stateEl = document.querySelector("[data-politician-photo-harvest-state]");
+    const r = await (await import("./views/admin.js")).harvestPoliticianPhotos(stateEl, politicianPhotoHarvest);
+    if (!r.ok) { if (stateEl) stateEl.textContent = `자동수집 중단 · ${r.error || "오류"}`; return; }
+    if (stateEl) stateEl.textContent = r.message || "자동수집 완료";
+    clearDomainCache("politicianPhotos");
+    await render(currentRoute(), { resetScroll:false });
+    return;
+  }
   const politicianPhotoReset = event.target.closest("[data-politician-photo-reset]");
   if (politicianPhotoReset) {
-    if (!confirm("이 정치인의 수동사진을 삭제하고 Wikimedia 자동사진으로 되돌릴까요?")) return;
+    if (!confirm("이 정치인의 정참시 사진 자산을 삭제하고 자동사진 연결 상태로 되돌릴까요?")) return;
     const r = await (await import("./views/admin.js")).resetPoliticianPhoto(politicianPhotoReset.dataset.politicianPhotoReset);
     if (!r.ok) alert(`사진 초기화 실패 · ${r.error || ""}`);
     else { clearDomainCache("politicianPhotos"); await render(currentRoute(), { resetScroll:false }); }

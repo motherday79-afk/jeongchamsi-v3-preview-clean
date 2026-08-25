@@ -200,11 +200,7 @@
 .storage-state span{padding:6px 9px;border-radius:999px;background:#f1f6f4;color:var(--text-2);font-size:12px;font-weight:800}
 
 /* ---------- dynamic HOME content: dimensions remain inherited from locked app.css ---------- */
-.column-lead-image.has-cover,.column-thumb.has-cover{background-position:center;background-size:contain;background-repeat:no-repeat;background-color:#f4f7f6}
-.column-lead-copy.live{justify-content:center}
-.column-lead-copy.live .live-kicker{color:var(--green);font-size:11px;font-weight:950;letter-spacing:.08em}
-.column-lead-copy.live h3{margin:5px 0 8px;font-size:21px;line-height:1.4}
-.column-lead-copy.live p{margin:0;color:var(--text-2);font-size:14px;line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.column-thumb.has-cover{background-position:center;background-size:contain;background-repeat:no-repeat;background-color:#f4f7f6}
 .column-card-copy.live b{display:block;font-size:14px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .column-card-copy.live > span{display:flex;align-items:center;gap:4px;min-width:0;margin-top:5px;color:var(--text-3);font-size:12px;white-space:nowrap;overflow:hidden}
 .column-card-copy.live > span .author-identity{display:inline-flex;align-items:center;gap:4px;min-width:0;margin:0;flex:0 1 auto}
@@ -1860,9 +1856,6 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 
 
 /* alpha6.0.24 STABILITY — approved detail rules */
-.column-lead[role="button"]{cursor:pointer;border:1px solid transparent;border-radius:14px;transition:border-color 150ms var(--ui-ease),box-shadow 150ms var(--ui-ease),transform 150ms var(--ui-ease)}
-.column-lead[role="button"]:hover{border-color:#b9dcd2;box-shadow:0 8px 22px rgba(23,42,36,.08);transform:translateY(-1px)}
-.column-lead[role="button"]:focus-visible{outline:0;box-shadow:var(--ui-focus-ring)}
 .politician-rising-row i{display:block;min-width:0}
 .politician-rising-row i b,.politician-rising-row i small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .politician-rising-row i b{font-size:14px;line-height:1.3;color:var(--text)}
@@ -2319,8 +2312,8 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .author-role-admin{background:#f0f2f3;color:#4d5960}
 .article-meta .author-identity,.board-list small .author-identity,.comment-list .author-identity{color:inherit}
 .comment-list b:has(.author-identity){display:inline-flex;align-items:center}
-.column-lead .author-identity,.column-card .author-identity,.community-row .author-identity{display:inline-flex}
-.column-lead .author-representative-badge .badge-gem,.community-row .author-representative-badge .badge-gem{width:16px;height:16px;flex-basis:16px}
+.column-card .author-identity,.community-row .author-identity{display:inline-flex}
+.community-row .author-representative-badge .badge-gem{width:16px;height:16px;flex-basis:16px}
 .column-card .author-representative-badge .badge-gem{width:18px;height:18px;flex-basis:18px}
 .column-card .author-representative-badge .badge-gem svg{width:18px;height:18px}
 
@@ -2813,3 +2806,8 @@ html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
 .push-preview-image{height:150px;margin-top:12px;border-radius:13px;background:#e9f4f1 center/cover no-repeat}
 .push-history{margin-top:28px}.push-history>article{display:flex;justify-content:space-between;gap:18px;padding:14px 0;border-top:1px solid #e9efed}.push-history>article div{display:grid;gap:3px}.push-history>article span{font-size:12px;color:#71817d}.push-history>article strong{font-size:12px;white-space:nowrap}
 @media(max-width:760px){.push-compose-grid{grid-template-columns:1fr}.push-phone-preview{position:static;min-height:0}.push-preview-image{height:130px}}
+
+/* 0.36.64 politician photo auto-assetization */
+.politician-photo-harvest{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;align-items:center;padding:15px 16px;border:1px solid #cfe2dc;border-radius:14px;background:#f4faf8}
+.politician-photo-harvest>div{min-width:0}.politician-photo-harvest b{display:block;font-size:13px;color:#17342d}.politician-photo-harvest p{margin:5px 0 0;color:#60736d;font-size:10.5px;line-height:1.55}.politician-photo-harvest>span{grid-column:1/-1;color:#087f74;font-size:10px;font-weight:850}
+@media(max-width:620px){.politician-photo-harvest{grid-template-columns:minmax(0,1fr)}.politician-photo-harvest .primary-btn{width:100%}.politician-photo-harvest>span{grid-column:1}}

@@ -1,7 +1,7 @@
 /*
- * 0.36.34 — WIKIMEDIA COMMONS ALL POLITICIANS
- * Every real politician ID uses one photo path. The server accepts Wikimedia Commons only.
- * The previous NEC resolver is removed. v2/legacy runtime dependencies: none.
+ * 0.36.64 — VERIFIED PHOTO ASSETS
+ * Every real politician ID uses one versioned photo path. Verified Wikimedia photos may be
+ * assetized into Jeongchamsi Blob storage; admin manual assets remain highest priority.
  */
 
 const VARIANTS = Object.freeze({
@@ -33,10 +33,10 @@ export function politicianPhotoMeta(id = "") {
     focus:"50% 28%",
     sourceUrl:"",
     sourcePage:COMMONS_SOURCE_PAGE,
-    attribution:"Wikimedia Commons",
-    license:"Wikimedia Commons file page",
+    attribution:"정참시 사진 자산 / Wikimedia Commons",
+    license:"원본 출처 페이지 기준",
     licenseUrl:COMMONS_SOURCE_PAGE,
-    verification:["정참시 서버: 이름 + 정치인 문맥 + 정당/지역 문맥 교차검증","최종 이미지 소스는 Wikimedia Commons / upload.wikimedia.org만 허용"]
+    verification:["정참시 서버: 이름 + 정당 + 직책 + 지역 문맥 교차검증","검증 완료 자동사진은 정참시 Blob 자산화 · 수기등록은 관리자 우선"]
   });
 }
 
@@ -50,10 +50,10 @@ export function politicianPhoto(id = "", variant = "card") {
     variant,
     width:spec.width,
     quality:spec.quality,
-    url:`/api/v3/politician-photo?id=${encodeURIComponent(key)}&w=${spec.width}`,
-    modifiedNote:"Wikimedia Commons 전용 · 최초 확인 후 Vercel CDN 장기 캐시",
+    url:`/api/v3/politician-photo?id=${encodeURIComponent(key)}&w=${spec.width}&v=03664`,
+    modifiedNote:"검증 사진 · 정참시 자산 우선 · v0.36.64 캐시 키",
     verified:true,
-    resolver:"wikimedia-commons-only"
+    resolver:"verified-asset-first"
   });
 }
 

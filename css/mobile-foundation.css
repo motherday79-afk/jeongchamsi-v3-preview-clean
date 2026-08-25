@@ -112,9 +112,6 @@
   #now .rank-top-grid-10 .rank-top-card{min-width:0;min-height:126px}
   #now .rank-top-card:first-child{grid-column:1/-1;min-height:102px;display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;gap:12px;text-align:left}
   #now .rank-top-card:first-child .rank-top-avatar{margin:0}
-  #column .column-lead{grid-template-columns:minmax(0,1fr);min-height:0}
-  #column .column-lead-image{min-height:0;aspect-ratio:16/9}
-  #column .column-lead-copy{min-width:0;padding:18px}
   #column .column-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   #community .community-highlight{grid-template-columns:minmax(0,1fr);gap:8px}
   #community .community-row{grid-template-columns:24px minmax(0,1fr);gap:8px}
@@ -224,7 +221,7 @@
   .product-launcher-compact .product-launcher-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 
   #itsme.itsme-home-module .itsme-grid{grid-template-columns:minmax(0,1fr)}
-  #column .column-grid{grid-template-columns:minmax(0,1fr)}
+  #column .column-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .generation-page-grid{grid-template-columns:minmax(0,1fr)}
   .member-stat-grid,.admin-stat-grid,.people-admin-grid{grid-template-columns:minmax(0,1fr)}
   .person-grid{grid-template-columns:repeat(2,minmax(0,1fr))}

@@ -126,9 +126,6 @@ img{display:block;max-width:100%}
 .itsme-card.accent{background:var(--green-soft);border-color:#cce7df}
 
 /* COLUMN */
-.column-lead{display:grid;grid-template-columns:44% 1fr;min-height:285px;border:1px solid #e5ebe8;border-radius:var(--r-md);overflow:hidden}
-.column-lead-image{background:linear-gradient(135deg,#dce9e5,#c4d7d1)}
-.column-lead-copy{padding:25px;display:flex;flex-direction:column;justify-content:center;gap:10px}
 .skeleton{display:block;background:#e8eeec;border-radius:999px}
 .skeleton.kicker{width:25%;height:8px}
 .skeleton.title{width:91%;height:17px}
@@ -625,20 +622,7 @@ img{display:block;max-width:100%}
     padding:14px;
   }
 
-  /* Column: no sideways cards; stable 2-column grid */
-  .column-lead{
-    grid-template-columns:1fr;
-  }
-
-  .column-lead-image{
-    min-height:clamp(190px,55vw,250px);
-  }
-
-  .column-lead-copy{
-    min-height:205px;
-    padding:19px;
-  }
-
+  /* Column: stable 2-column grid on phones */
   .column-grid{
     grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px;
@@ -832,9 +816,12 @@ img{display:block;max-width:100%}
   }
 
   .itsme-grid,
-  .column-grid,
   .generation-grid{
     grid-template-columns:1fr;
+  }
+
+  .column-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
   }
 
   .poll-options button{
