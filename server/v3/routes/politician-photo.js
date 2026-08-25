@@ -1,5 +1,6 @@
 const { put, del } = require("@vercel/blob");
 const ROSTER = require("../data/politician-photo-roster.json");
+const LOCAL_SEED = require("../data/politician-photo-local-seed.json");
 const { getPoliticianById, fetchPoliticianPhoto, resolvePoliticianPhotoSource } = require("../lib/politician-photo-resolver");
 const { discoverOfficialCandidates, fetchWithTimeout, publicHttpsUrl, officialHostAllowed, naverCredentials } = require("../lib/politician-photo-official");
 const { discoverDirectCandidates } = require("../lib/politician-photo-direct");
@@ -20,6 +21,7 @@ const AUTO_VARIANT_PLANS = [
 ];
 const PHOTO_TARGETS = ROSTER.filter((person) => person?.id && person.id !== "assembly-300");
 const TARGET_BY_ID = new Map(PHOTO_TARGETS.map(person => [person.id,person]));
+const LOCAL_ASSET_MAP = new Map(((LOCAL_SEED && Array.isArray(LOCAL_SEED.items)) ? LOCAL_SEED.items : []).map(item => [String(item.id || ""), item]));
 
 const manualCache = globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__ || { at:0, items:new Map() };
 globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__ = manualCache;
@@ -40,11 +42,21 @@ async function manualPhoto(id, width) {
     } catch { manualCache.at = Date.now(); }
   }
   const item = manualCache.items.get(String(id || ""));
+  if (item?.variants) {
+    const key = width <= 96 ? "mini" : width <= 256 ? "card" : "profile";
+    const url = item.variants[key] || item.variants.profile || item.variants.card || item.variants.mini || "";
+    if (url && blobPhotoUrl(url)) return { url, updatedAt:String(item.updatedAt || ""), sourceType:String(item.sourceType || "manual") };
+  }
+  return localSeedPhoto(id,width);
+}
+
+function localSeedPhoto(id, width) {
+  const item = LOCAL_ASSET_MAP.get(String(id || ""));
   if (!item?.variants) return null;
   const key = width <= 96 ? "mini" : width <= 256 ? "card" : "profile";
-  const url = item.variants[key] || item.variants.profile || item.variants.card || item.variants.mini || "";
-  if (!url || !blobPhotoUrl(url)) return null;
-  return { url, updatedAt:String(item.updatedAt || ""), sourceType:String(item.sourceType || "manual") };
+  const url = String(item.variants[key] || item.variants.profile || item.variants.card || item.variants.mini || "").trim();
+  if (!url || !url.startsWith("/assets/")) return null;
+  return { url, updatedAt:String(item.updatedAt || ""), sourceType:String(item.sourceType || "seed-local") };
 }
 
 function contentExt(contentType = "") {
@@ -438,7 +450,13 @@ module.exports = async function politicianPhotoRoute(req,res) {
   const manual=await manualPhoto(id,width);
   if (manual?.url) {
     res.setHeader("Cache-Control","public, max-age=30, s-maxage=60, stale-while-revalidate=300");
-    const provider=manual.sourceType === "auto-wikimedia" ? "JCV3_BLOB_WIKIMEDIA" : manual.sourceType === "auto-official-review" ? "JCV3_BLOB_OFFICIAL_REVIEW" : "ADMIN_UPLOAD";
+    const provider=manual.sourceType === "auto-wikimedia"
+      ? "JCV3_BLOB_WIKIMEDIA"
+      : manual.sourceType === "auto-official-review"
+        ? "JCV3_BLOB_OFFICIAL_REVIEW"
+        : manual.sourceType === "seed-local"
+          ? "JCV3_LOCAL_SEED"
+          : "ADMIN_UPLOAD";
     res.setHeader("X-JCV3-Photo-Provider",provider);
     if (manual.updatedAt) res.setHeader("X-JCV3-Photo-Version",encodeURIComponent(manual.updatedAt));
     res.statusCode=307;

@@ -1,0 +1,161 @@
+{
+  "version": "local-seed-5-20260826",
+  "updatedAt": "2026-08-26T00:00:00.000Z",
+  "items": [
+    {
+      "id": "assembly-127",
+      "variants": {
+        "mini": "/assets/politicians/assembly-127-mini.webp",
+        "card": "/assets/politicians/assembly-127-card.webp",
+        "profile": "/assets/politicians/assembly-127-profile.webp"
+      },
+      "bytes": {
+        "mini": 1764,
+        "card": 3516,
+        "profile": 11350,
+        "total": 16630
+      },
+      "original": {
+        "width": 791,
+        "height": 857,
+        "size": 548853
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "https://tokpyo.com/assembly/235",
+      "sourceUrl": "https://tokpyo.com/assembly/235",
+      "matchScore": 100,
+      "verification": [
+        "실제 인물명 기준 검색 후 로컬 자산화",
+        "정참시 패키지 포함 로컬 사진 시드"
+      ],
+      "assetizedAt": "2026-08-26T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    },
+    {
+      "id": "assembly-227",
+      "variants": {
+        "mini": "/assets/politicians/assembly-227-mini.webp",
+        "card": "/assets/politicians/assembly-227-card.webp",
+        "profile": "/assets/politicians/assembly-227-profile.webp"
+      },
+      "bytes": {
+        "mini": 2594,
+        "card": 5028,
+        "profile": 21962,
+        "total": 29584
+      },
+      "original": {
+        "width": 591,
+        "height": 827,
+        "size": 591537
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "https://tokpyo.com/assembly/196",
+      "sourceUrl": "https://tokpyo.com/assembly/196",
+      "matchScore": 100,
+      "verification": [
+        "실제 인물명 기준 검색 후 로컬 자산화",
+        "정참시 패키지 포함 로컬 사진 시드"
+      ],
+      "assetizedAt": "2026-08-26T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    },
+    {
+      "id": "assembly-089",
+      "variants": {
+        "mini": "/assets/politicians/assembly-089-mini.webp",
+        "card": "/assets/politicians/assembly-089-card.webp",
+        "profile": "/assets/politicians/assembly-089-profile.webp"
+      },
+      "bytes": {
+        "mini": 2682,
+        "card": 4930,
+        "profile": 15282,
+        "total": 22894
+      },
+      "original": {
+        "width": 692,
+        "height": 1000,
+        "size": 726884
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "https://tokpyo.com/assembly/33",
+      "sourceUrl": "https://tokpyo.com/assembly/33",
+      "matchScore": 100,
+      "verification": [
+        "실제 인물명 기준 검색 후 로컬 자산화",
+        "정참시 패키지 포함 로컬 사진 시드"
+      ],
+      "assetizedAt": "2026-08-26T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    },
+    {
+      "id": "assembly-214",
+      "variants": {
+        "mini": "/assets/politicians/assembly-214-mini.webp",
+        "card": "/assets/politicians/assembly-214-card.webp",
+        "profile": "/assets/politicians/assembly-214-profile.webp"
+      },
+      "bytes": {
+        "mini": 2266,
+        "card": 4572,
+        "profile": 18702,
+        "total": 25540
+      },
+      "original": {
+        "width": 717,
+        "height": 1000,
+        "size": 817288
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "https://tokpyo.com/assembly/183",
+      "sourceUrl": "https://tokpyo.com/assembly/183",
+      "matchScore": 100,
+      "verification": [
+        "실제 인물명 기준 검색 후 로컬 자산화",
+        "정참시 패키지 포함 로컬 사진 시드"
+      ],
+      "assetizedAt": "2026-08-26T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    },
+    {
+      "id": "assembly-248",
+      "variants": {
+        "mini": "/assets/politicians/assembly-248-mini.webp",
+        "card": "/assets/politicians/assembly-248-card.webp",
+        "profile": "/assets/politicians/assembly-248-profile.webp"
+      },
+      "bytes": {
+        "mini": 1822,
+        "card": 3638,
+        "profile": 14732,
+        "total": 20192
+      },
+      "original": {
+        "width": 709,
+        "height": 992,
+        "size": 498902
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "https://tokpyo.com/assembly/98",
+      "sourceUrl": "https://tokpyo.com/assembly/98",
+      "matchScore": 100,
+      "verification": [
+        "실제 인물명 기준 검색 후 로컬 자산화",
+        "정참시 패키지 포함 로컬 사진 시드"
+      ],
+      "assetizedAt": "2026-08-26T00:00:00.000Z",
+      "updatedAt": "2026-08-26T00:00:00.000Z"
+    }
+  ]
+}
