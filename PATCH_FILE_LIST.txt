@@ -1,17 +1,15 @@
-index.html
-package.json
-src/version.js
-src/views/home.js
-src/views/admin.js
-src/app.js
-src/data/person-meta.js
-src/data/politician-photo-index.js
-css/app.css
-css/mobile-foundation.css
-css/pages.css
-lib/v3/schema.js
-server/v3/routes/politician-photo.js
-server/v3/lib/politician-photo-resolver.js
-tests/home-column-four-only-03664.test.js
-tests/politician-photo-assetization-03664.test.js
-COLUMN_PHOTO_ASSETIZATION_0_36_64.md
+JEONGCHAMSI alpha6.0.36.65 — HOME COMMUNITY FIVE ONLY
+Base: alpha6.0.36.64
+
+Changed files:
+- index.html
+- package.json
+- src/version.js
+- src/views/home.js
+- css/app.css
+- css/mobile-foundation.css
+- css/pages.css
+- css/product-system.css
+- css/spectrum-palette.css
+- tests/home-community-five-only-03665.test.js
+- HOME_COMMUNITY_FIVE_ONLY_0_36_65.md

@@ -113,7 +113,6 @@
   #now .rank-top-card:first-child{grid-column:1/-1;min-height:102px;display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;gap:12px;text-align:left}
   #now .rank-top-card:first-child .rank-top-avatar{margin:0}
   #column .column-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  #community .community-highlight{grid-template-columns:minmax(0,1fr);gap:8px}
   #community .community-row{grid-template-columns:24px minmax(0,1fr);gap:8px}
   #community .community-stats{grid-column:2;text-align:left}
 

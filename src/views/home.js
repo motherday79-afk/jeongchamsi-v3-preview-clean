@@ -118,10 +118,6 @@ function columnMini(item, authorProfiles = {}) {
   </article>`;
 }
 
-function communityHot(item) {
-  if (!item) return `<article><span>HOT</span><b>주목받는 정뮤니티 게시물 영역</b><p>본문 한 줄 미리보기</p></article>`;
-  return `<article class="live" role="button" tabindex="0" data-go="/community/${esc(item.id)}"><span>HOT</span><b>${esc(item.title)}</b><p>${esc(item.summary || item.body || "")}</p></article>`;
-}
 
 function communityRow(item, index, authorProfiles = {}) {
   if (!item) return `<div class="community-row"><span class="community-order">${String(index + 1).padStart(2, "0")}</span><span class="community-copy"><b>정뮤니티 게시물 제목 영역</b><em>말머리 · 작성자 · 시간</em></span><span class="community-stats">댓글 · 조회</span></div>`;
@@ -206,9 +202,7 @@ export async function renderHome() {
   while (columnCards.length < 4) columnCards.push(null);
 
   const community = published(data.community?.items || []);
-  const hot = [...community].sort((a, b) => Number(b.likes || 0) - Number(a.likes || 0)).slice(0, 2);
-  while (hot.length < 2) hot.push(null);
-  const general = community.filter(x => !hot.includes(x)).slice(0, 5);
+  const general = community.slice(0, 5);
   while (general.length < 5) general.push(null);
 
   const news = published(data.news?.items || []).slice(0, 5);
@@ -365,7 +359,7 @@ export async function renderHome() {
 
         <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div><div class="column-grid">${columnCards.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 
-        <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2><p class="module-desc">이미지 없이 읽기 좋은 리스트형 정뮤니티</p></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-highlight">${hot.map(communityHot).join("")}</div><div class="community-list">${general.map((item, index) => communityRow(item, index, homeAuthorProfiles)).join("")}</div></section>
+        <section class="module" id="community"><div class="module-header"><div><span class="eyebrow">COMMUNITY</span><h2>지금 시민들이 말하는 것</h2></div><button class="more-btn" type="button" data-go="/community">전체보기</button></div><div class="community-list">${general.map((item, index) => communityRow(item, index, homeAuthorProfiles)).join("")}</div></section>
 
         <section class="module academy-module" id="academy"><div class="module-header"><div><span class="eyebrow">${esc(academyConfig.eyebrow)}</span><h2>${esc(academyConfig.title)}</h2><p class="module-desc">${esc(academyConfig.description)}</p></div><div class="inline-actions">${userSession.authenticated && userSession.user?.role === "admin" ? `<button class="ghost-btn academy-admin-edit" type="button" data-go="/admin?tab=academy">메인 아카데미 편집</button>` : ""}<button class="more-btn" type="button" data-go="/academy">일정 보기</button></div></div><div class="academy-layout"><div class="academy-intro"><span class="academy-mark">A</span><h3>${esc(academyConfig.headline)}</h3><p>${esc(academyConfig.description)}</p><button type="button" data-go="/academy">${esc(academyConfig.cta)}</button></div><div class="academy-schedule"><div class="schedule-head"><b>예정 교육 일정</b><span>${academySlots.length}개</span></div>${academyRows(academySlots)}</div></div></section>
       </main>

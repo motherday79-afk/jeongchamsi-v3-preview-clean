@@ -89,8 +89,6 @@ body{background:#f4f6f7;color:var(--ps-ink)}
 #itsme .itsme-card:nth-child(6){background:var(--jc-navy-soft);border-color:#dfe3f3}
 
 #column .column-lead{background:#f6f7f8}
-#community .community-highlight article:first-child{background:var(--jc-orange-soft);border-color:#f1dfc9}
-#community .community-highlight span{color:#bc6d22}
 
 /* Data / participation tools */
 #generation-president{background:#fff3f4;border-color:#f1d8db;color:var(--ps-ink)}
@@ -404,12 +402,6 @@ a,.more-btn{--jc-link:#087f74}
 
 /* Reading / talking sections calm the page after NOW. */
 #column .column-lead{background:#f7f8f9}
-#community .community-highlight article,
-#community .community-highlight article:first-child{
-  background:#fff;
-  border-color:#e5e9ec;
-}
-#community .community-highlight span{color:#bc6d22}
 
 /* JEONGCHAMSI alpha6.0.36.8 — COMPACT NAVIGATOR + IT'S ME SIGNATURE
    Fixed sections (Academy / Column / Community) are intentionally untouched. */

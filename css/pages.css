@@ -206,7 +206,6 @@
 .column-card-copy.live > span .author-identity{display:inline-flex;align-items:center;gap:4px;min-width:0;margin:0;flex:0 1 auto}
 .column-card-copy.live > span .author-identity span{margin:0;display:inline-flex}
 .column-card-copy.live > span .author-nickname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.community-highlight article.live p{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .community-row.live{cursor:pointer}
 .side-row.live{cursor:pointer}
 .side-row.live i{height:auto;background:none;border-radius:0;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-2);font-size:12px}
@@ -906,22 +905,6 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .person-photo-placeholder.has-photo img,.rank-top-avatar.has-photo img,.recent-circle-avatar.has-photo img,.recent-person-avatar.has-photo img,.eval-avatar.has-photo img{pointer-events:none}
 .person-detail-photo.has-photo,.recent-circle-avatar.has-photo,.recent-person-avatar.has-photo,.eval-avatar.has-photo{border:1px solid #d8e7e2}
 
-/* Community top two are clearly interactive */
-.community-highlight article.live{
-  cursor:pointer;
-  transition:border-color var(--ui-motion-fast) var(--ui-ease),
-             background-color var(--ui-motion-fast) var(--ui-ease),
-             box-shadow var(--ui-motion-fast) var(--ui-ease),
-             transform var(--ui-motion-fast) var(--ui-ease);
-}
-.community-highlight article.live:hover{
-  border-color:#bddbd2;
-  background:#fbfdfc;
-  box-shadow:var(--ui-soft-shadow);
-  transform:translateY(-2px);
-}
-.community-highlight article.live:active{transform:scale(.985)}
-
 /* Larger, readable recent politicians in the right sidebar */
 .recent-visual-grid{
   display:grid;
@@ -1125,7 +1108,6 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   .legal-document>section{grid-template-columns:30px minmax(0,1fr)}
 }
 @media(hover:none) and (pointer:coarse){
-  .community-highlight article.live:active,
   .recent-visual-card:active,
   .search-person-grid button:active,
   .search-president-result>button:active{transform:scale(.98)}
