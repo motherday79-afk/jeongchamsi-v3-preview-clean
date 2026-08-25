@@ -1,6 +1,6 @@
 {
-  "version": "local-seed-5-20260826",
-  "updatedAt": "2026-08-26T00:00:00.000Z",
+  "version": "local-seed-21-20260826",
+  "updatedAt": "2026-08-26T01:46:00+09:00",
   "items": [
     {
       "id": "assembly-127",
@@ -156,6 +156,502 @@
       ],
       "assetizedAt": "2026-08-26T00:00:00.000Z",
       "updatedAt": "2026-08-26T00:00:00.000Z"
+    },
+    {
+      "id": "metropolitan-001",
+      "variants": {
+        "mini": "https://img1.newsis.com/2021/04/07/NISI20210407_0000722477_web.jpg?rnd=20210407225036",
+        "card": "https://img1.newsis.com/2021/04/07/NISI20210407_0000722477_web.jpg?rnd=20210407225036",
+        "profile": "https://img1.newsis.com/2021/04/07/NISI20210407_0000722477_web.jpg?rnd=20210407225036"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.newsis.com/view/NISX20210407_0001399080",
+      "sourceUrl": "https://img1.newsis.com/2021/04/07/NISI20210407_0000722477_web.jpg?rnd=20210407225036",
+      "matchScore": 100,
+      "verification": [
+        "오세훈 · 서울특별시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-002",
+      "variants": {
+        "mini": "https://cphoto.asiae.co.kr/listimglink/1/2020012815292426952_1580192963.jpg",
+        "card": "https://cphoto.asiae.co.kr/listimglink/1/2020012815292426952_1580192963.jpg",
+        "profile": "https://cphoto.asiae.co.kr/listimglink/1/2020012815292426952_1580192963.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.asiae.co.kr/en/article/2020021716231272968",
+      "sourceUrl": "https://cphoto.asiae.co.kr/listimglink/1/2020012815292426952_1580192963.jpg",
+      "matchScore": 100,
+      "verification": [
+        "민형배 · 전남광주통합특별시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-003",
+      "variants": {
+        "mini": "https://cpmadang.org/sites/default/files/%EC%A0%84%EC%9E%AC%EC%88%98_18eeced1.jpg",
+        "card": "https://cpmadang.org/sites/default/files/%EC%A0%84%EC%9E%AC%EC%88%98_18eeced1.jpg",
+        "profile": "https://cpmadang.org/sites/default/files/%EC%A0%84%EC%9E%AC%EC%88%98_18eeced1.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://cpmadang.org/%ED%9B%84%EB%B3%B4/%EC%A0%84%EC%9E%AC%EC%88%98",
+      "sourceUrl": "https://cpmadang.org/sites/default/files/%EC%A0%84%EC%9E%AC%EC%88%98_18eeced1.jpg",
+      "matchScore": 100,
+      "verification": [
+        "전재수 · 부산광역시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-004",
+      "variants": {
+        "mini": "https://umq1gm7a8386.edge.naverncp.com/data2/content/image/2025/12/28/.cache/512/20251228500579.jpg",
+        "card": "https://umq1gm7a8386.edge.naverncp.com/data2/content/image/2025/12/28/.cache/512/20251228500579.jpg",
+        "profile": "https://umq1gm7a8386.edge.naverncp.com/data2/content/image/2025/12/28/.cache/512/20251228500579.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.kbmaeil.com/article/20251229500163",
+      "sourceUrl": "https://umq1gm7a8386.edge.naverncp.com/data2/content/image/2025/12/28/.cache/512/20251228500579.jpg",
+      "matchScore": 100,
+      "verification": [
+        "추경호 · 대구광역시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-005",
+      "variants": {
+        "mini": "https://img1.newsis.com/2026/06/03/NISI20260603_0002151856_web.jpg?rnd=20260603145529",
+        "card": "https://img1.newsis.com/2026/06/03/NISI20260603_0002151856_web.jpg?rnd=20260603145529",
+        "profile": "https://img1.newsis.com/2026/06/03/NISI20260603_0002151856_web.jpg?rnd=20260603145529"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.newsis.com/view/NISX20260603_0003654603",
+      "sourceUrl": "https://img1.newsis.com/2026/06/03/NISI20260603_0002151856_web.jpg?rnd=20260603145529",
+      "matchScore": 100,
+      "verification": [
+        "박찬대 · 인천광역시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-006",
+      "variants": {
+        "mini": "https://upload.wikimedia.org/wikipedia/commons/5/5a/%ED%97%88%ED%83%9C%EC%A0%95_%EB%8C%80%EC%A0%84%EA%B4%91%EC%97%AD%EC%8B%9C%EC%9E%A5.jpg",
+        "card": "https://upload.wikimedia.org/wikipedia/commons/5/5a/%ED%97%88%ED%83%9C%EC%A0%95_%EB%8C%80%EC%A0%84%EA%B4%91%EC%97%AD%EC%8B%9C%EC%9E%A5.jpg",
+        "profile": "https://upload.wikimedia.org/wikipedia/commons/5/5a/%ED%97%88%ED%83%9C%EC%A0%95_%EB%8C%80%EC%A0%84%EA%B4%91%EC%97%AD%EC%8B%9C%EC%9E%A5.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://en.wikipedia.org/wiki/Heo_Tae-jeong",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/%ED%97%88%ED%83%9C%EC%A0%95_%EB%8C%80%EC%A0%84%EA%B4%91%EC%97%AD%EC%8B%9C%EC%9E%A5.jpg",
+      "matchScore": 100,
+      "verification": [
+        "허태정 · 대전광역시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-007",
+      "variants": {
+        "mini": "https://img3.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202606%2F04%2Fnewsis%2F20260604030506591jtwx.jpg",
+        "card": "https://img3.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202606%2F04%2Fnewsis%2F20260604030506591jtwx.jpg",
+        "profile": "https://img3.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202606%2F04%2Fnewsis%2F20260604030506591jtwx.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://v.daum.net/v/20260604030506211",
+      "sourceUrl": "https://img3.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202606%2F04%2Fnewsis%2F20260604030506591jtwx.jpg",
+      "matchScore": 100,
+      "verification": [
+        "김상욱 · 울산광역시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-008",
+      "variants": {
+        "mini": "https://www.chosun.com/resizer/v2/P2HG6MQVMRNORFWWSFJJDRR4QM.jpg?auth=d6ea2e8a63b59716c0b0faa476e0f09436172e9571d08b049480bf1c31edbd77&width=616",
+        "card": "https://www.chosun.com/resizer/v2/P2HG6MQVMRNORFWWSFJJDRR4QM.jpg?auth=d6ea2e8a63b59716c0b0faa476e0f09436172e9571d08b049480bf1c31edbd77&width=616",
+        "profile": "https://www.chosun.com/resizer/v2/P2HG6MQVMRNORFWWSFJJDRR4QM.jpg?auth=d6ea2e8a63b59716c0b0faa476e0f09436172e9571d08b049480bf1c31edbd77&width=616"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.chosun.com/politics/goverment/2026/04/16/7BD4MUY24RCG5NTC7DEZFSZLH4/",
+      "sourceUrl": "https://www.chosun.com/resizer/v2/P2HG6MQVMRNORFWWSFJJDRR4QM.jpg?auth=d6ea2e8a63b59716c0b0faa476e0f09436172e9571d08b049480bf1c31edbd77&width=616",
+      "matchScore": 100,
+      "verification": [
+        "조상호 · 세종특별자치시 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-009",
+      "variants": {
+        "mini": "https://argos.nanet.go.kr/resources/moc21/9771452.jpg",
+        "card": "https://argos.nanet.go.kr/resources/moc21/9771452.jpg",
+        "profile": "https://argos.nanet.go.kr/resources/moc21/9771452.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://argos.nanet.go.kr/main/mobile/personalizeGuest.do?deptCd=9771452&pageIndex=1",
+      "sourceUrl": "https://argos.nanet.go.kr/resources/moc21/9771452.jpg",
+      "matchScore": 100,
+      "verification": [
+        "추미애 · 경기도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-010",
+      "variants": {
+        "mini": "https://img.khan.co.kr/news/2026/03/10/rcv.YNA.20260305.PYH2026030505790006200_P1.jpg",
+        "card": "https://img.khan.co.kr/news/2026/03/10/rcv.YNA.20260305.PYH2026030505790006200_P1.jpg",
+        "profile": "https://img.khan.co.kr/news/2026/03/10/rcv.YNA.20260305.PYH2026030505790006200_P1.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.khan.co.kr/article/202603102258001",
+      "sourceUrl": "https://img.khan.co.kr/news/2026/03/10/rcv.YNA.20260305.PYH2026030505790006200_P1.jpg",
+      "matchScore": 100,
+      "verification": [
+        "우상호 · 강원특별자치도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-011",
+      "variants": {
+        "mini": "https://img9.yna.co.kr/etc/inner/KR/2026/02/26/AKR20260226090400064_01_i_P4.jpg",
+        "card": "https://img9.yna.co.kr/etc/inner/KR/2026/02/26/AKR20260226090400064_01_i_P4.jpg",
+        "profile": "https://img9.yna.co.kr/etc/inner/KR/2026/02/26/AKR20260226090400064_01_i_P4.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.yna.co.kr/view/AKR20260226090400064",
+      "sourceUrl": "https://img9.yna.co.kr/etc/inner/KR/2026/02/26/AKR20260226090400064_01_i_P4.jpg",
+      "matchScore": 100,
+      "verification": [
+        "신용한 · 충청북도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-012",
+      "variants": {
+        "mini": "https://img1.newsis.com/2026/03/30/NISI20260330_0002097512_web.jpg",
+        "card": "https://img1.newsis.com/2026/03/30/NISI20260330_0002097512_web.jpg",
+        "profile": "https://img1.newsis.com/2026/03/30/NISI20260330_0002097512_web.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://mobile.newsis.com/view_amp.html?ar_id=NISX20260330_0003569835",
+      "sourceUrl": "https://img1.newsis.com/2026/03/30/NISI20260330_0002097512_web.jpg",
+      "matchScore": 100,
+      "verification": [
+        "박수현 · 충청남도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-013",
+      "variants": {
+        "mini": "https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202604%2F06%2Finews24%2F20260406134404233besl.jpg",
+        "card": "https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202604%2F06%2Finews24%2F20260406134404233besl.jpg",
+        "profile": "https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202604%2F06%2Finews24%2F20260406134404233besl.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://v.daum.net/v/20260406134402140",
+      "sourceUrl": "https://img1.daumcdn.net/thumb/R658x0.q70/?fname=https%3A%2F%2Ft1.daumcdn.net%2Fnews%2F202604%2F06%2Finews24%2F20260406134404233besl.jpg",
+      "matchScore": 100,
+      "verification": [
+        "이원택 · 전북특별자치도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-014",
+      "variants": {
+        "mini": "https://cdn.news.bbsi.co.kr/news/photo/202406/3160893_515665_2155.jpg",
+        "card": "https://cdn.news.bbsi.co.kr/news/photo/202406/3160893_515665_2155.jpg",
+        "profile": "https://cdn.news.bbsi.co.kr/news/photo/202406/3160893_515665_2155.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://news.bbsi.co.kr/news/articleView.html?idxno=3160893",
+      "sourceUrl": "https://cdn.news.bbsi.co.kr/news/photo/202406/3160893_515665_2155.jpg",
+      "matchScore": 100,
+      "verification": [
+        "이철우 · 경상북도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-015",
+      "variants": {
+        "mini": "https://file2.nocutnews.co.kr/newsroom/image/2023/12/28/202312281431353996_2.jpg",
+        "card": "https://file2.nocutnews.co.kr/newsroom/image/2023/12/28/202312281431353996_2.jpg",
+        "profile": "https://file2.nocutnews.co.kr/newsroom/image/2023/12/28/202312281431353996_2.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.nocutnews.co.kr/news/6070365",
+      "sourceUrl": "https://file2.nocutnews.co.kr/newsroom/image/2023/12/28/202312281431353996_2.jpg",
+      "matchScore": 100,
+      "verification": [
+        "박완수 · 경상남도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "metropolitan-016",
+      "variants": {
+        "mini": "https://www.foodtoday.or.kr/data/photos/20260208/art_177173644909_2afb31.jpg",
+        "card": "https://www.foodtoday.or.kr/data/photos/20260208/art_177173644909_2afb31.jpg",
+        "profile": "https://www.foodtoday.or.kr/data/photos/20260208/art_177173644909_2afb31.jpg"
+      },
+      "bytes": {
+        "mini": 0,
+        "card": 0,
+        "profile": 0,
+        "total": 0
+      },
+      "original": {
+        "width": 0,
+        "height": 0,
+        "size": 0
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-external",
+      "verified": true,
+      "sourcePage": "https://www.foodtoday.or.kr/news/article.html?no=202599",
+      "sourceUrl": "https://www.foodtoday.or.kr/data/photos/20260208/art_177173644909_2afb31.jpg",
+      "matchScore": 100,
+      "verification": [
+        "위성곤 · 제주특별자치도 인물명/직책 교차확인",
+        "정참시 광역단체장 16인 지정 자산"
+      ],
+      "assetizedAt": "2026-08-26T01:46:00+09:00",
+      "updatedAt": "2026-08-26T01:46:00+09:00"
     }
   ]
 }

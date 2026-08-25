@@ -1,6 +1,5 @@
 const { put, del } = require("@vercel/blob");
 const ROSTER = require("../data/politician-photo-roster.json");
-const LOCAL_SEED = require("../data/politician-photo-local-seed.json");
 const { getPoliticianById, fetchPoliticianPhoto, resolvePoliticianPhotoSource } = require("../lib/politician-photo-resolver");
 const { discoverOfficialCandidates, fetchWithTimeout, publicHttpsUrl, officialHostAllowed, naverCredentials } = require("../lib/politician-photo-official");
 const { discoverDirectCandidates } = require("../lib/politician-photo-direct");
@@ -8,6 +7,7 @@ const { getJSON, setJSON } = require("../../../lib/v3/redis");
 const { requireAdmin } = require("../../../lib/v3/access");
 const { blobToken } = require("../../../lib/v3/blob");
 const { sanitize } = require("../../../lib/v3/schema");
+const { mergePoliticianPhotoAssets } = require("../lib/politician-photo-assets");
 
 const ALLOWED_WIDTHS = new Set([64,96,128,160,256,384]);
 const MAX_ASSET_BYTES = 128 * 1024;
@@ -21,7 +21,6 @@ const AUTO_VARIANT_PLANS = [
 ];
 const PHOTO_TARGETS = ROSTER.filter((person) => person?.id && person.id !== "assembly-300");
 const TARGET_BY_ID = new Map(PHOTO_TARGETS.map(person => [person.id,person]));
-const LOCAL_ASSET_MAP = new Map(((LOCAL_SEED && Array.isArray(LOCAL_SEED.items)) ? LOCAL_SEED.items : []).map(item => [String(item.id || ""), item]));
 
 const manualCache = globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__ || { at:0, items:new Map() };
 globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__ = manualCache;
@@ -33,10 +32,14 @@ function blobPhotoUrl(url = "") {
   } catch { return false; }
 }
 
+async function getPhotoAssets() {
+  return mergePoliticianPhotoAssets(await getJSON("politicianPhotos").catch(()=>null));
+}
+
 async function manualPhoto(id, width) {
   if (Date.now() - manualCache.at > 10000) {
     try {
-      const data = await getJSON("politicianPhotos");
+      const data = await getPhotoAssets();
       manualCache.items = new Map((data?.items || []).map(item => [String(item.id || ""), item]));
       manualCache.at = Date.now();
     } catch { manualCache.at = Date.now(); }
@@ -44,19 +47,14 @@ async function manualPhoto(id, width) {
   const item = manualCache.items.get(String(id || ""));
   if (item?.variants) {
     const key = width <= 96 ? "mini" : width <= 256 ? "card" : "profile";
-    const url = item.variants[key] || item.variants.profile || item.variants.card || item.variants.mini || "";
-    if (url && blobPhotoUrl(url)) return { url, updatedAt:String(item.updatedAt || ""), sourceType:String(item.sourceType || "manual") };
+    const url = String(item.variants[key] || item.variants.profile || item.variants.card || item.variants.mini || "").trim();
+    const sourceType = String(item.sourceType || "manual");
+    const packaged = sourceType === "seed-local" || sourceType === "seed-external";
+    if (url && (blobPhotoUrl(url) || (packaged && (url.startsWith("/assets/") || /^https:\/\//.test(url))))) {
+      return { url, updatedAt:String(item.updatedAt || ""), sourceType };
+    }
   }
-  return localSeedPhoto(id,width);
-}
-
-function localSeedPhoto(id, width) {
-  const item = LOCAL_ASSET_MAP.get(String(id || ""));
-  if (!item?.variants) return null;
-  const key = width <= 96 ? "mini" : width <= 256 ? "card" : "profile";
-  const url = String(item.variants[key] || item.variants.profile || item.variants.card || item.variants.mini || "").trim();
-  if (!url || !url.startsWith("/assets/")) return null;
-  return { url, updatedAt:String(item.updatedAt || ""), sourceType:String(item.sourceType || "seed-local") };
+  return null;
 }
 
 function contentExt(contentType = "") {
@@ -107,7 +105,7 @@ async function putAutoVariants(person, fetched, token) {
 }
 
 async function saveAutoRecord(person, source, uploaded, token) {
-  const latest=await getJSON("politicianPhotos") || {items:[]};
+  const latest=await getPhotoAssets();
   const latestItems=Array.isArray(latest.items) ? latest.items : [];
   if (latestItems.some((item)=>String(item.id) === person.id)) {
     await del(uploaded.uploaded,{token}).catch(()=>{});
@@ -173,7 +171,7 @@ async function harvestBatch(req,res) {
   const cursor=Math.max(0,Math.min(PHOTO_TARGETS.length,Math.floor(Number(req.body?.cursor || 0))));
   const limit=Math.max(1,Math.min(5,Math.floor(Number(req.body?.limit || 5))));
   const batch=PHOTO_TARGETS.slice(cursor,cursor + limit);
-  const initial=await getJSON("politicianPhotos") || {items:[]};
+  const initial=await getPhotoAssets();
   const existing=new Map((initial.items || []).map((item)=>[String(item.id || ""),item]));
   const results=[];
 
@@ -207,7 +205,7 @@ async function discoverBatch(req,res) {
   const cursor=Math.max(0,Math.min(PHOTO_TARGETS.length,Math.floor(Number(req.body?.cursor || 0))));
   const limit=Math.max(1,Math.min(3,Math.floor(Number(req.body?.limit || 1))));
   const batch=PHOTO_TARGETS.slice(cursor,cursor + limit);
-  const assets=await getJSON("politicianPhotos") || {items:[]};
+  const assets=await getPhotoAssets();
   const existing=new Map((assets.items || []).map(item=>[String(item.id || ""),item]));
   const review=await reviewState();
   const reviewMap=new Map(review.items.map(item=>[String(item.id || ""),item]));
@@ -257,7 +255,7 @@ async function directDiscoverBatch(req,res) {
   const cursor=Math.max(0,Math.min(PHOTO_TARGETS.length,Math.floor(Number(req.body?.cursor || 0))));
   const limit=Math.max(1,Math.min(2,Math.floor(Number(req.body?.limit || 1))));
   const batch=PHOTO_TARGETS.slice(cursor,cursor + limit);
-  const assets=await getJSON("politicianPhotos") || {items:[]};
+  const assets=await getPhotoAssets();
   const existing=new Map((assets.items || []).map(item=>[String(item.id || ""),item]));
   const review=await reviewState();
   const reviewMap=new Map(review.items.map(item=>[String(item.id || ""),item]));
@@ -302,7 +300,7 @@ async function directDiscoverBatch(req,res) {
 async function reviewStatus(req,res) {
   const admin=await requireAdmin(req);
   if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
-  const [assets,review]=await Promise.all([getJSON("politicianPhotos").catch(()=>null),reviewState()]);
+  const [assets,review]=await Promise.all([getPhotoAssets(),reviewState()]);
   const assetIds=new Set((assets?.items || []).map(x=>String(x.id || "")));
   const active=review.items.filter(item=>!assetIds.has(String(item.id || "")));
   const count=status=>active.filter(item=>item.status===status || item.lastFailure===status).length;
@@ -342,7 +340,7 @@ async function reportCandidateFailure(req,res) {
   const person=TARGET_BY_ID.get(id);
   if (!person) return res.status(404).json({ok:false,error:"POLITICIAN_NOT_FOUND"});
   if (!allowed.has(failure)) return res.status(400).json({ok:false,error:"INVALID_FAILURE_CODE"});
-  const [assetData,review]=await Promise.all([getJSON("politicianPhotos").catch(()=>null),reviewState()]);
+  const [assetData,review]=await Promise.all([getPhotoAssets(),reviewState()]);
   const assets=assetData || {items:[]};
   if ((assets.items || []).some(item=>String(item.id)===id)) return res.status(409).json({ok:false,error:"EXISTING_ASSET"});
   const reviewMap=new Map(review.items.map(item=>[String(item.id || ""),item]));
@@ -365,7 +363,7 @@ async function approveCandidate(req,res) {
   const uploaded=req.body?.uploaded || {};
   if (!validUploadedSet(uploaded)) return res.status(400).json({ok:false,error:"INVALID_OPTIMIZED_UPLOAD"});
   const newUrls=[uploaded.variants.mini,uploaded.variants.card,uploaded.variants.profile];
-  const [assetData,review]=await Promise.all([getJSON("politicianPhotos").catch(()=>null),reviewState()]);
+  const [assetData,review]=await Promise.all([getPhotoAssets(),reviewState()]);
   const assets=assetData || {items:[]};
   if ((assets.items || []).some(item=>String(item.id)===id)) {
     await del(newUrls,{token}).catch(()=>{});
@@ -456,7 +454,9 @@ module.exports = async function politicianPhotoRoute(req,res) {
         ? "JCV3_BLOB_OFFICIAL_REVIEW"
         : manual.sourceType === "seed-local"
           ? "JCV3_LOCAL_SEED"
-          : "ADMIN_UPLOAD";
+          : manual.sourceType === "seed-external"
+            ? "JCV3_PACKAGED_SEED"
+            : "ADMIN_UPLOAD";
     res.setHeader("X-JCV3-Photo-Provider",provider);
     if (manual.updatedAt) res.setHeader("X-JCV3-Photo-Version",encodeURIComponent(manual.updatedAt));
     res.statusCode=307;
