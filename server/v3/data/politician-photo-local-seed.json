@@ -652,6 +652,161 @@
       ],
       "assetizedAt": "2026-08-26T01:46:00+09:00",
       "updatedAt": "2026-08-26T01:46:00+09:00"
+    },
+    {
+      "id": "assembly-203",
+      "variants": {
+        "mini": "/assets/politicians/assembly-203-mini.webp",
+        "card": "/assets/politicians/assembly-203-card.webp",
+        "profile": "/assets/politicians/assembly-203-profile.webp"
+      },
+      "bytes": {
+        "mini": 1992,
+        "card": 3738,
+        "profile": 9554,
+        "total": 15284
+      },
+      "original": {
+        "width": 142,
+        "height": 190,
+        "size": 5216
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:운용근.jpg",
+      "sourceUrl": "user-upload:운용근.jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 윤용근 국회의원 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:29:24+09:00",
+      "updatedAt": "2026-08-26T03:29:24+09:00"
+    },
+    {
+      "id": "assembly-027",
+      "variants": {
+        "mini": "/assets/politicians/assembly-027-mini.webp",
+        "card": "/assets/politicians/assembly-027-card.webp",
+        "profile": "/assets/politicians/assembly-027-profile.webp"
+      },
+      "bytes": {
+        "mini": 1896,
+        "card": 3626,
+        "profile": 9798,
+        "total": 15320
+      },
+      "original": {
+        "width": 250,
+        "height": 243,
+        "size": 13137
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:이진숙.jpg",
+      "sourceUrl": "user-upload:이진숙.jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 이진숙 국회의원 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:29:24+09:00",
+      "updatedAt": "2026-08-26T03:29:24+09:00"
+    },
+    {
+      "id": "assembly-126",
+      "variants": {
+        "mini": "/assets/politicians/assembly-126-mini.webp",
+        "card": "/assets/politicians/assembly-126-card.webp",
+        "profile": "/assets/politicians/assembly-126-profile.webp"
+      },
+      "bytes": {
+        "mini": 1606,
+        "card": 2676,
+        "profile": 7022,
+        "total": 11304
+      },
+      "original": {
+        "width": 92,
+        "height": 92,
+        "size": 1933
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:박용갑.jpg",
+      "sourceUrl": "user-upload:박용갑.jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 박용갑 국회의원 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:29:24+09:00",
+      "updatedAt": "2026-08-26T03:29:24+09:00"
+    },
+    {
+      "id": "assembly-189",
+      "variants": {
+        "mini": "/assets/politicians/assembly-189-mini.webp",
+        "card": "/assets/politicians/assembly-189-card.webp",
+        "profile": "/assets/politicians/assembly-189-profile.webp"
+      },
+      "bytes": {
+        "mini": 2160,
+        "card": 4414,
+        "profile": 13018,
+        "total": 19592
+      },
+      "original": {
+        "width": 234,
+        "height": 329,
+        "size": 10529
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:CONGRESS_PHOTO_G1899868_202405110816.jpg",
+      "sourceUrl": "user-upload:CONGRESS_PHOTO_G1899868_202405110816.jpg",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 박정하 국회의원 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:29:24+09:00",
+      "updatedAt": "2026-08-26T03:29:24+09:00"
+    },
+    {
+      "id": "assembly-155",
+      "variants": {
+        "mini": "/assets/politicians/assembly-155-mini.webp",
+        "card": "/assets/politicians/assembly-155-card.webp",
+        "profile": "/assets/politicians/assembly-155-profile.webp"
+      },
+      "bytes": {
+        "mini": 1662,
+        "card": 2984,
+        "profile": 9146,
+        "total": 13792
+      },
+      "original": {
+        "width": 853,
+        "height": 1004,
+        "size": 40776
+      },
+      "focus": "50% 28%",
+      "sourceType": "seed-local",
+      "verified": true,
+      "sourcePage": "user-upload:김현정.webp",
+      "sourceUrl": "user-upload:김현정.webp",
+      "matchScore": 100,
+      "verification": [
+        "사용자가 김현정 국회의원 사진으로 직접 제공",
+        "정참시 로컬 사진 자산으로 패키징"
+      ],
+      "assetizedAt": "2026-08-26T03:29:24+09:00",
+      "updatedAt": "2026-08-26T03:29:24+09:00"
     }
   ]
 }
