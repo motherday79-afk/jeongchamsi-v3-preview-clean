@@ -26,6 +26,10 @@ module.exports = async function handler(req, res) {
       if (!validDomain(domain)) return res.status(400).json({ ok: false, error: "INVALID_DOMAIN" });
       const data = sanitize(domain, req.body?.data);
       await setJSON(domain, data);
+      if (domain === "politicianPhotos") {
+        const photoCache = globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__;
+        if (photoCache) { photoCache.at = 0; photoCache.items = new Map(); }
+      }
       const savedData = domain === "politicianPhotos" ? mergePoliticianPhotoAssets(data) : data;
       return res.status(200).json({ ok: true, domain, savedAt: new Date().toISOString(), data: savedData });
     } catch (error) {

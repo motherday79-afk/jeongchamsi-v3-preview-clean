@@ -1,5 +1,5 @@
 /*
- * 0.36.64 — VERIFIED PHOTO ASSETS
+ * 0.36.72 — VERIFIED PHOTO ASSETS
  * Every real politician ID uses one versioned photo path. Verified Wikimedia photos may be
  * assetized into Jeongchamsi Blob storage; admin manual assets remain highest priority.
  */
@@ -50,8 +50,8 @@ export function politicianPhoto(id = "", variant = "card") {
     variant,
     width:spec.width,
     quality:spec.quality,
-    url:`/api/v3/politician-photo?id=${encodeURIComponent(key)}&w=${spec.width}&v=03664`,
-    modifiedNote:"검증 사진 · 정참시 자산 우선 · v0.36.64 캐시 키",
+    url:`/api/v3/politician-photo?id=${encodeURIComponent(key)}&w=${spec.width}&v=03672`,
+    modifiedNote:"검증 사진 · 정참시 자산 우선 · v0.36.72 캐시 키",
     verified:true,
     resolver:"verified-asset-first"
   });
