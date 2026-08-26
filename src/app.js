@@ -577,17 +577,16 @@ document.addEventListener("change", async event => {
       const form = politicianPhoto.closest("[data-politician-photo-form]");
       const tools = await import("./views/admin.js");
       tools.preparePoliticianPhotoPreview(politicianPhoto.files[0], form?.querySelector("[data-politician-photo-preview]"), form?.querySelector("[data-politician-photo-state]"));
-      if (form?.matches("[data-detail-politician-photo-form]")) {
-        const st = form.querySelector("[data-politician-photo-state]");
-        if (st) st.textContent = "자동 최적화 · 정참시 자산 저장 중";
-        const r = await tools.savePoliticianPhotoForm(form);
-        if (!r.ok) { if (st) st.textContent = `저장 실패 · ${r.error || ""}`; politicianPhoto.value = ""; return; }
-        if (st) st.textContent = r.message || "정참시 자산 저장 완료";
-        clearDomainCache("politicianPhotos");
-        await render(currentRoute(), { resetScroll:false });
-        return;
-      }
-    } catch (e) { alert(e.message || "이미지 처리 실패"); politicianPhoto.value = ""; return; }
+      const saveButton = form?.querySelector("[data-politician-photo-save]");
+      if (saveButton) saveButton.disabled = false;
+    } catch (e) {
+      alert(e.message || "이미지 처리 실패");
+      politicianPhoto.value = "";
+      const form = politicianPhoto.closest("[data-politician-photo-form]");
+      const saveButton = form?.querySelector("[data-politician-photo-save]");
+      if (saveButton) saveButton.disabled = true;
+      return;
+    }
   }
   const politicianPhotoSelect = event.target.closest("[data-politician-photo-select]");
   if (politicianPhotoSelect?.value) return route(`/admin?tab=people&person=${encodeURIComponent(politicianPhotoSelect.value)}`);

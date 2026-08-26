@@ -12,13 +12,18 @@ test("admin-only politician detail photo editor is rendered from the live detail
   assert.match(people, /session\.authenticated&&session\.user\?\.role==="admin"/);
   assert.match(people, /data-detail-politician-photo-form/);
   assert.match(people, /data-detail-politician-photo-trigger/);
-  assert.match(people, /사진 등록·교체/);
+  assert.match(people, /data-politician-photo-preview/);
+  assert.match(people, /data-politician-photo-save/);
+  assert.match(people, /사진 선택/);
+  assert.match(people, />저장</);
 });
 
-test("detail photo selection immediately reuses the existing optimized politician asset pipeline", () => {
-  assert.match(app, /form\?\.matches\("\[data-detail-politician-photo-form\]"\)/);
+test("detail photo selection previews first and explicit submit reuses the optimized politician asset pipeline", () => {
+  assert.match(app, /preparePoliticianPhotoPreview/);
+  assert.match(app, /data-politician-photo-save/);
+  assert.match(app, /form\.matches\("\[data-politician-photo-form\]"\)/);
   assert.match(app, /savePoliticianPhotoForm\(form\)/);
-  assert.match(app, /자동 최적화 · 정참시 자산 저장 중/);
+  assert.doesNotMatch(app, /자동 최적화 · 정참시 자산 저장 중/);
   assert.match(image, /mini: Object\.freeze\(\{ maxWidth: 96, maxHeight: 128, targetBytes: 12 \* 1024/);
   assert.match(image, /card: Object\.freeze\(\{ maxWidth: 192, maxHeight: 256, targetBytes: 24 \* 1024/);
   assert.match(image, /profile: Object\.freeze\(\{ maxWidth: 480, maxHeight: 640, targetBytes: 64 \* 1024/);

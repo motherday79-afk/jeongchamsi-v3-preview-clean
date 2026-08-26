@@ -139,7 +139,6 @@ async function peoplePanel() {
   const officialCount = [...assets.values()].filter(x => String(x.sourceType || "") === "auto-official-review").length;
   const autoCount = wikimediaCount + officialCount;
   const seedCount = [...assets.values()].filter(x => ["seed-local","seed-external"].includes(String(x.sourceType || ""))).length;
-  const assemblyAssetCount = people.filter(x => x.type === "assembly" && x.id !== "assembly-300" && assets.has(x.id)).length;
   const targetCount = people.filter(x => x.id !== "assembly-300").length;
   const summary = review?.summary || {};
   const candidateImages = Number(summary.candidateImages || 0);
@@ -168,7 +167,6 @@ async function peoplePanel() {
     <div class="admin-panel-head"><div><h2>인물 관리 · 정치인 사진</h2><span class="status-pill"><b>PHOTO ASSETS</b>${assets.size}명 정참시 자산</span></div></div>
     <div class="people-admin-grid"><article><b>국회의원</b><strong>${PERSON_COUNTS.assembly} / 300</strong><span>텍스트 연결</span></article><article><b>광역단체장</b><strong>${PERSON_COUNTS.metropolitan} / 16</strong><span>텍스트 연결</span></article><article><b>기초단체장</b><strong>${PERSON_COUNTS.basic} / 227</strong><span>텍스트 연결</span></article><article><b>인물 공급자</b><strong>${PERSON_PROVIDER_STATUS}</strong><span>앱 내부 Seed</span></article><article><b>사진 공급자</b><strong>${PHOTO_PROVIDER_STATUS}</strong><span>Wikimedia + 공식기관 + 정참시 Blob</span></article><article><b>정참시 자산</b><strong>${assets.size} / ${targetCount}</strong><span>자동 ${autoCount} · 수기 ${manualCount} · 패키지 ${seedCount}</span></article></div>
     <div class="politician-photo-stage2-stats"><article><b>정참시 자산</b><strong>${assets.size}</strong><span>${targetCount}명 중 자산화</span></article><article><b>직접소스 후보</b><strong>${candidateImages}</strong><span>검토필요 ${reviewRequired}명</span></article><article><b>강한검증</b><strong>${strongCandidates}</strong><span>공식페이지 신원확인</span></article><article><b>육안확인</b><strong>${visualReviewCandidates}</strong><span>공식호스트 이미지 후보</span></article><article><b>미발견</b><strong>${noCandidate}</strong><span>직접소스 후보 없음</span></article><article><b>수집오류</b><strong>${collectionErrors}</strong><span>검색·페이지·이미지</span></article></div>
-    <div class="politician-photo-harvest politician-photo-assembly-assetize"><div><b>국회의원 사진 · 정참시 자산화</b><p>공석 1석을 제외한 국회의원 299명을 대상으로, 기존 자산은 유지하고 미자산화 인물만 검증 사진을 찾아 정참시 Blob에 직접 저장합니다.</p></div><button class="primary-btn" type="button" data-politician-photo-assembly-assetize data-auto-start="${assemblyAssetCount < 299 ? "1" : "0"}">국회의원 299명 자산화 시작</button><span data-politician-photo-assembly-assetize-state>국회의원 자산 ${assemblyAssetCount}/299 · 기존 자산 자동 건너뜀</span></div>
     <div class="politician-photo-harvest"><div><b>사진 수집 3단계 · 직접소스 공략</b><p>국회의원은 국회 공식페이지, 광역·기초단체장은 열린시장실·도지사실·군수실·구청장실을 직접 탐색합니다. 공식페이지의 프로필·약력 링크를 한 단계 더 따라가고, 마지막에는 NAVER 이미지 검색에서 공식기관 호스트 후보까지 검수함으로 가져옵니다.</p></div><button class="primary-btn" type="button" data-politician-photo-harvest>3단계 직접소스 수집 시작</button><span data-politician-photo-harvest-state>NAVER WEB/IMAGE ${naverConfigured ? "OK" : "연결확인"} · 정참시 자산 ${assets.size}/${targetCount} · 후보 ${reviewRequired}명 · 3단계 미확인 ${stage3Unchecked}명</span></div>
     ${reviewInbox}
     <div class="politician-photo-picker"><label>정치인 찾기<input type="search" placeholder="이름 · 정당 · 지역 검색" data-person-select-filter="#politician-photo-person-select"></label><label>정치인 선택<select id="politician-photo-person-select" data-politician-photo-select>${options}</select></label></div>
@@ -591,7 +589,7 @@ export function preparePoliticianPhotoPreview(file, previewEl, stateEl) {
   if (!["image/jpeg","image/png","image/webp"].includes(String(file.type || "").toLowerCase())) throw new Error("JPG · PNG · WebP만 사용할 수 있습니다");
   if (file.size > 5 * 1024 * 1024) throw new Error("원본 이미지는 5MB 이하만 사용할 수 있습니다");
   const url = URL.createObjectURL(file);
-  if (previewEl) { previewEl.style.backgroundImage = `url('${url}')`; previewEl.textContent = ""; }
+  if (previewEl) { previewEl.style.backgroundImage = `url('${url}')`; previewEl.textContent = ""; previewEl.hidden = false; }
   if (stateEl) stateEl.textContent = `선택 완료 · 원본 ${photoKb(file.size)} · 저장 시 자동 최적화`;
   return { ok:true };
 }
@@ -619,36 +617,6 @@ export async function savePoliticianPhotoForm(form) {
     const cleanup = oldUrls.length ? await deletePoliticianPhotoBlobs(oldUrls) : { ok:true, deleted:0 };
     return { ok:true, record, cleanup, message:`저장 완료 · 최적화 ${photoKb(uploaded.bytes.total)}` };
   } catch (error) { return { ok:false, error:error?.message || "정치인 사진 저장 실패" }; }
-}
-
-export async function assetizeAssemblyPoliticianPhotos(stateEl = null, buttonEl = null) {
-  let cursor = 0;
-  let total = 299;
-  const counts = { assetized:0, existing:0, unresolved:0, failed:0 };
-  const label = () => `국회의원 자산화 ${Math.min(cursor,total)}/${total} · 신규 ${counts.assetized} · 기존 ${counts.existing} · 미확보 ${counts.unresolved} · 오류 ${counts.failed}`;
-  if (buttonEl) buttonEl.disabled = true;
-  if (stateEl) stateEl.textContent = "국회의원 자산화 준비 중";
-  try {
-    while (cursor < total) {
-      const r = await fetch("/api/v3/politician-photo", {
-        method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json",Accept:"application/json"},
-        body:JSON.stringify({action:"assetize-assembly-batch",cursor,limit:1})
-      });
-      const b = await r.json().catch(()=>({}));
-      if (!r.ok || !b.ok) return {ok:false,error:b.error || `ASSEMBLY_PHOTO_ASSETIZE_${r.status}`,cursor,total,counts};
-      total = Number(b.total || total);
-      for (const [key,value] of Object.entries(b.summary || {})) counts[key] = Number(counts[key] || 0) + Number(value || 0);
-      const next = Number(b.nextCursor);
-      if (!Number.isFinite(next) || next <= cursor) return {ok:false,error:"ASSEMBLY_PHOTO_CURSOR_STALLED",cursor,total,counts};
-      cursor = next;
-      if (stateEl) stateEl.textContent = label();
-      if (b.done) break;
-      await new Promise(resolve => setTimeout(resolve, 35));
-    }
-    return {ok:true,cursor,total,counts,message:`국회의원 자산화 완료 · 신규 ${counts.assetized}명 · 기존 ${counts.existing}명 · 미확보 ${counts.unresolved}명 · 오류 ${counts.failed}명`};
-  } catch (error) {
-    return {ok:false,error:error?.message || "ASSEMBLY_PHOTO_ASSETIZE_FAILED",cursor,total,counts};
-  } finally { if (buttonEl) buttonEl.disabled = false; }
 }
 
 export async function harvestPoliticianPhotos(stateEl = null, buttonEl = null) {
