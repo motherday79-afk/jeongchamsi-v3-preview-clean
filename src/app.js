@@ -568,6 +568,9 @@ document.addEventListener("input", async event => {
   if (cover?.files?.[0]) { try { await (await import("./views/admin.js")).prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
   const profile = event.target.closest("[data-profile-input]");
   if (profile?.files?.[0]) { try { await (await import("./views/admin.js")).prepareProfilePreview(profile.files[0], profile.closest("form")?.querySelector("[data-profile-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); profile.value = ""; } }
+});
+
+document.addEventListener("change", async event => {
   const politicianPhoto = event.target.closest("[data-politician-photo-input]");
   if (politicianPhoto?.files?.[0]) {
     try {
@@ -584,11 +587,8 @@ document.addEventListener("input", async event => {
         await render(currentRoute(), { resetScroll:false });
         return;
       }
-    } catch (e) { alert(e.message || "이미지 처리 실패"); politicianPhoto.value = ""; }
+    } catch (e) { alert(e.message || "이미지 처리 실패"); politicianPhoto.value = ""; return; }
   }
-});
-
-document.addEventListener("change", async event => {
   const politicianPhotoSelect = event.target.closest("[data-politician-photo-select]");
   if (politicianPhotoSelect?.value) return route(`/admin?tab=people&person=${encodeURIComponent(politicianPhotoSelect.value)}`);
   const region = event.target.closest("[data-region-province],[data-region-city]");
