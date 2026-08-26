@@ -9,7 +9,6 @@ const app = document.querySelector("#app");
 let renderEpoch = 0;
 let liveBarRotationTimer = 0;
 let liveBarCelebrationTimer = 0;
-let assemblyPhotoAutoStarted = false;
 
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
@@ -140,28 +139,6 @@ async function hydrateLiveCommunityBar() {
   }
 }
 
-async function startAssemblyPhotoAssetizationIfNeeded() {
-  const button = document.querySelector('[data-politician-photo-assembly-assetize][data-auto-start="1"]');
-  if (!button || assemblyPhotoAutoStarted) return;
-  assemblyPhotoAutoStarted = true;
-  const stateEl = document.querySelector("[data-politician-photo-assembly-assetize-state]");
-  try {
-    const photoTools = await import("./views/admin.js");
-    const result = await photoTools.assetizeAssemblyPoliticianPhotos(stateEl, button);
-    if (!result.ok) {
-      if (stateEl) stateEl.textContent = `국회의원 자산화 중단 · ${result.error || "오류"}`;
-      assemblyPhotoAutoStarted = false;
-      return;
-    }
-    if (stateEl) stateEl.textContent = result.message || "국회의원 자산화 완료";
-    clearDomainCache("politicianPhotos");
-    await render(currentRoute(), { resetScroll:false });
-  } catch (error) {
-    if (stateEl) stateEl.textContent = `국회의원 자산화 중단 · ${error?.message || "오류"}`;
-    assemblyPhotoAutoStarted = false;
-  }
-}
-
 async function render(state = currentRoute(), { resetScroll = true, scrollTarget = null } = {}) {
   const epoch = ++renderEpoch;
   const preserved = scrollTarget || (resetScroll ? { x:0, y:0 } : currentScrollPoint());
@@ -183,7 +160,6 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
 
   syncCurrentScroll();
   hydrateLiveCommunityBar();
-  void startAssemblyPhotoAssetizationIfNeeded();
   requestAnimationFrame(() => document.documentElement.classList.remove("jcv3-route-swapping"));
 }
 function toggleDrawer(open) {
@@ -227,6 +203,21 @@ document.addEventListener("error", event => {
 document.addEventListener("click", async event => {
   const insideMore = event.target.closest(".service-more");
   if (!insideMore) closeServiceMore();
+
+  const detailPhotoTrigger = event.target.closest("[data-detail-politician-photo-trigger]");
+  if (detailPhotoTrigger) {
+    const form = detailPhotoTrigger.closest("[data-detail-politician-photo-form]");
+    const input = form?.querySelector("[data-politician-photo-input]");
+    if (input) input.click();
+    return;
+  }
+
+  const detailPhotoShell = event.target.closest("[data-detail-photo-shell].admin-photo-editable");
+  if (detailPhotoShell && !event.target.closest("button,input,a")) {
+    const input = detailPhotoShell.querySelector("[data-politician-photo-input]");
+    if (input) input.click();
+    return;
+  }
 
   const quickSelect = event.target.closest("[data-person-quick-option]");
   if (quickSelect) {
@@ -451,18 +442,6 @@ document.addEventListener("click", async event => {
     await render(currentRoute(), { resetScroll:false });
     return;
   }
-  const politicianPhotoAssemblyAssetize = event.target.closest("[data-politician-photo-assembly-assetize]");
-  if (politicianPhotoAssemblyAssetize) {
-    if (!confirm("국회의원 299명 중 미자산화 사진을 찾아 정참시 Blob에 저장할까요? 기존 사진은 덮어쓰지 않습니다.")) return;
-    const stateEl = document.querySelector("[data-politician-photo-assembly-assetize-state]");
-    const photoTools = await import("./views/admin.js");
-    const r = await photoTools.assetizeAssemblyPoliticianPhotos(stateEl, politicianPhotoAssemblyAssetize);
-    if (!r.ok) { if (stateEl) stateEl.textContent = `국회의원 자산화 중단 · ${r.error || "오류"}`; return; }
-    if (stateEl) stateEl.textContent = r.message || "국회의원 자산화 완료";
-    clearDomainCache("politicianPhotos");
-    await render(currentRoute(), { resetScroll:false });
-    return;
-  }
   const politicianPhotoHarvest = event.target.closest("[data-politician-photo-harvest]");
   if (politicianPhotoHarvest) {
     if (!confirm("미자산화 정치인을 국회·지자체 직접소스까지 3단계 수집할까요? 기존 정참시 자산은 절대 덮어쓰지 않고 발견 사진은 후보 검수함에만 넣습니다.")) return;
@@ -593,7 +572,18 @@ document.addEventListener("input", async event => {
   if (politicianPhoto?.files?.[0]) {
     try {
       const form = politicianPhoto.closest("[data-politician-photo-form]");
-      (await import("./views/admin.js")).preparePoliticianPhotoPreview(politicianPhoto.files[0], form?.querySelector("[data-politician-photo-preview]"), form?.querySelector("[data-politician-photo-state]"));
+      const tools = await import("./views/admin.js");
+      tools.preparePoliticianPhotoPreview(politicianPhoto.files[0], form?.querySelector("[data-politician-photo-preview]"), form?.querySelector("[data-politician-photo-state]"));
+      if (form?.matches("[data-detail-politician-photo-form]")) {
+        const st = form.querySelector("[data-politician-photo-state]");
+        if (st) st.textContent = "자동 최적화 · 정참시 자산 저장 중";
+        const r = await tools.savePoliticianPhotoForm(form);
+        if (!r.ok) { if (st) st.textContent = `저장 실패 · ${r.error || ""}`; politicianPhoto.value = ""; return; }
+        if (st) st.textContent = r.message || "정참시 자산 저장 완료";
+        clearDomainCache("politicianPhotos");
+        await render(currentRoute(), { resetScroll:false });
+        return;
+      }
     } catch (e) { alert(e.message || "이미지 처리 실패"); politicianPhoto.value = ""; }
   }
 });

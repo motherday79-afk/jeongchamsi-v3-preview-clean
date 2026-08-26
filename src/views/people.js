@@ -181,7 +181,9 @@ export async function renderPersonDetail(id){
   const activityTitle=p.type==="assembly"?"의정활동":"행정활동";
   const [live,photo]=await Promise.all([getNowPerson(p.id),Promise.resolve(politicianPhoto(p.id,"profile"))]);
   const row=live?.row||null,news=row?.news||{};
+  const isAdmin=session.authenticated&&session.user?.role==="admin";
   const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="eager" decoding="async" fetchpriority="high">` : "";
+  const adminPhotoEditor=isAdmin?`<form class="detail-politician-photo-form" data-politician-photo-form data-detail-politician-photo-form data-person-id="${esc(p.id)}"><input type="file" accept="image/jpeg,image/png,image/webp" data-politician-photo-input hidden><button class="detail-photo-admin-trigger" type="button" data-detail-politician-photo-trigger aria-label="${esc(p.name)} 사진 등록 또는 교체"><span>ADMIN</span><b>사진 등록·교체</b></button><small class="detail-photo-admin-state" data-politician-photo-state>선택 즉시 자동 최적화·저장</small></form>`:"";
   const photoNotice=photo
     ? ` · 사진: <a href="${esc(photo.sourcePage||"#")}" target="_blank" rel="noopener noreferrer">${esc(photo.attribution||"프로필 사진")}</a>${photo.licenseUrl?` · <a href="${esc(photo.licenseUrl)}" target="_blank" rel="noopener noreferrer">${esc(photo.license||"라이선스")}</a>`:""}`
     : " · 사진은 순차 연결 중";
@@ -190,7 +192,7 @@ export async function renderPersonDetail(id){
   const newsSection=row?`<section class="content-card person-recent-news"><div class="section-title"><h2>최근 뉴스</h2><span>분석 근거 · 최근 7일 최대 6건</span></div>${recentNews(news)}</section>`:"";
   return pageShell(`<main class="subpage person-live-detail-page person-analysis-report-page">
     <section class="person-detail-hero person-live-hero content-card">
-      <div class="person-detail-photo ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div>
+      <div class="person-detail-photo ${photo ? "has-photo" : ""} ${isAdmin ? "admin-photo-editable" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""} data-detail-photo-shell>${photoMarkup}${adminPhotoEditor}</div>
       <div class="person-detail-title"><span class="eyebrow">${esc(p.roleLabel)} · LIVE PROFILE</span><h1>${esc(p.name)}</h1><p class="person-current-role">${esc(p.office||p.roleLabel)}</p><p>${esc(p.party)} · ${esc(p.jurisdiction)}</p><div class="person-detail-badges"><span>${esc(p.roleLabel)}</span><span>${esc(p.terms||"기본정보")}</span><span>${esc(p.type==="assembly"?(p.committee||"국회의원"):p.jurisdiction)}</span></div></div>
       ${liveHero}
       <div class="detail-action-bar"><button type="button" class="ghost-btn ${favorite?"active":""}" data-person-favorite="${esc(p.id)}">${favorite?"★ 즐겨찾기됨":"☆ 즐겨찾기"}</button><button type="button" class="ghost-btn" data-go="/compare?a=${esc(p.id)}">비교하기</button></div>
