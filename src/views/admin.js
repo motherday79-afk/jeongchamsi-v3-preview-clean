@@ -13,7 +13,7 @@ const TABS = [
 ];
 const BOARD_NAMES = { columns: "COLUMN", community: "정뮤니티", news: "정참시 NEWS" };
 function params() { const p = new URLSearchParams(location.search); return { tab: p.get("tab") || "dashboard", edit: p.get("edit") || "", person: p.get("person") || "" }; }
-function adminTabs(active) { return `<nav class="admin-tabs">${TABS.map(([key, label]) => `<button type="button" class="${active === key ? "active" : ""}" data-admin-tab="${key}">${label}</button>`).join("")}</nav>`; }
+function adminTabs(active) { return `<nav class="admin-tabs" aria-label="관리자 메뉴">${TABS.map(([key, label]) => `<a href="/admin?tab=${encodeURIComponent(key)}" class="${active === key ? "active" : ""}" data-route${active === key ? ` aria-current="page"` : ""}>${label}</a>`).join("")}</nav>`; }
 async function setupStatus() {
   try { const r = await fetch("/api/v3/setup", { credentials: "same-origin", headers: { Accept: "application/json" } }); return await r.json(); }
   catch { return { ok: false, needed: false, error: "SETUP_STATUS_FAILED" }; }
@@ -107,10 +107,10 @@ async function membersPanel() {
         <label>상태<select data-member-status="${esc(user.id)}"><option value="active" ${!suspended ? "selected" : ""}>정상</option><option value="suspended" ${suspended ? "selected" : ""}>이용정지</option></select></label>
         <label>정지기간<select data-member-days="${esc(user.id)}"><option value="0" ${suspended && !Number.isFinite(until) ? "selected" : ""}>무기한</option><option value="2" ${durationPreset===2 ? "selected" : ""}>2일</option><option value="7" ${durationPreset===7 ? "selected" : ""}>7일</option><option value="30" ${durationPreset===30 ? "selected" : ""}>30일</option></select></label>
         <label class="member-reason">제재 사유<input data-member-reason="${esc(user.id)}" value="${esc(user.suspensionReason || "")}" maxlength="200" placeholder="선택 입력"></label>
-        <button class="primary-btn" type="button" data-member-access="${esc(user.id)}">회원정보 저장</button>
+        <button class="primary-btn" type="button" data-member-access="${esc(user.id)}">회원정보 저장</button><span class="save-state member-save-state" data-member-save-state="${esc(user.id)}" role="status" aria-live="polite"></span>
       </div>
     </article>`;
-  }).join("")}</div><div class="save-state" data-member-save-state></div></section>`;
+  }).join("")}</div></section>`;
 }
 function photoKb(bytes = 0) { return `${Math.max(0, Number(bytes || 0) / 1024).toFixed(1)}KB`; }
 function politicianTypeName(type = "") { return type === "assembly" ? "국회의원" : type === "metropolitan" ? "광역단체장" : "기초단체장"; }
@@ -287,12 +287,29 @@ async function academyPanel() {
     </form>` : ""}
   </section>`;
 }
+const HERO_TONES = [
+  ["default","기본"], ["white","화이트"], ["mint","민트"], ["yellow","옐로 포인트"], ["dark","다크"]
+];
+function heroToneOptions(current = "default") {
+  return HERO_TONES.map(([value,label]) => `<option value="${value}" ${String(current || "default") === value ? "selected" : ""}>${label}</option>`).join("");
+}
+
 async function brandPanel() {
   const data = await getDomain("brand");
   const hero = {
     kicker:"정참시 — 정치에 참여할 시간",
     headline:"바라볼 때가 아닌, 행동할 때 정치가 시작됩니다",
+    productKicker:"JEONGCHAMSI",
+    productTagline:"정치에 참여할 시간",
     productHeadline:"정치를 보는 것에서 움직이는 것으로!",
+    productDescription:"인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요",
+    productPrimaryLabel:"정참시 응원하기",
+    productPrimaryHref:"/about",
+    productSecondaryLabel:"정참시 후원하기",
+    productSecondaryHref:"https://toon.at/donate/jungchamsi",
+    productHeadlineTone:"white",
+    productAccentTone:"yellow",
+    productDescriptionTone:"mint",
     subline1:"알고, 비교하고, 선택하고, 평가하는 것",
     subline2:"한 사람의 작은 행동이 정치의 방향을 만듭니다",
     learnLabel:"정참시 더 알아보기",
@@ -316,37 +333,47 @@ async function brandPanel() {
   const liveBar = { useActualCount:true, overrideCount:0, ...(data.liveBar || {}) };
   const memberInfo = await fetchMembers();
   const actualMemberCount = memberInfo.users.length;
-  const art = hero.artImage || "/assets/brand/hero-art.webp";
-  return `<section class="admin-panel">
-    <div class="admin-panel-head"><div><h2>메인 최상단 · 정참시 브랜드 타이틀</h2><span class="status-pill"><b>HERO</b>금싸라기 영역</span></div><div class="inline-actions"><button class="ghost-btn" type="button" data-go="/">메인 보기</button><button class="ghost-btn" type="button" data-go="/about">더 알아보기 페이지</button></div></div>
-    <div class="notice-box">기존 대통령 영역을 정참시 브랜드 선언 영역으로 교체했습니다. 대통령 페이지는 더보기 메뉴에서 그대로 유지됩니다</div>
+  const art = hero.artImage || "";
+  return `<section class="admin-panel brand-admin-current">
+    <div class="admin-panel-head"><div><h2>메인 타이틀 · 현재 메인 히어로</h2><span class="status-pill"><b>LIVE HERO</b>실제 메인 1:1 편집</span></div><div class="inline-actions"><button class="ghost-btn" type="button" data-go="/">메인 보기</button><button class="ghost-btn" type="button" data-go="/about">더 알아보기 페이지</button></div></div>
+    <div class="notice-box">이 편집기는 현재 메인 첫 화면의 히어로 문구·버튼·비주얼을 직접 관리합니다. 저장 전 미리보기만 바뀌고, 저장해야 실제 메인에 반영됩니다.</div>
     <form class="admin-form brand-admin-form" data-admin-form="brand-settings">
       <div class="section-title"><h2>상단 함께하는 사람 표시</h2><span>현재 가입 ${actualMemberCount.toLocaleString("ko-KR")}명</span></div>
       <div class="admin-form-row"><label class="check"><input type="checkbox" name="liveBarUseActual" ${liveBar.useActualCount !== false ? "checked" : ""}> 실제 가입 회원수 자동 사용</label><label>수동 표시 인원<input type="number" name="liveBarOverride" min="0" step="1" value="${Math.max(0,Number(liveBar.overrideCount||0))}"></label></div>
-      <div class="section-title top-gap"><h2>메인 히어로 메인멘트</h2><span>현재 메인 첫 화면에 바로 반영</span></div>
-      <label class="admin-hero-primary-copy">정치를 보는 것에서 움직이는 것으로 영역<textarea name="productHeadline" rows="2" maxlength="180" required>${esc(hero.productHeadline || "정치를 보는 것에서 움직이는 것으로!")}</textarea><small>느낌표·문장까지 입력한 그대로 메인 히어로에 표시됩니다</small></label>
-      <div class="section-title top-gap"><h2>브랜드 상세 문구</h2><span>더 알아보기 페이지용</span></div>
-      <label>상단 문구<input name="kicker" maxlength="100" value="${esc(hero.kicker)}"></label>
-      <label>메인 문구<textarea name="headline" rows="3" maxlength="180" required>${esc(hero.headline)}</textarea></label>
-      <label>서브 1<input name="subline1" maxlength="180" value="${esc(hero.subline1)}"></label>
-      <label>서브 2<input name="subline2" maxlength="180" value="${esc(hero.subline2)}"></label>
-      <div class="admin-form-row"><label>더 알아보기 버튼<input name="learnLabel" maxlength="60" value="${esc(hero.learnLabel)}"></label><label>후원 버튼<input name="supportLabel" maxlength="60" value="${esc(hero.supportLabel)}"></label></div>
-      <label>히어로 비주얼 교체<input type="file" accept="image/*" data-cover-input></label>
-      <div class="image-uploader"><div class="image-preview brand-art-preview" data-cover-preview ${art ? `style="background-image:url('${esc(art)}')"` : ""} data-cover-data="${esc(hero.artImage || "")}"></div><div class="image-help"><b>현재 확정 디자인 비주얼 사용 중</b><span>교체하지 않으면 기본 비주얼이 계속 사용됩니다. 업로드 시 Blob 이미지로 교체됩니다</span></div></div>
-      <div class="section-title top-gap"><h2>정참시 더 알아보기</h2><span>/about</span></div>
-      <label>페이지 제목<input name="aboutTitle" maxlength="100" value="${esc(about.title)}"></label>
-      <label>도입문<textarea name="aboutIntro" rows="3" maxlength="600">${esc(about.intro)}</textarea></label>
-      <label>본문<textarea name="aboutBody" rows="12" maxlength="12000">${esc(about.body)}</textarea></label>
-      <div class="section-title top-gap"><h2>정참시 후원하기</h2><span>/support</span></div>
-      <label>페이지 제목<input name="supportTitle" maxlength="100" value="${esc(support.title)}"></label>
-      <label>도입문<textarea name="supportIntro" rows="3" maxlength="600">${esc(support.intro)}</textarea></label>
-      <label>본문<textarea name="supportBody" rows="10" maxlength="12000">${esc(support.body)}</textarea></label>
-      <label>후원 안내/준비 상태<textarea name="supportNote" rows="3" maxlength="1000">${esc(support.note)}</textarea></label>
-      <div class="admin-form-actions"><button class="primary-btn" type="submit">메인·상세페이지 저장</button><span class="save-state" data-save-state></span></div>
+
+      <div class="section-title top-gap"><h2>현재 메인 히어로 문구</h2><span>메인 첫 화면에 직접 연결</span></div>
+      <div class="admin-form-row"><label>영문 라벨<input name="productKicker" maxlength="60" value="${esc(hero.productKicker)}" required></label><label>보조 라벨<input name="productTagline" maxlength="60" value="${esc(hero.productTagline)}" required></label></div>
+      <label class="admin-hero-primary-copy">메인 헤드라인<textarea name="productHeadline" rows="2" maxlength="180" required>${esc(hero.productHeadline)}</textarea><small>줄바꿈도 그대로 반영됩니다. ‘움직이는 것’ 문구가 있으면 현재처럼 강조 포인트가 적용됩니다.</small></label>
+      <label>설명 문구<textarea name="productDescription" rows="3" maxlength="260" required>${esc(hero.productDescription)}</textarea><small>현재 메인의 ‘인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요’ 영역입니다.</small></label>
+      <div class="admin-form-row"><label>헤드라인 기본 색상<select name="productHeadlineTone">${heroToneOptions(hero.productHeadlineTone)}</select></label><label>강조 문구 색상<select name="productAccentTone">${heroToneOptions(hero.productAccentTone)}</select></label></div>
+      <label>설명 문구 색상<select name="productDescriptionTone">${heroToneOptions(hero.productDescriptionTone)}</select></label>
+      <div class="admin-form-row"><label>1번 버튼 문구<input name="productPrimaryLabel" maxlength="60" value="${esc(hero.productPrimaryLabel)}"></label><label>1번 버튼 주소<input name="productPrimaryHref" maxlength="300" value="${esc(hero.productPrimaryHref)}" placeholder="/about 또는 https://..."></label></div>
+      <div class="admin-form-row"><label>2번 버튼 문구<input name="productSecondaryLabel" maxlength="60" value="${esc(hero.productSecondaryLabel)}"></label><label>2번 버튼 주소<input name="productSecondaryHref" maxlength="300" value="${esc(hero.productSecondaryHref)}" placeholder="/support 또는 https://..."></label></div>
+
+      <div class="section-title top-gap"><h2>히어로 비주얼</h2><span>선택 · 미리보기 · 저장</span></div>
+      <label>히어로 이미지<input type="file" accept="image/jpeg,image/png,image/webp" data-cover-input></label>
+      <div class="image-uploader"><div class="image-preview brand-art-preview product-hero-admin-preview" data-cover-preview ${art ? `style="background-image:url('${esc(art)}')"` : ""} data-cover-data="${esc(hero.artImage || "")}"></div><div class="image-help"><b>권장 1200 × 675px 이상 · 16:9</b><span>JPG · PNG · WebP · 원본 최대 12MB. 업로드 시 브라우저에서 최대 1200×675 기준으로 자동 최적화하며, 저장 전에는 미리보기만 확인할 수 있습니다.</span></div></div>
+
+      <details class="brand-legacy-details"><summary>브랜드 상세페이지 문구 편집</summary>
+        <label>상단 문구<input name="kicker" maxlength="100" value="${esc(hero.kicker)}"></label>
+        <label>메인 문구<textarea name="headline" rows="3" maxlength="180">${esc(hero.headline)}</textarea></label>
+        <label>서브 1<input name="subline1" maxlength="180" value="${esc(hero.subline1)}"></label>
+        <label>서브 2<input name="subline2" maxlength="180" value="${esc(hero.subline2)}"></label>
+        <div class="admin-form-row"><label>더 알아보기 버튼<input name="learnLabel" maxlength="60" value="${esc(hero.learnLabel)}"></label><label>후원 버튼<input name="supportLabel" maxlength="60" value="${esc(hero.supportLabel)}"></label></div>
+        <div class="section-title top-gap"><h2>정참시 더 알아보기</h2><span>/about</span></div>
+        <label>페이지 제목<input name="aboutTitle" maxlength="100" value="${esc(about.title)}"></label>
+        <label>도입문<textarea name="aboutIntro" rows="3" maxlength="600">${esc(about.intro)}</textarea></label>
+        <label>본문<textarea name="aboutBody" rows="12" maxlength="12000">${esc(about.body)}</textarea></label>
+        <div class="section-title top-gap"><h2>정참시 후원하기</h2><span>/support</span></div>
+        <label>페이지 제목<input name="supportTitle" maxlength="100" value="${esc(support.title)}"></label>
+        <label>도입문<textarea name="supportIntro" rows="3" maxlength="600">${esc(support.intro)}</textarea></label>
+        <label>본문<textarea name="supportBody" rows="10" maxlength="12000">${esc(support.body)}</textarea></label>
+        <label>후원 안내/준비 상태<textarea name="supportNote" rows="3" maxlength="1000">${esc(support.note)}</textarea></label>
+      </details>
+      <div class="admin-form-actions"><button class="primary-btn" type="submit">메인 타이틀 저장</button><span class="save-state" data-save-state role="status" aria-live="polite"></span></div>
     </form>
   </section>`;
 }
-
 async function presidentPanel() {
   const data = await getDomain("president"); const p = data.profile || {};
   return `<section class="admin-panel"><div class="admin-panel-head"><div><h2>대통령 정보 구조</h2><span class="status-pill"><b>STRUCTURE</b>입력 준비 완료</span></div><button class="ghost-btn" data-go="/president">외부 페이지</button></div><div class="notice-box">실제 정보 입력은 나중에 해도 됩니다. 아래 필드가 대통령 전용 데이터 저장구조의 기준입니다</div><form class="admin-form" data-admin-form="president"><div class="admin-cover-layout"><div><label>대통령 프로필 사진<input type="file" accept="image/*" data-profile-input></label><p class="image-help">프로필 사진 권장: 세로형 3:4 · 900×1200px 내외. 업로드 시 브라우저에서 자동 최적화합니다</p></div><div class="cover-preview profile-preview" data-profile-preview ${p.photo ? `style="background-image:url('${esc(p.photo)}')" data-profile-data="${esc(p.photo)}"` : ""}>${p.photo ? "" : "프로필 사진 미리보기"}</div></div><div class="admin-form-row"><label>이름<input name="name" value="${esc(p.name || "")}"></label><label>정당<input name="party" value="${esc(p.party || "")}"></label></div><div class="admin-form-row"><label>출생<input name="birth" value="${esc(p.birth || "")}"></label><label>최종학력<input name="education" value="${esc(p.education || "")}"></label></div><div class="admin-form-row"><label>취임일<input name="inauguratedAt" value="${esc(p.inauguratedAt || "")}"></label><label>임기<input name="term" value="${esc(p.term || "")}"></label></div><label>주요 경력 · 한 줄씩<textarea name="career" rows="6">${esc((data.career || []).join("\n"))}</textarea></label><label>선거 이력 · 한 줄씩<textarea name="elections" rows="5">${esc((data.elections || []).join("\n"))}</textarea></label><label>국정 비전<textarea name="vision" rows="5">${esc(data.vision || "")}</textarea></label><label>주요 정책 · 한 줄씩<textarea name="policies" rows="6">${esc((data.policies || []).join("\n"))}</textarea></label><label>핵심 공약 · 한 줄씩<textarea name="pledges" rows="6">${esc((data.pledges || []).join("\n"))}</textarea></label><label>국정과제 · 한 줄씩<textarea name="nationalTasks" rows="6">${esc((data.nationalTasks || []).join("\n"))}</textarea></label><label>공식 채널 · 한 줄씩<textarea name="channels" rows="4">${esc((data.channels || []).join("\n"))}</textarea></label>${formButtons("president")}</form></section>`;
@@ -380,11 +407,11 @@ async function nowDataPanel() {
   const ready = data.configured?.searchAds && data.configured?.news;
   const draftStatus = draft?.status || "대기";
   return `<section class="admin-panel now-data-center">
-    <div class="admin-panel-head"><div><h2>NOW 데이터 센터</h2><span class="status-pill"><b>JEONGCHAMSI INTELLIGENT LIVE DATA</b></span></div></div>
+    <div class="admin-panel-head"><div><h2>NOW 데이터 센터 <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span></h2><span class="status-pill"><b>JEONGCHAMSI INTELLIGENT LIVE DATA</b></span></div></div>
     <div class="now-data-kpis">
       <article><span>수집 대상</span><strong>${num(data.rosterTotal)}</strong><small>실제 정치인</small></article>
-      <article><span>각종 대형 엔진 PC/모바일</span><strong>${data.configured?.searchAds ? "READY" : "연결필요"}</strong><small>각종 SNS PC/모바일</small></article>
-      <article><span>구글 · 네이버 · 다음</span><strong>${data.configured?.news ? "READY" : "확인필요"}</strong><small>JEONGCHAMSI INTELLIGENT NEWS DATA</small></article>
+      <article><span>각종 대형 엔진 PC/모바일</span><strong>${data.configured?.searchAds ? `READY <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>` : `연결필요 <span class="admin-live-pulse is-idle" data-live-status="idle" aria-hidden="true"><i></i></span>`}</strong><small>각종 SNS PC/모바일</small></article>
+      <article><span>구글 · 네이버 · 다음</span><strong>${data.configured?.news ? `READY <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>` : `확인필요 <span class="admin-live-pulse is-idle" data-live-status="idle" aria-hidden="true"><i></i></span>`}</strong><small>JEONGCHAMSI INTELLIGENT NEWS DATA</small></article>
       <article><span>최근 게시</span><strong>${data.current?.publishedAt ? timeText(data.current.publishedAt).slice(5,16) : "—"}</strong><small>${data.current?.draftId || "게시 전"}</small></article>
     </div>
     <div class="now-speed-note"><b>FAST REFRESH</b><span>10명 배치 · 브라우저 2개 워커 · 서버 배치당 5명 병렬 · 검색/뉴스 동시 호출</span></div>
@@ -521,7 +548,7 @@ export async function renderAdmin() {
   else if (tab === "push") panel = await pushPanel();
   else if (tab === "system") panel = await systemPanel();
   else panel = await dashboardPanel();
-  return pageShell(`<main class="subpage admin-page"><section class="page-hero"><span class="eyebrow">ADMIN · V3 CLEAN CORE</span><h1>정참시 관리자</h1><p>Leveraging the Collective Intelligence of Three Leading LLMs and the JEONGCHAMSI Intelligent Data Analysis System, We Deliver Optimized Solutions.</p></section>${adminTabs(tab)}${panel}</main>`);
+  return pageShell(`<main class="subpage admin-page"><section class="page-hero"><span class="eyebrow">ADMIN · V3 CLEAN CORE</span><h1>정참시 관리자 <span class="admin-live-pulse admin-live-pulse-hero" data-live-status="ready" aria-hidden="true"><i></i></span></h1><p>Leveraging the Collective Intelligence of Three Leading LLMs and the JEONGCHAMSI Intelligent Data Analysis System, We Deliver Optimized Solutions.</p></section>${adminTabs(tab)}${panel}</main>`);
 }
 
 export async function prepareCoverPreview(file, previewEl) {
@@ -555,7 +582,17 @@ export async function saveAdminForm(form) {
       hero: {
         kicker:String(fd.get("kicker") || "").trim(),
         headline:String(fd.get("headline") || "").trim(),
+        productKicker:String(fd.get("productKicker") || "JEONGCHAMSI").trim(),
+        productTagline:String(fd.get("productTagline") || "정치에 참여할 시간").trim(),
         productHeadline:String(fd.get("productHeadline") || "정치를 보는 것에서 움직이는 것으로!").trim(),
+        productDescription:String(fd.get("productDescription") || "인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요").trim(),
+        productPrimaryLabel:String(fd.get("productPrimaryLabel") || "정참시 응원하기").trim(),
+        productPrimaryHref:String(fd.get("productPrimaryHref") || "/about").trim(),
+        productSecondaryLabel:String(fd.get("productSecondaryLabel") || "정참시 후원하기").trim(),
+        productSecondaryHref:String(fd.get("productSecondaryHref") || "https://toon.at/donate/jungchamsi").trim(),
+        productHeadlineTone:String(fd.get("productHeadlineTone") || "white").trim(),
+        productAccentTone:String(fd.get("productAccentTone") || "yellow").trim(),
+        productDescriptionTone:String(fd.get("productDescriptionTone") || "mint").trim(),
         subline1:String(fd.get("subline1") || "").trim(),
         subline2:String(fd.get("subline2") || "").trim(),
         learnLabel:String(fd.get("learnLabel") || "").trim(),

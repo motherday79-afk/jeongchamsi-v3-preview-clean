@@ -166,8 +166,8 @@
 .admin-page{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}
 .admin-page>.page-hero{grid-column:1/-1}
 .admin-tabs{display:flex;flex-direction:column;gap:7px;position:sticky;top:84px;max-height:calc(100vh - 104px);overflow-y:auto;overflow-x:hidden;padding:2px;scrollbar-width:thin}
-.admin-tabs button{width:100%;flex:0 0 auto;min-height:42px;padding:10px 12px;border:1px solid #dfe7e4;border-radius:10px;background:#fff;text-align:left;white-space:normal;line-height:1.35}
-.admin-tabs button.active{background:var(--green);color:#fff;border-color:var(--green)}
+.admin-tabs a{width:100%;flex:0 0 auto;min-height:42px;padding:10px 12px;border:1px solid #dfe7e4;border-radius:10px;background:#fff;text-align:left;white-space:normal;line-height:1.35}
+.admin-tabs a.active{background:var(--green);color:#fff;border-color:var(--green)}
 .admin-panel{min-width:0}
 .admin-panel h2{margin:0 0 14px;font-size:var(--fs-h3)}
 .admin-stat-grid,.people-admin-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
@@ -317,7 +317,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   .admin-page{grid-template-columns:1fr}
   .admin-page>.page-hero{grid-column:auto}
   .admin-tabs{position:static;max-height:none;overflow:visible;display:flex;flex-direction:column}
-  .admin-tabs button{width:100%;text-align:left}
+  .admin-tabs a{width:100%;text-align:left}
 
   .page-hero,.content-card,.admin-panel,.auth-card{padding:17px 15px;border-radius:15px}
   .detail-grid{grid-template-columns:1fr}
@@ -484,7 +484,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .danger-btn,
 .load-more-btn,
 .service-nav a,
-.admin-tabs button,
+.admin-tabs a,
 .now-category-tabs button,
 .itsme-category-tabs button,
 .my-post-tabs button,
@@ -518,7 +518,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .ghost-btn:active:not(:disabled),
 .danger-btn:active:not(:disabled),
 .load-more-btn:active:not(:disabled),
-.admin-tabs button:active,
+.admin-tabs a:active,
 .now-category-tabs button:active,
 .itsme-category-tabs button:active,
 .my-post-tabs button:active{
@@ -529,7 +529,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
 .danger-btn:focus-visible,
 .load-more-btn:focus-visible,
 .more-btn:focus-visible,
-.admin-tabs button:focus-visible,
+.admin-tabs a:focus-visible,
 .now-category-tabs button:focus-visible,
 .itsme-category-tabs button:focus-visible,
 .my-post-tabs button:focus-visible,
@@ -628,7 +628,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   .danger-btn,
   .load-more-btn,
   .service-nav a,
-  .admin-tabs button,
+  .admin-tabs a,
   .now-category-tabs button,
   .itsme-category-tabs button,
   .my-post-tabs button,
@@ -737,7 +737,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   .ghost-btn,
   .danger-btn,
   .load-more-btn,
-  .admin-tabs button,
+  .admin-tabs a,
   .now-category-tabs button,
   .itsme-category-tabs button,
   .my-post-tabs button,
@@ -760,7 +760,7 @@ html.jcv3-touch-ui .footer-view-switch.mobile-toggle{display:inline-flex;positio
   .ghost-btn:active:not(:disabled),
   .danger-btn:active:not(:disabled),
   .load-more-btn:active:not(:disabled),
-  .admin-tabs button:active,
+  .admin-tabs a:active,
   .now-category-tabs button:active,
   .itsme-category-tabs button:active,
   .my-post-tabs button:active{
@@ -2823,3 +2823,15 @@ html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
 .politician-photo-coverage-rows span{font-size:8.5px;color:#71817c}
 .politician-photo-coverage-empty{padding:12px;font-size:9px;color:#7a8984}
 @media(max-width:900px){.politician-photo-coverage-groups{grid-template-columns:1fr}}
+
+/* admin live status + explicit save feedback */
+.admin-live-pulse{position:relative;display:inline-flex;width:13px;height:13px;margin-left:7px;vertical-align:middle;align-items:center;justify-content:center;flex:0 0 13px}
+.admin-live-pulse i{display:block;width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(18,151,116,.30);animation:admin-live-pulse 1.8s ease-out infinite}
+.admin-live-pulse:after{content:"";position:absolute;inset:1px;border:1px solid rgba(18,151,116,.36);border-radius:50%;animation:admin-live-ring 1.8s ease-out infinite}
+.admin-live-pulse.is-idle i{background:#a9b6b2;box-shadow:none;animation:none}.admin-live-pulse.is-idle:after{border-color:#c8d1ce;animation:none}
+.admin-live-pulse-hero{width:15px;height:15px;flex-basis:15px;margin-left:10px}
+@keyframes admin-live-pulse{0%{box-shadow:0 0 0 0 rgba(18,151,116,.34)}70%{box-shadow:0 0 0 8px rgba(18,151,116,0)}100%{box-shadow:0 0 0 0 rgba(18,151,116,0)}}
+@keyframes admin-live-ring{0%{transform:scale(.8);opacity:.8}70%{transform:scale(1.75);opacity:0}100%{transform:scale(1.75);opacity:0}}
+.member-save-state{min-width:100px;font-weight:800}.member-save-state.is-success{color:var(--green)}.member-save-state.is-error{color:#c43d4b}
+.brand-legacy-details{margin-top:24px;padding:16px;border:1px solid #dfe7e4;border-radius:14px;background:#fbfcfc}.brand-legacy-details>summary{cursor:pointer;font-weight:900}.brand-legacy-details[open]>summary{margin-bottom:16px}
+@media (prefers-reduced-motion:reduce){.admin-live-pulse i,.admin-live-pulse:after{animation:none}}

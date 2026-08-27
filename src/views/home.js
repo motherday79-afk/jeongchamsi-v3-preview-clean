@@ -84,18 +84,48 @@ function brandHero(data = {}) {
   </section>`;
 }
 
+function safeHeroHref(value = "", fallback = "/") {
+  const href = String(value || "").trim();
+  if (href.startsWith("/") && !href.startsWith("//")) return href;
+  try { const url = new URL(href); return url.protocol === "https:" ? url.toString() : fallback; }
+  catch { return fallback; }
+}
+function heroAction(label, href, className) {
+  const target = safeHeroHref(href, "/");
+  const external = target.startsWith("https://");
+  return `<a class="${className}" href="${esc(target)}" ${external ? `target="_blank" rel="noopener noreferrer"` : `data-route`}>${esc(label)} <span>${className.includes("secondary") ? "♡" : "→"}</span></a>`;
+}
 function productHero(brand = {}) {
-  const productHeadline = String(brand?.hero?.productHeadline || "정치를 보는 것에서 움직이는 것으로!").trim() || "정치를 보는 것에서 움직이는 것으로!";
+  const hero = {
+    productKicker:"JEONGCHAMSI",
+    productTagline:"정치에 참여할 시간",
+    productHeadline:"정치를 보는 것에서 움직이는 것으로!",
+    productDescription:"인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요",
+    productPrimaryLabel:"정참시 응원하기",
+    productPrimaryHref:"/about",
+    productSecondaryLabel:"정참시 후원하기",
+    productSecondaryHref:"https://toon.at/donate/jungchamsi",
+    productHeadlineTone:"white",
+    productAccentTone:"yellow",
+    productDescriptionTone:"mint",
+    artImage:"",
+    ...(brand?.hero || {})
+  };
+  const productHeadline = String(hero.productHeadline || "정치를 보는 것에서 움직이는 것으로!").trim() || "정치를 보는 것에서 움직이는 것으로!";
   const safeHeadline = esc(productHeadline);
   const headlineHtml = safeHeadline.includes("움직이는 것")
     ? safeHeadline.replace("움직이는 것", '<br><strong>움직이는 것</strong>')
     : safeHeadline.replace(/\n/g, "<br>");
-  return `<section class="product-hero product-hero-participation" aria-label="정참시 참여 허브">
+  const allowedTone = value => ["default","white","mint","yellow","dark"].includes(String(value || "")) ? String(value) : "default";
+  const art = safeImage(hero.artImage);
+  const heroClass = `product-hero product-hero-participation product-hero-headline-tone-${allowedTone(hero.productHeadlineTone)} product-hero-accent-tone-${allowedTone(hero.productAccentTone)} product-hero-description-tone-${allowedTone(hero.productDescriptionTone)}${art ? " product-hero-has-art" : ""}`;
+  const artStyle = art ? ` style="--product-hero-art:url('${esc(art)}')"` : "";
+  return `<section class="${heroClass}" aria-label="정참시 참여 허브"${artStyle}>
     <div class="product-hero-copy">
-      <div class="product-hero-kicker"><span>JEONGCHAMSI</span><em>정치에 참여할 시간</em></div>
+      <div class="product-hero-kicker"><span>${esc(hero.productKicker)}</span><em>${esc(hero.productTagline)}</em></div>
       <h1>${headlineHtml}</h1>
-      <p>인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요</p>
-      <div class="product-hero-actions"><button type="button" class="hero-action-primary" data-go="/about">정참시 응원하기 <span>→</span></button><a class="hero-action-secondary" href="https://toon.at/donate/jungchamsi" target="_blank" rel="noopener noreferrer">정참시 후원하기 <span>♡</span></a></div>
+      <p>${esc(hero.productDescription)}</p>
+      <div class="product-hero-actions">${heroAction(hero.productPrimaryLabel,hero.productPrimaryHref,"hero-action-primary")}${heroAction(hero.productSecondaryLabel,hero.productSecondaryHref,"hero-action-secondary")}</div>
     </div>
     <div class="product-hero-live hero-participation-hub">
       <button type="button" class="hero-hub-card hero-hub-request" data-go="/request-politician"><span class="hero-hub-label">POLITICIAN REQUEST</span><strong>찾는 정치인이 없나요?</strong><p>이름만 남겨주세요. 정보를 확인해 등록합니다</p><em>정치인 등록 요청 →</em></button>
@@ -103,7 +133,6 @@ function productHero(brand = {}) {
     </div>
   </section>`;
 }
-
 function productLauncher() {
   const items = launcherServices();
   return `<section class="product-launcher product-launcher-compact"><div class="product-launcher-head"><div><span>EXPLORE JEONGCHAMSI</span><h2>정참시는 여러분의 참여로 만들어갑니다</h2></div><button type="button" data-drawer-open>전체 서비스 <span>＋</span></button></div><div class="product-launcher-grid">${items.map(item=>`<button type="button" class="launcher-card launcher-${item.key === "poll" ? "choice" : item.key}" data-go="${item.href}" aria-label="${esc(item.label)} · ${esc(item.description)}"><span class="launcher-icon">${serviceIconSvg(item.key)}</span><span class="launcher-copy"><b>${esc(item.shortLabel || item.label)}</b></span><span class="launcher-cue">→</span></button>`).join("")}</div></section>`;

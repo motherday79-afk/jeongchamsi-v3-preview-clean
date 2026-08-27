@@ -449,7 +449,6 @@ document.addEventListener("click", async event => {
     if (!r?.ok) alert(`사진 노출 진단 실패 · ${r?.error || "오류"}`);
     return;
   }
-  const tab = event.target.closest("[data-admin-tab]"); if (tab) return route(`/admin?tab=${encodeURIComponent(tab.dataset.adminTab)}`);
   const add = event.target.closest("[data-admin-new]"); if (add) return route(`/admin?tab=${encodeURIComponent(add.dataset.adminNew)}&edit=new`);
   const edit = event.target.closest("[data-admin-edit]"); if (edit) return route(`/admin?tab=${encodeURIComponent(edit.dataset.adminEdit)}&edit=${encodeURIComponent(edit.dataset.id)}`);
   const cancel = event.target.closest("[data-admin-cancel]"); if (cancel) return route(`/admin?tab=${encodeURIComponent(cancel.dataset.domain)}`);
@@ -458,7 +457,8 @@ document.addEventListener("click", async event => {
   const member = event.target.closest("[data-member-access]");
   if (member) {
     const id = member.dataset.memberAccess;
-    const val = key => document.querySelector(`[data-member-${key}="${CSS.escape(id)}"]`)?.value || "";
+    const row = member.closest("[data-member-row]");
+    const val = key => row?.querySelector(`[data-member-${key}="${CSS.escape(id)}"]`)?.value || "";
     const patch = {
       role: val("role") || "member",
       status: val("status") || "active",
@@ -472,13 +472,21 @@ document.addEventListener("click", async event => {
       phone: val("phone"),
       birthYear: val("birth"),
       password: val("password"),
-      grantedBadges: Array.from(document.querySelectorAll(`[data-member-badge="${CSS.escape(id)}"]:checked`)).map(input => input.value)
+      grantedBadges: Array.from(row?.querySelectorAll(`[data-member-badge="${CSS.escape(id)}"]:checked`) || []).map(input => input.value)
     };
-    const r = await (await import("./views/admin.js")).updateMemberAccess(id, patch);
-    const st = document.querySelector("[data-member-save-state]");
+    const st = row?.querySelector(`[data-member-save-state="${CSS.escape(id)}"]`);
     const messages = { WEAK_PASSWORD:"비밀번호는 8자 이상이어야 합니다", INVALID_BIRTH_YEAR:"출생연도를 확인해 주세요", LAST_ADMIN_PROTECTED:"마지막 활성 관리자는 정지하거나 일반회원으로 변경할 수 없습니다" };
-    if (st) st.textContent = r.ok ? "회원정보 저장 완료" : `저장 실패 · ${messages[r.error] || r.error || ""}`;
-    if (r.ok) { await initializeUserState(); await render(currentRoute(), { resetScroll:false }); }
+    member.disabled = true;
+    if (st) { st.textContent = "저장 중…"; st.classList.remove("is-success","is-error"); }
+    const r = await (await import("./views/admin.js")).updateMemberAccess(id, patch);
+    member.disabled = false;
+    if (r.ok) {
+      if (st) { st.textContent = "✓ 저장 완료"; st.classList.add("is-success"); }
+      if (String(getUserSession().user?.id || "") === String(id)) await initializeUserState();
+    } else if (st) {
+      st.textContent = `저장 실패 · ${messages[r.error] || r.error || ""}`;
+      st.classList.add("is-error");
+    }
     return;
   }
 });
