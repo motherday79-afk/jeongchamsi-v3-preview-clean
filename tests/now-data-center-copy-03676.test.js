@@ -1,0 +1,13 @@
+const fs=require('fs');
+const assert=require('assert');
+const src=fs.readFileSync('src/views/admin.js','utf8');
+assert(src.includes('JEONGCHAMSI INTELLIGENT LIVE DATA'),'라이브 데이터 영문 문구 필요');
+assert(src.includes('각종 대형 엔진 PC/모바일'),'검색 카드 상단 문구 필요');
+assert(src.includes('각종 SNS PC/모바일'),'검색 카드 하단 문구 필요');
+assert(src.includes('구글 · 네이버 · 다음'),'뉴스 카드 상단 문구 필요');
+assert(src.includes('JEONGCHAMSI INTELLIGENT NEWS DATA'),'뉴스 카드 하단 영문 문구 필요');
+assert(!src.includes('<b>LIVE DATA</b>검색광고 PC·모바일 + 뉴스 자동수집'),'기존 LIVE DATA 문구 삭제 필요');
+assert(!src.includes('<span>네이버 검색량 연결</span>'),'기존 검색량 연결 문구 삭제 필요');
+assert(!src.includes('<span>뉴스 수집</span>'),'기존 뉴스 수집 제목 삭제 필요');
+assert(!src.includes('Google News RSS fallback · 6H/24H/7D'),'기존 뉴스 fallback 표시 삭제 필요');
+console.log('now data center copy tests passed');
