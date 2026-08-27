@@ -114,15 +114,27 @@ async function membersPanel() {
 }
 function photoKb(bytes = 0) { return `${Math.max(0, Number(bytes || 0) / 1024).toFixed(1)}KB`; }
 function politicianTypeName(type = "") { return type === "assembly" ? "국회의원" : type === "metropolitan" ? "광역단체장" : "기초단체장"; }
-async function fetchPoliticianPhotoCoverageStatus(type = "assembly") {
+const POLITICIAN_PHOTO_COVERAGE_CACHE_TTL = 120000;
+const politicianPhotoCoverageCache = new Map();
+let politicianPhotoCoverageSnapshot = new Map();
+function clearPoliticianPhotoCoverageCache(type = "") {
+  if (type) politicianPhotoCoverageCache.delete(String(type));
+  else politicianPhotoCoverageCache.clear();
+}
+async function fetchPoliticianPhotoCoverageStatus(type = "assembly", { force = false } = {}) {
+  const key = String(type || "assembly");
+  const cached = politicianPhotoCoverageCache.get(key);
+  if (!force && cached && Date.now() - cached.at < POLITICIAN_PHOTO_COVERAGE_CACHE_TTL) return cached.data;
   try {
     const r = await fetch("/api/v3/politician-photo", {
       method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json",Accept:"application/json"},
-      body:JSON.stringify({action:"coverage-status",type})
+      body:JSON.stringify({action:"coverage-status",type:key})
     });
     const b = await r.json().catch(()=>({}));
-    return r.ok && b.ok ? b : {ok:false,type,assetCount:0,fallbackCount:0,missingCount:0,fallback:[],missing:[],error:b.error || `PHOTO_COVERAGE_${r.status}`};
-  } catch { return {ok:false,type,assetCount:0,fallbackCount:0,missingCount:0,fallback:[],missing:[],error:"PHOTO_COVERAGE_FAILED"}; }
+    const data = r.ok && b.ok ? b : {ok:false,type:key,assetCount:0,fallbackCount:0,missingCount:0,asset:[],fallback:[],missing:[],error:b.error || `PHOTO_COVERAGE_${r.status}`};
+    if (data.ok) politicianPhotoCoverageCache.set(key,{at:Date.now(),data});
+    return data;
+  } catch { return {ok:false,type:key,assetCount:0,fallbackCount:0,missingCount:0,asset:[],fallback:[],missing:[],error:"PHOTO_COVERAGE_FAILED"}; }
 }
 
 async function fetchPoliticianPhotoReviewStatus() {
@@ -145,22 +157,50 @@ function politicianPhotoCoverageRows(items = []) {
   if (!items.length) return `<div class="politician-photo-coverage-empty">해당 인물이 없습니다.</div>`;
   return `<div class="politician-photo-coverage-rows">${items.map(item => `<a href="/person/${esc(encodeURIComponent(item.id))}" data-route><b>${esc(item.name || item.id)}</b><span>${esc(item.party || "")}${item.jurisdiction ? ` · ${esc(item.jurisdiction)}` : ""}</span></a>`).join("")}</div>`;
 }
-function politicianPhotoCoverageBucket(label, count, items, note) {
-  return `<details class="politician-photo-coverage-list"><summary><span><b>${esc(label)}</b><small>${esc(note)}</small></span><strong>${Number(count || 0)}명</strong></summary>${politicianPhotoCoverageRows(items || [])}</details>`;
+function politicianPhotoCoverageCount(count, deferred = false) {
+  return deferred ? "확인" : `${Number(count || 0)}명`;
 }
-function politicianPhotoCoverageDiagnostic(type, coverage) {
+function politicianPhotoCoverageBucket(type, bucket, label, count, items, note, { deferred = false, open = false } = {}) {
+  const body = Array.isArray(items) ? politicianPhotoCoverageRows(items) : `<div class="politician-photo-coverage-empty">목록을 보려면 눌러주세요.</div>`;
+  return `<details class="politician-photo-coverage-list" ${open ? "open" : ""}><summary data-politician-photo-coverage-load="${esc(type)}" data-politician-photo-coverage-bucket="${esc(bucket)}"><span><b>${esc(label)}</b><small>${esc(note)}</small></span><strong>${politicianPhotoCoverageCount(count,deferred)}</strong></summary>${body}</details>`;
+}
+function politicianPhotoCoverageDiagnostic(type, coverage = {}, openedBucket = "") {
   const title = type === "assembly" ? "국회의원 사진 노출 진단" : type === "metropolitan" ? "광역단체장 사진 노출 진단" : "기초단체장 사진 노출 진단";
-  if (!coverage?.ok) return `<section class="politician-photo-coverage-diagnostic"><div class="empty-inline">${esc(title)}을 불러오지 못했습니다 · ${esc(coverage?.error || "오류")}</div></section>`;
-  const asset = coverage.asset || [];
-  const fallback = coverage.fallback || [];
-  const missing = coverage.missing || [];
-  return `<section class="politician-photo-coverage-diagnostic"><div class="section-title"><div><h3>${esc(title)}</h3><span>항목을 누르면 해당 인물 목록을 펼쳐볼 수 있습니다.</span></div><b>${Number(coverage.assetCount || 0) + Number(coverage.fallbackCount || 0)} / ${Number(coverage.total || 0)}</b></div><div class="politician-photo-coverage-groups">${politicianPhotoCoverageBucket("정참시 자산", coverage.assetCount, asset, "서버 확보 사진")}${politicianPhotoCoverageBucket("외부 fallback", coverage.fallbackCount, fallback, "외부 사진으로 노출")}${politicianPhotoCoverageBucket("사진 미노출", coverage.missingCount, missing, "벡터 이미지 노출")}</div></section>`;
+  if (coverage?.ok === false) return `<section class="politician-photo-coverage-diagnostic" data-politician-photo-coverage-section="${esc(type)}"><div class="empty-inline">${esc(title)}을 불러오지 못했습니다 · ${esc(coverage?.error || "오류")}</div></section>`;
+  const deferred = coverage?.deferred === true;
+  const visible = deferred ? Number(coverage.assetCount || 0) : Number(coverage.assetCount || 0) + Number(coverage.fallbackCount || 0);
+  const headerNote = deferred ? `정참시 자산 ${Number(coverage.assetCount || 0)} / ${Number(coverage.total || 0)} · 외부 진단은 필요할 때만 실행` : `${visible} / ${Number(coverage.total || 0)} 노출`;
+  return `<section class="politician-photo-coverage-diagnostic" data-politician-photo-coverage-section="${esc(type)}"><div class="section-title"><div><h3>${esc(title)}</h3><span>${esc(headerNote)}</span></div><b>${deferred ? `${Number(coverage.assetCount || 0)} / ${Number(coverage.total || 0)}` : `${visible} / ${Number(coverage.total || 0)}`}</b></div><div class="politician-photo-coverage-groups">${politicianPhotoCoverageBucket(type,"asset","정참시 자산",coverage.assetCount,openedBucket === "asset" ? (coverage.asset || []) : null,"서버 확보 사진",{open:openedBucket === "asset"})}${politicianPhotoCoverageBucket(type,"fallback","외부 fallback",coverage.fallbackCount,openedBucket === "fallback" ? (coverage.fallback || []) : null,deferred ? "외부 fallback 진단 · 클릭 시 확인" : "외부 사진으로 노출",{deferred,open:openedBucket === "fallback"})}${politicianPhotoCoverageBucket(type,"missing","사진 미노출",coverage.missingCount,openedBucket === "missing" ? (coverage.missing || []) : null,deferred ? "외부 진단 후 미노출 확인" : "벡터 이미지 노출",{deferred,open:openedBucket === "missing"})}</div></section>`;
+}
+
+export async function loadPoliticianPhotoCoverageDiagnostic(trigger) {
+  const type = String(trigger?.dataset?.politicianPhotoCoverageLoad || "");
+  const bucket = String(trigger?.dataset?.politicianPhotoCoverageBucket || "fallback");
+  const section = trigger?.closest?.("[data-politician-photo-coverage-section]");
+  if (!type || !section) return {ok:false,error:"PHOTO_COVERAGE_TARGET_REQUIRED"};
+  const snapshot = politicianPhotoCoverageSnapshot.get(type);
+  if (bucket === "asset" && snapshot) {
+    section.outerHTML = politicianPhotoCoverageDiagnostic(type,{...snapshot,ok:true,deferred:true},"asset");
+    return {ok:true,type,bucket,cached:true};
+  }
+  const original = trigger.innerHTML;
+  trigger.setAttribute("aria-busy","true");
+  const strong = trigger.querySelector("strong");
+  if (strong) strong.textContent = "확인 중";
+  const coverage = await fetchPoliticianPhotoCoverageStatus(type);
+  if (!coverage.ok) {
+    trigger.removeAttribute("aria-busy");
+    trigger.innerHTML = original;
+    return coverage;
+  }
+  section.outerHTML = politicianPhotoCoverageDiagnostic(type,coverage,bucket);
+  return {ok:true,type,bucket,coverage};
 }
 
 async function peoplePanel() {
   const [{ PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS }, provider] = await Promise.all([import("../data/person-meta.js"), import("../data/person-provider.js")]);
   const people = provider.listAllPoliticians();
-  const [photos, review, assemblyCoverage, metropolitanCoverage, basicCoverage] = await Promise.all([getDomain("politicianPhotos", { fresh:true }), fetchPoliticianPhotoReviewStatus(), fetchPoliticianPhotoCoverageStatus("assembly"), fetchPoliticianPhotoCoverageStatus("metropolitan"), fetchPoliticianPhotoCoverageStatus("basic")]);
+  const [photos, review] = await Promise.all([getDomain("politicianPhotos", { fresh:true }), fetchPoliticianPhotoReviewStatus()]);
   const assets = new Map((photos.items || []).map(x => [String(x.id), x]));
   const personById = new Map(people.map(person => [String(person.id), person]));
   const assetCounts = { assembly: 0, metropolitan: 0, basic: 0 };
@@ -201,7 +241,11 @@ async function peoplePanel() {
   const stored = record ? `${recordType} · ${photoKb(record.bytes?.total)} · ${record.updatedAt ? String(record.updatedAt).slice(0,16).replace("T"," ") : "등록됨"}` : "미자산화 · 3단계 직접소스 수집 또는 수기등록 대상";
   const resetLabel = sourceType === "auto-wikimedia" || sourceType === "auto-official-review" ? "자동 자산 삭제 · 재수집 가능" : "수기사진 삭제 · 자동사진 복귀";
   const reviewItems = Array.isArray(review?.items) ? review.items : [];
-  const coverageDiagnostics = ["assembly","metropolitan","basic"].map(type => politicianPhotoCoverageDiagnostic(type, type === "assembly" ? assemblyCoverage : type === "metropolitan" ? metropolitanCoverage : basicCoverage)).join("");
+  politicianPhotoCoverageSnapshot = new Map(["assembly","metropolitan","basic"].map(type => {
+    const rows = people.filter(person => person.type === type && person.id !== "assembly-300").filter(person => assets.has(String(person.id))).map(person => ({id:person.id,name:person.name,party:person.party,jurisdiction:person.jurisdiction || person.region || ""}));
+    return [type,{type,total:assetTargets[type],assetCount:assetCounts[type],asset:rows,fallbackCount:0,missingCount:0}];
+  }));
+  const coverageDiagnostics = ["assembly","metropolitan","basic"].map(type => politicianPhotoCoverageDiagnostic(type,{...politicianPhotoCoverageSnapshot.get(type),ok:true,deferred:true})).join("");
   const reviewInbox = `<section class="politician-photo-review"><div class="section-title"><div><h3>후보 검수함</h3><span>강한검증은 공식페이지 신원 문맥 확인 · 육안확인은 공식기관 이미지 호스트 후보이므로 적용 전 얼굴·출처·이용조건을 직접 확인하세요</span></div><b>${reviewRequired}명 · ${candidateImages}장</b></div>${reviewItems.length ? `<div class="politician-photo-review-list">${reviewItems.map(item => `<article class="politician-photo-review-person"><div class="politician-photo-review-person-head"><div><span>${esc(politicianTypeName(item.type))}</span><h4>${esc(item.name)}</h4><p>${esc(item.party || "")} · ${esc(item.jurisdiction || "")}</p></div><em>검토 필요</em></div><div class="politician-photo-review-candidates">${(item.candidates || []).map((candidate,index)=>photoReviewCandidateCard(item,candidate,index)).join("")}</div></article>`).join("")}</div>` : `<div class="empty-inline">현재 검토 대기 중인 직접소스 사진 후보가 없습니다.</div>`}<span class="save-state" data-politician-photo-review-state></span></section>`;
   return `<section class="admin-panel politician-photo-admin">
     <div class="admin-panel-head"><div><h2>인물 관리 · 정치인 사진</h2><span class="status-pill"><b>PHOTO ASSETS</b>국회의원 ${assetCounts.assembly} · 광역단체장 ${assetCounts.metropolitan} · 기초단체장 ${assetCounts.basic}</span></div></div>
@@ -526,7 +570,7 @@ export async function renderAdmin() {
   else if (tab === "push") panel = await pushPanel();
   else if (tab === "system") panel = await systemPanel();
   else panel = await dashboardPanel();
-  return pageShell(`<main class="subpage admin-page"><section class="page-hero"><span class="eyebrow">ADMIN · V3 CLEAN CORE</span><h1>정참시 관리자</h1><p>회원·콘텐츠·참여기능을 동일한 서버 Source of Truth에서 관리합니다</p></section>${adminTabs(tab)}${panel}</main>`);
+  return pageShell(`<main class="subpage admin-page"><section class="page-hero"><span class="eyebrow">ADMIN · V3 CLEAN CORE</span><h1>정참시 관리자</h1><p>3대 LLM의 집단사고와 JEONGCHAMSI INTELLIGENT DATA ANALYSIS SYSTEM을 활용하여 OPTIMIZED SOLUTION을 제공합니다.</p></section>${adminTabs(tab)}${panel}</main>`);
 }
 
 export async function prepareCoverPreview(file, previewEl) {
@@ -656,6 +700,7 @@ export async function savePoliticianPhotoForm(form) {
       return saved;
     }
     const cleanup = oldUrls.length ? await deletePoliticianPhotoBlobs(oldUrls) : { ok:true, deleted:0 };
+    clearPoliticianPhotoCoverageCache();
     return { ok:true, record, cleanup, message:`저장 완료 · 최적화 ${photoKb(uploaded.bytes.total)}` };
   } catch (error) { return { ok:false, error:error?.message || "정치인 사진 저장 실패" }; }
 }
@@ -805,6 +850,7 @@ export async function applyPoliticianPhotoCandidate(id, candidateIndex = 0) {
       await deletePoliticianPhotoBlobs(Object.values(uploaded?.variants || {}).filter(Boolean));
       return {ok:false,error:body.error || `CANDIDATE_APPROVE_${response.status}`};
     }
+    clearPoliticianPhotoCoverageCache();
     return {ok:true,record:body.record};
   } catch (error) {
     if (uploaded?.variants) {
@@ -823,6 +869,7 @@ export async function resetPoliticianPhoto(id) {
   const oldUrls = Object.values(previous?.variants || {}).filter(Boolean);
   data.items = (data.items || []).filter(x => String(x.id) !== key);
   const saved = await saveDomain("politicianPhotos", data);
+  if (saved.ok) clearPoliticianPhotoCoverageCache();
   if (!saved.ok || !oldUrls.length) return saved;
   const { deletePoliticianPhotoBlobs } = await import("../core/image.js");
   const cleanup = await deletePoliticianPhotoBlobs(oldUrls);

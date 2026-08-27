@@ -14,10 +14,10 @@ test("photo route exposes display coverage diagnostics for all politician catego
   assert.match(route, /missing/);
 });
 
-test("admin shows category diagnostics with collapsible asset fallback and missing lists", () => {
-  assert.match(admin, /fetchPoliticianPhotoCoverageStatus\("assembly"\)/);
-  assert.match(admin, /fetchPoliticianPhotoCoverageStatus\("metropolitan"\)/);
-  assert.match(admin, /fetchPoliticianPhotoCoverageStatus\("basic"\)/);
+test("admin shows lazy category diagnostics with collapsible asset fallback and missing lists", () => {
+  assert.match(admin, /loadPoliticianPhotoCoverageDiagnostic/);
+  assert.match(admin, /data-politician-photo-coverage-load/);
+  assert.match(admin, /POLITICIAN_PHOTO_COVERAGE_CACHE_TTL/);
   assert.match(admin, /국회의원 사진 노출 진단/);
   assert.match(admin, /광역단체장 사진 노출 진단/);
   assert.match(admin, /기초단체장 사진 노출 진단/);

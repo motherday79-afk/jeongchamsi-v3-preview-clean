@@ -442,6 +442,13 @@ document.addEventListener("click", async event => {
     await render(currentRoute(), { resetScroll:false });
     return;
   }
+  const politicianPhotoCoverage = event.target.closest("[data-politician-photo-coverage-load]");
+  if (politicianPhotoCoverage) {
+    event.preventDefault();
+    const r = await (await import("./views/admin.js")).loadPoliticianPhotoCoverageDiagnostic(politicianPhotoCoverage);
+    if (!r?.ok) alert(`사진 노출 진단 실패 · ${r?.error || "오류"}`);
+    return;
+  }
   const politicianPhotoHarvest = event.target.closest("[data-politician-photo-harvest]");
   if (politicianPhotoHarvest) {
     if (!confirm("미자산화 정치인을 국회·지자체 직접소스까지 3단계 수집할까요? 기존 정참시 자산은 절대 덮어쓰지 않고 발견 사진은 후보 검수함에만 넣습니다.")) return;

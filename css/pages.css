@@ -2807,20 +2807,18 @@ html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
 .person-detail-photo.admin-photo-editable{position:relative;cursor:pointer;overflow:visible;outline:2px solid rgba(19,179,151,.18);outline-offset:3px}
 .person-detail-photo.admin-photo-editable:hover{outline-color:rgba(19,179,151,.58)}
 .detail-politician-photo-form{position:absolute;inset:0;z-index:4;border-radius:inherit}
-.detail-photo-admin-trigger{position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid #bfe1d8;border-radius:999px;background:#fff;padding:5px 8px;box-shadow:0 5px 16px rgba(20,63,53,.12);color:#17463d;cursor:pointer}
+.detail-photo-admin-trigger{position:absolute;left:calc(50% - 34px);bottom:-34px;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid #bfe1d8;border-radius:999px;background:#fff;padding:5px 8px;box-shadow:0 5px 16px rgba(20,63,53,.12);color:#17463d;cursor:pointer}
 .detail-photo-admin-trigger span{padding:2px 4px;border-radius:999px;background:#dff6ef;color:#087f74;font-size:7px;font-weight:950;letter-spacing:.06em}
 .detail-photo-admin-trigger b{font-size:8px;font-weight:900}
-.detail-photo-admin-state{position:absolute;left:50%;top:calc(100% + 38px);transform:translateX(-50%);min-width:170px;text-align:center;color:#72817d;font-size:7.5px;font-weight:800;line-height:1.25;white-space:nowrap;pointer-events:none}
+.detail-photo-admin-state{position:absolute;left:50%;top:calc(100% + 40px);transform:translateX(-50%);min-width:170px;text-align:center;color:#72817d;font-size:7.5px;font-weight:800;line-height:1.25;white-space:nowrap;pointer-events:none}
 .person-detail-photo.admin-photo-editable:not(.has-photo)::after{content:"사진 등록";position:absolute;inset:0;display:grid;place-items:center;border-radius:inherit;background:rgba(220,248,239,.86);color:#087f74;font-size:9px;font-weight:950;letter-spacing:.02em;pointer-events:none}
 @media(max-width:620px){.detail-photo-admin-trigger{bottom:-31px;padding:4px 7px}.detail-photo-admin-state{display:none}}
 
 /* 0.36.71 · detail photo explicit preview/save flow */
 .detail-photo-selected-preview{position:absolute;inset:0;z-index:5;border-radius:inherit;background-size:cover;background-position:50% 28%;background-repeat:no-repeat;pointer-events:none}
 .detail-photo-selected-preview[hidden]{display:none}
-.detail-photo-admin-trigger{left:calc(50% - 34px);z-index:7}
 .detail-photo-admin-save{position:absolute;left:calc(50% + 48px);bottom:-34px;transform:translateX(-50%);z-index:7;border:1px solid #0d9d84;border-radius:999px;background:#13b397;color:#fff;padding:5px 11px;box-shadow:0 5px 16px rgba(20,63,53,.12);font-size:8px;font-weight:950;cursor:pointer}
 .detail-photo-admin-save:disabled{opacity:.4;cursor:not-allowed}
-.detail-photo-admin-state{top:calc(100% + 40px)}
 @media(max-width:620px){.detail-photo-admin-save{bottom:-31px;padding:4px 9px}.detail-photo-admin-trigger{left:calc(50% - 31px)}.detail-photo-admin-save{left:calc(50% + 44px)}}
 
 
