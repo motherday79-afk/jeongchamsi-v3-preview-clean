@@ -6,7 +6,7 @@ const app=fs.readFileSync('src/app.js','utf8');
 const css=fs.readFileSync('css/pages.css','utf8');
 
 const peopleStart=admin.indexOf('async function peoplePanel()');
-const peopleEnd=admin.indexOf('\nfunction formButtons', peopleStart);
+const peopleEnd=admin.indexOf('\nasync function boardPanel(', peopleStart);
 assert(peopleStart >= 0 && peopleEnd > peopleStart, 'peoplePanel 범위를 찾을 수 있어야 합니다');
 const peoplePanel=admin.slice(peopleStart, peopleEnd);
 
@@ -18,7 +18,7 @@ assert(admin.includes('export async function loadPoliticianPhotoCoverageDiagnost
 assert(app.includes('[data-politician-photo-coverage-load]'), '진단 클릭을 처리하는 이벤트가 필요합니다');
 assert(admin.includes('외부 fallback 진단'), '외부 fallback은 클릭해서 진단할 수 있어야 합니다');
 
-const hero='3대 LLM의 집단사고와 JEONGCHAMSI INTELLIGENT DATA ANALYSIS SYSTEM을 활용하여 OPTIMIZED SOLUTION을 제공합니다.';
+const hero='Leveraging the Collective Intelligence of Three Leading LLMs and the JEONGCHAMSI Intelligent Data Analysis System, We Deliver Optimized Solutions.';
 assert(admin.includes(hero), '관리자 히어로 문구가 새 문구로 교체되어야 합니다');
 assert(!admin.includes('회원·콘텐츠·참여기능을 동일한 서버 Source of Truth에서 관리합니다'), '기존 관리자 히어로 문구는 제거되어야 합니다');
 

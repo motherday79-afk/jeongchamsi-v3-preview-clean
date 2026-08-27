@@ -449,47 +449,6 @@ document.addEventListener("click", async event => {
     if (!r?.ok) alert(`사진 노출 진단 실패 · ${r?.error || "오류"}`);
     return;
   }
-  const politicianPhotoHarvest = event.target.closest("[data-politician-photo-harvest]");
-  if (politicianPhotoHarvest) {
-    if (!confirm("미자산화 정치인을 국회·지자체 직접소스까지 3단계 수집할까요? 기존 정참시 자산은 절대 덮어쓰지 않고 발견 사진은 후보 검수함에만 넣습니다.")) return;
-    const stateEl = document.querySelector("[data-politician-photo-harvest-state]");
-    const photoTools = await import("./views/admin.js");
-    const r = await photoTools.discoverPoliticianPhotosStage3(stateEl, politicianPhotoHarvest);
-    if (!r.ok) { if (stateEl) stateEl.textContent = `3단계 직접소스 수집 중단 · ${r.error || "오류"}`; return; }
-    if (stateEl) stateEl.textContent = r.message || "3단계 직접소스 수집 완료";
-    clearDomainCache("politicianPhotos");
-    await render(currentRoute(), { resetScroll:false });
-    return;
-  }
-  const politicianPhotoCandidate = event.target.closest("[data-politician-photo-candidate-apply]");
-  if (politicianPhotoCandidate) {
-    const id = politicianPhotoCandidate.dataset.politicianPhotoCandidateApply || "";
-    const candidateIndex = Number(politicianPhotoCandidate.dataset.candidateIndex || 0);
-    if (!confirm("이 공식기관 후보사진을 정참시 자산으로 적용할까요? 출처와 이용조건을 확인했다면 진행하세요.")) return;
-    const original = politicianPhotoCandidate.textContent;
-    politicianPhotoCandidate.disabled = true;
-    politicianPhotoCandidate.textContent = "적용 중...";
-    const stateEl = document.querySelector("[data-politician-photo-review-state]");
-    const r = await (await import("./views/admin.js")).applyPoliticianPhotoCandidate(id, candidateIndex);
-    if (!r.ok) {
-      politicianPhotoCandidate.disabled = false;
-      politicianPhotoCandidate.textContent = original;
-      if (stateEl) stateEl.textContent = `후보 적용 실패 · ${r.error || "오류"}`;
-      return;
-    }
-    if (stateEl) stateEl.textContent = "후보사진 자산화 완료";
-    clearDomainCache("politicianPhotos");
-    await render(currentRoute(), { resetScroll:false });
-    return;
-  }
-  const politicianPhotoReset = event.target.closest("[data-politician-photo-reset]");
-  if (politicianPhotoReset) {
-    if (!confirm("이 정치인의 정참시 사진 자산을 삭제하고 자동사진 연결 상태로 되돌릴까요?")) return;
-    const r = await (await import("./views/admin.js")).resetPoliticianPhoto(politicianPhotoReset.dataset.politicianPhotoReset);
-    if (!r.ok) alert(`사진 초기화 실패 · ${r.error || ""}`);
-    else { clearDomainCache("politicianPhotos"); await render(currentRoute(), { resetScroll:false }); }
-    return;
-  }
   const tab = event.target.closest("[data-admin-tab]"); if (tab) return route(`/admin?tab=${encodeURIComponent(tab.dataset.adminTab)}`);
   const add = event.target.closest("[data-admin-new]"); if (add) return route(`/admin?tab=${encodeURIComponent(add.dataset.adminNew)}&edit=new`);
   const edit = event.target.closest("[data-admin-edit]"); if (edit) return route(`/admin?tab=${encodeURIComponent(edit.dataset.adminEdit)}&edit=${encodeURIComponent(edit.dataset.id)}`);
@@ -595,8 +554,6 @@ document.addEventListener("change", async event => {
       return;
     }
   }
-  const politicianPhotoSelect = event.target.closest("[data-politician-photo-select]");
-  if (politicianPhotoSelect?.value) return route(`/admin?tab=people&person=${encodeURIComponent(politicianPhotoSelect.value)}`);
   const region = event.target.closest("[data-region-province],[data-region-city]");
   if (region) (await import("./data/regions.js")).handleRegionChange(region);
 });

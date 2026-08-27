@@ -7,6 +7,7 @@ const app = fs.readFileSync("src/app.js","utf8");
 const image = fs.readFileSync("src/core/image.js","utf8");
 const admin = fs.readFileSync("src/views/admin.js","utf8");
 const css = fs.readFileSync("css/pages.css","utf8");
+const meta = fs.readFileSync("src/data/person-meta.js","utf8");
 
 test("admin-only politician detail photo editor is rendered from the live detail page", () => {
   assert.match(people, /session\.authenticated&&session\.user\?\.role==="admin"/);
@@ -29,9 +30,10 @@ test("detail photo selection previews first and explicit submit reuses the optim
   assert.match(image, /profile: Object\.freeze\(\{ maxWidth: 480, maxHeight: 640, targetBytes: 64 \* 1024/);
 });
 
-test("manual detail uploads remain classified as Jeongchamsi assets in admin", () => {
+test("manual detail uploads remain classified inside the JCS asset pool", () => {
   assert.match(admin, /sourceType:"manual"/);
-  assert.match(admin, /수기등록 · 정참시 자산/);
+  assert.match(meta, /PHOTO_PROVIDER_STATUS = "JCS_ASSET"/);
+  assert.match(admin, /정참시 사진 자산/);
   assert.match(css, /\.person-detail-photo\.admin-photo-editable/);
   assert.doesNotMatch(css, /detail-page admin politician photo hot upload[\s\S]*detail-page admin politician photo hot upload/);
 });

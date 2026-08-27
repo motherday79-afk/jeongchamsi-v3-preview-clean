@@ -63,25 +63,18 @@ test('photo route exposes stage2 discovery, review status and candidate approval
   assert.match(route, /if \(existing\.has\(person\.id\)\)/);
 });
 
-test('candidate review inbox remains available after stage3 replaces the visible stage2 launcher', () => {
+test('stage2 and stage3 collection APIs stay server-compatible but their admin collection UI is retired', () => {
   const admin = read('src/views/admin.js');
   const app = read('src/app.js');
-  assert.match(admin, /사진 수집 3단계/);
-  assert.match(admin, /직접소스 후보/);
-  assert.match(admin, /미발견/);
-  assert.match(admin, /후보 검수함/);
-  assert.match(admin, /data-politician-photo-candidate-apply/);
-  assert.match(admin, /discoverPoliticianPhotosStage3/);
-  assert.match(app, /data-politician-photo-candidate-apply/);
-  assert.match(app, /applyPoliticianPhotoCandidate/);
-});
-
-test('stage2 keeps candidate review available while recording image/blob failure causes', () => {
   const route = read('server/v3/routes/politician-photo.js');
-  const admin = read('src/views/admin.js');
+  assert.match(route, /discover-batch/);
   assert.match(route, /report-candidate-failure/);
   assert.match(route, /lastFailure/);
-  assert.match(admin, /reportPoliticianPhotoCandidateFailure/);
+  assert.doesNotMatch(admin, /후보 검수함/);
+  assert.doesNotMatch(admin, /discoverPoliticianPhotosStage2/);
+  assert.doesNotMatch(admin, /discoverPoliticianPhotosStage3/);
+  assert.doesNotMatch(admin, /reportPoliticianPhotoCandidateFailure/);
+  assert.doesNotMatch(app, /data-politician-photo-candidate-apply/);
 });
 
 test('stage2 official-review assets survive politician photo schema sanitization', () => {
@@ -89,9 +82,9 @@ test('stage2 official-review assets survive politician photo schema sanitization
   assert.match(schema, /auto-official-review/);
 });
 
-test('stage2 discovery remains available as a compatibility path after stage3', () => {
+test('stage2 discovery remains server-compatible without a client launcher', () => {
   const route = read('server/v3/routes/politician-photo.js');
   const admin = read('src/views/admin.js');
   assert.match(route, /action\s*===\s*"discover-batch"/);
-  assert.match(admin, /discoverPoliticianPhotosStage2/);
+  assert.doesNotMatch(admin, /discoverPoliticianPhotosStage2/);
 });
