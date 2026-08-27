@@ -114,6 +114,17 @@ async function membersPanel() {
 }
 function photoKb(bytes = 0) { return `${Math.max(0, Number(bytes || 0) / 1024).toFixed(1)}KB`; }
 function politicianTypeName(type = "") { return type === "assembly" ? "국회의원" : type === "metropolitan" ? "광역단체장" : "기초단체장"; }
+async function fetchPoliticianPhotoCoverageStatus(type = "assembly") {
+  try {
+    const r = await fetch("/api/v3/politician-photo", {
+      method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json",Accept:"application/json"},
+      body:JSON.stringify({action:"coverage-status",type})
+    });
+    const b = await r.json().catch(()=>({}));
+    return r.ok && b.ok ? b : {ok:false,type,assetCount:0,fallbackCount:0,missingCount:0,fallback:[],missing:[],error:b.error || `PHOTO_COVERAGE_${r.status}`};
+  } catch { return {ok:false,type,assetCount:0,fallbackCount:0,missingCount:0,fallback:[],missing:[],error:"PHOTO_COVERAGE_FAILED"}; }
+}
+
 async function fetchPoliticianPhotoReviewStatus() {
   try {
     const r = await fetch("/api/v3/politician-photo", {
@@ -132,7 +143,7 @@ function photoReviewCandidateCard(item, candidate, index) {
 async function peoplePanel() {
   const [{ PERSON_COUNTS, PERSON_PROVIDER_STATUS, PHOTO_PROVIDER_STATUS }, provider] = await Promise.all([import("../data/person-meta.js"), import("../data/person-provider.js")]);
   const people = provider.listAllPoliticians();
-  const [photos, review] = await Promise.all([getDomain("politicianPhotos", { fresh:true }), fetchPoliticianPhotoReviewStatus()]);
+  const [photos, review, assemblyCoverage] = await Promise.all([getDomain("politicianPhotos", { fresh:true }), fetchPoliticianPhotoReviewStatus(), fetchPoliticianPhotoCoverageStatus("assembly")]);
   const assets = new Map((photos.items || []).map(x => [String(x.id), x]));
   const personById = new Map(people.map(person => [String(person.id), person]));
   const assetCounts = { assembly: 0, metropolitan: 0, basic: 0 };
@@ -173,10 +184,16 @@ async function peoplePanel() {
   const stored = record ? `${recordType} · ${photoKb(record.bytes?.total)} · ${record.updatedAt ? String(record.updatedAt).slice(0,16).replace("T"," ") : "등록됨"}` : "미자산화 · 3단계 직접소스 수집 또는 수기등록 대상";
   const resetLabel = sourceType === "auto-wikimedia" || sourceType === "auto-official-review" ? "자동 자산 삭제 · 재수집 가능" : "수기사진 삭제 · 자동사진 복귀";
   const reviewItems = Array.isArray(review?.items) ? review.items : [];
+  const fallbackNames = (assemblyCoverage?.fallback || []).map(x => x.name).filter(Boolean);
+  const missingNames = (assemblyCoverage?.missing || []).map(x => x.name).filter(Boolean);
+  const assemblyDiagnostic = assemblyCoverage?.ok
+    ? `<section class="politician-photo-coverage-diagnostic"><div class="section-title"><div><h3>국회의원 사진 노출 진단</h3><span>정참시 자산과 외부 fallback을 분리해 실제 노출 경로를 확인합니다.</span></div><b>${assemblyCoverage.assetCount + assemblyCoverage.fallbackCount} / ${assemblyCoverage.total}</b></div><div class="politician-photo-stage2-stats"><article><b>정참시 자산</b><strong>${assemblyCoverage.assetCount}</strong><span>서버 확보 사진</span></article><article><b>외부 fallback</b><strong>${assemblyCoverage.fallbackCount}</strong><span>${fallbackNames.length ? fallbackNames.map(esc).join(" · ") : "없음"}</span></article><article><b>사진 미노출</b><strong>${assemblyCoverage.missingCount}</strong><span>${missingNames.length ? missingNames.map(esc).join(" · ") : "없음"}</span></article></div></section>`
+    : `<section class="politician-photo-coverage-diagnostic"><div class="empty-inline">국회의원 사진 노출 진단을 불러오지 못했습니다 · ${esc(assemblyCoverage?.error || "오류")}</div></section>`;
   const reviewInbox = `<section class="politician-photo-review"><div class="section-title"><div><h3>후보 검수함</h3><span>강한검증은 공식페이지 신원 문맥 확인 · 육안확인은 공식기관 이미지 호스트 후보이므로 적용 전 얼굴·출처·이용조건을 직접 확인하세요</span></div><b>${reviewRequired}명 · ${candidateImages}장</b></div>${reviewItems.length ? `<div class="politician-photo-review-list">${reviewItems.map(item => `<article class="politician-photo-review-person"><div class="politician-photo-review-person-head"><div><span>${esc(politicianTypeName(item.type))}</span><h4>${esc(item.name)}</h4><p>${esc(item.party || "")} · ${esc(item.jurisdiction || "")}</p></div><em>검토 필요</em></div><div class="politician-photo-review-candidates">${(item.candidates || []).map((candidate,index)=>photoReviewCandidateCard(item,candidate,index)).join("")}</div></article>`).join("")}</div>` : `<div class="empty-inline">현재 검토 대기 중인 직접소스 사진 후보가 없습니다.</div>`}<span class="save-state" data-politician-photo-review-state></span></section>`;
   return `<section class="admin-panel politician-photo-admin">
     <div class="admin-panel-head"><div><h2>인물 관리 · 정치인 사진</h2><span class="status-pill"><b>PHOTO ASSETS</b>국회의원 ${assetCounts.assembly} · 광역단체장 ${assetCounts.metropolitan} · 기초단체장 ${assetCounts.basic}</span></div></div>
     <div class="people-admin-grid"><article><b>국회의원</b><strong>${assetCounts.assembly} / ${assetTargets.assembly}</strong><span>정참시 사진 자산</span></article><article><b>광역단체장</b><strong>${assetCounts.metropolitan} / ${assetTargets.metropolitan}</strong><span>정참시 사진 자산</span></article><article><b>기초단체장</b><strong>${assetCounts.basic} / ${assetTargets.basic}</strong><span>정참시 사진 자산</span></article><article><b>인물 공급자</b><strong>${PERSON_PROVIDER_STATUS}</strong><span>앱 내부 Seed</span></article><article><b>사진 공급자</b><strong>${PHOTO_PROVIDER_STATUS}</strong><span>Wikimedia + 공식기관 + 정참시 Blob</span></article><article><b>전체 사진 자산</b><strong>${assets.size} / ${targetCount}</strong><span>자동 ${autoCount} · 수기 ${manualCount} · 패키지 ${seedCount}</span></article></div>
+    ${assemblyDiagnostic}
     <div class="politician-photo-stage2-stats"><article><b>정참시 자산</b><strong>${assets.size}</strong><span>${targetCount}명 중 자산화</span></article><article><b>직접소스 후보</b><strong>${candidateImages}</strong><span>검토필요 ${reviewRequired}명</span></article><article><b>강한검증</b><strong>${strongCandidates}</strong><span>공식페이지 신원확인</span></article><article><b>육안확인</b><strong>${visualReviewCandidates}</strong><span>공식호스트 이미지 후보</span></article><article><b>미발견</b><strong>${noCandidate}</strong><span>직접소스 후보 없음</span></article><article><b>수집오류</b><strong>${collectionErrors}</strong><span>검색·페이지·이미지</span></article></div>
     <div class="politician-photo-harvest"><div><b>사진 수집 3단계 · 직접소스 공략</b><p>국회의원은 국회 공식페이지, 광역·기초단체장은 열린시장실·도지사실·군수실·구청장실을 직접 탐색합니다. 공식페이지의 프로필·약력 링크를 한 단계 더 따라가고, 마지막에는 NAVER 이미지 검색에서 공식기관 호스트 후보까지 검수함으로 가져옵니다.</p></div><button class="primary-btn" type="button" data-politician-photo-harvest>3단계 직접소스 수집 시작</button><span data-politician-photo-harvest-state>NAVER WEB/IMAGE ${naverConfigured ? "OK" : "연결확인"} · 국회의원 ${assetCounts.assembly}/${assetTargets.assembly} · 광역 ${assetCounts.metropolitan}/${assetTargets.metropolitan} · 기초 ${assetCounts.basic}/${assetTargets.basic} · 후보 ${reviewRequired}명 · 3단계 미확인 ${stage3Unchecked}명</span></div>
     ${reviewInbox}

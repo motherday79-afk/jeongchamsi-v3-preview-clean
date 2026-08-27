@@ -12,7 +12,6 @@ const { mergePoliticianPhotoAssets } = require("../lib/politician-photo-assets")
 const ALLOWED_WIDTHS = new Set([64,96,128,160,256,384]);
 const MAX_ASSET_BYTES = 128 * 1024;
 const MAX_REVIEW_SOURCE_BYTES = 5 * 1024 * 1024;
-const LIVE_PHOTO_CACHE_CONTROL = "private, no-store, max-age=0";
 const REVIEW_KEY = "politicianPhotoReview03668";
 const LEGACY_REVIEW_KEY = "politicianPhotoReview03667";
 const AUTO_VARIANT_PLANS = [
@@ -395,6 +394,27 @@ async function approveCandidate(req,res) {
   return res.status(200).json({ok:true,record:persisted});
 }
 
+async function coverageStatus(req,res) {
+  const admin=await requireAdmin(req);
+  if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
+  const type=String(req.body?.type || "assembly");
+  if (!["assembly","metropolitan","basic"].includes(type)) return res.status(400).json({ok:false,error:"INVALID_POLITICIAN_TYPE"});
+  const people=PHOTO_TARGETS.filter(person=>person.type===type);
+  const assets=await getPhotoAssets();
+  const assetIds=new Set((assets.items || []).map(item=>String(item.id || "")));
+  const asset=people.filter(person=>assetIds.has(person.id));
+  const unresolved=people.filter(person=>!assetIds.has(person.id));
+  const checked=await Promise.all(unresolved.map(async person=>{
+    try {
+      const source=await resolvePoliticianPhotoSource(person);
+      return {person,source};
+    } catch { return {person,source:null}; }
+  }));
+  const fallback=checked.filter(row=>row.source).map(row=>({id:row.person.id,name:row.person.name,party:row.person.party,jurisdiction:row.person.jurisdiction,source:String(row.source?.source || "WIKIMEDIA_COMMONS_ONLY")}));
+  const missing=checked.filter(row=>!row.source).map(row=>({id:row.person.id,name:row.person.name,party:row.person.party,jurisdiction:row.person.jurisdiction}));
+  return res.status(200).json({ok:true,type,total:people.length,assetCount:asset.length,fallbackCount:fallback.length,missingCount:missing.length,fallback,missing});
+}
+
 async function candidateImage(req,res) {
   const admin=await requireAdmin(req);
   if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
@@ -431,6 +451,7 @@ module.exports = async function politicianPhotoRoute(req,res) {
     if (action === "discover-batch") return discoverBatch(req,res);
     if (action === "direct-discover-batch") return directDiscoverBatch(req,res);
     if (action === "review-status") return reviewStatus(req,res);
+    if (action === "coverage-status") return coverageStatus(req,res);
     if (action === "report-candidate-failure") return reportCandidateFailure(req,res);
     if (action === "approve-candidate") return approveCandidate(req,res);
     return res.status(400).json({ok:false,error:"UNKNOWN_ACTION"});
@@ -448,7 +469,7 @@ module.exports = async function politicianPhotoRoute(req,res) {
 
   const manual=await manualPhoto(id,width);
   if (manual?.url) {
-    res.setHeader("Cache-Control",LIVE_PHOTO_CACHE_CONTROL);
+    res.setHeader("Cache-Control","public, max-age=30, s-maxage=60, stale-while-revalidate=300");
     const provider=manual.sourceType === "auto-wikimedia"
       ? "JCV3_BLOB_WIKIMEDIA"
       : manual.sourceType === "auto-official-review"
@@ -467,13 +488,13 @@ module.exports = async function politicianPhotoRoute(req,res) {
 
   const photo=await fetchPoliticianPhoto(person,width);
   if (!photo) {
-    res.setHeader("Cache-Control",LIVE_PHOTO_CACHE_CONTROL);
+    res.setHeader("Cache-Control","public, max-age=120, s-maxage=1800, stale-while-revalidate=3600");
     res.setHeader("X-JCV3-Photo-Provider","WIKIMEDIA_COMMONS_ONLY");
     return res.status(404).json({ ok:false,error:"WIKIMEDIA_COMMONS_PHOTO_NOT_RESOLVED",id,name:person.name });
   }
 
   res.setHeader("Content-Type",photo.contentType || "image/jpeg");
-  res.setHeader("Cache-Control",LIVE_PHOTO_CACHE_CONTROL);
+  res.setHeader("Cache-Control","public, max-age=86400, s-maxage=2592000, stale-while-revalidate=604800");
   res.setHeader("X-Content-Type-Options","nosniff");
   res.setHeader("X-JCV3-Photo-Provider",photo.matched?.source || "WIKIMEDIA_COMMONS_ONLY");
   res.setHeader("X-JCV3-Photo-Source-Page",encodeURIComponent(photo.matched?.sourcePage || "https://commons.wikimedia.org/"));
