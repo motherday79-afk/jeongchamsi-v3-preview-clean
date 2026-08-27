@@ -410,9 +410,10 @@ async function coverageStatus(req,res) {
       return {person,source};
     } catch { return {person,source:null}; }
   }));
+  const assetRows=asset.map(person=>({id:person.id,name:person.name,party:person.party,jurisdiction:person.jurisdiction}));
   const fallback=checked.filter(row=>row.source).map(row=>({id:row.person.id,name:row.person.name,party:row.person.party,jurisdiction:row.person.jurisdiction,source:String(row.source?.source || "WIKIMEDIA_COMMONS_ONLY")}));
   const missing=checked.filter(row=>!row.source).map(row=>({id:row.person.id,name:row.person.name,party:row.person.party,jurisdiction:row.person.jurisdiction}));
-  return res.status(200).json({ok:true,type,total:people.length,assetCount:asset.length,fallbackCount:fallback.length,missingCount:missing.length,fallback,missing});
+  return res.status(200).json({ok:true,type,total:people.length,assetCount:asset.length,fallbackCount:fallback.length,missingCount:missing.length,asset:assetRows,fallback,missing});
 }
 
 async function candidateImage(req,res) {

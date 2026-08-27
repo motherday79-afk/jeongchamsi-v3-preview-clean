@@ -2822,3 +2822,24 @@ html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
 .detail-photo-admin-save:disabled{opacity:.4;cursor:not-allowed}
 .detail-photo-admin-state{top:calc(100% + 40px)}
 @media(max-width:620px){.detail-photo-admin-save{bottom:-31px;padding:4px 9px}.detail-photo-admin-trigger{left:calc(50% - 31px)}.detail-photo-admin-save{left:calc(50% + 44px)}}
+
+
+.politician-photo-coverage-diagnostic{display:grid;gap:10px;padding:14px;border:1px solid #dbe7e3;border-radius:14px;background:#fbfdfc}
+.politician-photo-coverage-diagnostic .section-title{margin:0}
+.politician-photo-coverage-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.politician-photo-coverage-list{overflow:hidden;border:1px solid #e0e8e5;border-radius:12px;background:#fff}
+.politician-photo-coverage-list summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;cursor:pointer;list-style:none}
+.politician-photo-coverage-list summary::-webkit-details-marker{display:none}
+.politician-photo-coverage-list summary span{display:grid;gap:3px}
+.politician-photo-coverage-list summary b{font-size:10px;color:#60736d}
+.politician-photo-coverage-list summary small{font-size:8.5px;color:#7a8984}
+.politician-photo-coverage-list summary strong{font-size:20px;color:#17342d;white-space:nowrap}
+.politician-photo-coverage-list[open] summary{border-bottom:1px solid #e6eeeb}
+.politician-photo-coverage-rows{display:grid;max-height:340px;overflow:auto}
+.politician-photo-coverage-rows a{display:grid;gap:2px;padding:9px 12px;border-bottom:1px solid #edf2f0;text-decoration:none}
+.politician-photo-coverage-rows a:last-child{border-bottom:0}
+.politician-photo-coverage-rows a:hover{background:#f4faf8}
+.politician-photo-coverage-rows b{font-size:11px;color:#17342d}
+.politician-photo-coverage-rows span{font-size:8.5px;color:#71817c}
+.politician-photo-coverage-empty{padding:12px;font-size:9px;color:#7a8984}
+@media(max-width:900px){.politician-photo-coverage-groups{grid-template-columns:1fr}}
