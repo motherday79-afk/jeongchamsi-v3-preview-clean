@@ -17,5 +17,5 @@ console.log('home live pulse tests passed');
 
 const index = fs.readFileSync('index.html', 'utf8');
 const app = fs.readFileSync('src/app.js', 'utf8');
-assert.match(index, /03683-hero-tone-pulse-align/, 'index cache marker가 03683로 갱신되어야 합니다');
+assert.match(index, /03684-compare-relative-axis/, 'index cache marker가 03683로 갱신되어야 합니다');
 assert.match(app, /\.\/views\/home\.js\?v=03683/, '동적 home.js import도 03683로 cache-bust 해야 합니다');

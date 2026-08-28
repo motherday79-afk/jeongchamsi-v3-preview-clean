@@ -45,6 +45,6 @@ test('main live pulses are larger and center-aligned with their labels', () => {
 });
 
 test('03683 cache markers are present for changed home and styles', () => {
-  assert.match(index, /03683-hero-tone-pulse-align/);
+  assert.match(index, /03684-compare-relative-axis/);
   assert.match(app, /\.\/views\/home\.js\?v=03683/);
 });

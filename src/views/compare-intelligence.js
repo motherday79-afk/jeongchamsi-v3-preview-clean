@@ -39,6 +39,15 @@ export function scoreFor(live,key){
   return Number.isFinite(value)?Math.max(0,Math.min(100,Math.round(value*10)/10)):null;
 }
 
+export function relativeCompareAxisValue(a,b){
+  if(a===null||a===undefined||a===''||b===null||b===undefined||b==='')return null;
+  const left=Number(a),right=Number(b);
+  if(!Number.isFinite(left)||!Number.isFinite(right))return null;
+  const safeLeft=Math.max(0,Math.min(100,left));
+  const safeRight=Math.max(0,Math.min(100,right));
+  return Math.max(-50,Math.min(50,Math.round(((safeRight-safeLeft)/2)*10)/10));
+}
+
 export function buildDifferences(liveA,liveB,metrics=CORE_COMPARE_METRICS,threshold=5){
   return metrics.map(item=>{
     const a=scoreFor(liveA,item.key),b=scoreFor(liveB,item.key);
