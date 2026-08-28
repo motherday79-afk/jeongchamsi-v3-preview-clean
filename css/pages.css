@@ -2835,3 +2835,10 @@ html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
 .member-save-state{min-width:100px;font-weight:800}.member-save-state.is-success{color:var(--green)}.member-save-state.is-error{color:#c43d4b}
 .brand-legacy-details{margin-top:24px;padding:16px;border:1px solid #dfe7e4;border-radius:14px;background:#fbfcfc}.brand-legacy-details>summary{cursor:pointer;font-weight:900}.brand-legacy-details[open]>summary{margin-bottom:16px}
 @media (prefers-reduced-motion:reduce){.admin-live-pulse i,.admin-live-pulse:after{animation:none}}
+
+/* Main LIVE PULSE — CSS only, no image request */
+.main-live-pulse{position:relative;display:inline-flex;width:12px;height:12px;margin-left:6px;vertical-align:-1px;align-items:center;justify-content:center;flex:0 0 12px}
+.main-live-pulse i{display:block;width:6px;height:6px;border-radius:50%;background:var(--green);position:relative;z-index:1}
+.main-live-pulse:after{content:"";position:absolute;inset:2px;border:1px solid rgba(18,151,116,.48);border-radius:50%;animation:main-live-ring 1.9s ease-out infinite;will-change:transform,opacity}
+@keyframes main-live-ring{0%{transform:scale(.75);opacity:.9}70%{transform:scale(2.05);opacity:0}100%{transform:scale(2.05);opacity:0}}
+@media (prefers-reduced-motion:reduce){.main-live-pulse:after{animation:none;transform:none;opacity:.45}}
