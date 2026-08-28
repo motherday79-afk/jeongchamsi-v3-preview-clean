@@ -13,7 +13,7 @@ let liveBarCelebrationTimer = 0;
 function parse(pathname) { return pathname.split("/").filter(Boolean).map(decodeURIComponent); }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=03682")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=03683")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
     if (p[0] === "login") return view.renderLogin();
@@ -50,7 +50,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=03682")).renderHome();
+  return (await import("./views/home.js?v=03683")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -492,6 +492,8 @@ document.addEventListener("click", async event => {
 });
 
 document.addEventListener("input", async event => {
+  const brandHeroForm = event.target.closest('[data-admin-form="brand-settings"]');
+  if (brandHeroForm) (await import("./views/admin.js")).syncBrandHeroPreview(brandHeroForm);
   const search = event.target.closest("[data-member-search]");
   if (search) { const q = String(search.value || "").trim().toLowerCase(); document.querySelectorAll("[data-member-row]").forEach(row => row.hidden = !!q && !String(row.dataset.memberSearchText || "").includes(q)); }
   const quickSearch = event.target.closest("[data-person-quick-search]");
@@ -545,6 +547,8 @@ document.addEventListener("input", async event => {
 });
 
 document.addEventListener("change", async event => {
+  const brandHeroForm = event.target.closest('[data-admin-form="brand-settings"]');
+  if (brandHeroForm) (await import("./views/admin.js")).syncBrandHeroPreview(brandHeroForm);
   const politicianPhoto = event.target.closest("[data-politician-photo-input]");
   if (politicianPhoto?.files?.[0]) {
     try {

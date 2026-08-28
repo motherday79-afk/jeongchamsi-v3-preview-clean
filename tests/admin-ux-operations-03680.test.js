@@ -38,8 +38,12 @@ test('admin and NOW data center expose lightweight live pulse status indicators'
 });
 
 test('main title admin edits the actual current product hero fields', () => {
-  for (const field of ['productKicker','productTagline','productHeadline','productDescription','productPrimaryLabel','productPrimaryHref','productSecondaryLabel','productSecondaryHref','productHeadlineTone','productAccentTone','productDescriptionTone']) {
+  for (const field of ['productKicker','productTagline','productHeadline','productAccentText','productDescription','productPrimaryLabel','productPrimaryHref','productSecondaryLabel','productSecondaryHref']) {
     assert.ok(admin.includes(`name="${field}"`), `missing admin field ${field}`);
+    assert.ok(schema.includes(field), `missing schema field ${field}`);
+  }
+  for (const field of ['productHeadlineTone','productAccentTone','productDescriptionTone']) {
+    assert.ok(admin.includes(`heroToneSwatches("${field}"`), `missing swatch field ${field}`);
     assert.ok(schema.includes(field), `missing schema field ${field}`);
   }
   assert.match(admin, /1200\s*×\s*675/);

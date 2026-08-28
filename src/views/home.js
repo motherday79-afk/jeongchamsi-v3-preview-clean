@@ -100,6 +100,7 @@ function productHero(brand = {}) {
     productKicker:"JEONGCHAMSI",
     productTagline:"정치에 참여할 시간",
     productHeadline:"정치를 보는 것에서 움직이는 것으로!",
+    productAccentText:"움직이는 것",
     productDescription:"인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요",
     productPrimaryLabel:"정참시 응원하기",
     productPrimaryHref:"/about",
@@ -112,10 +113,15 @@ function productHero(brand = {}) {
     ...(brand?.hero || {})
   };
   const productHeadline = String(hero.productHeadline || "정치를 보는 것에서 움직이는 것으로!").trim() || "정치를 보는 것에서 움직이는 것으로!";
-  const safeHeadline = esc(productHeadline);
-  const headlineHtml = safeHeadline.includes("움직이는 것")
-    ? safeHeadline.replace("움직이는 것", '<br><strong>움직이는 것</strong>')
-    : safeHeadline.replace(/\n/g, "<br>");
+  const accentText = String(hero.productAccentText ?? "움직이는 것").trim();
+  const accentIndex = accentText ? productHeadline.indexOf(accentText) : -1;
+  let headlineHtml = esc(productHeadline).replace(/\n/g, "<br>");
+  if (accentIndex >= 0) {
+    const prefix = productHeadline.slice(0, accentIndex);
+    const suffix = productHeadline.slice(accentIndex + accentText.length);
+    const autoBreak = accentText === "움직이는 것" && !productHeadline.includes("\n") && prefix;
+    headlineHtml = `${esc(prefix).replace(/\n/g,"<br>")}${autoBreak ? "<br>" : ""}<strong>${esc(accentText)}</strong>${esc(suffix).replace(/\n/g,"<br>")}`;
+  }
   const allowedTone = value => ["default","white","mint","yellow","dark"].includes(String(value || "")) ? String(value) : "default";
   const art = safeImage(hero.artImage);
   const heroClass = `product-hero product-hero-participation product-hero-headline-tone-${allowedTone(hero.productHeadlineTone)} product-hero-accent-tone-${allowedTone(hero.productAccentTone)} product-hero-description-tone-${allowedTone(hero.productDescriptionTone)}${art ? " product-hero-has-art" : ""}`;
@@ -383,7 +389,7 @@ export async function renderHome() {
 
         <section class="module" id="compare"><div class="module-header"><div><span class="eyebrow">COMPARE · SAMPLE</span><h2>정치인 비교분석</h2></div><button class="more-btn" type="button" data-go="/compare">비교하기</button></div><div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div><div class="compare-layout"><div class="compare-person"><span class="compare-avatar sample-a"></span><b>가상후보 A</b><small>정책·민생형</small></div><div class="compare-metrics"><div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div><div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div><div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div><div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div></div><div class="compare-person"><span class="compare-avatar sample-b"></span><b>가상후보 B</b><small>개혁·소통형</small></div></div><div class="compare-summary"><b>비교 결과 예시</b><span>정참시의 AI 인텔리전트 데이터 무브먼트로 22개의 항목을 비교분석 합니다</span></div></section>
 
-        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="rank-top-grid rank-top-grid-10">${rankTop10}</div></section>
+        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow live-heading-inline">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="rank-top-grid rank-top-grid-10">${rankTop10}</div></section>
 
         <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div><div class="column-grid">${columnCards.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 
@@ -399,7 +405,7 @@ export async function renderHome() {
           const person = typeof getPerson === "function" ? getPerson(id) : null;
           const recentPhoto = photoAsset(id, "tiny", info.name || `${info.group} ${info.number}`, { sizes:"54px" });
           return `<button type="button" class="recent-visual-card" title="${esc(info.short)}" aria-label="${esc(info.short)}" data-go="/person/${esc(id)}"><span class="recent-circle-avatar ${recentPhoto.photo ? "has-photo" : ""}"${recentPhoto.photo ? ` style="--photo-position:${esc(recentPhoto.photo.focus)}"` : ""}>${recentPhoto.img}</span><b>${esc(info.name || `${info.group} ${info.number}`)}</b><small>${esc(person?.party || info.group)}</small></button>`;
-        }).join("")}</div></section><section class="side-card side-keywords live-signal-card"><div class="side-head"><b>실시간 정치키워드 <span class="main-live-pulse" aria-label="LIVE"><i></i></span></b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid live-keyword-grid">${Array.from({ length: 8 }, (_, i) => { const x=keywords[i]; return x ? `<span class="live-keyword-chip" title="${esc(x.meta || "NOW 뉴스 기반")}"><b>${i+1}</b>${esc(x.label)}</span>` : `<span>${i+1}</span>`; }).join("")}</div><small class="signal-source-note">${nowSignals.source === "published-now" ? "게시된 NOW 뉴스 데이터 기반" : "관리자 등록 키워드"}</small></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising live-signal-card"><div class="side-head"><b>실시간 급상승 정치인 <span class="main-live-pulse" aria-label="LIVE"><i></i></span></b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live politician-rising-row" role="button" tabindex="0" data-go="${esc(x.href)}"><span>${i + 1}</span><i><b>${esc(x.title)}</b><small><em class="trend-signal ${Number(x.rankDelta)>0?"up":x.trendLabel==="NEW"?"new":""}">${esc(x.trendLabel || "NOW")}</em>${esc(x.meta ? ` ${x.meta.replace(x.trendLabel || "", "").replace(/^\s*·\s*/, "")}` : "")}</small></i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}<small class="signal-source-note">직전 게시 순위 + 최근 뉴스 가속도</small></section></aside>
+        }).join("")}</div></section><section class="side-card side-keywords live-signal-card"><div class="side-head"><b class="live-heading-inline">실시간 정치키워드 <span class="main-live-pulse" aria-label="LIVE"><i></i></span></b><span class="side-action" role="button" tabindex="0" data-go="/keywords">더보기</span></div><div class="keyword-grid live-keyword-grid">${Array.from({ length: 8 }, (_, i) => { const x=keywords[i]; return x ? `<span class="live-keyword-chip" title="${esc(x.meta || "NOW 뉴스 기반")}"><b>${i+1}</b>${esc(x.label)}</span>` : `<span>${i+1}</span>`; }).join("")}</div><small class="signal-source-note">${nowSignals.source === "published-now" ? "게시된 NOW 뉴스 데이터 기반" : "관리자 등록 키워드"}</small></section><section class="side-card side-news"><div class="side-head"><b>정참시 NEWS</b><span class="side-action" role="button" tabindex="0" data-go="/news">전체</span></div>${news.map(sideNewsRow).join("")}</section><section class="side-card side-rising live-signal-card"><div class="side-head"><b class="live-heading-inline">실시간 급상승 정치인 <span class="main-live-pulse" aria-label="LIVE"><i></i></span></b><span class="side-action" role="button" tabindex="0" data-go="/trending">전체</span></div>${Array.from({ length: 5 }, (_, i) => { const x = trending[i]; return x ? `<div class="side-row live politician-rising-row" role="button" tabindex="0" data-go="${esc(x.href)}"><span>${i + 1}</span><i><b>${esc(x.title)}</b><small><em class="trend-signal ${Number(x.rankDelta)>0?"up":x.trendLabel==="NEW"?"new":""}">${esc(x.trendLabel || "NOW")}</em>${esc(x.meta ? ` ${x.meta.replace(x.trendLabel || "", "").replace(/^\s*·\s*/, "")}` : "")}</small></i></div>` : `<div class="side-row"><span>${i + 1}</span><i></i></div>`; }).join("")}<small class="signal-source-note">직전 게시 순위 + 최근 뉴스 가속도</small></section></aside>
     </div></div>
     ${footer()}
     ${drawer()}

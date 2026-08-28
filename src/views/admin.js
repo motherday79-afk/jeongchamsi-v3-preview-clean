@@ -288,10 +288,20 @@ async function academyPanel() {
   </section>`;
 }
 const HERO_TONES = [
-  ["default","기본"], ["white","화이트"], ["mint","민트"], ["yellow","옐로 포인트"], ["dark","다크"]
+  ["default","기본","#e9f4f0"], ["white","화이트","#ffffff"], ["mint","민트","#9ee7d1"], ["yellow","옐로 포인트","#ffd84d"], ["dark","다크","#15352e"]
 ];
-function heroToneOptions(current = "default") {
-  return HERO_TONES.map(([value,label]) => `<option value="${value}" ${String(current || "default") === value ? "selected" : ""}>${label}</option>`).join("");
+function heroToneSwatches(name, current = "default", label = "색상") {
+  return `<fieldset class="hero-tone-field"><legend>${esc(label)}</legend><div class="hero-tone-choices">${HERO_TONES.map(([value,text,color]) => `<label class="hero-tone-choice"><input type="radio" name="${esc(name)}" value="${value}" ${String(current || "default") === value ? "checked" : ""}><span class="hero-tone-swatch" style="--hero-tone-swatch:${color}"></span><b>${esc(text)}</b></label>`).join("")}</div></fieldset>`;
+}
+function heroHeadlinePreviewHtml(headline = "", accent = "") {
+  const text = String(headline || "");
+  const accentText = String(accent || "").trim();
+  const index = accentText ? text.indexOf(accentText) : -1;
+  if (index < 0) return esc(text).replace(/\n/g,"<br>");
+  const prefix = text.slice(0,index);
+  const suffix = text.slice(index + accentText.length);
+  const autoBreak = accentText === "움직이는 것" && !text.includes("\n") && prefix;
+  return `${esc(prefix).replace(/\n/g,"<br>")}${autoBreak ? "<br>" : ""}<strong>${esc(accentText)}</strong>${esc(suffix).replace(/\n/g,"<br>")}`;
 }
 
 async function brandPanel() {
@@ -302,6 +312,7 @@ async function brandPanel() {
     productKicker:"JEONGCHAMSI",
     productTagline:"정치에 참여할 시간",
     productHeadline:"정치를 보는 것에서 움직이는 것으로!",
+    productAccentText:"움직이는 것",
     productDescription:"인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요",
     productPrimaryLabel:"정참시 응원하기",
     productPrimaryHref:"/about",
@@ -343,10 +354,16 @@ async function brandPanel() {
 
       <div class="section-title top-gap"><h2>현재 메인 히어로 문구</h2><span>메인 첫 화면에 직접 연결</span></div>
       <div class="admin-form-row"><label>영문 라벨<input name="productKicker" maxlength="60" value="${esc(hero.productKicker)}" required></label><label>보조 라벨<input name="productTagline" maxlength="60" value="${esc(hero.productTagline)}" required></label></div>
-      <label class="admin-hero-primary-copy">메인 헤드라인<textarea name="productHeadline" rows="2" maxlength="180" required>${esc(hero.productHeadline)}</textarea><small>줄바꿈도 그대로 반영됩니다. ‘움직이는 것’ 문구가 있으면 현재처럼 강조 포인트가 적용됩니다.</small></label>
+      <label class="admin-hero-primary-copy">메인 헤드라인<textarea name="productHeadline" rows="2" maxlength="180" required>${esc(hero.productHeadline)}</textarea><small>줄바꿈도 그대로 반영됩니다.</small></label>
+      <label>강조할 문구<input name="productAccentText" maxlength="80" value="${esc(hero.productAccentText || "움직이는 것")}" placeholder="예: 움직이는 것"><small>헤드라인 안에서 이 문구와 일치하는 부분만 강조 색상으로 표시됩니다.</small></label>
       <label>설명 문구<textarea name="productDescription" rows="3" maxlength="260" required>${esc(hero.productDescription)}</textarea><small>현재 메인의 ‘인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요’ 영역입니다.</small></label>
-      <div class="admin-form-row"><label>헤드라인 기본 색상<select name="productHeadlineTone">${heroToneOptions(hero.productHeadlineTone)}</select></label><label>강조 문구 색상<select name="productAccentTone">${heroToneOptions(hero.productAccentTone)}</select></label></div>
-      <label>설명 문구 색상<select name="productDescriptionTone">${heroToneOptions(hero.productDescriptionTone)}</select></label>
+      <div class="hero-tone-editor-grid">${heroToneSwatches("productHeadlineTone", hero.productHeadlineTone, "헤드라인 기본색")}${heroToneSwatches("productAccentTone", hero.productAccentTone, "강조 문구색")}${heroToneSwatches("productDescriptionTone", hero.productDescriptionTone, "설명 문구색")}</div>
+      <div class="admin-product-hero-preview" data-hero-live-preview data-headline-tone="${esc(hero.productHeadlineTone)}" data-accent-tone="${esc(hero.productAccentTone)}" data-description-tone="${esc(hero.productDescriptionTone)}">
+        <div class="admin-product-hero-preview-kicker"><span data-hero-preview-kicker>${esc(hero.productKicker)}</span><em data-hero-preview-tagline>${esc(hero.productTagline)}</em></div>
+        <h3 data-hero-preview-headline>${heroHeadlinePreviewHtml(hero.productHeadline, hero.productAccentText)}</h3>
+        <p data-hero-preview-description>${esc(hero.productDescription)}</p>
+        <small>색상·강조 문구는 저장 전에 여기서 바로 확인할 수 있습니다.</small>
+      </div>
       <div class="admin-form-row"><label>1번 버튼 문구<input name="productPrimaryLabel" maxlength="60" value="${esc(hero.productPrimaryLabel)}"></label><label>1번 버튼 주소<input name="productPrimaryHref" maxlength="300" value="${esc(hero.productPrimaryHref)}" placeholder="/about 또는 https://..."></label></div>
       <div class="admin-form-row"><label>2번 버튼 문구<input name="productSecondaryLabel" maxlength="60" value="${esc(hero.productSecondaryLabel)}"></label><label>2번 버튼 주소<input name="productSecondaryHref" maxlength="300" value="${esc(hero.productSecondaryHref)}" placeholder="/support 또는 https://..."></label></div>
 
@@ -551,6 +568,39 @@ export async function renderAdmin() {
   return pageShell(`<main class="subpage admin-page"><section class="page-hero"><span class="eyebrow">ADMIN · V3 CLEAN CORE</span><h1>정참시 관리자 <span class="admin-live-pulse admin-live-pulse-hero" data-live-status="ready" aria-hidden="true"><i></i></span></h1><p>Leveraging the Collective Intelligence of Three Leading LLMs and the JEONGCHAMSI Intelligent Data Analysis System, We Deliver Optimized Solutions.</p></section>${adminTabs(tab)}${panel}</main>`);
 }
 
+export function syncBrandHeroPreview(form) {
+  if (!form?.matches?.('[data-admin-form="brand-settings"]')) return;
+  const preview = form.querySelector('[data-hero-live-preview]');
+  if (!preview) return;
+  const value = name => form.querySelector(`[name="${name}"]`)?.value || "";
+  const checked = name => form.querySelector(`[name="${name}"]:checked`)?.value || "default";
+  const headline = String(value("productHeadline") || "").trim();
+  const accentText = String(value("productAccentText") || "").trim();
+  preview.dataset.headlineTone = checked("productHeadlineTone");
+  preview.dataset.accentTone = checked("productAccentTone");
+  preview.dataset.descriptionTone = checked("productDescriptionTone");
+  const kicker = preview.querySelector('[data-hero-preview-kicker]');
+  const tagline = preview.querySelector('[data-hero-preview-tagline]');
+  const headlineEl = preview.querySelector('[data-hero-preview-headline]');
+  const description = preview.querySelector('[data-hero-preview-description]');
+  if (kicker) kicker.textContent = value("productKicker") || "JEONGCHAMSI";
+  if (tagline) tagline.textContent = value("productTagline") || "정치에 참여할 시간";
+  if (description) description.textContent = value("productDescription");
+  if (!headlineEl) return;
+  headlineEl.replaceChildren();
+  const appendText = (target, text) => String(text || "").split("\n").forEach((part, index) => { if (index) target.append(document.createElement("br")); target.append(document.createTextNode(part)); });
+  const accentIndex = accentText ? headline.indexOf(accentText) : -1;
+  if (accentIndex < 0) { appendText(headlineEl, headline); return; }
+  const prefix = headline.slice(0, accentIndex);
+  const suffix = headline.slice(accentIndex + accentText.length);
+  appendText(headlineEl, prefix);
+  if (accentText === "움직이는 것" && !headline.includes("\n") && prefix) headlineEl.append(document.createElement("br"));
+  const strong = document.createElement("strong");
+  strong.textContent = accentText;
+  headlineEl.append(strong);
+  appendText(headlineEl, suffix);
+}
+
 export async function prepareCoverPreview(file, previewEl) {
   const { uploadCoverImage } = await import("../core/image.js");
   const data = await uploadCoverImage(file);
@@ -585,6 +635,7 @@ export async function saveAdminForm(form) {
         productKicker:String(fd.get("productKicker") || "JEONGCHAMSI").trim(),
         productTagline:String(fd.get("productTagline") || "정치에 참여할 시간").trim(),
         productHeadline:String(fd.get("productHeadline") || "정치를 보는 것에서 움직이는 것으로!").trim(),
+        productAccentText:String(fd.get("productAccentText") ?? "").trim().slice(0,80),
         productDescription:String(fd.get("productDescription") || "인물·이슈·여론·제안을 한곳에서 보고, 비교하고, 직접 참여하세요").trim(),
         productPrimaryLabel:String(fd.get("productPrimaryLabel") || "정참시 응원하기").trim(),
         productPrimaryHref:String(fd.get("productPrimaryHref") || "/about").trim(),
