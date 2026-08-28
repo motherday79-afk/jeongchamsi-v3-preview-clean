@@ -1,38 +1,35 @@
-JCS HISTORY DATA LAYER FINAL PATCH
-Base application: v3.0.0-alpha6.0.36.68
-Patch: HISTORY DATA LAYER V1 / history-v1
+JCS HISTORY V2 — DETAIL OBSERVATION COUNT HOTFIX
 Date: 2026-08-29
 Package mode: changed files only
+Target: JCV3_HISTORY_V2_SEARCH_DAILY_FINAL_PATCH_20260829 applied project
 
-ADDED
-- DELETE_FILES.txt
-- PATCH_MANIFEST.txt
-- docs/HISTORY_DATA_LAYER_TECHNICAL_20260829.md
-- docs/HISTORY_DEPLOY_RUNBOOK_20260829.md
-- server/v3/lib/history-core.js
-- server/v3/lib/history-store.js
-- server/v3/routes/admin/history.js
-- tests/history-backfill-20260829.test.js
-- tests/history-core-20260829.test.js
-- tests/history-derived-20260829.test.js
-- tests/history-integration-admin-20260829.test.js
-- tests/history-security-route-20260829.test.js
+PURPOSE
+- Politician detail HISTORY summary now separates raw intraday observation count from observed-day count.
+- Example: three FULL snapshots on one Korea calendar day render as:
+  원본 관측 3회 / 관측일 1일
 
-MODIFIED
-- api/gateway.js
-- index.html
-- lib/v3/redis.js
-- server/v3/routes/action.js
-- server/v3/routes/admin/now-data.js
+RUNTIME — MODIFIED
+- src/views/people.js
+- css/pages.css
 - src/app.js
-- src/views/admin.js
-- tests/politician-photo-assembly299-assetize-20260826.test.js
-- tests/politician-photo-immediate-refresh.test.js
+- index.html
 
-DELETE AFTER EXTRACTION
-- tests/home-live-pulse-03682.test.js
+TESTS
+- ADDED tests/history-detail-observation-count-20260829.test.js
+- UPDATED tests/history-v2-search-daily-20260829.test.js
+  - makes the existing Korea-day normalization test deterministic across clock times
 
-EXPECTED VERIFICATION
-- HISTORY: 51 / 51 pass
-- Full project: 195 / 199 pass
-- Expected pre-existing failures: 4
+INTENTIONALLY UNCHANGED
+- api/gateway.js
+- server/v3/routes/now-data.js
+- server/v3/routes/admin/now-data.js
+- server/v3/lib/history-v2-core.js
+- server/v3/lib/history-v2-store.js
+- src/core/repository.js
+- src/core/history-repository.js
+
+DATA SAFETY
+- No Redis key changes.
+- No snapshot writes/deletes/migrations.
+- No NOW calculation changes.
+- No new DB or environment variables.

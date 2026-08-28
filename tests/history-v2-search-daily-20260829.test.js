@@ -46,12 +46,14 @@ test('daily summaries group repeated refreshes by Korea calendar day and preserv
 test('long windows normalize trend calculations to one daily representative while retaining raw observations',async()=>{
   const h=historyHarness();
   const id='assembly-001',index=`jcv3:history:v2:observations:${id}`;
-  const now=Date.now();
+  const now=Date.now(),dayMs=24*60*60*1000,kstOffset=9*60*60*1000;
+  const todayKstStartUtc=Math.floor((now+kstOffset)/dayMs)*dayMs-kstOffset;
+  const yesterdayKstStartUtc=todayKstStartUtc-dayMs;
   const rows=[
-    observation(new Date(now-30*60*60*1000).toISOString(),20,20,'a'),
-    observation(new Date(now-27*60*60*1000).toISOString(),80,8,'b'),
-    observation(new Date(now-24*60*60*1000).toISOString(),80,7,'c'),
-    observation(new Date(now-3*60*60*1000).toISOString(),40,12,'d')
+    observation(new Date(yesterdayKstStartUtc+9*60*60*1000).toISOString(),20,20,'a'),
+    observation(new Date(yesterdayKstStartUtc+12*60*60*1000).toISOString(),80,8,'b'),
+    observation(new Date(yesterdayKstStartUtc+18*60*60*1000).toISOString(),80,7,'c'),
+    observation(new Date(todayKstStartUtc+30*60*1000).toISOString(),40,12,'d')
   ];
   for(const row of rows){
     h.kv.set(`jcv3:history:v2:observation:${id}:${row.draftId}`,JSON.stringify(row));
