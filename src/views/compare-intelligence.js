@@ -48,6 +48,17 @@ export function relativeCompareAxisValue(a,b){
   return Math.max(-50,Math.min(50,Math.round(((safeRight-safeLeft)/2)*10)/10));
 }
 
+export function axisIntensityBand(value){
+  const numeric=Number(value);
+  if(!Number.isFinite(numeric))return "neutral";
+  const distance=Math.min(50,Math.abs(numeric));
+  if(distance<=10)return "green";
+  if(distance<=20)return "yellow";
+  if(distance<=30)return "amber";
+  if(distance<=40)return "orange";
+  return "red";
+}
+
 export function buildDifferences(liveA,liveB,metrics=CORE_COMPARE_METRICS,threshold=5){
   return metrics.map(item=>{
     const a=scoreFor(liveA,item.key),b=scoreFor(liveB,item.key);

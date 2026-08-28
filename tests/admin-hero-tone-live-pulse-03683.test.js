@@ -45,6 +45,6 @@ test('main live pulses are larger and center-aligned with their labels', () => {
 });
 
 test('03683 cache markers are present for changed home and styles', () => {
-  assert.match(index, /03685-compare-absolute-axis/);
+  assert.match(index, /03686-data-intensity-axis/);
   assert.match(app, /\.\/views\/home\.js\?v=03683/);
 });

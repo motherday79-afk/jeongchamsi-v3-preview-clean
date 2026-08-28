@@ -22,6 +22,6 @@ test('compare UI uses one centered relative axis while showing absolute left/rig
   assert.doesNotMatch(features,/현재 관측 신호 · 0–100 상대지표/);
   const app=fs.readFileSync('src/app.js','utf8');
   const index=fs.readFileSync('index.html','utf8');
-  assert.match(app,/features\.js\?v=03685/);
-  assert.match(index,/03685-compare-absolute-axis/);
+  assert.match(app,/features\.js\?v=03686/);
+  assert.match(index,/03686-data-intensity-axis/);
 });

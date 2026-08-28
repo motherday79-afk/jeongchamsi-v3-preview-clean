@@ -13,8 +13,8 @@ import {
 import { authorIdentity, authorOwnerIds } from "./author-identity.js";
 import {
   CORE_COMPARE_METRICS, AUDIENCE_COMPARE_METRICS, ACTIVITY_COMPARE_METRICS, FLOW_COMPARE_METRICS,
-  scoreFor, buildDifferences, buildCompareInsight, relativeCompareAxisValue, trendScoreDelta, trendRankDelta
-} from "./compare-intelligence.js";
+  scoreFor, buildDifferences, buildCompareInsight, relativeCompareAxisValue, axisIntensityBand, trendScoreDelta, trendRankDelta
+} from "./compare-intelligence.js?v=03686";
 import {
   normalizeNationalEvaluation,
   votesForEvaluationSlot,
@@ -408,10 +408,11 @@ function compareMetricRow(metric, liveA, liveB, personA, personB) {
   const axis = relativeCompareAxisValue(a,b);
   const axisLeft = axis === null ? 50 : axis + 50;
   const axisLabel = axis === null ? "—" : compareScoreText(Math.abs(axis));
+  const axisIntensity = axisIntensityBand(axis);
   const difference = axis === null ? "관측 대기" : diff?.leader === "a" ? `${esc(personA.name)} 상대강세` : diff?.leader === "b" ? `${esc(personB.name)} 상대강세` : "근접";
   return `<article class="compare-metric-row">
     <div class="compare-metric-center"><b>${esc(metric.label)}</b><small>${esc(metric.description)}</small></div>
-    <div class="compare-relative-axis">
+    <div class="compare-relative-axis intensity-${axisIntensity}">
       <div class="compare-relative-axis-labels"><span>${esc(personA.name)}</span><span>${esc(personB.name)}</span></div>
       <div class="compare-relative-axis-track"><i></i><em style="left:${axisLeft}%"><b>${axisLabel}</b></em></div>
       <div class="compare-relative-axis-scale" aria-label="${esc(metric.label)} 비교 상대축"><span>50</span><span>25</span><span>0</span><span>25</span><span>50</span></div>
@@ -476,7 +477,7 @@ function compareLiveResult(personA,liveA,personB,liveB) {
       <div class="compare-live-signal"><span class="eyebrow">COMPARE SIGNAL</span><strong>VS</strong><h2>${esc(insight.headline)}</h2><p>${esc(insight.summary)}</p><div class="compare-signal-counts"><span><b>${insight.advantageA}</b>${esc(personA.name)} 상대강세</span><span><b>${insight.balanced}</b>근접</span><span><b>${insight.advantageB}</b>${esc(personB.name)} 상대강세</span></div></div>
       ${comparePersonHero(personB,liveB,"b")}
     </section>
-    ${compareMetricSection("CORE INTELLIGENCE","핵심 관심지표 비교","비교 상대축 · 50 ← 0 → 50",CORE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-core-section")}
+    ${compareMetricSection("CORE INTELLIGENCE","핵심 관심지표 비교","비교 상대축 · 50 ← 0 → 50 · 초록 → 빨강 = 차이 강도",CORE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-core-section")}
     ${compareMetricSection("AUDIENCE LANDSCAPE","관심 구조 비교","관심의 깊이와 확장 방향",AUDIENCE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-audience-section")}
     ${compareMetricSection("ACTIVITY & MEDIA","활동 · 미디어 비교","속도 · 집중 · 지속 · 확산",ACTIVITY_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-activity-section")}
     ${compareMetricSection("ATTENTION FLOW","관심 전이 비교","이슈 노출이 실제 관심으로 연결되는 흐름",FLOW_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-flow-section")}

@@ -17,6 +17,6 @@ test('comparison UI labels the centered relative axis as 50 25 0 25 50 without +
 });
 
 test('03685 cache markers identify the comparison absolute-label correction',()=>{
-  assert.match(index,/03685-compare-absolute-axis/);
-  assert.match(app,/features\.js\?v=03685/);
+  assert.match(index,/03686-data-intensity-axis/);
+  assert.match(app,/features\.js\?v=03686/);
 });

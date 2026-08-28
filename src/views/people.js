@@ -3,6 +3,7 @@ import { getPersonSlotById } from "../data/person-provider.js";
 import { politicianPhoto } from "../data/politician-photo-index.js";
 import { getNowPerson } from "../core/repository.js";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
+import { axisIntensityBand } from "./compare-intelligence.js?v=03686";
 
 const empty=()=>`<span class="info-empty" aria-label="추가 데이터 준비중"></span>`;
 const v=x=>x?esc(x):empty();
@@ -60,11 +61,11 @@ function analysisBar(label,desc,value,tone="mint"){
 function analysisAxisValue(value){
   const score=Math.max(0,Math.min(100,n(value)));
   const axis=Math.round(score-50);
-  return {score,axis,label:axis>0?`+${axis}`:String(axis)};
+  return {score,axis,label:axis>0?`+${axis}`:String(axis),intensity:axisIntensityBand(axis)};
 }
-function analysisAxis(label,desc,value,leftLabel,rightLabel,tone="mint"){
+function analysisAxis(label,desc,value,leftLabel,rightLabel){
   const point=analysisAxisValue(value);
-  return `<article class="person-analysis-axis-metric ${tone}">
+  return `<article class="person-analysis-axis-metric intensity-${point.intensity}">
     <div class="person-analysis-axis-head"><b>${esc(label)}</b><strong>${point.label}</strong></div>
     <small class="person-analysis-axis-desc">${esc(desc)}</small>
     <div class="person-analysis-axis-labels"><span>${esc(leftLabel)}</span><span>${esc(rightLabel)}</span></div>
@@ -129,6 +130,7 @@ function analysisReport(live){
   const audienceAxisValue=Math.round(Math.max(-50,Math.min(50,audiencePosition-50)));
   const audienceAxisLeft=audienceAxisValue+50;
   const audienceAxisLabel=audienceAxisValue>0?`+${audienceAxisValue}`:String(audienceAxisValue);
+  const audienceIntensity=axisIntensityBand(audienceAxisValue);
   const mediaPublic=analysis?.mediaPublic||{};
   const signalCopy=analysis?.signal?.diagnosis||(row?(live?.whyNow||"현재 관측된 관심과 활동 흐름을 정참시 인텔리전스 지표로 해석합니다."):"게시 데이터가 연결되면 정참시 분석지표가 표시됩니다.");
   const status=signal.label||(row?"분석 중":"데이터 대기");
@@ -152,13 +154,13 @@ function analysisReport(live){
     </section>
 
     <section class="content-card person-analysis-landscape">
-      <div class="section-title person-analysis-title"><div><span class="eyebrow">AUDIENCE LANDSCAPE</span><h2>관심 구조 분석</h2></div><span>관심 성향과 확장 방향의 상대적 구조</span></div>
-      <div class="person-analysis-landscape-grid"><div class="person-interest-axis"><div class="person-interest-axis-labels"><span>심층 탐색형</span><span>대중 확산형</span></div><div class="person-interest-axis-track"><i></i><em style="left:${audienceAxisLeft}%"><b class="person-interest-axis-value">${audienceAxisLabel}</b></em></div><div class="person-interest-axis-scale" aria-label="관심 구조 상대축"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div><strong>${esc(audience.label||"관심 구조 분석")}</strong><p>관심의 깊이와 확산 범위가 어느 방향으로 형성되는지 상대적 위치로 판독합니다.</p></div><div class="person-analysis-mini-grid">${analysisBar("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"blue")}${analysisBar("반응 확장력",gd("mobileResponse","새로운 관심이 보다 넓은 이용자층으로 빠르게 확산되는 정도"),scores.mobileResponse,"mint")}${analysisBar("대중 침투력",gd("massPenetration","정치 고관여층을 넘어 일반적인 대중 관심으로 연결되는 힘"),scores.massPenetration,"orange")}${analysisBar("심층 유지력",gd("coreRetention","단기 화제 이후에도 정보 탐색형 관심이 지속되는 정도"),scores.coreRetention,"navy")}</div></div>
+      <div class="section-title person-analysis-title"><div><span class="eyebrow">AUDIENCE LANDSCAPE</span><h2>관심 구조 분석</h2></div><span>관심 성향과 확장 방향 · 초록 → 빨강 = 0 기준 편차 강도</span></div>
+      <div class="person-analysis-landscape-grid"><div class="person-interest-axis intensity-${audienceIntensity}"><div class="person-interest-axis-labels"><span>심층 탐색형</span><span>대중 확산형</span></div><div class="person-interest-axis-track"><i></i><em style="left:${audienceAxisLeft}%"><b class="person-interest-axis-value">${audienceAxisLabel}</b></em></div><div class="person-interest-axis-scale" aria-label="관심 구조 상대축"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div><strong>${esc(audience.label||"관심 구조 분석")}</strong><p>관심의 깊이와 확산 범위가 어느 방향으로 형성되는지 상대적 위치로 판독합니다.</p></div><div class="person-analysis-mini-grid">${analysisBar("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"blue")}${analysisBar("반응 확장력",gd("mobileResponse","새로운 관심이 보다 넓은 이용자층으로 빠르게 확산되는 정도"),scores.mobileResponse,"mint")}${analysisBar("대중 침투력",gd("massPenetration","정치 고관여층을 넘어 일반적인 대중 관심으로 연결되는 힘"),scores.massPenetration,"orange")}${analysisBar("심층 유지력",gd("coreRetention","단기 화제 이후에도 정보 탐색형 관심이 지속되는 정도"),scores.coreRetention,"navy")}</div></div>
     </section>
 
     <section class="content-card person-analysis-activity">
       <div class="section-title person-analysis-title"><div><span class="eyebrow">ACTIVITY & MEDIA</span><h2>활동 · 미디어 분석</h2></div><span>활동의 속도 · 집중 · 지속 · 확산 방향</span></div>
-      <div class="person-analysis-dual"><div class="person-analysis-panel"><h3>정치 활동성</h3>${analysisAxis("활동성",gd("activity","최근 활동과 이슈 노출이 얼마나 활발하게 포착되고 있는지"),scores.activity,"정체","활발","orange")}${analysisAxis("활동 가속도",gd("activityAcceleration","최근 활동과 관련 노출의 증가 속도가 얼마나 빨라지고 있는지"),scores.activityAcceleration,"둔화","가속","red")}${analysisAxis("활동 집중도",gd("activityConcentration","최근 짧은 기간에 활동과 관심이 얼마나 집중되고 있는지"),scores.activityConcentration,"분산","집중","mint")}${analysisAxis("활동 지속성",gd("activityPersistence","일회성 이슈가 아닌 연속적인 활동 흐름이 유지되는 정도"),scores.activityPersistence,"단기","지속","navy")}</div><div class="person-analysis-panel"><h3>미디어 움직임</h3>${analysisAxis("미디어 가속도",gd("newsAcceleration","관련 보도와 언급이 이전 흐름보다 빠르게 확대되는 정도"),scores.newsAcceleration,"둔화","확산","red")}${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 최근 발생한 이슈에 얼마나 집중되어 있는지"),scores.issueFreshness,"누적","최신","orange")}${analysisAxis("이슈 지속성",gd("issuePersistence","특정 이슈에 대한 관심이 단발성 반응을 넘어 유지되는 정도"),scores.issuePersistence,"단발","지속","blue")}${analysisAxis("채널 다양성",gd("mediaDiversity","특정 정보원에 편중되지 않고 다양한 경로에서 다뤄지는 정도"),scores.mediaDiversity,"편중","다변화","violet")}</div></div>
+      <div class="person-analysis-dual"><div class="person-analysis-panel"><h3>정치 활동성</h3>${analysisAxis("활동성",gd("activity","최근 활동과 이슈 노출이 얼마나 활발하게 포착되고 있는지"),scores.activity,"정체","활발")}${analysisAxis("활동 가속도",gd("activityAcceleration","최근 활동과 관련 노출의 증가 속도가 얼마나 빨라지고 있는지"),scores.activityAcceleration,"둔화","가속")}${analysisAxis("활동 집중도",gd("activityConcentration","최근 짧은 기간에 활동과 관심이 얼마나 집중되고 있는지"),scores.activityConcentration,"분산","집중")}${analysisAxis("활동 지속성",gd("activityPersistence","일회성 이슈가 아닌 연속적인 활동 흐름이 유지되는 정도"),scores.activityPersistence,"단기","지속")}</div><div class="person-analysis-panel"><h3>미디어 움직임</h3>${analysisAxis("미디어 가속도",gd("newsAcceleration","관련 보도와 언급이 이전 흐름보다 빠르게 확대되는 정도"),scores.newsAcceleration,"둔화","확산")}${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 최근 발생한 이슈에 얼마나 집중되어 있는지"),scores.issueFreshness,"누적","최신")}${analysisAxis("이슈 지속성",gd("issuePersistence","특정 이슈에 대한 관심이 단발성 반응을 넘어 유지되는 정도"),scores.issuePersistence,"단발","지속")}${analysisAxis("채널 다양성",gd("mediaDiversity","특정 정보원에 편중되지 않고 다양한 경로에서 다뤄지는 정도"),scores.mediaDiversity,"편중","다변화")}</div></div>
     </section>
 
     <section class="content-card person-analysis-issue">
@@ -169,7 +171,7 @@ function analysisReport(live){
 
     <details class="person-analysis-deep content-card">
       <summary><span><small>DEEP ANALYSIS</small><b>정참시 심층분석 더보기</b></span><em>+</em></summary>
-      <div class="person-analysis-deep-body"><div class="person-analysis-deep-grid"><article><h3>관심 전이</h3>${analysisAxis("미디어→대중 전이",gd("newsSearchTransition","이슈 노출이 능동적인 대중 관심으로 연결되는 정도"),scores.newsSearchTransition,"분리","전이","mint")}${analysisAxis("미디어·대중 괴리",gd("mediaPublicGap","정보 노출과 대중 관심 사이의 간격"),scores.mediaPublicGap,"낮은 괴리","큰 괴리","blue")}${analysisAxis("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"정체","확장","orange")}</article><article><h3>시간 흐름</h3>${analysisAxis("단기 가속",gd("newsAcceleration","최근 관심과 노출의 변화 속도"),scores.newsAcceleration,"둔화","가속","red")}${analysisAxis("일간 집중",gd("activityConcentration","최근 활동과 관심이 특정 시점에 집중되는 정도"),scores.activityConcentration,"분산","집중","orange")}${analysisAxis("주간 지속",gd("activityPersistence","관심과 활동 흐름이 연속적으로 유지되는 정도"),scores.activityPersistence,"단기","지속","navy")}</article><article><h3>이슈 구조</h3>${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 새로운 이슈에 집중되는 정도"),scores.issueFreshness,"누적","최신","violet")}${analysisAxis("대중 침투",gd("massPenetration","관심이 일반적인 대중 영역으로 확장되는 힘"),scores.massPenetration,"제한","침투","mint")}${analysisAxis("이슈 폭발",gd("issueExplosiveness","짧은 시간 안에 관심이 증폭되는 힘"),scores.issueExplosiveness,"안정","폭발","red")}</article></div><!-- ANALYSIS TREND -->${analysisTrend(live)}</div>
+      <div class="person-analysis-deep-body"><div class="person-analysis-deep-grid"><article><h3>관심 전이</h3>${analysisAxis("미디어→대중 전이",gd("newsSearchTransition","이슈 노출이 능동적인 대중 관심으로 연결되는 정도"),scores.newsSearchTransition,"분리","전이")}${analysisAxis("미디어·대중 괴리",gd("mediaPublicGap","정보 노출과 대중 관심 사이의 간격"),scores.mediaPublicGap,"낮은 괴리","큰 괴리")}${analysisAxis("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"정체","확장")}</article><article><h3>시간 흐름</h3>${analysisAxis("단기 가속",gd("newsAcceleration","최근 관심과 노출의 변화 속도"),scores.newsAcceleration,"둔화","가속")}${analysisAxis("일간 집중",gd("activityConcentration","최근 활동과 관심이 특정 시점에 집중되는 정도"),scores.activityConcentration,"분산","집중")}${analysisAxis("주간 지속",gd("activityPersistence","관심과 활동 흐름이 연속적으로 유지되는 정도"),scores.activityPersistence,"단기","지속")}</article><article><h3>이슈 구조</h3>${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 새로운 이슈에 집중되는 정도"),scores.issueFreshness,"누적","최신")}${analysisAxis("대중 침투",gd("massPenetration","관심이 일반적인 대중 영역으로 확장되는 힘"),scores.massPenetration,"제한","침투")}${analysisAxis("이슈 폭발",gd("issueExplosiveness","짧은 시간 안에 관심이 증폭되는 힘"),scores.issueExplosiveness,"안정","폭발")}</article></div><!-- ANALYSIS TREND -->${analysisTrend(live)}</div>
     </details>`;
 }
 

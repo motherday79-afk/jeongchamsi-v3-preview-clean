@@ -24,7 +24,7 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=03686")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
     const view = await import("./views/boards.js");
     const domain = p[0] === "column" ? "columns" : p[0];
@@ -37,7 +37,7 @@ async function resolveView(state) {
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03685");
+  const view = await import("./views/features.js?v=03686");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -292,7 +292,7 @@ document.addEventListener("click", async event => {
   if (nowMore) {
     if (nowMore.disabled) return;
     nowMore.disabled = true;
-    const tools = await import("./views/features.js?v=03685");
+    const tools = await import("./views/features.js?v=03686");
     const r = await tools.appendNowRankMore(nowMore);
     if (!r?.ok) {
       nowMore.disabled = false;
