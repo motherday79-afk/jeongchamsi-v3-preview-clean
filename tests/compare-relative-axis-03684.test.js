@@ -12,15 +12,16 @@ test('comparison axis normalizes A-left and B-right into -50..+50 without changi
   assert.equal(relativeCompareAxisValue(null,80),null);
 });
 
-test('compare UI uses one centered -50..+50 axis instead of two 0..100 bars',()=>{
+test('compare UI uses one centered relative axis while showing absolute left/right magnitudes',()=>{
   const features=fs.readFileSync('src/views/features.js','utf8');
   assert.match(features,/compare-relative-axis-track/);
   assert.match(features,/compare-relative-axis-scale/);
-  for(const label of ['-50','-25','0','+25','+50']) assert.ok(features.includes(`>${label}<`),`missing ${label}`);
+  for(const label of ['50','25','0']) assert.ok(features.includes(`>${label}<`),`missing ${label}`);
+  for(const signed of ['-50','-25','+25','+50']) assert.ok(!features.includes(`>${signed}<`),`unexpected signed label ${signed}`);
   assert.match(features,/relativeCompareAxisValue/);
   assert.doesNotMatch(features,/현재 관측 신호 · 0–100 상대지표/);
   const app=fs.readFileSync('src/app.js','utf8');
   const index=fs.readFileSync('index.html','utf8');
-  assert.match(app,/features\.js\?v=03684/);
-  assert.match(index,/03684-compare-relative-axis/);
+  assert.match(app,/features\.js\?v=03685/);
+  assert.match(index,/03685-compare-absolute-axis/);
 });

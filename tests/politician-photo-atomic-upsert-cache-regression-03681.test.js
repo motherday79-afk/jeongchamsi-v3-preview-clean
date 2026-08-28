@@ -27,5 +27,5 @@ test('photo resolver cache cannot hide a just-saved photo', () => {
   assert.match(route, /res\.setHeader\(["']Cache-Control["'],LIVE_PHOTO_CACHE_CONTROL\)/);
   assert.match(content, /__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__/);
   assert.match(index, /v=03681/);
-  assert.match(html, /03684-compare-relative-axis/);
+  assert.match(html, /03685-compare-absolute-axis/);
 });
