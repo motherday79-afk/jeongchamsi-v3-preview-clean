@@ -6,6 +6,7 @@ const people = fs.readFileSync("src/views/people.js","utf8");
 const app = fs.readFileSync("src/app.js","utf8");
 const image = fs.readFileSync("src/core/image.js","utf8");
 const admin = fs.readFileSync("src/views/admin.js","utf8");
+const route = fs.readFileSync("server/v3/routes/politician-photo.js","utf8");
 const css = fs.readFileSync("css/pages.css","utf8");
 const meta = fs.readFileSync("src/data/person-meta.js","utf8");
 
@@ -31,7 +32,8 @@ test("detail photo selection previews first and explicit submit reuses the optim
 });
 
 test("manual detail uploads remain classified inside the JCS asset pool", () => {
-  assert.match(admin, /sourceType:"manual"/);
+  assert.match(route, /sourceType:"manual"/);
+  assert.match(admin, /action:"manual-upsert"/);
   assert.match(meta, /PHOTO_PROVIDER_STATUS = "JCS_ASSET"/);
   assert.match(admin, /정참시 사진 자산/);
   assert.match(css, /\.person-detail-photo\.admin-photo-editable/);

@@ -12,6 +12,7 @@ const { mergePoliticianPhotoAssets } = require("../lib/politician-photo-assets")
 const ALLOWED_WIDTHS = new Set([64,96,128,160,256,384]);
 const MAX_ASSET_BYTES = 128 * 1024;
 const MAX_REVIEW_SOURCE_BYTES = 5 * 1024 * 1024;
+const LIVE_PHOTO_CACHE_CONTROL = "private, no-store, max-age=0";
 const REVIEW_KEY = "politicianPhotoReview03668";
 const LEGACY_REVIEW_KEY = "politicianPhotoReview03667";
 const AUTO_VARIANT_PLANS = [
@@ -24,6 +25,11 @@ const TARGET_BY_ID = new Map(PHOTO_TARGETS.map(person => [person.id,person]));
 
 const manualCache = globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__ || { at:0, items:new Map() };
 globalThis.__JCV3_POLITICIAN_MANUAL_PHOTO_CACHE_03667__ = manualCache;
+
+function invalidateManualPhotoCache() {
+  manualCache.at = 0;
+  manualCache.items = new Map();
+}
 
 function blobPhotoUrl(url = "") {
   try {
@@ -124,7 +130,7 @@ async function saveAutoRecord(person, source, uploaded, token) {
     return { saved:false,reason:"SCHEMA_REJECTED" };
   }
   await setJSON("politicianPhotos",next);
-  manualCache.at=0;
+  invalidateManualPhotoCache();
   return { saved:true,record:persisted };
 }
 
@@ -331,6 +337,42 @@ function validUploadedSet(uploaded={}) {
   return total > 0 && total <= MAX_ASSET_BYTES;
 }
 
+async function manualUpsert(req,res) {
+  const admin=await requireAdmin(req);
+  if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
+  const id=String(req.body?.id || "").trim();
+  const person=TARGET_BY_ID.get(id);
+  if (!person) return res.status(404).json({ok:false,error:"POLITICIAN_NOT_FOUND"});
+  const uploaded=req.body?.uploaded || {};
+  if (!validUploadedSet(uploaded)) return res.status(400).json({ok:false,error:"INVALID_OPTIMIZED_UPLOAD"});
+
+  const stored=await getJSON("politicianPhotos").catch(()=>null);
+  const storedItems=Array.isArray(stored?.items) ? stored.items : [];
+  const previous=storedItems.find(item=>String(item?.id || "")===id) || null;
+  const now=new Date().toISOString();
+  const record={
+    id,
+    variants:uploaded.variants,
+    bytes:uploaded.bytes,
+    original:uploaded.original || {width:0,height:0,size:0},
+    focus:String(uploaded.focus || previous?.focus || "50% 28%"),
+    sourceType:"manual",
+    verified:true,
+    sourcePage:"",
+    sourceUrl:"",
+    matchScore:100,
+    verification:["관리자 상세페이지 직접 등록"],
+    assetizedAt:String(previous?.assetizedAt || now),
+    updatedAt:now
+  };
+  const next=sanitize("politicianPhotos",{items:[record,...storedItems.filter(item=>String(item?.id || "")!==id)]});
+  const persisted=next.items.find(item=>String(item?.id || "")===id);
+  if (!persisted) return res.status(400).json({ok:false,error:"SCHEMA_REJECTED"});
+  await setJSON("politicianPhotos",next);
+  invalidateManualPhotoCache();
+  return res.status(200).json({ok:true,record:persisted,person:{id:person.id,type:person.type,name:person.name}});
+}
+
 async function reportCandidateFailure(req,res) {
   const admin=await requireAdmin(req);
   if (!admin) return res.status(403).json({ok:false,error:"ADMIN_REQUIRED"});
@@ -390,7 +432,7 @@ async function approveCandidate(req,res) {
   await setJSON("politicianPhotos",next);
   reviewMap.set(id,reviewRecord(person,"assetized",{reason:"official-review-approved"}));
   await saveReviewMap(reviewMap);
-  manualCache.at=0;
+  invalidateManualPhotoCache();
   return res.status(200).json({ok:true,record:persisted});
 }
 
@@ -453,6 +495,7 @@ module.exports = async function politicianPhotoRoute(req,res) {
     if (action === "direct-discover-batch") return directDiscoverBatch(req,res);
     if (action === "review-status") return reviewStatus(req,res);
     if (action === "coverage-status") return coverageStatus(req,res);
+    if (action === "manual-upsert") return manualUpsert(req,res);
     if (action === "report-candidate-failure") return reportCandidateFailure(req,res);
     if (action === "approve-candidate") return approveCandidate(req,res);
     return res.status(400).json({ok:false,error:"UNKNOWN_ACTION"});
@@ -470,7 +513,7 @@ module.exports = async function politicianPhotoRoute(req,res) {
 
   const manual=await manualPhoto(id,width);
   if (manual?.url) {
-    res.setHeader("Cache-Control","public, max-age=30, s-maxage=60, stale-while-revalidate=300");
+    res.setHeader("Cache-Control",LIVE_PHOTO_CACHE_CONTROL);
     const provider=manual.sourceType === "auto-wikimedia"
       ? "JCV3_BLOB_WIKIMEDIA"
       : manual.sourceType === "auto-official-review"
@@ -489,13 +532,13 @@ module.exports = async function politicianPhotoRoute(req,res) {
 
   const photo=await fetchPoliticianPhoto(person,width);
   if (!photo) {
-    res.setHeader("Cache-Control","public, max-age=120, s-maxage=1800, stale-while-revalidate=3600");
+    res.setHeader("Cache-Control",LIVE_PHOTO_CACHE_CONTROL);
     res.setHeader("X-JCV3-Photo-Provider","WIKIMEDIA_COMMONS_ONLY");
     return res.status(404).json({ ok:false,error:"WIKIMEDIA_COMMONS_PHOTO_NOT_RESOLVED",id,name:person.name });
   }
 
   res.setHeader("Content-Type",photo.contentType || "image/jpeg");
-  res.setHeader("Cache-Control","public, max-age=86400, s-maxage=2592000, stale-while-revalidate=604800");
+  res.setHeader("Cache-Control",LIVE_PHOTO_CACHE_CONTROL);
   res.setHeader("X-Content-Type-Options","nosniff");
   res.setHeader("X-JCV3-Photo-Provider",photo.matched?.source || "WIKIMEDIA_COMMONS_ONLY");
   res.setHeader("X-JCV3-Photo-Source-Page",encodeURIComponent(photo.matched?.sourcePage || "https://commons.wikimedia.org/"));

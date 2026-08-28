@@ -673,23 +673,25 @@ export async function savePoliticianPhotoForm(form) {
   if (!id || !file) return { ok:false, error:"새 사진을 선택해 주세요" };
   try {
     const { uploadPoliticianPhotoSet, deletePoliticianPhotoBlobs } = await import("../core/image.js");
-    const data = await getDomain("politicianPhotos", { fresh:true });
-    const list = Array.isArray(data.items) ? data.items : [];
-    const previous = list.find(x => String(x.id) === id);
-    const oldUrls = Object.values(previous?.variants || {}).filter(Boolean);
+    const current = await getDomain("politicianPhotos", { fresh:true });
+    const previous = (Array.isArray(current?.items) ? current.items : []).find(x => String(x?.id || "") === id);
+    const oldUrls = Object.values(previous?.variants || {}).filter(value => /^https:\/\//i.test(String(value || "")));
     const uploaded = await uploadPoliticianPhotoSet(file, id);
     const newUrls = Object.values(uploaded?.variants || {}).filter(Boolean);
-    const now = new Date().toISOString();
-    const record = { id, ...uploaded, focus:"50% 28%", sourceType:"manual", verified:true, updatedAt:now };
-    data.items = list.some(x => String(x.id) === id) ? list.map(x => String(x.id) === id ? record : x) : [record, ...list];
-    const saved = await saveDomain("politicianPhotos", data);
-    if (!saved.ok) {
+    const response = await fetch("/api/v3/politician-photo", {
+      method:"POST",
+      credentials:"same-origin",
+      headers:{ "Content-Type":"application/json", Accept:"application/json" },
+      body:JSON.stringify({ action:"manual-upsert", id, uploaded })
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body?.ok) {
       await deletePoliticianPhotoBlobs(newUrls);
-      return saved;
+      return { ok:false, error:body?.error || "POLITICIAN_PHOTO_SAVE_FAILED" };
     }
     const cleanup = oldUrls.length ? await deletePoliticianPhotoBlobs(oldUrls) : { ok:true, deleted:0 };
     clearPoliticianPhotoCoverageCache();
-    return { ok:true, record, cleanup, message:`저장 완료 · 최적화 ${photoKb(uploaded.bytes.total)}` };
+    return { ok:true, record:body.record, cleanup, message:`저장 완료 · 최적화 ${photoKb(uploaded.bytes.total)}` };
   } catch (error) { return { ok:false, error:error?.message || "정치인 사진 저장 실패" }; }
 }
 

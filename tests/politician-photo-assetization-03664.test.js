@@ -36,12 +36,13 @@ test('photo route supports admin-only small-batch auto assetization into Vercel 
 
 test('photo URLs use a new resolver cache key so old same-name mistakes cannot survive CDN cache', () => {
   const index = read('src/data/politician-photo-index.js');
-  assert.match(index, /politician-photo\?id=\$\{encodeURIComponent\(key\)\}&w=\$\{spec\.width\}&v=03664/);
+  assert.match(index, /politician-photo\?id=\$\{encodeURIComponent\(key\)\}&w=\$\{spec\.width\}&v=03681/);
 });
 
 test('existing photo assets are locked out of automatic replacement and manual saves are marked manual', () => {
   assert.match(route, /if \(existing\.has\(person\.id\)\)/);
-  assert.match(admin, /sourceType:"manual"/);
+  assert.match(route, /sourceType:"manual"/);
+  assert.match(admin, /action:"manual-upsert"/);
   assert.match(schema, /sourceType/);
   assert.match(schema, /verified/);
 });
