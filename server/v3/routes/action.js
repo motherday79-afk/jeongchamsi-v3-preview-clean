@@ -4,6 +4,7 @@ const { currentUser } = require("../../../lib/v3/access");
 const { getActivity, setActivity, recordBadgeEvent } = require("../../../lib/v3/activity");
 const { VALID_BADGE_KEYS, isBadgeUnlocked } = require("../../../lib/v3/badge-engine");
 const push = require("../../../lib/v3/push");
+const { recordActionSignal } = require("../lib/history-store");
 
 function toggle(list, value, max = 300) {
   const id = String(value || "");
@@ -98,6 +99,7 @@ module.exports = async function handler(req, res) {
       activity.favorites = t.list;
       activity = recordBadgeEvent(activity, "favorite");
       activity = await setActivity(user.id, activity);
+      await recordActionSignal(action,{personId:String(payload.personId||"")});
       return res.status(200).json({ ok: true, active: t.active, activity });
     }
 
@@ -105,6 +107,7 @@ module.exports = async function handler(req, res) {
       const id = String(payload.personId || "");
       if (id) activity.recentPeople = [id, ...(activity.recentPeople || []).filter(x => x !== id)].slice(0, 20);
       activity = await setActivity(user.id, activity);
+      await recordActionSignal(action,{personId:id});
       return res.status(200).json({ ok: true, activity });
     }
 
@@ -129,6 +132,7 @@ module.exports = async function handler(req, res) {
       activity.likedPosts = t.list;
       activity = recordBadgeEvent(activity, "post-like");
       activity = await setActivity(user.id, activity);
+      await recordActionSignal(action,{domain,postId});
       return res.status(200).json({ ok: true, active: t.active, activity });
     }
 
@@ -178,6 +182,7 @@ module.exports = async function handler(req, res) {
       activity.pollVotes = { ...(activity.pollVotes || {}), [pollId]: optionId };
       activity = recordBadgeEvent(activity, "poll-vote");
       activity = await setActivity(user.id, activity);
+      await recordActionSignal(action,{pollId,optionId});
       return res.status(200).json({ ok: true, activity });
     }
 
@@ -207,6 +212,7 @@ module.exports = async function handler(req, res) {
       activity.generationVotes = { ...(activity.generationVotes || {}), [ageGroup]: personId };
       activity = recordBadgeEvent(activity, "generation-vote");
       activity = await setActivity(user.id, activity);
+      await recordActionSignal(action,{ageGroup,personId});
       return res.status(200).json({ ok: true, activity });
     }
 
@@ -246,6 +252,7 @@ module.exports = async function handler(req, res) {
       activity.nationalEvaluationVotes = { ...priorVotes, [evaluationId]: rating };
       activity = recordBadgeEvent(activity, "national-evaluation");
       activity = await setActivity(user.id, activity);
+      await recordActionSignal(action,{personId,evaluationId,rating});
       return res.status(200).json({ ok: true, activity });
     }
 
@@ -281,6 +288,7 @@ module.exports = async function handler(req, res) {
       activity.academyApplications = [slotId, ...(activity.academyApplications || []).filter(x => x !== slotId)].slice(0, 100);
       activity = recordBadgeEvent(activity, "academy-apply");
       activity = await setActivity(user.id, activity);
+      await recordActionSignal(action,{slotId});
       return res.status(200).json({ ok: true, activity });
     }
 

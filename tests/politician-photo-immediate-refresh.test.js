@@ -23,6 +23,6 @@ test('saving politicianPhotos invalidates server runtime photo map immediately',
 
 test('client photo resolver cache key is bumped for existing stale browser entries', () => {
   const index = read('src/data/politician-photo-index.js');
-  assert.match(index, /v=03672/);
+  assert.match(index, /v=03681/);
   assert.doesNotMatch(index, /v=03664/);
 });

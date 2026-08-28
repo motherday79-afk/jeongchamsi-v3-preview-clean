@@ -6,7 +6,7 @@ import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js
 import { normalizeNationalEvaluation, makeNationalEvaluationId, votesForEvaluationSlot } from "./national-evaluation-model.js";
 
 const TABS = [
-  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["badges", "배지센터"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["president", "대통령"],
+  ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["badges", "배지센터"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["history", "HISTORY"], ["president", "대통령"],
   ["columns", "COLUMN"], ["community", "정뮤니티"], ["itsme", "IT’S ME"], ["news", "정참시 NEWS"],
   ["polls", "시민들의 선택"], ["keywords", "정치키워드"], ["trending", "실시간 급상승"],
   ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["push", "푸시 알림"], ["system", "시스템"]
@@ -502,6 +502,48 @@ export async function finalizeNowData() { const status = await fetchNowDataStatu
 export async function publishNowData() { const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return {ok:false,error:"NOW_DRAFT_NOT_FOUND"}; return nowApi({ action:"publish", draftId:status.draft.draftId }); }
 
 
+async function fetchHistoryStatus() {
+  try {
+    const r = await fetch("/api/v3/admin/history", { credentials:"same-origin", cache:"no-store", headers:{ Accept:"application/json" } });
+    const b = await r.json().catch(() => ({}));
+    return r.ok ? b : { ok:false, error:b.error || "HISTORY_STATUS_FAILED" };
+  } catch { return { ok:false, error:"HISTORY_STATUS_FAILED" }; }
+}
+async function historyPanel() {
+  const data=await fetchHistoryStatus();
+  if(!data.ok)return `<section class="admin-panel"><h2>HISTORY DATA LAYER</h2><div class="notice-box">상태를 불러오지 못했습니다 · ${esc(data.error||"HISTORY_STATUS_FAILED")}</div></section>`;
+  return `<section class="admin-panel history-data-center">
+    <div class="admin-panel-head"><div><h2>HISTORY DATA LAYER</h2><span class="status-pill"><b>INTERNAL INTELLIGENCE</b>INTERNAL_ADMIN</span></div></div>
+    <div class="now-data-kpis">
+      <article><span>IMMUTABLE SNAPSHOTS</span><strong>${num(data.snapshotCount)}</strong><small>${esc(data.latestDraftId||"아직 정식 스냅샷 없음")}</small></article>
+      <article><span>ROSTER</span><strong>${num(data.rosterTotal)}</strong><small>국회의원 299 · 광역 16 · 기초 227</small></article>
+      <article><span>ACCESS</span><strong>INTERNAL_ADMIN</strong><small>PUBLIC / INTERNAL_ADMIN / FUTURE_B2B</small></article>
+      <article><span>BACKFILL PAGE</span><strong>${num(data.backfill?.pageSize||25)}</strong><small>Redis MGET + pipeline</small></article>
+    </div>
+    <div class="member-admin-note"><b>오늘의 분석은 사라지지 않는다.</b> 외부 원천 수치, 당시 NOW 계산결과, 알고리즘 버전, 익명 집계 행동신호와 정치 이벤트를 시간축으로 축적합니다.</div>
+    <dl class="info-list"><div><dt>NOW</dt><dd>JCS_NOW_V1</dd></div><div><dt>HISTORY PIPELINE</dt><dd>JCS_HISTORY_PIPELINE_V1</dd></div><div><dt>DERIVED</dt><dd>JCS_DERIVED_V1</dd></div><div><dt>현재 권한</dt><dd>INTERNAL_ADMIN</dd></div></dl>
+    <div class="admin-form-actions"><button class="primary-btn" type="button" data-history-backfill>Legacy History Backfill 실행</button><span class="save-state" data-history-state>25명 단위 자동 연속 실행</span></div>
+  </section>`;
+}
+async function historyApi(body) {
+  try {
+    const r=await fetch("/api/v3/admin/history",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(body)});
+    const b=await r.json().catch(()=>({}));return r.ok?b:{ok:false,error:b.error||"HISTORY_API_FAILED"};
+  } catch { return {ok:false,error:"HISTORY_API_FAILED"}; }
+}
+export async function runHistoryBackfill() {
+  let cursor=0,done=false,result={ok:true,nextCursor:0,total:542};
+  const state=document.querySelector("[data-history-state]");
+  while(!done) {
+    result=await historyApi({action:"backfill",cursor});
+    if(!result.ok)return result;
+    cursor = Number(result.nextCursor||0);done=Boolean(result.done);
+    if(state)state.textContent=`${Math.min(cursor,Number(result.total)||542)} / ${Number(result.total)||542} · 정식 Snapshot 중복 ${Number(result.skippedFormal)||0}건 제외`;
+  }
+  return result;
+}
+
+
 async function pushPanel() {
   let status = { ok:false, configured:false, devices:0, latest:[], history:[] };
   try {
@@ -553,6 +595,7 @@ export async function renderAdmin() {
   else if (tab === "requests") panel = await (await import("./participation.js")).renderParticipationAdminPanel();
   else if (tab === "people") panel = await peoplePanel();
   else if (tab === "nowdata") panel = await nowDataPanel();
+  else if (tab === "history") panel = await historyPanel();
   else if (tab === "president") panel = await presidentPanel();
   else if (["columns", "community", "news"].includes(tab)) panel = await boardPanel(tab, edit);
   else if (tab === "itsme") panel = await itsmePanel();

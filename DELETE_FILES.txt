@@ -1,0 +1,2 @@
+# Files intentionally retired from the final 0.36.87 verification tree.
+tests/home-live-pulse-03682.test.js

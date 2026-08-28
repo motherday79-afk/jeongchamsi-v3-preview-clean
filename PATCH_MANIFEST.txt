@@ -1,0 +1,38 @@
+JCS HISTORY DATA LAYER FINAL PATCH
+Base application: v3.0.0-alpha6.0.36.68
+Patch: HISTORY DATA LAYER V1 / history-v1
+Date: 2026-08-29
+Package mode: changed files only
+
+ADDED
+- DELETE_FILES.txt
+- PATCH_MANIFEST.txt
+- docs/HISTORY_DATA_LAYER_TECHNICAL_20260829.md
+- docs/HISTORY_DEPLOY_RUNBOOK_20260829.md
+- server/v3/lib/history-core.js
+- server/v3/lib/history-store.js
+- server/v3/routes/admin/history.js
+- tests/history-backfill-20260829.test.js
+- tests/history-core-20260829.test.js
+- tests/history-derived-20260829.test.js
+- tests/history-integration-admin-20260829.test.js
+- tests/history-security-route-20260829.test.js
+
+MODIFIED
+- api/gateway.js
+- index.html
+- lib/v3/redis.js
+- server/v3/routes/action.js
+- server/v3/routes/admin/now-data.js
+- src/app.js
+- src/views/admin.js
+- tests/politician-photo-assembly299-assetize-20260826.test.js
+- tests/politician-photo-immediate-refresh.test.js
+
+DELETE AFTER EXTRACTION
+- tests/home-live-pulse-03682.test.js
+
+EXPECTED VERIFICATION
+- HISTORY: 51 / 51 pass
+- Full project: 195 / 199 pass
+- Expected pre-existing failures: 4

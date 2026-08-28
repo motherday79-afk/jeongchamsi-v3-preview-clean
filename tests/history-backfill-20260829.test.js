@@ -1,0 +1,20 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.join(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const source=()=>read('server/v3/lib/history-store.js');
+
+test('history store uses the existing redis helper instead of a new database client',()=>{ assert.match(source(),/lib\/v3\/redis/); assert.doesNotMatch(source(),/postgres|prisma|mongoose|supabase/i); });
+test('backfill page size is fixed to 25 politicians by default',()=>{ assert.match(source(),/BACKFILL_PAGE_SIZE\s*=\s*25/); });
+test('backfill slices the 542-person roster by cursor and page size',()=>{ assert.match(source(),/allPeople\(\)/); assert.match(source(),/slice\(cursor\s*,\s*cursor\s*\+\s*pageSize\)/); });
+test('backfill loads a page of person public trends with one mget json operation',()=>{ assert.match(source(),/mgetJSON\(people\.map/); });
+test('backfill batches formal snapshot existence checks through one MGET helper call',()=>{ assert.match(source(),/mgetRawJSON\(snapshotKeys\)/); });
+test('backfill skips legacy observations when the same draft already has a formal immutable snapshot',()=>{ assert.match(source(),/formalSnapshotIds/); assert.match(source(),/filter\([^\n]*formalSnapshotIds/); });
+test('backfill merges trend points and legacy top30 before writing',()=>{ assert.match(source(),/mergeLegacyObservations/); });
+test('backfill writes observations through redis pipeline',()=>{ assert.match(source(),/pipeline\(commands\)/); });
+test('backfill observation writes are immutable with SET NX',()=>{ assert.match(source(),/"SET"[^\n]*"NX"/); });
+test('backfill returns cursor progress for admin auto continuation',()=>{ assert.match(source(),/nextCursor/); assert.match(source(),/done/); assert.match(source(),/total/); });
+test('backfill is idempotent by deterministic observation key and sorted-set member',()=>{ assert.match(source(),/observationKey/); assert.match(source(),/ZADD/); });
+test('backfill does not persist raw search query text',()=>{ const s=source(); assert.doesNotMatch(s,/searchTerm|rawQuery|searchKeyword/i); });
