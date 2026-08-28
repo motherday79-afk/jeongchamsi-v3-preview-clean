@@ -1,6 +1,7 @@
 import { pageShell, esc } from "./layout.js";
 import { getUserSession, initializeUserState } from "../core/user.js";
 import { getDomain, saveDomain, getStorageState, DEFAULT_ITSME_CATEGORIES } from "../core/repository.js";
+import { getAdminHistoryOverview, getAdminHistoryPerson } from "../core/history-repository.js?v=history-v2";
 import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
 import { normalizeNationalEvaluation, makeNationalEvaluationId, votesForEvaluationSlot } from "./national-evaluation-model.js";
@@ -12,7 +13,7 @@ const TABS = [
   ["generation", "세대별 대통령"], ["national", "전국평가"], ["academy", "아카데미"], ["push", "푸시 알림"], ["system", "시스템"]
 ];
 const BOARD_NAMES = { columns: "COLUMN", community: "정뮤니티", news: "정참시 NEWS" };
-function params() { const p = new URLSearchParams(location.search); return { tab: p.get("tab") || "dashboard", edit: p.get("edit") || "", person: p.get("person") || "" }; }
+function params() { const p = new URLSearchParams(location.search); return { tab: p.get("tab") || "dashboard", edit: p.get("edit") || "", person: p.get("person") || "", range: p.get("range") || "30" }; }
 function adminTabs(active) { return `<nav class="admin-tabs" aria-label="관리자 메뉴">${TABS.map(([key, label]) => `<a href="/admin?tab=${encodeURIComponent(key)}" class="${active === key ? "active" : ""}" data-route${active === key ? ` aria-current="page"` : ""}>${label}</a>`).join("")}</nav>`; }
 async function setupStatus() {
   try { const r = await fetch("/api/v3/setup", { credentials: "same-origin", headers: { Accept: "application/json" } }); return await r.json(); }
@@ -502,27 +503,54 @@ export async function finalizeNowData() { const status = await fetchNowDataStatu
 export async function publishNowData() { const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return {ok:false,error:"NOW_DRAFT_NOT_FOUND"}; return nowApi({ action:"publish", draftId:status.draft.draftId }); }
 
 
-async function fetchHistoryStatus() {
-  try {
-    const r = await fetch("/api/v3/admin/history", { credentials:"same-origin", cache:"no-store", headers:{ Accept:"application/json" } });
-    const b = await r.json().catch(() => ({}));
-    return r.ok ? b : { ok:false, error:b.error || "HISTORY_STATUS_FAILED" };
-  } catch { return { ok:false, error:"HISTORY_STATUS_FAILED" }; }
+async function fetchHistoryStatus(personId="", range="30") {
+  return personId ? getAdminHistoryPerson(personId, range) : getAdminHistoryOverview();
+}
+function historyDelta(value){
+  if(value===null||value===undefined||!Number.isFinite(Number(value)))return `<span class="history-v2-delta neutral">관측 부족</span>`;
+  const n=Math.round(Number(value)*10)/10;
+  return `<span class="history-v2-delta ${n>0?"up":n<0?"down":"neutral"}">${n>0?"+":""}${n}</span>`;
+}
+function historyCoreCards(person){
+  const d=person?.summary?.coreDeltas||{},volatility=person?.summary?.volatility||{},latest=person?.summary?.latest?.scores||{};
+  const rows=[['overallInterest','종합 관심'],['highEngagement','심층 관심'],['massExpansion','대중 확산'],['activity','활동성'],['issueHeat','이슈 온도'],['mediaSpread','미디어 확산']];
+  return rows.map(([key,label])=>{const vol=Number(volatility[key]);return `<article><small>${label}</small><strong>${latest[key]===null||latest[key]===undefined?'—':Math.round(Number(latest[key]))}</strong>${historyDelta(d[key])}<em>${Number.isFinite(vol)?`변동성 ${Math.round(vol*10)/10}`:'변동성 —'}</em></article>`;}).join('');
+}
+function historyEvidenceRow(label,value){return value===null||value===undefined||value===''?'':`<span><b>${esc(label)}</b>${esc(String(value))}</span>`;}
+function historyObservationMarkup(row={}){
+  const full=row.completeness==='FULL',scores=row.intelligence?.scores||{},search=row.external?.search||{},news=row.external?.news||{},signal=row.intelligence?.signal||{};
+  const date=String(row.publishedAt||'').slice(0,16).replace('T',' ');
+  const headline=(news.headlines||[])[0]?.title||news.latest?.title||'';
+  const competitors=Array.isArray(row.related)?row.related.slice(0,4):[];
+  const competitorLine=competitors.length?`<p class="history-v2-competitors">경쟁구도 · ${competitors.map(x=>{const p=x.person||{};const name=p.name||p.id||'정치인';const rank=x.globalRank??x.rank;return `${esc(name)} ${rank!==undefined&&rank!==null?`NOW ${esc(String(rank))}위`:''}`;}).join(' · ')}</p>`:'';
+  return `<article class="history-v2-observation ${full?'is-full':'is-partial'}"><div class="history-v2-observation-head"><div><span class="history-v2-source">${full?'FULL SNAPSHOT':'LEGACY PARTIAL'}</span><b>${esc(date||row.draftId||'관측 시점')}</b></div><strong>전체 ${row.rank?.global??'—'}위 · 카테고리 ${row.rank?.category??'—'}위</strong></div><div class="history-v2-observation-core">${[['overallInterest','종합'],['highEngagement','심층'],['massExpansion','확산'],['activity','활동'],['issueHeat','이슈'],['mediaSpread','미디어']].map(([key,label])=>`<span><small>${label}</small><b>${scores[key]===undefined?'—':Math.round(Number(scores[key]))}</b></span>`).join('')}</div><div class="history-v2-evidence">${historyEvidenceRow('PC',search.monthlyPcQcCnt)}${historyEvidenceRow('MOBILE',search.monthlyMobileQcCnt)}${historyEvidenceRow('검색합',search.monthlyTotalQcCnt)}${historyEvidenceRow('뉴스24h',news.count24)}${historyEvidenceRow('채널',news.sources24)}</div>${signal.label||row.intelligence?.whyNow?`<div class="history-v2-diagnosis"><b>${esc(signal.label||'당시 분석')}</b><p>${esc(signal.diagnosis||row.intelligence?.whyNow||'')}</p></div>`:''}${competitorLine}${headline?`<p class="history-v2-headline">근거 뉴스 · ${esc(headline)}</p>`:''}</article>`;
+}
+function historyEventsMarkup(events=[]){
+  if(!events.length)return `<div class="notice-box">이 기간에 연결된 정치 이벤트가 아직 없습니다.</div>`;
+  return `<div class="history-v2-events">${events.slice(-20).reverse().map(e=>`<article><span>${esc(String(e.occurredAt||'').slice(0,10))}</span><div><b>${esc(e.title||'정치 이벤트')}</b><small>${esc(e.category||'EVENT')}</small>${e.note?`<p>${esc(e.note)}</p>`:''}</div></article>`).join('')}</div>`;
 }
 async function historyPanel() {
-  const data=await fetchHistoryStatus();
-  if(!data.ok)return `<section class="admin-panel"><h2>HISTORY DATA LAYER</h2><div class="notice-box">상태를 불러오지 못했습니다 · ${esc(data.error||"HISTORY_STATUS_FAILED")}</div></section>`;
-  return `<section class="admin-panel history-data-center">
-    <div class="admin-panel-head"><div><h2>HISTORY DATA LAYER</h2><span class="status-pill"><b>INTERNAL INTELLIGENCE</b>INTERNAL_ADMIN</span></div></div>
+  const current=params();
+  const range=['7','30','90','365','all'].includes(current.range)?current.range:'30';
+  const data=await fetchHistoryStatus(current.person,range);
+  if(!data.ok)return `<section class="admin-panel"><h2>HISTORY V2</h2><div class="notice-box">상태를 불러오지 못했습니다 · ${esc(data.error||"HISTORY_STATUS_FAILED")}</div></section>`;
+  const selected=(data.roster||[]).find(x=>String(x.id)===String(current.person))||null;
+  const observations=data.person?.observations||[];
+  const rangeButtons=['7','30','90','365','all'].map(value=>`<button type="button" class="${range===value?'active':''}" data-history-range="${value}" data-go="/admin?tab=history${current.person?`&person=${encodeURIComponent(current.person)}`:''}&range=${value}">${value==='all'?'전체':`${value}일`}</button>`).join('');
+  const selector=`<div class="history-v2-selector"><select data-history-person-select><option value="">정치인을 선택하세요</option>${(data.roster||[]).map(p=>`<option value="${esc(p.id)}" ${String(p.id)===String(current.person)?'selected':''}>${esc(p.name)} · ${esc(p.type==='assembly'?'국회의원':p.type==='metropolitan'?'광역단체장':'기초단체장')} · ${esc(p.party||'')}</option>`).join('')}</select><button class="primary-btn" type="button" data-history-person-load>HISTORY 조회</button></div>`;
+  const personBlock=selected?`<section class="history-v2-browser"><div class="history-v2-person-head"><div><span>POLITICAL HISTORY</span><h3>${esc(selected.name)}</h3><p>${esc([selected.party,selected.jurisdiction].filter(Boolean).join(' · '))}</p></div><div class="history-v2-range">${rangeButtons}</div></div><div class="history-v2-core-grid">${historyCoreCards(data.person)}</div><div class="history-v2-section-title"><h3>시간축 관측</h3><span>${observations.length}회 · FULL과 LEGACY PARTIAL을 구분해 표시</span></div>${observations.length?`<div class="history-v2-observations">${observations.slice(-30).reverse().map(historyObservationMarkup).join('')}</div>`:`<div class="notice-box">선택한 기간에 저장된 HISTORY 관측이 없습니다. 현재 기준점 보존 또는 Legacy Backfill 후 확인할 수 있습니다.</div>`}<div class="history-v2-section-title"><h3>정치 이벤트</h3><span>동일 시간축 연결</span></div>${historyEventsMarkup(data.person?.events||[])}</section>`:`<section class="history-v2-browser is-empty"><div class="notice-box">정치인을 선택하면 7일 · 30일 · 90일 · 365일 변화, 당시 6대 지표, 순위, 검색·뉴스 원천값, SIGNAL과 이벤트를 시간축으로 볼 수 있습니다.</div></section>`;
+  return `<section class="admin-panel history-data-center history-v2-center">
+    <div class="admin-panel-head"><div><h2>HISTORY V2 · POLITICAL INTELLIGENCE</h2><span class="status-pill"><b>INTERNAL INTELLIGENCE</b>INTERNAL_ADMIN</span></div></div>
     <div class="now-data-kpis">
-      <article><span>IMMUTABLE SNAPSHOTS</span><strong>${num(data.snapshotCount)}</strong><small>${esc(data.latestDraftId||"아직 정식 스냅샷 없음")}</small></article>
+      <article><span>IMMUTABLE SNAPSHOTS</span><strong>${num(data.snapshotCount)}</strong><small>${esc(data.latestDraftId||"아직 V2 Snapshot 없음")}</small></article>
       <article><span>ROSTER</span><strong>${num(data.rosterTotal)}</strong><small>국회의원 299 · 광역 16 · 기초 227</small></article>
-      <article><span>ACCESS</span><strong>INTERNAL_ADMIN</strong><small>PUBLIC / INTERNAL_ADMIN / FUTURE_B2B</small></article>
-      <article><span>BACKFILL PAGE</span><strong>${num(data.backfill?.pageSize||25)}</strong><small>Redis MGET + pipeline</small></article>
+      <article><span>CURRENT BASELINE</span><strong>${data.currentCaptured?'SAVED':'READY'}</strong><small>${esc(data.currentDraftId||'NOW 게시 데이터 대기')}</small></article>
+      <article><span>BACKFILL PAGE</span><strong>${num(data.backfill?.pageSize||25)}</strong><small>PARTIAL은 없는 값을 0으로 만들지 않음</small></article>
     </div>
-    <div class="member-admin-note"><b>오늘의 분석은 사라지지 않는다.</b> 외부 원천 수치, 당시 NOW 계산결과, 알고리즘 버전, 익명 집계 행동신호와 정치 이벤트를 시간축으로 축적합니다.</div>
-    <dl class="info-list"><div><dt>NOW</dt><dd>JCS_NOW_V1</dd></div><div><dt>HISTORY PIPELINE</dt><dd>JCS_HISTORY_PIPELINE_V1</dd></div><div><dt>DERIVED</dt><dd>JCS_DERIVED_V1</dd></div><div><dt>현재 권한</dt><dd>INTERNAL_ADMIN</dd></div></dl>
-    <div class="admin-form-actions"><button class="primary-btn" type="button" data-history-backfill>Legacy History Backfill 실행</button><span class="save-state" data-history-state>25명 단위 자동 연속 실행</span></div>
+    <div class="member-admin-note"><b>오늘의 분석은 사라지지 않는다.</b> 현재 542명 분석을 그대로 보존하고, 이후 게시 시점의 21개 Intelligence 지표·순위·검색·뉴스·SIGNAL을 immutable observation으로 축적합니다.</div>
+    <dl class="info-list"><div><dt>NOW</dt><dd>JCS_NOW_V1</dd></div><div><dt>HISTORY V2</dt><dd>JCS_HISTORY_PIPELINE_V2</dd></div><div><dt>DERIVED V2</dt><dd>JCS_DERIVED_V2</dd></div><div><dt>LEGACY COMPAT</dt><dd>JCS_HISTORY_PIPELINE_V1 / JCS_DERIVED_V1</dd></div></dl>
+    <div class="history-v2-actions"><button class="primary-btn" type="button" data-history-capture-current ${data.currentCaptured?'disabled':''}>${data.currentCaptured?'현재 기준점 보존 완료':'현재 542명 기준점 보존'}</button><button class="ghost-btn" type="button" data-history-backfill>Legacy History Backfill</button><span class="save-state" data-history-state>${data.currentCaptured?'현재 NOW 기준점이 V2에 안전하게 저장되어 있습니다.':'새 수집 없이 현재 NOW 데이터를 첫 FULL SNAPSHOT으로 저장할 수 있습니다.'}</span></div>
+    ${selector}${personBlock}
   </section>`;
 }
 async function historyApi(body) {
@@ -531,6 +559,7 @@ async function historyApi(body) {
     const b=await r.json().catch(()=>({}));return r.ok?b:{ok:false,error:b.error||"HISTORY_API_FAILED"};
   } catch { return {ok:false,error:"HISTORY_API_FAILED"}; }
 }
+export async function captureHistoryCurrent(){return historyApi({action:"capture-current"});}
 export async function runHistoryBackfill() {
   let cursor=0,done=false,result={ok:true,nextCursor:0,total:542};
   const state=document.querySelector("[data-history-state]");
@@ -538,7 +567,7 @@ export async function runHistoryBackfill() {
     result=await historyApi({action:"backfill",cursor});
     if(!result.ok)return result;
     cursor = Number(result.nextCursor||0);done=Boolean(result.done);
-    if(state)state.textContent=`${Math.min(cursor,Number(result.total)||542)} / ${Number(result.total)||542} · 정식 Snapshot 중복 ${Number(result.skippedFormal)||0}건 제외`;
+    if(state)state.textContent=`${Math.min(cursor,Number(result.total)||542)} / ${Number(result.total)||542} · FULL Snapshot 중복 ${Number(result.skippedFull)||0}건 제외`;
   }
   return result;
 }

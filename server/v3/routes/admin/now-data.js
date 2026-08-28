@@ -6,6 +6,7 @@ const { credentials: newsCredentials, availability: newsAvailability } = require
 const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resultState, compactRankRow } = require('../../lib/now-data-engine');
 const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots, mergePersonTrend } = require('../../lib/now-public-snapshot');
 const { recordPublishedSnapshot } = require('../../lib/history-store');
+const { recordPublishedSnapshotV2 } = require('../../lib/history-v2-store');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -120,10 +121,12 @@ module.exports=async function nowDataAdmin(req,res){
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
-      await recordPublishedSnapshot(current);
       await Promise.all([setJSON(CURRENT,current),setJSON(HISTORY,history),setJSON(PUBLIC_HOME,publicHome),setJSON(PUBLIC_ADMIN,publicAdmin),setJSON(META,nextMeta),...Object.entries(categorySnapshots).map(([type,value])=>setJSON(categoryDomain(type),value))]);
       await writePersonEntries(trendedPersonEntries);
-      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt});
+      const historyWarnings=[];
+      try{await recordPublishedSnapshot(current);}catch(historyError){console.error('[HISTORY_V1_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V1_CAPTURE_FAILED');}
+      try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}
+      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
   }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}

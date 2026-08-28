@@ -2,6 +2,7 @@ import { pageShell, esc } from "./layout.js";
 import { getPersonSlotById } from "../data/person-provider.js";
 import { politicianPhoto } from "../data/politician-photo-index.js";
 import { getNowPerson } from "../core/repository.js";
+import { getAdminHistoryPerson } from "../core/history-repository.js?v=history-v2";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
 import { axisIntensityBand } from "./compare-intelligence.js?v=03686";
 
@@ -175,15 +176,30 @@ function analysisReport(live){
     </details>`;
 }
 
+
+function adminHistoryDelta(value){
+  if(value===null||value===undefined||!Number.isFinite(Number(value)))return `<em class="neutral">관측 부족</em>`;
+  const x=Math.round(Number(value)*10)/10;
+  return `<em class="${x>0?'up':x<0?'down':'neutral'}">${x>0?'+':''}${x}</em>`;
+}
+function adminHistoryIntelligence(history,p){
+  if(!history)return '';
+  if(!history.ok)return `<section class="content-card admin-history-intelligence"><div class="section-title"><div><span class="eyebrow">HISTORY INTELLIGENCE</span><h2>관리자 전용 정치 데이터 이력</h2></div><span>INTERNAL_ADMIN</span></div><div class="notice-box">HISTORY V2를 불러오지 못했습니다. 현재 공개 분석에는 영향이 없습니다 · ${esc(history.error||'HISTORY_UNAVAILABLE')}</div></section>`;
+  const person=history.person||{},summary=person.summary||{},d=summary.coreDeltas||{},latest=summary.latest?.scores||{},observations=person.observations||[];
+  const rows=[['overallInterest','종합 관심'],['highEngagement','심층 관심'],['massExpansion','대중 확산'],['activity','활동성'],['issueHeat','이슈 온도'],['mediaSpread','미디어 확산']];
+  const recent=observations.slice(-3).reverse();
+  return `<section class="content-card admin-history-intelligence"><div class="section-title"><div><span class="eyebrow">HISTORY INTELLIGENCE</span><h2>관리자 전용 정치 데이터 이력</h2></div><span>INTERNAL_ADMIN · 30일</span></div><div class="admin-history-summary"><div><small>관측</small><strong>${Number(summary.sampleSize||0)}</strong><span>회</span></div><div><small>전체 순위 변화</small><strong>${summary.rankDelta?.global===null||summary.rankDelta?.global===undefined?'—':`${Number(summary.rankDelta.global)>0?'+':''}${summary.rankDelta.global}`}</strong><span>계단</span></div><button type="button" data-go="/admin?tab=history&person=${encodeURIComponent(p.id)}&range=30">전체 HISTORY 열기 →</button></div><div class="admin-history-core">${rows.map(([key,label])=>`<article><small>${label}</small><strong>${latest[key]===null||latest[key]===undefined?'—':Math.round(Number(latest[key]))}</strong>${adminHistoryDelta(d[key])}</article>`).join('')}</div>${recent.length?`<div class="admin-history-recent">${recent.map(o=>`<article><span>${o.completeness==='FULL'?'FULL SNAPSHOT':'LEGACY PARTIAL'}</span><b>${esc(String(o.publishedAt||'').slice(0,10))}</b><small>전체 ${o.rank?.global??'—'}위 · ${esc(o.intelligence?.signal?.label||'관측 기록')}</small></article>`).join('')}</div>`:`<div class="notice-box">아직 저장된 HISTORY 관측이 없습니다. 관리자 HISTORY에서 현재 기준점을 보존할 수 있습니다.</div>`}</section>`;
+}
+
 export async function renderPersonDetail(id){
   const p=getPersonSlotById(id);
   if(!p)return pageShell(`<main class="subpage"><section class="content-card empty-state tall"><div class="empty-icon">?</div><h2>존재하지 않는 정치인입니다</h2><button class="primary-btn" type="button" data-go="/now">전체 정치인</button></section></main>`);
   const session=getUserSession(); recordRecentPerson(p.id);
+  const isAdmin=session.authenticated&&session.user?.role==="admin";
   const favorite=session.authenticated&&isFavoritePerson(p.id);
   const activityTitle=p.type==="assembly"?"의정활동":"행정활동";
-  const [live,photo]=await Promise.all([getNowPerson(p.id),Promise.resolve(politicianPhoto(p.id,"profile"))]);
+  const [live,photo,history]=await Promise.all([getNowPerson(p.id),Promise.resolve(politicianPhoto(p.id,"profile")),isAdmin ? getAdminHistoryPerson(p.id,"30") : Promise.resolve(null)]);
   const row=live?.row||null,news=row?.news||{};
-  const isAdmin=session.authenticated&&session.user?.role==="admin";
   const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="eager" decoding="async" fetchpriority="high">` : "";
   const adminPhotoEditor=isAdmin?`<form class="detail-politician-photo-form" data-politician-photo-form data-detail-politician-photo-form data-person-id="${esc(p.id)}"><input type="file" accept="image/jpeg,image/png,image/webp" data-politician-photo-input hidden><div class="detail-photo-selected-preview" data-politician-photo-preview hidden></div><button class="detail-photo-admin-trigger" type="button" data-detail-politician-photo-trigger aria-label="${esc(p.name)} 사진 등록 또는 교체"><span>ADMIN</span><b>사진 선택</b></button><button class="detail-photo-admin-save" type="submit" data-politician-photo-save disabled>저장</button><small class="detail-photo-admin-state" data-politician-photo-state>사진을 선택하면 여기서 미리볼 수 있습니다</small></form>`:"";
   const photoNotice=photo
@@ -200,6 +216,7 @@ export async function renderPersonDetail(id){
       <div class="detail-action-bar"><button type="button" class="ghost-btn ${favorite?"active":""}" data-person-favorite="${esc(p.id)}">${favorite?"★ 즐겨찾기됨":"☆ 즐겨찾기"}</button><button type="button" class="ghost-btn" data-go="/compare?a=${esc(p.id)}">비교하기</button></div>
     </section>
     ${analysisReport(live)}
+    ${isAdmin?adminHistoryIntelligence(history,p):""}
     ${newsSection}
     <section class="person-profile-divider"><span>PROFILE & RECORD</span><b>공식 프로필과 정치 기록</b></section>
     <div class="detail-grid">

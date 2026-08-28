@@ -1,0 +1,45 @@
+JCS HISTORY V2 · POLITICAL INTELLIGENCE
+Date: 2026-08-29
+Package mode: changed files only
+Target: current working JCS V3 source after gateway-restore hotfix
+
+RUNTIME — ADDED
+- server/v3/lib/history-v2-core.js
+- server/v3/lib/history-v2-store.js
+- src/core/history-repository.js
+
+RUNTIME — MODIFIED
+- css/pages.css
+- index.html
+- server/v3/routes/admin/history.js
+- server/v3/routes/admin/now-data.js
+- src/app.js
+- src/views/admin.js
+- src/views/home.js
+- src/views/people.js
+
+PROTECTED / INTENTIONALLY NOT INCLUDED
+- api/gateway.js
+- server/v3/routes/now-data.js
+- server/v3/lib/now-public-signals.js
+- server/v3/lib/now-public-snapshot.js
+- src/core/repository.js
+These files remain byte-identical to the verified working golden baseline.
+
+TESTS — ADDED
+- tests/history-v2-admin-surfaces-20260829.test.js
+- tests/history-v2-admin-ui-20260829.test.js
+- tests/history-v2-core-20260829.test.js
+- tests/history-v2-golden-baseline-20260829.test.js
+- tests/history-v2-integration-20260829.test.js
+- tests/history-v2-store-20260829.test.js
+
+DOCS — ADDED
+- docs/HISTORY_V2_TECHNICAL_20260829.md
+- docs/HISTORY_V2_DEPLOY_RUNBOOK_20260829.md
+
+DELETIONS
+- none
+
+NEW DATABASE / ENVIRONMENT VARIABLES
+- none
