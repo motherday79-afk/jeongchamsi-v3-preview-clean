@@ -84,19 +84,25 @@ Legacy backfill reads existing `nowDataPersonPublic:{personId}.trend.points` and
 - missing historical fields are omitted instead of being converted to zero;
 - migrated rows are explicitly labeled `LEGACY_PARTIAL`.
 
-## 8. Derived windows
+## 8. Intraday observations and daily normalization
 
-Admin reads support `7`, `30`, `90`, `365`, and `all` windows.
+HISTORY V2 accepts multiple independent FULL Snapshots on the same Korea calendar day. Each successful NOW publish has a distinct `draftId`, so a morning, afternoon, and evening publish are preserved as separate immutable observations rather than collapsed into one daily record.
 
-For available numeric observations V2 returns:
+The analysis layer uses two resolutions:
 
-- six-core first-to-last deltas
-- momentum for each core series
-- volatility as the population standard deviation of consecutive available-value deltas
-- global/category rank change
-- latest available six-core values and ranks
+- `7 days`: `RAW_INTRADAY` — every available intraday observation participates in momentum/volatility so short political spikes remain visible.
+- `30 / 90 / 365 / all`: `DAILY_AVERAGE` — raw observations remain fully preserved, but each Asia/Seoul calendar day contributes one derived daily-average representative to long-term trend calculations. This prevents a day with many refreshes from receiving more statistical weight than a quieter day.
 
-Missing values remain unavailable rather than becoming fabricated zeros.
+Each derived Daily Summary retains, where available:
+
+- observation count for that Korea calendar day
+- six-core open / high / low / close / average
+- global/category rank open / best / worst / close / average
+- FULL vs PARTIAL source counts
+
+Long reads reserve approximately 3-hour-cadence capacity (`365 days` up to 3,200 raw observations) and batch raw Redis MGET reads in chunks of at most 180 keys.
+
+For available numeric observations V2 returns six-core deltas, momentum, volatility, global/category rank change, and the latest raw six-core/rank values. Missing values remain unavailable rather than becoming fabricated zeros.
 
 ## 9. Admin intelligence surfaces
 
@@ -105,8 +111,9 @@ Missing values remain unavailable rather than becoming fabricated zeros.
 - immutable snapshot status
 - current 542-person baseline capture
 - Legacy Backfill
-- 542-person selector
+- search-to-select politician finder (name / party / region / office; no visible 542-person list)
 - 7/30/90/365/all ranges
+- intraday raw count plus Daily Summary count and normalization mode
 - six-core latest values, momentum change, volatility
 - FULL vs LEGACY PARTIAL timeline
 - search/news evidence
@@ -122,11 +129,22 @@ Only an authenticated administrator requests HISTORY data. A compact `HISTORY IN
 
 Only an authenticated administrator requests the compact HISTORY overview. The internal strip is omitted for ordinary users and if the HISTORY request fails.
 
-## 10. Existing anonymous action history
+## 10. Recommended operating cadence
+
+A roughly 3-hour operating cadence is useful because it captures intraday political attention movement. The important distinction is that HISTORY freezes **published NOW moments**. Running collection/finalize alone does not create the formal HISTORY moment; the refreshed draft must be published through the existing NOW publish flow.
+
+A practical operating rule is:
+
+- normal days: refresh and publish roughly every 3 hours when useful;
+- major political events: additional publishes are valuable;
+- raw observations: keep every formal publish;
+- long-term 30/90/365 analysis: normalize by Korea calendar day.
+
+## 11. Existing anonymous action history
 
 The existing V1 anonymous ACTION aggregate remains active and unchanged. V2 intentionally does not duplicate those writes in this release, avoiding unnecessary changes to the working action route and preventing double-counting. No member identity or raw search text is introduced into V2.
 
-## 11. Security
+## 12. Security
 
 - `/api/v3/admin/history` runs server-side `requireAdmin()`.
 - HISTORY is `INTERNAL_ADMIN` only.
@@ -134,7 +152,7 @@ The existing V1 anonymous ACTION aggregate remains active and unchanged. V2 inte
 - V2 observation persistence does not store user ID, email, nickname, IP, raw search query, or raw search keyword.
 - public NOW modules do not import the V2 store.
 
-## 12. Release gate
+## 13. Release gate
 
 A V2 package is accepted only when:
 

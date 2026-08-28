@@ -5,13 +5,14 @@ const {mergeLegacyObservations}=require('./history-core');
 const {
   V2_VERSIONS,V2_PREFIX,V2_ACCESS,V2_SNAPSHOT_INDEX_KEY,V2_EVENT_INDEX_KEY,
   v2SnapshotKey,v2ObservationKey,v2ObservationIndexKey,v2EventKey,
-  buildFullObservation,buildLegacyPartialObservation,deriveWindowSummary
+  buildFullObservation,buildLegacyPartialObservation,buildDailySummaries,dailySummaryObservations,deriveWindowSummary
 }=require('./history-v2-core');
 
 const BACKFILL_PAGE_SIZE_V2=25;
 function isoMs(value){const t=Date.parse(value||'');return Number.isFinite(t)?t:Date.now();}
 function safeDays(value){if(String(value)==='all')return 'all';const n=Number(value);return [7,30,90,365].includes(n)?n:30;}
 function cleanId(value=''){return String(value||'').trim().replace(/[^A-Za-z0-9._-]/g,'_').slice(0,180);}
+function observationReadLimit(days,requested){const base=days==='all'?4000:{7:96,30:320,90:960,365:3200}[Number(days)]||320;const req=Math.max(0,Number(requested)||0);return Math.min(4000,Math.max(base,req));}
 function compactRoster(people=[]){return people.map(p=>({id:String(p.id||''),name:String(p.name||''),type:String(p.type||''),party:String(p.party||''),jurisdiction:String(p.jurisdiction||''),office:String(p.office||'')})).filter(x=>x.id);}
 function snapshotHeader(current={},observations=[]){
   const movers=observations.map(o=>({id:o.person?.id||'',name:o.person?.name||'',type:o.person?.type||'',globalRank:o.rank?.global??null,categoryRank:o.rank?.category??null,rankDelta:Number.isFinite(Number(o._rankDelta))?Number(o._rankDelta):null,issueHeat:o.intelligence?.scores?.issueHeat??null,overallInterest:o.intelligence?.scores?.overallInterest??null,signal:o.intelligence?.signal?.label||''}))
@@ -27,6 +28,7 @@ function createHistoryV2Store(overrides={}){
   };
 
   async function pipelineChunks(commands,size=180){const results=[];for(let i=0;i<commands.length;i+=size)results.push(...await deps.pipeline(commands.slice(i,i+size)));return results;}
+  async function mgetRawJSONChunks(keys,size=180){const results=[];for(let i=0;i<keys.length;i+=size)results.push(...await deps.mgetRawJSON(keys.slice(i,i+size)));return results;}
 
   async function recordPublishedSnapshotV2(current={},historyOverride){
     const draftId=String(current?.draftId||'').trim(),publishedAt=current?.publishedAt||null;
@@ -98,14 +100,23 @@ function createHistoryV2Store(overrides={}){
   }
 
   async function readPersonHistoryV2(personId,{days=30,limit=365}={}){
-    const id=String(personId||'').trim();if(!id)return {observations:[],summary:deriveWindowSummary([]),events:[]};
-    days=safeDays(days);const max=Math.max(1,Math.min(730,Number(limit)||365));
+    const id=String(personId||'').trim();
+    if(!id){
+      const summary=deriveWindowSummary([]);summary.normalization='DAILY_AVERAGE';summary.rawSampleSize=0;summary.dailySampleSize=0;
+      return {observations:[],daily:[],summary,events:[],rangeDays:safeDays(days)};
+    }
+    days=safeDays(days);const max=observationReadLimit(days,limit);
     const members=await deps.command(['ZREVRANGE',v2ObservationIndexKey(id),0,max-1]);
-    const publishIds=Array.isArray(members)?members:[],rows=await deps.mgetRawJSON(publishIds.map(x=>v2ObservationKey(id,x)));
+    const publishIds=Array.isArray(members)?members:[],rows=await mgetRawJSONChunks(publishIds.map(x=>v2ObservationKey(id,x)));
     const cutoff=days==='all'?0:Date.now()-Number(days)*86400000;
     const observations=rows.filter(Boolean).filter(row=>!cutoff||(Date.parse(row.publishedAt)||0)>=cutoff).sort((a,b)=>(Date.parse(a.publishedAt)||0)-(Date.parse(b.publishedAt)||0));
+    const daily=buildDailySummaries(observations),rawSummary=deriveWindowSummary(observations);
+    const intraday=days===7,trendRows=intraday?observations:dailySummaryObservations(daily);
+    const summary=deriveWindowSummary(trendRows);
+    summary.normalization=intraday?'RAW_INTRADAY':'DAILY_AVERAGE';
+    summary.rawSampleSize=observations.length;summary.dailySampleSize=daily.length;summary.latest=rawSummary.latest;
     const events=await readEventsForPerson(id,{days,limit:80});
-    return {observations,summary:deriveWindowSummary(observations),events,rangeDays:days};
+    return {observations,daily,summary,events,rangeDays:days};
   }
 
   async function appendPoliticalEventV2(input={}){

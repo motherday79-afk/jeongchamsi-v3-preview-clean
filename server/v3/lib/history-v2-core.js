@@ -100,6 +100,51 @@ function volatilityFrom(observations,getter){
   const variance=deltas.reduce((sum,value)=>sum+((value-mean)**2),0)/deltas.length;
   return roundFinite(Math.sqrt(variance));
 }
+const KOREA_OFFSET_MS=9*60*60*1000;
+function koreaDateKey(value){
+  const ms=Date.parse(value||'');
+  if(!Number.isFinite(ms))return '';
+  return new Date(ms+KOREA_OFFSET_MS).toISOString().slice(0,10);
+}
+function numericStats(values=[]){
+  const nums=values.map(finite).filter(value=>value!==null);
+  if(!nums.length)return null;
+  return {count:nums.length,open:roundFinite(nums[0]),high:roundFinite(Math.max(...nums)),low:roundFinite(Math.min(...nums)),close:roundFinite(nums.at(-1)),average:roundFinite(nums.reduce((sum,value)=>sum+value,0)/nums.length)};
+}
+function rankStats(values=[]){
+  const nums=values.map(finite).filter(value=>value!==null);
+  if(!nums.length)return null;
+  return {count:nums.length,open:roundFinite(nums[0]),best:roundFinite(Math.min(...nums)),worst:roundFinite(Math.max(...nums)),close:roundFinite(nums.at(-1)),average:roundFinite(nums.reduce((sum,value)=>sum+value,0)/nums.length)};
+}
+function buildDailySummaries(observations=[]){
+  const rows=(Array.isArray(observations)?observations:[]).filter(Boolean).slice().sort((a,b)=>(Date.parse(a.publishedAt)||0)-(Date.parse(b.publishedAt)||0));
+  const groups=new Map();
+  for(const row of rows){
+    const date=koreaDateKey(row?.publishedAt);if(!date)continue;
+    if(!groups.has(date))groups.set(date,[]);
+    groups.get(date).push(row);
+  }
+  return [...groups.entries()].map(([date,group])=>{
+    const core={};
+    for(const key of CORE_SCORE_KEYS){const stats=numericStats(group.map(row=>row?.intelligence?.scores?.[key]));if(stats)core[key]=stats;}
+    const rank={};
+    const global=rankStats(group.map(row=>row?.rank?.global));if(global)rank.global=global;
+    const category=rankStats(group.map(row=>row?.rank?.category));if(category)rank.category=category;
+    return {
+      date,timezone:'Asia/Seoul',observationCount:group.length,
+      openedAt:group[0]?.publishedAt||null,closedAt:group.at(-1)?.publishedAt||null,
+      sources:{full:group.filter(row=>row?.completeness==='FULL').length,partial:group.filter(row=>row?.completeness!=='FULL').length},
+      core,rank
+    };
+  });
+}
+function dailySummaryObservations(daily=[]){
+  return (Array.isArray(daily)?daily:[]).map(day=>{
+    const scores={};for(const key of CORE_SCORE_KEYS){const value=day?.core?.[key]?.average;if(finite(value)!==null)scores[key]=roundFinite(value);}
+    const rank={};if(finite(day?.rank?.global?.average)!==null)rank.global=roundFinite(day.rank.global.average);if(finite(day?.rank?.category?.average)!==null)rank.category=roundFinite(day.rank.category.average);
+    return {publishedAt:day?.closedAt||null,source:'DAILY_SUMMARY',completeness:'DERIVED',rank,intelligence:{scores}};
+  }).filter(row=>row.publishedAt);
+}
 function deriveWindowSummary(observations=[]){
   const rows=(Array.isArray(observations)?observations:[]).filter(Boolean).slice().sort((a,b)=>(Date.parse(a.publishedAt)||0)-(Date.parse(b.publishedAt)||0));
   const coreDeltas={},momentum={},volatility={};for(const key of CORE_SCORE_KEYS){const getter=row=>row?.intelligence?.scores?.[key];coreDeltas[key]=deltaFrom(rows,getter);momentum[key]=coreDeltas[key];volatility[key]=volatilityFrom(rows,getter);}
@@ -110,4 +155,4 @@ function deriveWindowSummary(observations=[]){
   return {version:V2_VERSIONS.derived,sampleSize:rows.length,coreDeltas,momentum,volatility,rankDelta,latest:{publishedAt:rows.at(-1)?.publishedAt||null,globalRank:latestAvailable(rows,row=>row?.rank?.global),categoryRank:latestAvailable(rows,row=>row?.rank?.category),scores:latestScores}};
 }
 
-module.exports={V2_VERSIONS,V2_PREFIX,V2_ACCESS,V2_SNAPSHOT_INDEX_KEY,V2_EVENT_INDEX_KEY,CORE_SCORE_KEYS,ALL_SCORE_KEYS,v2SnapshotKey,v2ObservationKey,v2ObservationIndexKey,v2EventKey,buildFullObservation,buildLegacyPartialObservation,deriveWindowSummary,roundFinite};
+module.exports={V2_VERSIONS,V2_PREFIX,V2_ACCESS,V2_SNAPSHOT_INDEX_KEY,V2_EVENT_INDEX_KEY,CORE_SCORE_KEYS,ALL_SCORE_KEYS,v2SnapshotKey,v2ObservationKey,v2ObservationIndexKey,v2EventKey,buildFullObservation,buildLegacyPartialObservation,buildDailySummaries,dailySummaryObservations,deriveWindowSummary,roundFinite};

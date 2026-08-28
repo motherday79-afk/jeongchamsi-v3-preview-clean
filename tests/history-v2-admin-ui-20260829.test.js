@@ -20,10 +20,12 @@ test('HISTORY admin panel has current snapshot capture and safe legacy backfill 
   assert.match(s,/data-history-backfill/);
 });
 
-test('HISTORY admin panel provides politician selector and 7 30 90 365 all ranges',()=>{
+test('HISTORY admin panel provides search-to-select and 7 30 90 365 all ranges',()=>{
   const s=read('src/views/admin.js');
-  assert.match(s,/data-history-person-select/);
-  assert.match(s,/data-history-person-load/);
+  assert.match(s,/data-history-search-input/);
+  assert.match(s,/data-history-search-results/);
+  assert.match(s,/data-history-search-source/);
+  assert.doesNotMatch(s,/data-history-person-select/);
   assert.match(s,/\['7','30','90','365','all'\]/);
   assert.match(s,/data-history-range=\"\$\{value\}\"/);
 });
@@ -35,12 +37,13 @@ test('HISTORY admin panel renders six core deltas and FULL versus LEGACY PARTIAL
   assert.match(s,/LEGACY PARTIAL/);
 });
 
-test('app wires HISTORY capture and person load controls without touching public NOW handler',()=>{
+test('app wires HISTORY capture and search-result selection without touching public NOW handler',()=>{
   const s=read('src/app.js');
   assert.match(s,/data-history-capture-current/);
   assert.match(s,/captureHistoryCurrent/);
-  assert.match(s,/data-history-person-load/);
-  assert.match(s,/data-history-person-select/);
+  assert.match(s,/data-history-search-input/);
+  assert.match(s,/data-history-search-person/);
+  assert.doesNotMatch(s,/data-history-person-select/);
 });
 
 test('HISTORY V2 styles are scoped and add no important declarations',()=>{
