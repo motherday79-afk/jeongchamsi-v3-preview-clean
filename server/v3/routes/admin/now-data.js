@@ -5,7 +5,6 @@ const { credentials: searchCredentials } = require('../../lib/naver-searchad');
 const { credentials: newsCredentials, availability: newsAvailability } = require('../../lib/naver-news');
 const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resultState, compactRankRow } = require('../../lib/now-data-engine');
 const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots, mergePersonTrend } = require('../../lib/now-public-snapshot');
-const { recordPublishedSnapshot } = require('../../lib/history-store');
 const { recordPublishedSnapshotV2 } = require('../../lib/history-v2-store');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
@@ -49,7 +48,7 @@ async function migrateLegacyMeta(meta){
   const ranked=meta.ranked;
   const next={...meta,top30:ranked.slice(0,30).map(compactPreviewRow),summary:summaryFromRows(ranked,meta.total),completedBatchIndexes:Array.from({length:meta.batchCount||0},(_,i)=>i)};
   delete next.ranked;
-  await Promise.all([setJSON(rankedDomain(meta.draftId),ranked),setJSON(META,next)]);
+  await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
   return next;
 }
 async function writePersonEntries(entries=[]){
@@ -59,7 +58,7 @@ async function writePersonEntries(entries=[]){
 async function saveBatchAndStatus(meta,index,stored){
   const summary=aggregateBatchSummaries([stored],stored.ids?.length||stored.results?.length||0);
   const status={draftId:meta.draftId,batchIndex:index,count:stored.results?.length||0,elapsedMs:stored.elapsedMs||0,collectedAt:stored.collectedAt||new Date().toISOString(),summary};
-  await Promise.all([setJSON(batchDomain(meta.draftId,index),stored),setJSON(batchStatusDomain(meta.draftId,index),status)]);
+  await msetJSON([[batchDomain(meta.draftId,index),stored],[batchStatusDomain(meta.draftId,index),status]]);
   return summary;
 }
 
@@ -105,7 +104,7 @@ module.exports=async function nowDataAdmin(req,res){
       const rows=batches.flatMap(x=>x.results||[]),ranked=scoreSnapshot(rows,{searchWeight:meta.weights.search,newsWeight:meta.weights.news}).map(compactRankRow),summary=aggregateBatchSummaries(batches,meta.total);
       const statuses=await loadBatchStatuses(meta),top30=ranked.slice(0,30).map(compactPreviewRow);
       const next={...meta,status:'preview',finalizedAt:new Date().toISOString(),top30,summary,completedBatchIndexes:Array.from({length:meta.batchCount},(_,i)=>i),failedBatchIndexes:failedBatchIndexes(statuses)};delete next.ranked;
-      await Promise.all([setJSON(rankedDomain(meta.draftId),ranked),setJSON(META,next)]);
+      await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
       return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights});
     }
     if(action==='publish'){
@@ -121,10 +120,13 @@ module.exports=async function nowDataAdmin(req,res){
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
-      await Promise.all([setJSON(CURRENT,current),setJSON(HISTORY,history),setJSON(PUBLIC_HOME,publicHome),setJSON(PUBLIC_ADMIN,publicAdmin),setJSON(META,nextMeta),...Object.entries(categorySnapshots).map(([type,value])=>setJSON(categoryDomain(type),value))]);
+      await msetJSON([
+        [CURRENT,current],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
+        ...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])
+      ]);
       await writePersonEntries(trendedPersonEntries);
       const historyWarnings=[];
-      try{await recordPublishedSnapshot(current);}catch(historyError){console.error('[HISTORY_V1_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V1_CAPTURE_FAILED');}
+      // HISTORY V1 remains readable as a legacy layer. New formal publish snapshots are recorded only in V2.
       try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}
       return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings});
     }

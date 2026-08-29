@@ -468,20 +468,20 @@ function setNowProgress(done,total,label="수집 중") {
   const text = document.querySelector("[data-now-progress-label]"); if (text) text.textContent = label;
 }
 async function runBatchQueue({draftId,batchIndexes,total,batchSize,action}) {
-  let cursor = 0, doneBatches = 0, firstError = "";
+  let cursor = 0, doneBatches = 0, firstError = "", firstDetail = "";
   const workers = Array.from({length:Math.min(2,batchIndexes.length || 1)}, async () => {
     while (true) {
       const at = cursor++; if (at >= batchIndexes.length) return;
       const batchIndex = batchIndexes[at];
       let r = await nowApi({ action, draftId, batchIndex });
       if (!r.ok) { await new Promise(resolve => setTimeout(resolve, 350)); r = await nowApi({ action, draftId, batchIndex }); }
-      if (!r.ok && !firstError) firstError = r.error || "BATCH_FAILED";
+      if (!r.ok && !firstError) { firstError = r.error || "BATCH_FAILED"; firstDetail = r.detail || ""; }
       doneBatches++;
       setNowProgress(Math.min(total, doneBatches * batchSize), total, action === "retry-batch" ? "오류 재수집 중" : "네이버 데이터 수집 중");
       const state = document.querySelector("[data-now-live-state]"); if (state) state.textContent = `배치 ${doneBatches}/${batchIndexes.length} · 최근 처리 #${batchIndex + 1}${r.elapsedMs ? ` · ${(r.elapsedMs/1000).toFixed(1)}초` : ""}`;
     }
   });
-  await Promise.all(workers); return firstError ? { ok:false, error:firstError } : { ok:true };
+  await Promise.all(workers); return firstError ? { ok:false, error:firstError, detail:firstDetail } : { ok:true };
 }
 export async function runNowDataRefresh() {
   const searchWeight = Number(document.querySelector("[data-now-search-weight]")?.value || 50), newsWeight = Number(document.querySelector("[data-now-news-weight]")?.value || 50);

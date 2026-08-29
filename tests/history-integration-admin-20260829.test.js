@@ -5,7 +5,7 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('NOW admin publish records a formal immutable History snapshot',()=>{ const s=read('server/v3/routes/admin/now-data.js'); assert.match(s,/recordPublishedSnapshot/); assert.match(s,/await recordPublishedSnapshot\(current\)/); });
+test('legacy History V1 remains available while formal NOW publish capture has moved to V2',()=>{ const now=read('server/v3/routes/admin/now-data.js'),action=read('server/v3/routes/action.js'); assert.doesNotMatch(now,/await recordPublishedSnapshot\(current\)/); assert.match(now,/recordPublishedSnapshotV2/); assert.match(action,/history-store/); assert.match(action,/recordActionSignal/); });
 test('redis helper provides raw MGET and true pipeline operations without new environment variables',()=>{ const s=read('lib/v3/redis.js'); assert.match(s,/async function mgetRawJSON/); assert.match(s,/async function pipeline/); assert.match(s,/\/pipeline/); assert.doesNotMatch(s,/HISTORY_[A-Z_]+|DATABASE_URL/); });
 test('redis helper restores msetJSON used by NOW publication batching',()=>{ const s=read('lib/v3/redis.js'); assert.match(s,/async function msetJSON/); assert.match(s,/module\.exports[^\n]*msetJSON/); });
 test('admin navigation includes a History control tab and cache-busts the changed admin module',()=>{ assert.match(read('src/views/admin.js'),/\["history",\s*"HISTORY"\]/); assert.match(read('src/app.js'),/views\/admin\.js\?v=history-v1/); assert.match(read('index.html'),/history-v1/); });

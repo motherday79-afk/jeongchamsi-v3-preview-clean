@@ -1,35 +1,23 @@
-JCS HISTORY V2 — DETAIL OBSERVATION COUNT HOTFIX
-Date: 2026-08-29
-Package mode: changed files only
-Target: JCV3_HISTORY_V2_SEARCH_DAILY_FINAL_PATCH_20260829 applied project
+JCS STORAGE COMMAND BUDGET HOTFIX — 2026-08-29
 
-PURPOSE
-- Politician detail HISTORY summary now separates raw intraday observation count from observed-day count.
-- Example: three FULL snapshots on one Korea calendar day render as:
-  원본 관측 3회 / 관측일 1일
-
-RUNTIME — MODIFIED
-- src/views/people.js
-- css/pages.css
+MODIFIED RUNTIME
+- lib/v3/redis.js
+- server/v3/routes/admin/now-data.js
 - src/app.js
+- src/views/admin.js
 - index.html
 
-TESTS
-- ADDED tests/history-detail-observation-count-20260829.test.js
-- UPDATED tests/history-v2-search-daily-20260829.test.js
-  - makes the existing Korea-day normalization test deterministic across clock times
+TEST CONTRACT UPDATES
+- tests/history-integration-admin-20260829.test.js
+- tests/history-v2-integration-20260829.test.js
 
-INTENTIONALLY UNCHANGED
-- api/gateway.js
-- server/v3/routes/now-data.js
-- server/v3/routes/admin/now-data.js
-- server/v3/lib/history-v2-core.js
-- server/v3/lib/history-v2-store.js
-- src/core/repository.js
-- src/core/history-repository.js
+ADDED TEST
+- tests/storage-command-budget-hotfix-20260829.test.js
 
-DATA SAFETY
-- No Redis key changes.
-- No snapshot writes/deletes/migrations.
-- No NOW calculation changes.
-- No new DB or environment variables.
+DOC
+- STORAGE_COMMAND_BUDGET_HOTFIX_20260829.md
+
+NO DELETIONS
+NO NEW DATABASE
+NO NEW ENVIRONMENT VARIABLE
+NO EXISTING HISTORY DATA DELETION
