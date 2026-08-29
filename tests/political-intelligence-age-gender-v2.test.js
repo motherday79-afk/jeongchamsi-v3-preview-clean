@@ -119,3 +119,41 @@ test('conflicting external cohort anchors reduce confidence compared with aligne
   const conflict=deriveAgeGenderCohortsV2({...base,evidence:{sources:[{fingerprint:'c',observedAt:'2026-08-20',values:{'18_29_m':45}},{fingerprint:'d',observedAt:'2026-08-22',values:{'18_29_m':10}}]}});
   assert.ok((aligned.cells['18_29_m'].confidence||0)>(conflict.cells['18_29_m'].confidence||0));
 });
+
+test('official direct age-gender baseline with complete current NOW inputs is usable immediately without waiting for HISTORY',()=>{
+  const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
+  const baseline={...directBaseline(),baselineQuality:70,cohortAffinity:Array(12).fill(0),sourceState:'OFFICIAL_FILE_ECOLOGICAL_ESTIMATE',matchedGeoUnits:12};
+  const view=validView();view.row.news={state:'READY',headlines:[],count24:4};
+  const out=deriveAgeGenderCohortsV2({person:view.row.person,baseline,view,history:{summary:{dailySampleSize:0,coreDeltas:{}}},evidence:{sources:[]},asOf:'2026-08-30T00:00:00.000Z'});
+  assert.equal(out.validity.validCellCount,12);
+  for(const key of COHORT_KEYS){assert.equal(out.cells[key].status,'VALID_SIGNAL',key);assert.ok(Number.isFinite(out.cells[key].value),key);}
+});
+
+test('official proportional party ecological proxy can expose all 12 cells with lower confidence than direct evidence',()=>{
+  const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
+  const view=validView();view.row.news={state:'READY',headlines:[],count24:4};
+  const common={person:view.row.person,view,history:{summary:{dailySampleSize:0,coreDeltas:{}}},evidence:{sources:[]},asOf:'2026-08-30T00:00:00.000Z'};
+  const direct=deriveAgeGenderCohortsV2({...common,baseline:{...directBaseline(),baselineQuality:75,cohortAffinity:Array(12).fill(0),sourceState:'OFFICIAL_FILE_ECOLOGICAL_ESTIMATE',matchedGeoUnits:18}});
+  const party=deriveAgeGenderCohortsV2({...common,baseline:{...directBaseline(),baselineKind:'PARTY_PROXY',baselineQuality:60,cohortAffinity:Array(12).fill(0),sourceState:'OFFICIAL_PROPORTIONAL_ECOLOGICAL_ESTIMATE',matchedGeoUnits:120,proxyReferenceCount:120}});
+  assert.equal(party.validity.validCellCount,12);
+  assert.ok(party.cells['18_29_m'].confidence<direct.cells['18_29_m'].confidence);
+  assert.ok(party.cells['18_29_m'].confidence>=55);
+});
+
+test('well-supported official regional structural proxy can expose cells while weak generic proxy remains limited',()=>{
+  const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
+  const view=validView();view.row.news={state:'READY',headlines:[],count24:4};
+  const common={person:view.row.person,view,history:{summary:{dailySampleSize:0,coreDeltas:{}}},evidence:{sources:[]},asOf:'2026-08-30T00:00:00.000Z'};
+  const official=deriveAgeGenderCohortsV2({...common,baseline:{...directBaseline(),baselineKind:'REGIONAL_PARTY_PROXY',baselineQuality:56,cohortAffinity:Array(12).fill(0),sourceState:'OFFICIAL_FILE_REGIONAL_STRUCTURAL_PROXY',proxyReferenceCount:24}});
+  const weak=deriveAgeGenderCohortsV2({...common,baseline:{...directBaseline(),baselineKind:'REGIONAL_PARTY_PROXY',baselineQuality:25,cohortAffinity:Array(12).fill(0),sourceState:'GENERIC_PROXY',proxyReferenceCount:1}});
+  assert.equal(official.validity.validCellCount,12);
+  assert.equal(weak.validity.validCellCount,0);
+});
+
+test('official 12-dimensional age-gender ecological baseline is treated as sex-specific evidence even when a fitted cell is neutral',()=>{
+  const {cellConfidence}=require('../server/v3/lib/age-gender-cohort-core')._internals;
+  const view=validView();view.row.news={state:'READY',headlines:[],count24:4};
+  const baseline={...directBaseline(),baselineQuality:70,cohortAffinity:Array(12).fill(0),sourceState:'OFFICIAL_FILE_ECOLOGICAL_ESTIMATE',matchedGeoUnits:10};
+  const c=cellConfidence({baseline,view,history:{summary:{dailySampleSize:0}},events:[],evidence:{sources:[]},cellIndex:0,detailedAnchor:null,anchorAgreement:1,anchorFreshness:0});
+  assert.ok(c>=55,`official neutral-sex cell confidence ${c}`);
+});

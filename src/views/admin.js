@@ -494,7 +494,11 @@ export async function runNowDataRefresh() {
   if (!evidence.ok) return evidence;
   const state = document.querySelector("[data-now-live-state]");
   if (state) state.textContent = `외부근거 ${num(evidence.recordCount)}건 · 정치인 매칭 ${num(evidence.matchedPeople)}명${evidence.warnings?.length ? ` · 경고 ${num(evidence.warnings.length)}건` : ""}`;
-  setNowProgress(start.total,start.total,"NOW RANK CALCULATION (순위 계산 중)");
+  setNowProgress(start.total,start.total,"OFFICIAL PUBLIC DATA COLLECTION (선거·인구·연령×성별 자료 수집)");
+  const baseline = await nowApi({ action:"collect-age-gender-baseline", draftId:start.draftId });
+  if (!baseline.ok) return baseline;
+  if (state) state.textContent = `AGE×GENDER ${num(baseline.rosterTotal)}명 · DIRECT ${num(baseline.directCount)} · PARTY ${num(baseline.partyProxyCount)} · REGIONAL ${num(baseline.regionalPartyProxyCount)} · LIMITED ${num(baseline.limitedCount)}${baseline.status === "reused" ? " · 이전 검증 Baseline 재사용" : ""}`;
+  setNowProgress(start.total,start.total,"JCS AGE & GENDER INTELLIGENCE CALCULATION (542명 분석 중)");
   return nowApi({ action:"finalize", draftId:start.draftId });
 }
 export async function retryNowDataFailures() {

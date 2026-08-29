@@ -75,10 +75,27 @@ function previousCell(previous,key){const row=previous?.cohorts?.cells?.[key];re
 function movementCap({events,evidence,cellKey,cellIndex,baselineAffinity,asOf}){const diag=anchorDiagnostics(evidence,cellKey,cellIndex,baselineAffinity,asOf);if(diag.hasDetailed&&diag.freshness>=.75)return 15;const independent=events.length;const evidenceCount=evidenceRows(evidence).length;if(independent>=3||evidenceCount>=2)return 10;return 5;}
 function baselineUsable(baseline={}){return baseline&&baseline.baselineKind!=='LIMITED'&&Number(baseline.baselineQuality)>=20&&Array.isArray(baseline.populationWeights)&&baseline.populationWeights.length===12&&baseline.populationWeights.every(v=>num(v)!==null)&&Array.isArray(baseline.cohortAffinity)&&baseline.cohortAffinity.length===12;}
 function sourceReadiness(view={}){const row=view?.row||{},search=row.search||null,news=row.news||null;let ready=0;if(search&&(search.state==='READY'||num(search.monthlyTotalQcCnt)!==null||num(search.monthlyPcQcCnt)!==null))ready++;if(news&&(news.state==='READY'||Array.isArray(news.headlines)||num(news.count24)!==null))ready++;return ready/2;}
+function isOfficialDemographicBaseline(baseline={}){
+  const state=String(baseline?.sourceState||'').toUpperCase();
+  return state.startsWith('OFFICIAL_')&&Array.isArray(baseline?.populationWeights)&&baseline.populationWeights.length===12&&Array.isArray(baseline?.cohortAffinity)&&baseline.cohortAffinity.length===12;
+}
+function officialBaselineEvidenceBonus(baseline={}){
+  if(!isOfficialDemographicBaseline(baseline))return 0;
+  const support=Math.max(0,Number(baseline?.matchedGeoUnits)||0,Number(baseline?.proxyEvidenceUnitCount)||0,Number(baseline?.proxyReferenceCount)||0);
+  return round(clamp(2+Math.log2(support+1)*1.2,2,8),1);
+}
 function cellConfidence({baseline,view,history,events,evidence,cellIndex,detailedAnchor,anchorAgreement=1,anchorFreshness=0}){
-  let c=0;c+=clamp(Number(baseline?.baselineQuality)||0,0,100)*.48;c+=coreCoverage(view)*18;c+=clamp(historyDays(history)/180,0,1)*10;c+=clamp(events.length/4,0,1)*8;c+=clamp(evidenceRows(evidence).length/3,0,1)*6;c+=(sourceReadiness(view)-.5)*8;if(detailedAnchor!==null)c+=14*anchorFreshness;c-=Math.max(0,1-anchorAgreement)*16;
-  if(baseline?.baselineKind==='PARTY_PROXY')c-=8;if(baseline?.baselineKind==='REGIONAL_PARTY_PROXY')c-=13;if(baseline?.baselineKind==='LIMITED')c=Math.min(c,25);
-  const sexSpecific=detailedAnchor!==null||Math.abs(num(baseline?.cohortAffinity?.[cellIndex])||0)>=.015;if(!sexSpecific)c-=5;
+  const officialDemographic=isOfficialDemographicBaseline(baseline);
+  let c=0;
+  c+=clamp(Number(baseline?.baselineQuality)||0,0,100)*(officialDemographic?.55:.48);
+  c+=coreCoverage(view)*(officialDemographic?22:18);
+  c+=clamp(historyDays(history)/180,0,1)*10;
+  c+=clamp(events.length/4,0,1)*8;
+  c+=clamp(evidenceRows(evidence).length/3,0,1)*6;
+  c+=officialDemographic?sourceReadiness(view)*4:(sourceReadiness(view)-.5)*8;
+  c+=officialBaselineEvidenceBonus(baseline);if(detailedAnchor!==null)c+=14*anchorFreshness;c-=Math.max(0,1-anchorAgreement)*16;
+  if(!officialDemographic&&baseline?.baselineKind==='PARTY_PROXY')c-=8;if(!officialDemographic&&baseline?.baselineKind==='REGIONAL_PARTY_PROXY')c-=13;if(baseline?.baselineKind==='LIMITED')c=Math.min(c,25);
+  const sexSpecific=officialDemographic||detailedAnchor!==null||Math.abs(num(baseline?.cohortAffinity?.[cellIndex])||0)>=.015;if(!sexSpecific)c-=5;
   return round(clamp(c,0,100));
 }
 function computeCell({key,index,baseline,view,history,evidence,events,previous,marketContext={},asOf=null}){
@@ -113,4 +130,4 @@ function deriveAgeGenderCohortsV2({person={},baseline={},view={},history={},evid
   return {engineVersion:ENGINE_VERSION,asOf:asOf||null,baseline:{kind:baseline?.baselineKind||'LIMITED',quality:Number(baseline?.baselineQuality)||0,sourceState:String(baseline?.sourceState||''),limitedReasons:Array.isArray(baseline?.limitedReasons)?baseline.limitedReasons.slice(0,8):[]},cells,age:aggregates.age,gender:aggregates.gender,summary:summaryFromCells(cells,reference30d,volatility30d),validity:{state:validCount?'VALID_SIGNAL':'LIMITED_SIGNAL',validCellCount:validCount,totalCellCount:12,independentEventCount:events.length,evidenceCount:evidenceRows(evidence).length,historyDays:historyDays(history),confidenceThreshold:CONFIDENCE_THRESHOLD}};
 }
 
-module.exports={ENGINE_VERSION,CONFIDENCE_THRESHOLD,deriveAgeGenderCohortsV2,deriveMarketContextV2,_internals:{aggregateCells,collectEvents,eventFingerprint,normalizeEventTitle,issueEffectForCell,globalMovement,detailedAnchorForCell,coarseAnchorForCell,movementCap,baselineUsable,cellConfidence,summaryFromCells,currentViewSignal,broadRegion,eventTokens,similarEvent,anchorDiagnostics,sourceReadiness}};
+module.exports={ENGINE_VERSION,CONFIDENCE_THRESHOLD,deriveAgeGenderCohortsV2,deriveMarketContextV2,_internals:{aggregateCells,collectEvents,eventFingerprint,normalizeEventTitle,issueEffectForCell,globalMovement,detailedAnchorForCell,coarseAnchorForCell,movementCap,baselineUsable,cellConfidence,summaryFromCells,currentViewSignal,broadRegion,eventTokens,similarEvent,anchorDiagnostics,sourceReadiness,isOfficialDemographicBaseline,officialBaselineEvidenceBonus}};

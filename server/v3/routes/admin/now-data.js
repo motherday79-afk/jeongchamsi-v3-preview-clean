@@ -7,6 +7,8 @@ const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resul
 const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots, mergePersonTrend } = require('../../lib/now-public-snapshot');
 const { recordPublishedSnapshotV2 } = require('../../lib/history-v2-store');
 const { collectExternalEvidence } = require('../../lib/external-evidence-collector');
+const { collectOfficialAgeGenderBaseline } = require('../../lib/age-gender-public-baseline-collector');
+const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = require('../../lib/age-gender-baseline-v2-store');
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
@@ -46,7 +48,7 @@ function publicMeta(meta,statuses=[]){
   if((meta.status==='preview'||meta.status==='published')&&!summary.completed)summary={total:meta.total,completed:meta.total,success:meta.total,partial:0,failed:0,remaining:0};
   const completed=statuses.some(Boolean)?statuses.map((x,i)=>x?i:null).filter(x=>x!==null):(meta.completedBatchIndexes||((meta.status==='preview'||meta.status==='published')?Array.from({length:meta.batchCount},(_,i)=>i):[]));
   const failed=statuses.some(Boolean)?failedBatchIndexes(statuses):(meta.failedBatchIndexes||[]);
-  return {draftId:meta.draftId,status:meta.status,total:meta.total,batchSize:meta.batchSize,batchCount:meta.batchCount,startedAt:meta.startedAt,finalizedAt:meta.finalizedAt||null,publishedAt:meta.publishedAt||null,weights:meta.weights,summary,completedBatchIndexes:completed,failedBatchIndexes:failed,top30:meta.top30||[],externalEvidence:meta.externalEvidence||null,intelligenceSnapshot:meta.intelligenceSnapshot||null};
+  return {draftId:meta.draftId,status:meta.status,total:meta.total,batchSize:meta.batchSize,batchCount:meta.batchCount,startedAt:meta.startedAt,finalizedAt:meta.finalizedAt||null,publishedAt:meta.publishedAt||null,weights:meta.weights,summary,completedBatchIndexes:completed,failedBatchIndexes:failed,top30:meta.top30||[],externalEvidence:meta.externalEvidence||null,ageGenderBaseline:meta.ageGenderBaseline||null,intelligenceSnapshot:meta.intelligenceSnapshot||null};
 }
 async function migrateLegacyMeta(meta){
   if(!meta||!Array.isArray(meta.ranked))return meta;
@@ -115,6 +117,29 @@ module.exports=async function nowDataAdmin(req,res){
       const next={...meta,externalEvidence};
       await msetJSON([[evidenceDomain(meta.draftId),evidence],[META,next]]);
       return res.status(200).json({ok:true,draftId:meta.draftId,...externalEvidence});
+    }
+    if(action==='collect-age-gender-baseline'){
+      const previous=await readAgeGenderBaselineBundleV2({fresh:true});
+      try{
+        const bundle=await collectOfficialAgeGenderBaseline({people:allPeople()});
+        const manifest=bundle.manifest||{};
+        if(!manifest.trustedBaselineReady){
+          if(previous?.manifest?.trustedBaselineReady){
+            const ageGenderBaseline={status:'reused',warning:'USING_PREVIOUS_TRUSTED_BASELINE',collectedAt:previous.generatedAt||null,rosterTotal:Number(previous.manifest.rosterTotal)||0,directCount:Number(previous.manifest.directCount)||0,partyProxyCount:Number(previous.manifest.partyProxyCount)||0,regionalPartyProxyCount:Number(previous.manifest.regionalPartyProxyCount)||0,limitedCount:Number(previous.manifest.limitedCount)||0,coverage:Number(previous.manifest.coverage)||0};
+            const next={...meta,ageGenderBaseline};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
+          }
+          return res.status(409).json({ok:false,error:'AGE_GENDER_BASELINE_COVERAGE_INSUFFICIENT',manifest});
+        }
+        const stored=await writeAgeGenderBaselineBundleV2(bundle);
+        const ageGenderBaseline={status:'collected',collectedAt:bundle.generatedAt,rosterTotal:Number(manifest.rosterTotal)||0,usableCount:Number(manifest.usableCount)||0,directCount:Number(manifest.directCount)||0,partyProxyCount:Number(manifest.partyProxyCount)||0,regionalPartyProxyCount:Number(manifest.regionalPartyProxyCount)||0,limitedCount:Number(manifest.limitedCount)||0,coverage:Number(manifest.coverage)||0,partyProfileCount:Number(manifest.partyProfileCount)||0,compressedBytes:Number(stored.compressedBytes)||0,sources:(manifest.sourceStatus||[]).map(x=>({sourceId:x.sourceId,authority:x.authority,ok:Boolean(x.ok),bytes:Number(x.bytes)||0,error:x.error||''})),warnings:Array.isArray(manifest.warnings)?manifest.warnings.slice(0,20):[]};
+        const next={...meta,ageGenderBaseline};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
+      }catch(error){
+        if(previous?.manifest?.trustedBaselineReady){
+          const ageGenderBaseline={status:'reused',warning:'USING_PREVIOUS_TRUSTED_BASELINE',sourceError:String(error?.code||error?.message||'OFFICIAL_BASELINE_COLLECTION_FAILED'),collectedAt:previous.generatedAt||null,rosterTotal:Number(previous.manifest.rosterTotal)||0,directCount:Number(previous.manifest.directCount)||0,partyProxyCount:Number(previous.manifest.partyProxyCount)||0,regionalPartyProxyCount:Number(previous.manifest.regionalPartyProxyCount)||0,limitedCount:Number(previous.manifest.limitedCount)||0,coverage:Number(previous.manifest.coverage)||0};
+          const next={...meta,ageGenderBaseline};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
+        }
+        return res.status(502).json({ok:false,error:error?.code||'AGE_GENDER_OFFICIAL_BASELINE_COLLECTION_FAILED',detail:String(error?.message||'')});
+      }
     }
     if(action==='finalize'){
       const batches=await loadBatches(meta);if(batches.some(x=>!x))return res.status(409).json({ok:false,error:'NOW_BATCHES_INCOMPLETE',summary:aggregateBatchSummaries(batches,meta.total)});
