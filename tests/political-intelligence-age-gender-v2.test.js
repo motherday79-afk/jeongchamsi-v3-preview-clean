@@ -6,13 +6,13 @@ function directBaseline(){return {personId:'p1',baselineKind:'DIRECT_CANDIDATE',
 function validView(headlines=[]){return {row:{person:{id:'p1',name:'테스트',party:'A',region:'서울',jurisdiction:'서울 테스트구'},news:{headlines},search:{state:'READY'}},rankDelta:2,analysis:{scores:{overallInterest:57,highEngagement:55,massExpansion:52,activity:54,issueHeat:60,mediaSpread:58}}};}
 function validHistory(days=60){return {observations:[{publishedAt:'2026-08-28T00:00:00.000Z',intelligence:{scores:{overallInterest:52,highEngagement:51,massExpansion:50,mediaSpread:52,issueHeat:54}}},{publishedAt:'2026-08-29T00:00:00.000Z',intelligence:{scores:{overallInterest:57,highEngagement:55,massExpansion:52,mediaSpread:58,issueHeat:60}}}],daily:Array.from({length:days},(_,i)=>({date:`2026-07-${String((i%28)+1).padStart(2,'0')}`})),summary:{dailySampleSize:days,coreDeltas:{overallInterest:5,highEngagement:4,massExpansion:2,mediaSpread:6,issueHeat:6}}};}
 
-test('limited baseline never fabricates 12 demographic numbers',()=>{
+test('limited structural baseline still publishes 12 JCS estimates from current real signals instead of hiding data',()=>{
   const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
   const baseline={personId:'p1',baselineKind:'LIMITED',baselineQuality:0,populationWeights:Array(12).fill(null),cohortAffinity:Array(12).fill(null),limitedReasons:['TRUSTED_OFFICIAL_BASELINE_NOT_INGESTED']};
-  const out=deriveAgeGenderCohortsV2({person:validView().row.person,baseline,view:validView(),history:validHistory(),evidence:{sources:[]}});
-  assert.equal(out.validity.state,'LIMITED_SIGNAL');
+  const out=deriveAgeGenderCohortsV2({person:validView().row.person,baseline,view:validView([{title:'청년 주거 정책 지지 상승',source:'A'}]),history:validHistory(),evidence:{sources:[]}});
+  assert.equal(out.validity.state,'VALID_SIGNAL');
   assert.equal(Object.keys(out.cells).length,12);
-  for(const key of COHORT_KEYS){assert.equal(out.cells[key].value,null,key);assert.equal(out.cells[key].status,'LIMITED_SIGNAL',key);}
+  for(const key of COHORT_KEYS){assert.ok(Number.isFinite(out.cells[key].value),key);assert.equal(out.cells[key].status,'VALID_SIGNAL',key);assert.ok(Number.isFinite(out.cells[key].confidence),key);}
 });
 
 test('direct baseline plus valid current inputs produces deterministic 12-cell output and aggregates',()=>{

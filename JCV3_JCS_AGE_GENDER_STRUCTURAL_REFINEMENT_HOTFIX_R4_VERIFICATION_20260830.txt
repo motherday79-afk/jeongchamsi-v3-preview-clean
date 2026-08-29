@@ -1,0 +1,26 @@
+JCV3 JCS AGE/GENDER STRUCTURAL REFINEMENT HOTFIX R4
+Date: 2026-08-30
+
+Root cause fixed:
+- Some high-quality ecological fits could still have a near-flat 12-cell cohortAffinity vector.
+- Because quality could be high from many matched geographic units, the old stabilization path skipped them.
+- Flat proportional party profiles were also accepted before checking whether informative same-party/regional direct evidence existed.
+- This could make final AGE/GENDER values repeat as all 8 / all 4 even though other official structural evidence existed.
+
+R4 behavior:
+1. Detects information-poor/near-flat cohort vectors separately from baseline quality.
+2. High-quality-but-flat direct fits are refined with informative party / same-party / regional / national official structural evidence.
+3. Flat party proxies are refined when independent official direct structure exists.
+4. Truly flat evidence is not forcibly made different: identical output remains allowed when the underlying available evidence is genuinely flat.
+5. No numeric hiding path in cohort calculation: even LIMITED structural baseline continues through current real JCS signals and returns numeric values with confidence.
+6. Calculation revision bumped to COHORT_JCS_STRUCTURAL_REFINEMENT_20260830_R4 so old R3 active snapshots are not reused as the R4 result.
+
+Fresh verification:
+- Syntax checks: PASS
+- Core + R4 regression suite: 23/23 PASS
+- Official collector/proxy focused regression suite: 7/7 PASS
+- 542-person scale synthetic roster regression: 542 * 12 = 6,504 numeric cohort cell outputs verified.
+
+Important:
+- The 542-person scale test validates the algorithm at full roster scale using synthetic source fixtures shaped like the production data model.
+- Production politician values are created after deployment by the real official-source refresh path; synthetic fixture numbers are not production claims.
