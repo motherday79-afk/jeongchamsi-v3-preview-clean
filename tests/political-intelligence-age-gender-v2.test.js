@@ -36,15 +36,16 @@ test('missing cells are excluded and aggregate weights renormalize instead of su
   assert.notEqual(age.age['18-29'].value,10);
 });
 
-test('movement caps ordinary, aligned, and direct-anchor changes from previous state',()=>{
+test('movement caps apply to a healthy prior, while a compressed prior is eligible for structural rebase',()=>{
   const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
-  const previous={cohorts:{cells:Object.fromEntries(COHORT_KEYS.map(k=>[k,{value:10,status:'VALID_SIGNAL',confidence:80}]))}};
+  const priorValues=[18,15,13,11,8,6,3,1,-2,-4,-7,-9];
+  const previous={cohorts:{cells:Object.fromEntries(COHORT_KEYS.map((k,i)=>[k,{value:priorValues[i],status:'VALID_SIGNAL',confidence:80}]))}};
   const ordinary=deriveAgeGenderCohortsV2({person:validView().row.person,baseline:directBaseline(),view:validView([{title:'청년 정책 발표',source:'A'}]),history:validHistory(),evidence:{sources:[]},previous});
-  for(const c of Object.values(ordinary.cells))if(c.value!==null)assert.ok(Math.abs(c.value-10)<=5,`ordinary cap ${c.value}`);
+  COHORT_KEYS.forEach((k,i)=>assert.ok(Math.abs(ordinary.cells[k].value-priorValues[i])<=5,`ordinary cap ${k}:${ordinary.cells[k].value}`));
   const aligned=deriveAgeGenderCohortsV2({person:validView().row.person,baseline:directBaseline(),view:validView([{title:'청년 주거 정책 성과 확대',source:'A'},{title:'청년 취업 정책 지지 상승',source:'B'},{title:'청년 주택 정책 호평',source:'C'}]),history:validHistory(),evidence:{sources:[{fingerprint:'x1',values:{age2030:30}},{fingerprint:'x2',values:{age2030:32}}]},previous});
-  for(const c of Object.values(aligned.cells))if(c.value!==null)assert.ok(Math.abs(c.value-10)<=10,`aligned cap ${c.value}`);
-  const anchored=deriveAgeGenderCohortsV2({person:validView().row.person,baseline:directBaseline(),view:validView(),history:validHistory(),evidence:{sources:[{fingerprint:'anchor',sourceType:'POLL_AGE_GENDER_SUPPORT',values:{'18_29_m':45,'18_29_f':40}}]},previous});
-  assert.ok(Math.abs(anchored.cells['18_29_m'].value-10)<=15);
+  COHORT_KEYS.forEach((k,i)=>assert.ok(Math.abs(aligned.cells[k].value-priorValues[i])<=10,`aligned cap ${k}:${aligned.cells[k].value}`));
+  const anchored=deriveAgeGenderCohortsV2({person:validView().row.person,baseline:directBaseline(),view:validView(),history:validHistory(),evidence:{sources:[{fingerprint:'anchor',sourceType:'POLL_AGE_GENDER_SUPPORT',observedAt:'2026-08-20',values:{'18_29_m':45,'18_29_f':40}}]},previous,asOf:'2026-08-30T00:00:00.000Z'});
+  assert.ok(Math.abs(anchored.cells['18_29_m'].value-priorValues[0])<=15);
 });
 
 test('duplicate headlines from one event count as propagation, not independent causal events',()=>{
@@ -140,14 +141,16 @@ test('official proportional party ecological proxy can expose all 12 cells with 
   assert.ok(party.cells['18_29_m'].confidence>=55);
 });
 
-test('well-supported official regional structural proxy can expose cells while weak generic proxy remains limited',()=>{
+test('regional structural proxy always returns estimates while confidence distinguishes stronger and weaker evidence',()=>{
   const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
   const view=validView();view.row.news={state:'READY',headlines:[],count24:4};
   const common={person:view.row.person,view,history:{summary:{dailySampleSize:0,coreDeltas:{}}},evidence:{sources:[]},asOf:'2026-08-30T00:00:00.000Z'};
   const official=deriveAgeGenderCohortsV2({...common,baseline:{...directBaseline(),baselineKind:'REGIONAL_PARTY_PROXY',baselineQuality:56,cohortAffinity:Array(12).fill(0),sourceState:'OFFICIAL_FILE_REGIONAL_STRUCTURAL_PROXY',proxyReferenceCount:24}});
   const weak=deriveAgeGenderCohortsV2({...common,baseline:{...directBaseline(),baselineKind:'REGIONAL_PARTY_PROXY',baselineQuality:25,cohortAffinity:Array(12).fill(0),sourceState:'GENERIC_PROXY',proxyReferenceCount:1}});
   assert.equal(official.validity.validCellCount,12);
-  assert.equal(weak.validity.validCellCount,0);
+  assert.equal(weak.validity.validCellCount,12);
+  assert.ok(weak.cells['18_29_m'].confidence<official.cells['18_29_m'].confidence);
+  assert.ok(Number.isFinite(weak.cells['18_29_m'].value));
 });
 
 test('official 12-dimensional age-gender ecological baseline is treated as sex-specific evidence even when a fitted cell is neutral',()=>{
@@ -184,4 +187,30 @@ test('a previously flattened V2 snapshot does not permanently lock later officia
   const out=deriveAgeGenderCohortsV2({person:view.row.person,baseline,view,history:validHistory(),evidence:{sources:[]},previous,asOf:'2026-08-30T00:00:00.000Z'});
   const cellValues=COHORT_KEYS.map(k=>out.cells[k].value).filter(Number.isFinite);
   assert.ok(new Set(cellValues).size>=2,`flattened prior remained locked: ${cellValues.join(',')}`);
+});
+
+test('JCS cohort interpretation preserves a materially different age profile instead of compressing every age into adjacent integers',()=>{
+  const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
+  const baseline={...directBaseline(),baselineQuality:82,sourceState:'OFFICIAL_FILE_ECOLOGICAL_ESTIMATE',matchedGeoUnits:24,
+    cohortAffinity:[.16,.13,.11,.09,.025,.015,-.025,-.035,-.07,-.08,-.12,-.13]};
+  const view=validView([{title:'청년 일자리 주거 정책 지지 상승',source:'A'}]);
+  const out=deriveAgeGenderCohortsV2({person:view.row.person,baseline,view,history:validHistory(),evidence:{sources:[]},asOf:'2026-08-30T00:00:00.000Z'});
+  const ages=Object.fromEntries(Object.entries(out.age).map(([k,v])=>[k,v.value]));
+  const values=Object.values(ages);
+  assert.equal(values.every(Number.isFinite),true,JSON.stringify(ages));
+  assert.ok(new Set(values).size>=4,`age profile still compressed: ${JSON.stringify(ages)}`);
+  assert.ok(Math.max(...values)-Math.min(...values)>=12,`age spread too small: ${JSON.stringify(ages)}`);
+  assert.ok(ages['18-29']-ages['70+']>=12,`structural direction lost: ${JSON.stringify(ages)}`);
+});
+
+test('low-confidence JCS estimates remain numeric; confidence describes uncertainty instead of hiding the data',()=>{
+  const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
+  const baseline={...directBaseline(),baselineKind:'REGIONAL_PARTY_PROXY',baselineQuality:24,sourceState:'OFFICIAL_FILE_NATIONAL_STRUCTURAL_PROXY',proxyReferenceCount:3,
+    cohortAffinity:[.10,.07,.08,.05,.02,.00,-.02,-.04,-.05,-.07,-.08,-.10]};
+  const out=deriveAgeGenderCohortsV2({person:validView().row.person,baseline,view:validView(),history:{summary:{dailySampleSize:0,coreDeltas:{}}},evidence:{sources:[]},asOf:'2026-08-30T00:00:00.000Z'});
+  for(const key of COHORT_KEYS){
+    assert.ok(Number.isFinite(out.cells[key].value),`${key} hidden`);
+    assert.ok(Number.isFinite(out.cells[key].confidence),`${key} confidence hidden`);
+  }
+  assert.equal(out.validity.validCellCount,12);
 });

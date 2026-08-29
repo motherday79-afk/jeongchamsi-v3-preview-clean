@@ -1,0 +1,29 @@
+JCV3 JCS AGE & GENDER — JCS INTERPRETATION HOTFIX R3
+Date: 2026-08-30
+
+ROOT CAUSE
+- Previous engine used movementCap (5/10/15) as an absolute first-snapshot output cap.
+- Therefore even materially different official cohort affinities were compressed into adjacent integers such as 5/6 or 6/7.
+- cohortProfileEffect was also capped at only +/-4, so shared politician momentum dominated demographic structure.
+- Low-confidence numeric estimates were converted to null, hiding data instead of exposing estimate + confidence.
+
+R3 FIX
+1. First-snapshot level is no longer clamped to the movement cap.
+   - movement cap is used as a temporal change cap only when a healthy previous snapshot exists.
+2. Official/proxy cohortAffinity is standardized relative to its own 12-cell distribution and mapped into a JCS structural cohort signal.
+   - This preserves real source-derived demographic shape instead of copying one common NOW value.
+3. Previous snapshots compressed to <=2 point total range are treated as invalid legacy shape and are structurally rebased.
+4. For usable official/proxy baselines, low confidence no longer hides the numeric estimate.
+   - Value is preserved; confidence remains the uncertainty indicator.
+5. Calculation revision bumped to COHORT_JCS_INTERPRETATION_20260830_R3 so same-draft R2 snapshots are not silently reused.
+
+FRESH VERIFICATION
+- node --check server/v3/lib/age-gender-cohort-core.js: PASS
+- node --check server/v3/lib/political-intelligence-v2-store.js: PASS
+- focused AGE/GENDER model tests: 20/20 PASS
+- R3 regression case (source-derived non-flat cohort baseline):
+  age aggregates -> 18-29 18, 30-39 13, 40-49 5, 50-59 0, 60-69 -5, 70+ -10
+  This is a synthetic fixture used only to verify that the engine preserves meaningful cohort separation.
+
+NOTE
+- Store integration tests cannot be executed in this patch-only workspace because the unchanged full-project lib/v3/redis module is not included in the supplied patch archives. The R3 store change itself is limited to the calculation revision key.
