@@ -47,3 +47,22 @@ test('542-person compact snapshot stays below 80% of hard storage budget',()=>{
   const packed=store.encodeSnapshot({schemaVersion:2,draftId:'synthetic',publishedAt:'2026-08-30T00:00:00.000Z',people});
   assert.ok(packed.compressedBytes<store.MAX_COMPRESSED_BYTES*.8,`${packed.compressedBytes} vs ${store.MAX_COMPRESSED_BYTES}`);
 });
+
+test('calculation hotfix writes a fresh snapshot instead of reusing the legacy flat snapshot for the same draft',async()=>{
+  const mod=require('../server/v3/lib/political-intelligence-v2-store');
+  const {createPoliticalIntelligenceV2Store}=mod;
+  const db=new Map();
+  const legacy={schemaVersion:2,draftId:'d-flat',publishedAt:'2026-08-30T00:00:00.000Z',people:{p:mod.packCohorts(cohortLayer(10))}};
+  db.set(`${mod.PREFIX}:snapshot:d-flat`,mod.encodeSnapshot(legacy).encoded);
+  const command=async args=>{const [op,key,...rest]=args;if(op==='GET')return db.get(key)||null;if(op==='SET'){if(rest.includes('NX')&&db.has(key))return null;db.set(key,rest[0]);return 'OK';}if(op==='ZADD'){db.set(`index:${key}`,rest[1]);return 1;}if(op==='ZREVRANGE'){const v=db.get(`index:${key}`);return v?[v]:[];}throw new Error(op);};
+  const current={draftId:'d-flat',publishedAt:'2026-08-30T01:00:00.000Z',ranked:[{person:{id:'p',name:'P'}}]};
+  const fakeView={row:{person:{id:'p',name:'P'},news:{headlines:[]}},analysis:{scores:{overallInterest:50,highEngagement:50,massExpansion:50,activity:50,issueHeat:50,mediaSpread:50}},trend:{points:[]}};
+  const varied=cohortLayer(4);let i=0;for(const row of Object.values(varied.cells))row.value=4+(i++%4);
+  const store=createPoliticalIntelligenceV2Store({command,hasTrustedBaselineV2:()=>true,derivePersonView:()=>fakeView,getAgeGenderBaselineV2:()=>({personId:'p',baselineKind:'DIRECT_CANDIDATE',baselineQuality:80,populationWeights:Array(12).fill(1/12),cohortAffinity:Array.from({length:12},(_,j)=>(j-5.5)/100),sourceState:'TEST',limitedReasons:[]}),getPoliticalIntelligenceEvidence:()=>({sources:[]}),derivePoliticalIntelligenceV1:()=>({version:'JCS_POLITICAL_INTELLIGENCE_V1_2',validity:{state:'VALID'}}),derivePoliticalIntelligenceV2:()=>({version:'JCS_POLITICAL_INTELLIGENCE_V2',cohorts:varied})});
+  const written=await store.recordPoliticalIntelligenceSnapshotV2({current,legacyHistory:{items:[]},personViews:[fakeView],evidenceBundle:{records:[]}});
+  assert.equal(written.created,true,'same draft must get a new calculation-revision snapshot');
+  const latest=await store.readLatestPoliticalIntelligenceSnapshotPersonV2('p');
+  assert.ok(latest);
+  assert.equal(latest.calculationRevision,mod.CALCULATION_REVISION);
+  assert.ok(new Set(Object.values(latest.cohorts.cells).map(x=>x.value)).size>1,'new latest snapshot must not be the old flat values');
+});
