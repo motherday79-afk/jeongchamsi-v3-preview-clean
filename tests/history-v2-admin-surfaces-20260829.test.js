@@ -28,10 +28,13 @@ test('politician detail HISTORY card links to full admin browser and shows six-c
   for(const key of ['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread'])assert.match(s,new RegExp(key));
 });
 
-test('home requests compact HISTORY overview only for authenticated admin',()=>{
+test('home reserves an admin-only HISTORY slot and hydrates it asynchronously',()=>{
   const s=read('src/views/home.js');
   assert.match(s,/userSession\.authenticated\s*&&\s*userSession\.user\?\.role\s*===\s*"admin"/);
-  assert.match(s,/getAdminHistoryOverview/);
+  assert.match(s,/data-home-history-slot/);
+  assert.match(s,/getAdminHistoryHomeSummary/);
+  const renderHome=s.slice(s.indexOf('export async function renderHome()'),s.indexOf('export async function renderHome()')+2200);
+  assert.doesNotMatch(renderHome,/await\s+getAdminHistoryHomeSummary/);
   assert.match(s,/ADMIN INTELLIGENCE/);
 });
 

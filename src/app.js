@@ -18,7 +18,7 @@ function nowFailureText(label, r) {
 }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=03683-history-v2")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
     if (p[0] === "login") return view.renderLogin();
@@ -55,7 +55,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=03683-history-v2")).renderHome();
+  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -165,6 +165,13 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
 
   syncCurrentScroll();
   hydrateLiveCommunityBar();
+  if (app.querySelector("[data-home-history-slot]")) {
+    requestAnimationFrame(() => {
+      import("./views/home.js?v=03683-history-v2-main-perf-app-return")
+        .then(mod => mod.hydrateHomeAdminHistory?.())
+        .catch(() => {});
+    });
+  }
   requestAnimationFrame(() => document.documentElement.classList.remove("jcv3-route-swapping"));
 }
 function toggleDrawer(open) {

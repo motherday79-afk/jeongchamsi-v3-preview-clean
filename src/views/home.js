@@ -1,7 +1,6 @@
 import { HOME_NOW_PREVIEW } from "../data/home-person-preview.js";
 import { politicianPhoto } from "../data/politician-photo-index.js";
 import { getHomeSnapshot, getAuthorProfiles } from "../core/repository.js";
-import { getAdminHistoryOverview } from "../core/history-repository.js?v=history-v2";
 import { drawer, siteHeader, footer } from "./layout.js";
 import { getUserSummary, hasVotedPoll } from "../core/user.js";
 import { launcherServices, serviceIconSvg } from "../data/service-catalog.js";
@@ -228,13 +227,23 @@ function homeHistoryIntelligence(history){
   return `<section class="home-history-intelligence" aria-label="관리자 전용 HISTORY 인텔리전스"><div class="home-history-head"><div><span>ADMIN INTELLIGENCE · INTERNAL_ADMIN</span><b>HISTORY V2</b></div><button type="button" data-go="/admin?tab=history">전체 HISTORY →</button></div><div class="home-history-status"><span>IMMUTABLE ${Number(history.snapshotCount||0)}회</span><span>${esc(status)}</span><span>${esc(history.latestDraftId||history.currentDraftId||'첫 기준점 대기')}</span></div>${movers.length?`<div class="home-history-movers">${movers.slice(0,5).map((m,i)=>`<button type="button" data-go="/admin?tab=history&person=${encodeURIComponent(m.id)}&range=30"><em>${i+1}</em><span><b>${esc(m.name||m.id)}</b><small>NOW ${m.globalRank??'—'}위 · ${esc(m.signal||'관측')}</small></span><strong>${m.rankDelta===null||m.rankDelta===undefined?'—':`${Number(m.rankDelta)>0?'▲ ':Number(m.rankDelta)<0?'▼ ':''}${Math.abs(Number(m.rankDelta))}`}</strong></button>`).join('')}</div>`:`<div class="home-history-empty">첫 FULL SNAPSHOT을 저장하면 관리자에게만 최근 변화와 급변 신호가 표시됩니다.</div>`}</section>`;
 }
 
+export async function hydrateHomeAdminHistory(){
+  const slot=document.querySelector('[data-home-history-slot]');
+  if(!slot)return;
+  const {getAdminHistoryHomeSummary}=await import('../core/history-repository.js?v=history-v2-perf');
+  const history=await getAdminHistoryHomeSummary();
+  if(!slot.isConnected)return;
+  if(!history||history.ok===false){slot.remove();return;}
+  slot.outerHTML=homeHistoryIntelligence(history);
+}
+
 export async function renderHome() {
   const data = await getHomeSnapshot();
   const userSummary = getUserSummary();
   const userSession = userSummary.session;
   const userReady = !document.documentElement.classList.contains("jcv3-user-pending");
-  const adminHistory = userReady && userSession.authenticated && userSession.user?.role === "admin" ? await getAdminHistoryOverview() : null;
-  const adminHistoryMarkup = adminHistory ? homeHistoryIntelligence(adminHistory) : "";
+  const isAdmin = userReady && userSession.authenticated && userSession.user?.role === "admin";
+  const adminHistoryMarkup = isAdmin ? `<section class="home-history-intelligence home-history-loading" data-home-history-slot aria-busy="true"><div class="home-history-head"><div><span>ADMIN INTELLIGENCE · INTERNAL_ADMIN</span><b>HISTORY V2</b></div></div><div class="home-history-empty">HISTORY 요약을 불러오는 중입니다.</div></section>` : "";
   let getPerson = null;
   const generationDisplayResults = data.generation?.demoMode === true ? (data.generation?.demoResults || {}) : (data.generation?.results || {});
   const generationHasVotes = Object.values(generationDisplayResults).some(votes => Object.values(votes || {}).some(v => Number(v || 0) > 0));

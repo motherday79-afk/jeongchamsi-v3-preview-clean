@@ -20,6 +20,13 @@ export async function getAdminHistoryOverview() {
     : result;
 }
 
+export async function getAdminHistoryHomeSummary() {
+  const result = await requestHistory(`/api/v3/admin/history?summary=home&r=${Date.now()}`);
+  return result?.ok === false
+    ? { ...result, snapshotCount:0, latestSnapshot:null }
+    : result;
+}
+
 export async function getAdminHistoryPerson(id, range = "30") {
   const personId = String(id || "").trim();
   if (!personId) return { ok:false, error:"HISTORY_PERSON_REQUIRED", person:null };

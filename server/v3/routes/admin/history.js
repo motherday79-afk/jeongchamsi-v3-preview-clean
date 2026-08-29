@@ -1,6 +1,7 @@
 const {requireAdmin}=require('../../../../lib/v3/access');
 const {
   historyOverviewV2,
+  historyHomeSummaryV2,
   captureCurrentSnapshot,
   backfillLegacyPageV2,
   appendPoliticalEventV2,
@@ -13,6 +14,8 @@ module.exports=async function historyAdmin(req,res){
   try{
     const admin=await requireAdmin(req);if(!admin)return res.status(401).json({ok:false,error:'ADMIN_LOGIN_REQUIRED'});
     if(req.method==='GET'){
+      const summary=String(req.query?.summary||'').trim();
+      if(summary==='home')return res.status(200).json({ok:true,...await historyHomeSummaryV2()});
       const overview=await historyOverviewV2();
       const personId=String(req.query?.personId||'').trim();
       const range=String(req.query?.range||req.query?.days||'30');

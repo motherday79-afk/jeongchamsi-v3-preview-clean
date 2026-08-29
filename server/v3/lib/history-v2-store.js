@@ -128,6 +128,27 @@ function createHistoryV2Store(overrides={}){
     await deps.command(['ZADD',V2_EVENT_INDEX_KEY,isoMs(occurredAt),eventId]);return {ok:true,event};
   }
 
+  async function historyHomeSummaryV2(){
+    const [count,latest,current]=await Promise.all([
+      deps.command(['ZCARD',V2_SNAPSHOT_INDEX_KEY]),
+      deps.command(['ZREVRANGE',V2_SNAPSHOT_INDEX_KEY,0,0]),
+      deps.getJSON('nowDataCurrent')
+    ]);
+    const latestDraftId=Array.isArray(latest)?latest[0]||null:null;
+    const currentDraftId=current?.draftId||null;
+    const latestHeader=latestDraftId?await deps.command(['GET',v2SnapshotKey(latestDraftId)]):null;
+    let latestSnapshot=null;try{latestSnapshot=latestHeader?JSON.parse(latestHeader):null;}catch{}
+    let currentCaptured=false;
+    if(currentDraftId){
+      if(currentDraftId===latestDraftId)currentCaptured=Boolean(latestHeader);
+      else currentCaptured=Boolean(await deps.command(['GET',v2SnapshotKey(currentDraftId)]));
+    }
+    return {
+      accessScope:V2_ACCESS,versions:{...V2_VERSIONS},snapshotCount:Number(count)||0,latestDraftId,latestSnapshot,
+      rosterTotal:Number(latestSnapshot?.rosterTotal)||0,currentDraftId,currentPublishedAt:current?.publishedAt||null,currentCaptured
+    };
+  }
+
   async function historyOverviewV2(){
     const roster=compactRoster(deps.allPeople());
     const [count,latest,current]=await Promise.all([deps.command(['ZCARD',V2_SNAPSHOT_INDEX_KEY]),deps.command(['ZREVRANGE',V2_SNAPSHOT_INDEX_KEY,0,0]),deps.getJSON('nowDataCurrent')]);
@@ -140,7 +161,7 @@ function createHistoryV2Store(overrides={}){
     return {accessScope:V2_ACCESS,versions:{...V2_VERSIONS},snapshotCount:Number(count)||0,latestDraftId,latestSnapshot,rosterTotal:roster.length,roster,currentDraftId:current?.draftId||null,currentPublishedAt:current?.publishedAt||null,currentCaptured:Boolean(currentHeader),backfill:{pageSize:BACKFILL_PAGE_SIZE_V2,total:roster.length}};
   }
 
-  return {BACKFILL_PAGE_SIZE_V2,recordPublishedSnapshotV2,captureCurrentSnapshot,backfillLegacyPageV2,readPersonHistoryV2,historyOverviewV2,appendPoliticalEventV2,readEventsForPerson,_deps:deps};
+  return {BACKFILL_PAGE_SIZE_V2,recordPublishedSnapshotV2,captureCurrentSnapshot,backfillLegacyPageV2,readPersonHistoryV2,historyOverviewV2,historyHomeSummaryV2,appendPoliticalEventV2,readEventsForPerson,_deps:deps};
 }
 
 const defaultStore=createHistoryV2Store();
