@@ -8,6 +8,7 @@ const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPu
 const { recordPublishedSnapshotV2 } = require('../../lib/history-v2-store');
 const { collectExternalEvidence } = require('../../lib/external-evidence-collector');
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
+const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
@@ -121,7 +122,7 @@ module.exports=async function nowDataAdmin(req,res){
       const statuses=await loadBatchStatuses(meta),top30=ranked.slice(0,30).map(compactPreviewRow),finalizedAt=new Date().toISOString();
       let next={...meta,status:'preview',finalizedAt,top30,summary,completedBatchIndexes:Array.from({length:meta.batchCount},(_,i)=>i),failedBatchIndexes:failedBatchIndexes(statuses)};delete next.ranked;
       await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
-      let intelligenceSnapshot=null;const intelligenceWarnings=[];
+      let intelligenceSnapshot=null,ageGenderV2Snapshot=null;const intelligenceWarnings=[];
       try{
         const previousHistory=compactHistory((await getJSON(HISTORY))||{items:[]});
         const previewCurrent={schemaVersion:1,draftId:meta.draftId,publishedAt:finalizedAt,snapshotKind:'REFRESH_FINALIZE',weights:meta.weights,ranked,batchCount:meta.batchCount,batches:meta.batches,providers:['naver-search-ads',meta.newsProvider||'news-auto-fallback']};
@@ -130,10 +131,13 @@ module.exports=async function nowDataAdmin(req,res){
         const trendedPreviewEntries=previewEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
         const evidenceBundle=(await getJSON(evidenceDomain(meta.draftId)))||{version:'JCS_EXTERNAL_EVIDENCE_V1',collectedAt:finalizedAt,records:[],sources:[],warnings:[{sourceId:'refresh',error:'EXTERNAL_EVIDENCE_NOT_COLLECTED'}],matchedPeople:0,recordCount:0};
         intelligenceSnapshot=await recordPoliticalIntelligenceSnapshotV1({current:previewCurrent,legacyHistory:previousHistory,personViews:trendedPreviewEntries,evidenceBundle});
-        next={...next,intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0}};
+        try{ageGenderV2Snapshot=await recordPoliticalIntelligenceSnapshotV2({current:previewCurrent,legacyHistory:previousHistory,personViews:trendedPreviewEntries,evidenceBundle});}
+        catch(v2Error){console.error('[JCS_AGE_GENDER_V2_REFRESH_SNAPSHOT_NON_BLOCKING]',v2Error);intelligenceWarnings.push('JCS_AGE_GENDER_V2_SNAPSHOT_FAILED');}
+        if(ageGenderV2Snapshot?.error==='BASELINE_INGESTION_REQUIRED')intelligenceWarnings.push('BASELINE_INGESTION_REQUIRED');
+        next={...next,intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0},ageGenderV2Snapshot:ageGenderV2Snapshot?{created:Boolean(ageGenderV2Snapshot.created),skipped:Boolean(ageGenderV2Snapshot.skipped),error:ageGenderV2Snapshot.error||null,analysisAt:ageGenderV2Snapshot.analysisAt||finalizedAt,rosterTotal:Number(ageGenderV2Snapshot.rosterTotal)||0,compressedBytes:Number(ageGenderV2Snapshot.compressedBytes)||0,baselineVersion:ageGenderV2Snapshot.baselineVersion||null}:null};
         await setJSON(META,next);
       }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
-      return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights,intelligenceSnapshot,intelligenceWarnings});
+      return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights,intelligenceSnapshot,ageGenderV2Snapshot,intelligenceWarnings});
     }
     if(action==='publish'){
       const ranked=await getJSON(rankedDomain(meta.draftId));
@@ -156,15 +160,18 @@ module.exports=async function nowDataAdmin(req,res){
       const historyWarnings=[];
       // HISTORY V1 remains readable as a legacy layer. New formal publish snapshots are recorded only in V2.
       try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}
-      let intelligenceSnapshot=null;
+      let intelligenceSnapshot=null,ageGenderV2Snapshot=null;
       try{
         const evidenceBundle=(await getJSON(evidenceDomain(meta.draftId)))||{version:'JCS_EXTERNAL_EVIDENCE_V1',collectedAt:publishedAt,records:[],sources:[],warnings:[{sourceId:'refresh',error:'EXTERNAL_EVIDENCE_NOT_COLLECTED'}],matchedPeople:0,recordCount:0};
         intelligenceSnapshot=await recordPoliticalIntelligenceSnapshotV1({current,legacyHistory:previousHistory,personViews:trendedPersonEntries,evidenceBundle});
-        await setJSON(META,{...nextMeta,intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0}});
+        try{ageGenderV2Snapshot=await recordPoliticalIntelligenceSnapshotV2({current,legacyHistory:previousHistory,personViews:trendedPersonEntries,evidenceBundle});}
+        catch(v2Error){console.error('[JCS_AGE_GENDER_V2_SNAPSHOT_NON_BLOCKING]',v2Error);historyWarnings.push('JCS_AGE_GENDER_V2_SNAPSHOT_FAILED');}
+        if(ageGenderV2Snapshot?.error==='BASELINE_INGESTION_REQUIRED')historyWarnings.push('BASELINE_INGESTION_REQUIRED');
+        await setJSON(META,{...nextMeta,intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0},ageGenderV2Snapshot:ageGenderV2Snapshot?{created:Boolean(ageGenderV2Snapshot.created),skipped:Boolean(ageGenderV2Snapshot.skipped),error:ageGenderV2Snapshot.error||null,rosterTotal:Number(ageGenderV2Snapshot.rosterTotal)||0,compressedBytes:Number(ageGenderV2Snapshot.compressedBytes)||0,baselineVersion:ageGenderV2Snapshot.baselineVersion||null}:null});
       }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_SNAPSHOT_NON_BLOCKING]',intelligenceError);historyWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
       let tempCleanup={matched:0,deleted:0};
       try{tempCleanup=await cleanupDraftNowTemp(meta.draftId,meta.batchCount);}catch(cleanupError){console.error('[NOW_TEMP_CLEANUP_NON_BLOCKING]',cleanupError);historyWarnings.push('NOW_TEMP_CLEANUP_FAILED');}
-      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,tempCleanup});
+      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
   }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}

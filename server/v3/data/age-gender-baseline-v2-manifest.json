@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "baselineVersion": "JCS_AGE_GENDER_BASELINE_V2",
+  "validationStatus": "BASELINE_INGESTION_REQUIRED",
+  "trustedBaselineReady": false,
+  "generatedAt": "2026-08-29T16:58:56.613Z",
+  "rosterTotal": 542,
+  "directCount": 0,
+  "partyProxyCount": 0,
+  "regionalPartyProxyCount": 0,
+  "limitedCount": 542,
+  "unresolvedMappingRows": 0,
+  "sourceAuthorities": [],
+  "sourceFiles": [],
+  "cohortOrder": [
+    "18_29_m",
+    "18_29_f",
+    "30_39_m",
+    "30_39_f",
+    "40_49_m",
+    "40_49_f",
+    "50_59_m",
+    "50_59_f",
+    "60_69_m",
+    "60_69_f",
+    "70_plus_m",
+    "70_plus_f"
+  ],
+  "baselineSha256": "74781ad8a63858408604e1a6d9d2a021ba73948c4992724d73446a7c5e335a14"
+}

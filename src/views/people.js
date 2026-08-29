@@ -200,6 +200,49 @@ function adminPiQuality(quality={}){
 function adminPiSignalList(title,meaning,items=[],tone="risk"){
   return `<article class="admin-pi-signal-list ${tone}"><div><b>${esc(title)}</b><small>${esc(meaning)}</small></div>${items.map(x=>`<p>${esc(x)}</p>`).join('')}</article>`;
 }
+function adminPiConfidenceBand(value,status='VALID_SIGNAL'){
+  if(status!=='VALID_SIGNAL')return 'LIMITED';
+  const n=piNumber(value);if(n===null)return 'LIMITED';
+  return n>=80?'HIGH':'MEDIUM';
+}
+function adminPiCohortAxis(label,meaning,row={}){
+  const valid=row?.status==='VALID_SIGNAL'&&piNumber(row?.value)!==null;
+  const confidence=piNumber(row?.confidence),band=adminPiConfidenceBand(confidence,row?.status);
+  if(!valid)return `<article class="admin-pi-axis admin-pi-cohort-axis is-insufficient"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>SIGNAL CONFIDENCE LIMITED</strong></div><div class="admin-pi-cohort-meta"><span>CONFIDENCE ${band}</span><span>JCS HISTORY 정상 유지</span></div><div class="admin-pi-axis-track"><i></i></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
+  const x=Math.max(-50,Math.min(50,Number(row.value))),pos=x+50,intensity=axisIntensityBand(x),text=x>0?`+${Math.round(x)}`:String(Math.round(x));
+  return `<article class="admin-pi-axis admin-pi-cohort-axis intensity-${intensity}"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>${text}</strong></div><div class="admin-pi-cohort-meta"><span>CONFIDENCE ${band}${confidence===null?'':` · ${Math.round(confidence)}%`}</span><span>SUPPORT MOMENTUM · JCS EST.</span></div><div class="admin-pi-axis-track"><i></i><em style="left:${pos}%"></em></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
+}
+function adminPiCohortCell(label,row={}){
+  const valid=row?.status==='VALID_SIGNAL'&&piNumber(row?.value)!==null,confidence=piNumber(row?.confidence),band=adminPiConfidenceBand(confidence,row?.status),evidence=Math.max(0,Number(row?.evidenceCount)||0);
+  return `<article class="admin-pi-cohort-cell${valid?'':' is-insufficient'}"><div><b>${esc(label)}</b><small>CONFIDENCE ${band}${valid&&confidence!==null?` · ${Math.round(confidence)}%`:''}</small></div><strong>${valid?piSigned(row.value):'LIMITED'}</strong><span>${valid?`EVIDENCE ${evidence}`:'JCS HISTORY 정상 유지'}</span></article>`;
+}
+function adminPiSummaryCard(label,row,kind='value'){
+  if(!row)return '';
+  let main='';
+  if(kind==='gap')main=`${esc(row.label||'—')} · ${piNumber(row.value)===null?'—':`${Math.round(Math.abs(Number(row.value)))}P`}`;
+  else if(kind==='stable')main=esc(row.cohort||'—');
+  else main=`${esc(row.cohort||'—')} · ${piSigned(row.value)}`;
+  return `<article><small>${esc(label)}</small><strong>${main}</strong></article>`;
+}
+function adminPiDemographicSection(pi,legacyAge={}){
+  const isV2=pi.version==='JCS_POLITICAL_INTELLIGENCE_V2'&&pi.cohorts;
+  if(!isV2)return `<div class="admin-pi-section-head"><div><span>SUPPORT BASE MOVEMENT</span><h3>연령별 지지 흐름</h3></div><small>JCS EST. · -50 감소 / 0 중립 / +50 증가</small></div><div class="admin-pi-axis-grid">${adminPiAxis('2030 SUPPORT','20·30대 지지 변화',legacyAge.age2030)}${adminPiAxis('4050 SUPPORT','40·50대 지지 변화',legacyAge.age4050)}${adminPiAxis('60+ SUPPORT','60대 이상 지지 변화',legacyAge.age60plus)}</div>`;
+  const cohorts=pi.cohorts||{},age=cohorts.age||{},gender=cohorts.gender||{},cells=cohorts.cells||{},summary=cohorts.summary||{};
+  const ages=[['18–29','18-29'],['30–39','30-39'],['40–49','40-49'],['50–59','50-59'],['60–69','60-69'],['70+','70+']];
+  const matrix=[['18–29','18_29_m','18_29_f'],['30–39','30_39_m','30_39_f'],['40–49','40_49_m','40_49_f'],['50–59','50_59_m','50_59_f'],['60–69','60_69_m','60_69_f'],['70+','70_plus_m','70_plus_f']];
+  const summaryCards=[adminPiSummaryCard('STRONGEST POSITIVE SIGNAL',summary.strongestPositive),adminPiSummaryCard('STRONGEST NEGATIVE SIGNAL',summary.strongestNegative),adminPiSummaryCard('WIDEST GENDER GAP',summary.widestGenderGap,'gap'),adminPiSummaryCard('FASTEST 30D CHANGE',summary.fastest30dChange),adminPiSummaryCard('MOST STABLE COHORT',summary.mostStableCohort,'stable')].filter(Boolean).join('');
+  return `<div class="admin-pi-cohort-suite" data-jcs-age-gender-v2>
+    <div class="admin-pi-section-head"><div><span>AGE COHORT SUPPORT MOMENTUM</span><h3>연령별 지지 흐름</h3></div><small>SUPPORT MOMENTUM · JCS EST. · -50 / 0 / +50</small></div>
+    <div class="admin-pi-cohort-age-grid">${ages.map(([label,key])=>adminPiCohortAxis(label,'연령 코호트 현재 방향',age[key]||{})).join('')}</div>
+    <div class="admin-pi-section-head"><div><span>GENDER SUPPORT MOMENTUM</span><h3>성별 지지 흐름</h3></div><small>유효한 연령×성별 셀만 가중 집계</small></div>
+    <div class="admin-pi-cohort-gender-grid">${adminPiCohortAxis('MALE','남성 전체 지지 방향',gender.MALE||{})}${adminPiCohortAxis('FEMALE','여성 전체 지지 방향',gender.FEMALE||{})}</div>
+    <div class="admin-pi-section-head"><div><span>AGE × GENDER MATRIX</span><h3>연령 × 성별 세부 흐름</h3></div><small>각 셀: MOMENTUM · CONFIDENCE · EVIDENCE</small></div>
+    <div class="admin-pi-cohort-matrix"><div class="admin-pi-cohort-matrix-head"><span>AGE</span><b>MALE</b><b>FEMALE</b></div>${matrix.map(([label,m,f])=>`<section><h4>${esc(label)}</h4><div>${adminPiCohortCell('MALE',cells[m]||{})}${adminPiCohortCell('FEMALE',cells[f]||{})}</div></section>`).join('')}</div>
+    <div class="admin-pi-section-head"><div><span>COHORT INTELLIGENCE SUMMARY</span><h3>연령·성별 핵심 판독</h3></div><small>유효 신호만 요약 · 불충분 항목은 생성하지 않음</small></div>
+    ${summaryCards?`<div class="admin-pi-cohort-summary">${summaryCards}</div>`:`<div class="notice-box">SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지</div>`}
+  </div>`;
+}
+
 function adminPiStrategicSolution(solution={}){
   const priorities=Array.isArray(solution?.priorities)?solution.priorities:[];
   if(!priorities.length)return '';
@@ -219,8 +262,7 @@ function adminPoliticalIntelligence(history,p){
     <div class="admin-pi-hero"><div><span class="eyebrow">JCS POLITICAL INTELLIGENCE</span><h2>관리자 전용 정치 인텔리전스</h2><p>SEARCH ENGINE · NEWS PORTAL · JCS HISTORY를 포함한 LEADING EXTERNAL INSTITUTIONS의 데이터를 JCS INTELLIGENCE ENGINE으로 재해석한 분석결과입니다.</p></div><div class="admin-pi-trust"><b>JCS EST.</b><strong>${piNumber(confidence.score)===null?'—':`${Math.round(piNumber(confidence.score))}%`}</strong><small>CONFIDENCE ${esc(confidence.label||'LOW')} · ${Number(confidence.observedDays)||0} DAYS OBSERVED</small></div></div>
     <div class="admin-pi-diagnosis"><div><span>JCS CURRENT DIAGNOSIS</span><small>현재 정치상태 진단</small></div><strong>${esc(pi.diagnosis?.label||'SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지')}</strong><em>${piSigned(pi.diagnosis?.condition)}</em></div>
 
-    <div class="admin-pi-section-head"><div><span>SUPPORT BASE MOVEMENT</span><h3>연령별 지지 흐름</h3></div><small>JCS EST. · -50 감소 / 0 중립 / +50 증가</small></div>
-    <div class="admin-pi-axis-grid">${adminPiAxis('2030 SUPPORT','20·30대 지지 변화',age.age2030)}${adminPiAxis('4050 SUPPORT','40·50대 지지 변화',age.age4050)}${adminPiAxis('60+ SUPPORT','60대 이상 지지 변화',age.age60plus)}</div>
+    ${adminPiDemographicSection(pi,age)}
 
     <div class="admin-pi-section-head"><div><span>CORE SUPPORT DYNAMICS</span><h3>강성지지층 변화</h3></div><small>핵심 지지 기반의 이탈과 신규 유입 추정</small></div>
     <div class="admin-pi-metric-grid">${adminPiMetric('CORE SUPPORT ATTRITION','강성지지층 이탈 추정',piNumber(support.coreAttritionPct)===null?null:piNumber(support.coreAttritionPct).toFixed(1),'%')}${adminPiMetric('NEW SUPPORT INFLOW','신규지지층 유입 추정',piNumber(support.newSupportInflowPct)===null?null:piNumber(support.newSupportInflowPct).toFixed(1),'%')}${adminPiMetric('ATTENTION → SUPPORT GAP','관심 대비 지지전환',piNumber(gap.gap)===null?null:piSigned(gap.gap),'')}${adminPiMetric('POLITICAL RESILIENCE','정치적 회복력',piNumber(resilience.score)===null?null:Math.round(piNumber(resilience.score)),'/100')}</div>

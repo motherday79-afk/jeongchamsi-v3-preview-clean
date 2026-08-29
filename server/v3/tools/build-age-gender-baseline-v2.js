@@ -1,0 +1,138 @@
+'use strict';
+
+const fs=require('node:fs');
+const path=require('node:path');
+const crypto=require('node:crypto');
+const rosterLib=require('../lib/politician-live-roster');
+const {COHORT_KEYS,BASELINE_VERSION}=require('../lib/age-gender-baseline-v2');
+
+const BASELINE_KINDS=['DIRECT_CANDIDATE','PARTY_PROXY','REGIONAL_PARTY_PROXY','LIMITED'];
+function cleanText(value=''){return String(value??'').replace(/^\uFEFF/,'').trim();}
+function cleanNum(value){const n=Number(String(value??'').replace(/,/g,'').trim());return Number.isFinite(n)?n:0;}
+function normalizeToken(value=''){return cleanText(value).replace(/[\s·ㆍ.()\-]/g,'').replace(/특별시|광역시|특별자치시|특별자치도|도$/g,'');}
+function parseCsv(input){
+  const s=Buffer.isBuffer(input)?input.toString('utf8'):String(input||'');const rows=[];let row=[],cell='',q=false;
+  for(let i=0;i<s.length;i++){
+    const ch=s[i];
+    if(q){if(ch==='"'&&s[i+1]==='"'){cell+='"';i++;}else if(ch==='"')q=false;else cell+=ch;continue;}
+    if(ch==='"'){q=true;continue;}if(ch===','){row.push(cell);cell='';continue;}
+    if(ch==='\n'){row.push(cell);rows.push(row);row=[];cell='';continue;}if(ch==='\r')continue;cell+=ch;
+  }
+  if(cell.length||row.length){row.push(cell);rows.push(row);}
+  const header=(rows.shift()||[]).map(cleanText);return rows.filter(r=>r.some(v=>cleanText(v)!=='')).map(r=>Object.fromEntries(header.map((h,i)=>[h,cleanText(r[i]??'')])));
+}
+function ageFromHeader(header){const m=String(header).match(/(?:^|[_\s])(\d{1,3})\s*세/);return m?Number(m[1]):null;}
+function sexFromHeader(header){const h=String(header).toLowerCase();if(/(^|[_\s])(남|남자|남성|male|m)(?:[_\s]|$)/i.test(h)||/^남[_\s]?\d/.test(h))return 'm';if(/(^|[_\s])(여|여자|여성|female|f)(?:[_\s]|$)/i.test(h)||/^여[_\s]?\d/.test(h))return 'f';return null;}
+function cohortIndex(age,sex){if(age<18||!sex)return -1;let bucket;if(age<=29)bucket=0;else if(age<=39)bucket=1;else if(age<=49)bucket=2;else if(age<=59)bucket=3;else if(age<=69)bucket=4;else bucket=5;return bucket*2+(sex==='f'?1:0);}
+function aggregatePopulationRow(row={}){
+  const out=Array(12).fill(0),seen=Array(12).fill(false);
+  for(const [key,value] of Object.entries(row)){const age=ageFromHeader(key),sex=sexFromHeader(key);if(age===null||!sex)continue;const idx=cohortIndex(age,sex);if(idx<0)continue;out[idx]+=cleanNum(value);seen[idx]=true;}
+  return seen.some(Boolean)?out:null;
+}
+function overrideKey(row={}){return `${cleanText(row.선거일||row.electionDate||row.선거연도||'')}|${cleanText(row.후보자||row.candidate||'')}|${cleanText(row.선거구명||row.jurisdiction||'')}`;}
+function resolveRosterPerson(row={},roster=rosterLib.allPeople(),overrides={}){
+  const forced=overrides?.[overrideKey(row)];if(forced){const person=roster.find(p=>String(p.id)===String(forced));return person?{status:'OVERRIDE',person}:{status:'UNRESOLVED_OVERRIDE_TARGET'};}
+  const name=cleanText(row.후보자||row.candidate||row.성명||''),jur=normalizeToken(row.선거구명||row.jurisdiction||row.구시군명||''),sido=normalizeToken(row.시도명||row.sido||'');
+  const sameName=roster.filter(p=>cleanText(p.name)===name);if(!sameName.length)return {status:'UNRESOLVED_NAME'};
+  const candidates=sameName.filter(p=>{const pj=normalizeToken(p.jurisdiction||p.constituency||'');const pr=normalizeToken(p.region||'');return (!jur||pj.includes(jur)||jur.includes(pj))&&(!sido||pj.includes(sido)||pr.includes(sido)||sido.includes(pr));});
+  if(candidates.length===1)return {status:'EXACT',person:candidates[0]};
+  if(candidates.length>1)return {status:'UNRESOLVED_AMBIGUOUS'};
+  return sameName.length===1&&jur&&normalizeToken(sameName[0].jurisdiction||'').includes(jur)?{status:'EXACT',person:sameName[0]}:{status:sameName.length>1?'UNRESOLVED_AMBIGUOUS':'UNRESOLVED_JURISDICTION'};
+}
+
+function populationUnitName(row={}){return cleanText(row.법정읍면동명||row.행정동명||row.읍면동명||row.지역||row.행정기관||row.법정동||'');}
+function electionUnitName(row={}){return cleanText(row.법정읍면동명||row.읍면동명||row.행정동명||'');}
+function vectorNormalizeCounts(counts){const nums=(Array.isArray(counts)?counts:Array(12).fill(0)).map(v=>Math.max(0,cleanNum(v)));const total=nums.reduce((a,b)=>a+b,0);return total>0?nums.map(v=>v/total):null;}
+function fitEcologicalAffinity(units=[]){
+  const usable=units.filter(u=>Array.isArray(u.population)&&u.population.length===12&&Number.isFinite(Number(u.voteShare))&&u.population.reduce((a,b)=>a+Math.max(0,Number(b)||0),0)>0);
+  if(usable.length<3)return {affinity:Array(12).fill(null),quality:0,unitCount:usable.length,rmse:null};
+  const totalPop=Array(12).fill(0);let popTotal=0,weightedY=0;
+  for(const u of usable){const t=u.population.reduce((a,b)=>a+(Number(b)||0),0);popTotal+=t;weightedY+=t*Number(u.voteShare);for(let j=0;j<12;j++)totalPop[j]+=Number(u.population[j])||0;}
+  const globalWeights=Array(12).fill(0);
+  for(let j=0;j<12;j++)globalWeights[j]=popTotal>0?totalPop[j]/popTotal:0;
+  const overall=popTotal>0?weightedY/popTotal:usable.reduce((a,u)=>a+Number(u.voteShare),0)/usable.length;
+  const beta=Array(12).fill(0),lambda=.06,lr=.55;
+  const rows=usable.map(u=>{const x=vectorNormalizeCounts(u.population);return {x:x.map((v,j)=>v-globalWeights[j]),y:Number(u.voteShare),w:Math.max(1,u.population.reduce((a,b)=>a+(Number(b)||0),0))};});
+  const sw=rows.reduce((a,r)=>a+r.w,0)||1;
+  for(let iter=0;iter<2200;iter++){
+    const grad=Array(12).fill(0);
+    for(const r of rows){let pred=overall;for(let j=0;j<12;j++)pred+=beta[j]*r.x[j];const err=pred-r.y;for(let j=0;j<12;j++)grad[j]+=(r.w/sw)*2*err*r.x[j];}
+    for(let j=0;j<12;j++){grad[j]+=2*lambda*beta[j];beta[j]=Math.max(-1,Math.min(1,beta[j]-lr*grad[j]));}
+  }
+  let se=0,ws=0;for(const r of rows){let pred=overall;for(let j=0;j<12;j++)pred+=beta[j]*r.x[j];se+=r.w*(pred-r.y)**2;ws+=r.w;}
+  const rmse=Math.sqrt(se/(ws||1));const spread=Math.sqrt(beta.reduce((a,b)=>a+b*b,0)/12);const quality=Math.round(Math.max(20,Math.min(92,28+usable.length*3.2+Math.min(18,spread*80)-Math.min(18,rmse*100))));
+  return {affinity:beta.map(v=>Math.round(v*10000)/10000),quality,unitCount:usable.length,rmse:Math.round(rmse*10000)/10000,overallVoteShare:Math.round(overall*10000)/10000,populationWeights:globalWeights};
+}
+function buildDirectBaselines({electionRows=[],populationRows=[],roster=rosterLib.allPeople(),overrides={},electionDate=''}={}){
+  const popCandidates=populationRows.map(row=>({row,name:populationUnitName(row),norm:normalizeToken(populationUnitName(row)),vector:aggregatePopulationRow(row)})).filter(x=>x.name&&x.vector&&x.vector.reduce((a,b)=>a+b,0)>0);
+  const candidateGroups=new Map(),unresolved=[];
+  for(const row of electionRows){const candidate=cleanText(row.후보자||row.candidate||'');if(!candidate)continue;const resolved=resolveRosterPerson({...row,선거일:row.선거일||electionDate},roster,overrides);if(!resolved.person){if(resolved.status!=='UNRESOLVED_NAME')unresolved.push({status:resolved.status,candidate,jurisdiction:cleanText(row.선거구명||'')});continue;}const id=resolved.person.id;const key=`${normalizeToken(row.시도명||'')}|${normalizeToken(row.선거구명||row.구시군명||'')}|${normalizeToken(electionUnitName(row))}`;if(!candidateGroups.has(id))candidateGroups.set(id,{person:resolved.person,candidateRows:new Map(),allRows:new Map()});const g=candidateGroups.get(id);g.candidateRows.set(key,(g.candidateRows.get(key)||0)+cleanNum(row.득표수||row.votes));}
+  // Totals must include all candidates, keyed by jurisdiction + geographic unit.
+  const totals=new Map();for(const row of electionRows){const key=`${normalizeToken(row.시도명||'')}|${normalizeToken(row.선거구명||row.구시군명||'')}|${normalizeToken(electionUnitName(row))}`;totals.set(key,(totals.get(key)||0)+cleanNum(row.득표수||row.votes));}
+  const people={};
+  for(const [id,g] of candidateGroups){const units=[];for(const [key,votes] of g.candidateRows){const unitNorm=key.split('|').pop();const matches=popCandidates.filter(p=>p.norm===unitNorm);if(matches.length!==1)continue;const total=totals.get(key)||0;if(!(total>0))continue;units.push({population:matches[0].vector,voteShare:votes/total});}
+    const fit=fitEcologicalAffinity(units);if(fit.unitCount<3||!fit.populationWeights){unresolved.push({status:'INSUFFICIENT_MATCHED_GEO_UNITS',personId:id,matchedUnits:fit.unitCount});continue;}people[id]={personId:id,name:g.person.name,type:g.person.type,party:g.person.party||'',jurisdiction:g.person.jurisdiction||'',baselineKind:'DIRECT_CANDIDATE',baselineQuality:fit.quality,populationWeights:fit.populationWeights,cohortAffinity:fit.affinity,sourceState:'OFFICIAL_FILE_ECOLOGICAL_ESTIMATE',limitedReasons:[],mappedElectionDate:electionDate,matchedGeoUnits:fit.unitCount,fitRmse:fit.rmse,overallVoteShare:fit.overallVoteShare};}
+  return {people,unresolved};
+}
+
+
+function broadRegion(value=''){
+  const raw=cleanText(value).split(/\s+/)[0]||'';
+  const aliases={'서울특별시':'서울','부산광역시':'부산','대구광역시':'대구','인천광역시':'인천','광주광역시':'광주','대전광역시':'대전','울산광역시':'울산','세종특별자치시':'세종','경기도':'경기','강원특별자치도':'강원','충청북도':'충북','충청남도':'충남','전북특별자치도':'전북','전라북도':'전북','전라남도':'전남','경상북도':'경북','경상남도':'경남','제주특별자치도':'제주'};
+  return aliases[raw]||raw;
+}
+function weightedVectorMean(rows,key){
+  const out=Array(12).fill(0),weights=Array(12).fill(0);
+  for(const row of rows){const vector=row?.[key],q=Math.max(1,Number(row?.baselineQuality)||1);if(!Array.isArray(vector)||vector.length!==12)continue;for(let i=0;i<12;i++){const n=Number(vector[i]);if(!Number.isFinite(n))continue;out[i]+=n*q;weights[i]+=q;}}
+  return out.map((v,i)=>weights[i]>0?Math.round((v/weights[i])*1e6)/1e6:null);
+}
+function proxyFromReferences(person,refs,kind,electionDate=''){
+  if(!refs.length)return null;const avgQuality=refs.reduce((a,b)=>a+(Number(b.baselineQuality)||0),0)/refs.length;
+  const factor=kind==='PARTY_PROXY'?.68:.52,ceiling=kind==='PARTY_PROXY'?64:48;
+  const quality=Math.max(20,Math.min(ceiling,Math.round(avgQuality*factor+Math.min(8,refs.length*1.5))));
+  return {personId:String(person.personId||person.id||''),name:person.name,type:person.type,party:person.party||'',jurisdiction:person.jurisdiction||'',baselineKind:kind,baselineQuality:quality,populationWeights:weightedVectorMean(refs,'populationWeights'),cohortAffinity:weightedVectorMean(refs,'cohortAffinity'),sourceState:kind==='PARTY_PROXY'?'OFFICIAL_FILE_PARTY_PROXY':'OFFICIAL_FILE_REGIONAL_PARTY_PROXY',limitedReasons:[],mappedElectionDate:electionDate||refs[0]?.mappedElectionDate||'',proxyReferenceCount:refs.length};
+}
+function applyProxyBaselines({rows=[],directPeople={},electionDate=''}={}){
+  const byId=Object.fromEntries(rows.map(row=>[String(row.personId||''),{...row}]));
+  for(const [id,row] of Object.entries(directPeople||{}))if(row)byId[id]={...row};
+  const all=Object.values(byId),direct=all.filter(row=>row.baselineKind==='DIRECT_CANDIDATE'&&Array.isArray(row.cohortAffinity));
+  for(const row of all){
+    if(row.baselineKind==='DIRECT_CANDIDATE')continue;
+    const party=cleanText(row.party||''),type=String(row.type||''),region=broadRegion(row.jurisdiction||'');
+    if(!party||/무소속|independent/i.test(party))continue;
+    const sameParty=direct.filter(d=>String(d.type||'')===type&&cleanText(d.party||'')===party);
+    let proxy=null;
+    if(sameParty.length>=3)proxy=proxyFromReferences(row,sameParty,'PARTY_PROXY',electionDate);
+    else{const regional=sameParty.filter(d=>broadRegion(d.jurisdiction||'')===region&&region);if(regional.length)proxy=proxyFromReferences(row,regional,'REGIONAL_PARTY_PROXY',electionDate);}
+    if(proxy)byId[row.personId]=proxy;
+  }
+  return rows.map(row=>byId[String(row.personId||'')]||row);
+}
+function baselineRank(kind){return {LIMITED:0,REGIONAL_PARTY_PROXY:1,PARTY_PROXY:2,DIRECT_CANDIDATE:3}[String(kind||'')]??0;}
+function mergeBaselineRows({roster=rosterLib.allPeople(),previousPeople={},incomingPeople={}}={}){
+  const registry=registryRows(roster),out=[];
+  for(const base of registry){const id=String(base.personId),prev=previousPeople?.[id],incoming=incomingPeople?.[id];let chosen=prev?{...base,...prev}:base;if(incoming){const ir=baselineRank(incoming.baselineKind),pr=baselineRank(chosen.baselineKind);if(ir===3||ir>=pr)chosen={...base,...incoming};}out.push(chosen);}
+  return out;
+}
+
+function sha256(bytes){return crypto.createHash('sha256').update(bytes).digest('hex');}
+function buildManifest({rosterTotal=0,baselineRows=[],sources=[],unresolved=[]}={}){
+  const count=k=>baselineRows.filter(x=>x.baselineKind===k).length;const directCount=count('DIRECT_CANDIDATE'),partyProxyCount=count('PARTY_PROXY'),regionalPartyProxyCount=count('REGIONAL_PARTY_PROXY'),limitedCount=count('LIMITED');
+  return {schemaVersion:2,baselineVersion:BASELINE_VERSION,validationStatus:directCount>0?'PARTIAL_OFFICIAL_BASELINE':'BASELINE_INGESTION_REQUIRED',trustedBaselineReady:directCount>0,generatedAt:new Date().toISOString(),rosterTotal:Number(rosterTotal)||baselineRows.length,directCount,partyProxyCount,regionalPartyProxyCount,limitedCount,unresolvedMappingRows:unresolved.length,sourceAuthorities:[...new Set(sources.map(s=>String(s.authority||'')).filter(Boolean))],sourceFiles:sources.map(s=>({authority:String(s.authority||''),title:String(s.title||''),date:String(s.date||''),url:String(s.url||''),sha256:sha256(s.bytes||Buffer.alloc(0)),bytes:Number((s.bytes||Buffer.alloc(0)).length)||0})),cohortOrder:[...COHORT_KEYS]};
+}
+function registryRows(roster=rosterLib.allPeople()){return roster.map(p=>({personId:p.id,name:p.name,type:p.type,party:p.party,jurisdiction:p.jurisdiction,baselineKind:'LIMITED',baselineQuality:0,populationWeights:Array(12).fill(null),cohortAffinity:Array(12).fill(null),sourceState:'REGISTRY_ONLY',limitedReasons:['TRUSTED_OFFICIAL_BASELINE_NOT_INGESTED']}));}
+function writeRegistry(outDir=path.join(__dirname,'../data')){const rows=registryRows(),people=Object.fromEntries(rows.map(x=>[x.personId,x]));const baseline={schemaVersion:2,baselineVersion:BASELINE_VERSION,cohortOrder:[...COHORT_KEYS],generatedAt:new Date().toISOString(),people};const baselinePath=path.join(outDir,'age-gender-baseline-v2.json');fs.writeFileSync(baselinePath,JSON.stringify(baseline));const bytes=fs.readFileSync(baselinePath);const manifest={...buildManifest({rosterTotal:rows.length,baselineRows:rows}),baselineSha256:sha256(bytes)};fs.writeFileSync(path.join(outDir,'age-gender-baseline-v2-manifest.json'),JSON.stringify(manifest,null,2));return {baselinePath,manifest};}
+
+if(require.main===module){
+  const args=process.argv.slice(2),value=flag=>{const i=args.indexOf(flag);return i>=0?args[i+1]:null;};
+  const out=value('--out-dir')?path.resolve(value('--out-dir')):path.join(__dirname,'../data');fs.mkdirSync(out,{recursive:true});
+  if(args.includes('--registry-only')){const r=writeRegistry(out);process.stdout.write(JSON.stringify({ok:true,mode:'registry-only',...r.manifest},null,2)+'\n');}
+  else if(value('--election')&&value('--population')){
+    const electionPath=path.resolve(value('--election')),populationPath=path.resolve(value('--population'));const electionBytes=fs.readFileSync(electionPath),populationBytes=fs.readFileSync(populationPath);
+    const crosswalkPath=value('--crosswalk')?path.resolve(value('--crosswalk')):path.join(__dirname,'../data/age-gender-crosswalk-v2.json');const crosswalk=fs.existsSync(crosswalkPath)?JSON.parse(fs.readFileSync(crosswalkPath,'utf8')):{overrides:{}};const roster=rosterLib.allPeople();
+    const built=buildDirectBaselines({electionRows:parseCsv(electionBytes),populationRows:parseCsv(populationBytes),roster,overrides:crosswalk.overrides||{},electionDate:value('--election-date')||''});const existingPath=path.join(out,'age-gender-baseline-v2.json');let previousPeople={};if(!args.includes('--replace')&&fs.existsSync(existingPath)){try{const previous=JSON.parse(fs.readFileSync(existingPath,'utf8'));if(previous?.baselineVersion===BASELINE_VERSION&&previous?.people)previousPeople=previous.people;}catch{}}const mergedRows=mergeBaselineRows({roster,previousPeople,incomingPeople:built.people});const baseRows=applyProxyBaselines({rows:mergedRows,directPeople:Object.fromEntries(mergedRows.filter(x=>x.baselineKind==='DIRECT_CANDIDATE').map(x=>[x.personId,x])),electionDate:value('--election-date')||''});const people=Object.fromEntries(baseRows.map(x=>[x.personId,x]));
+    const baseline={schemaVersion:2,baselineVersion:BASELINE_VERSION,cohortOrder:[...COHORT_KEYS],generatedAt:new Date().toISOString(),people};const baselinePath=path.join(out,'age-gender-baseline-v2.json');fs.writeFileSync(baselinePath,JSON.stringify(baseline));const manifest={...buildManifest({rosterTotal:baseRows.length,baselineRows:baseRows,sources:[{authority:value('--authority')||'OFFICIAL_PUBLIC_DATA',title:path.basename(electionPath),date:value('--election-date')||'',url:value('--source-url')||'',bytes:electionBytes},{authority:value('--population-authority')||'OFFICIAL_POPULATION_DATA',title:path.basename(populationPath),date:value('--population-date')||'',url:value('--population-url')||'',bytes:populationBytes}],unresolved:built.unresolved}),baselineSha256:sha256(fs.readFileSync(baselinePath)),unresolved:built.unresolved.slice(0,500)};fs.writeFileSync(path.join(out,'age-gender-baseline-v2-manifest.json'),JSON.stringify(manifest,null,2));process.stdout.write(JSON.stringify({ok:true,mode:'official-files',...manifest},null,2)+'\n');
+  } else {process.stderr.write('Usage: --registry-only OR --election FILE --population FILE [--election-date YYYY-MM-DD] [--out-dir DIR]\n');process.exitCode=2;}
+}
+
+module.exports={COHORT_KEYS,parseCsv,aggregatePopulationRow,resolveRosterPerson,buildManifest,registryRows,writeRegistry,fitEcologicalAffinity,buildDirectBaselines,applyProxyBaselines,mergeBaselineRows,_internals:{ageFromHeader,sexFromHeader,cohortIndex,overrideKey,normalizeToken,cleanNum,populationUnitName,electionUnitName,vectorNormalizeCounts,broadRegion,weightedVectorMean,proxyFromReferences}};
