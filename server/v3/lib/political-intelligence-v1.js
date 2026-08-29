@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION='JCS_POLITICAL_INTELLIGENCE_V1_1';
+const VERSION='JCS_POLITICAL_INTELLIGENCE_V1_2';
 const NEGATIVE_TERMS=['사퇴','사임','내려놓','탈당','논란','수사','기소','구속','폭로','갈등','비판','사과','패배','낙선','해임','불출마','의혹','충격','반발','파문'];
 const POSITIVE_TERMS=['출마','선언','승리','영입','합류','지지','공약','정책','개혁','성과','회복','상승','확대','돌파','협력'];
 const DIGITAL_TERMS=['유튜브','youtube','sns','커뮤니티','온라인','영상','숏폼','실시간','단독','폭로','논란','충격','긴급'];
@@ -10,34 +10,35 @@ const AGE_TERMS={
   age60plus:['60대','70대','고령','노인','연금','의료','복지','안보','보훈','농업','기초연금']
 };
 
-function finite(v,fallback=0){const n=Number(v);return Number.isFinite(n)?n:fallback;}
+function numeric(v){if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+function finite(v,fallback=0){const n=numeric(v);return n===null?fallback:n;}
 function clamp(v,min,max){return Math.max(min,Math.min(max,finite(v)));}
 function axis(v){return Math.round(clamp(v,-50,50));}
 function pct(v,max=20){return Math.round(clamp(v,0,max)*10)/10;}
 function score(v){return Math.round(clamp(v,0,100));}
-function avg(values=[]){const nums=values.map(Number).filter(Number.isFinite);return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;}
+function avg(values=[]){const nums=values.map(numeric).filter(v=>v!==null);return nums.length?nums.reduce((a,b)=>a+b,0)/nums.length:0;}
 function text(value=''){return String(value||'').toLowerCase();}
 function termHits(value,terms=[]){const s=text(value);return terms.reduce((n,term)=>n+(s.includes(String(term).toLowerCase())?1:0),0);}
 function headlineRows(view={}){return Array.isArray(view?.row?.news?.headlines)?view.row.news.headlines.slice(0,12):[];}
-function scoreAxis(value){return axis(finite(value)-50);}
+function scoreAxis(value){const n=numeric(value);return n===null?0:axis(n-50);}
 function delta(summary,key){const n=Number(summary?.coreDeltas?.[key]);return Number.isFinite(n)?n:0;}
 function evidenceAffinity(evidence={},key){const d=evidence?.demographic||null;if(!d)return 0;const values=['age2030','age4050','age60plus'].map(k=>finite(d[k],NaN)).filter(Number.isFinite);if(!values.length)return 0;const target=finite(d[key],avg(values));const mean=avg(values);const spread=Math.max(4,Math.max(...values)-Math.min(...values));return clamp((target-mean)/spread,-1,1);}
 function historyVolatility(history={}){
   const rows=Array.isArray(history.observations)?history.observations:[];
-  const vals=rows.map(x=>Number(x?.intelligence?.scores?.overallInterest)).filter(Number.isFinite);
+  const vals=rows.map(x=>numeric(x?.intelligence?.scores?.overallInterest)).filter(v=>v!==null);
   if(vals.length<2)return 0;
   const ds=[];for(let i=1;i<vals.length;i++)ds.push(vals[i]-vals[i-1]);
   return avg(ds.map(Math.abs));
 }
 function historyRecoveryDays(history={}){
-  const rows=(Array.isArray(history.observations)?history.observations:[]).filter(x=>Number.isFinite(Number(x?.intelligence?.scores?.overallInterest)));
+  const rows=(Array.isArray(history.observations)?history.observations:[]).filter(x=>numeric(x?.intelligence?.scores?.overallInterest)!==null);
   if(rows.length<3)return null;
   let best=null;
   for(let i=1;i<rows.length-1;i++){
-    const before=Number(rows[i-1].intelligence.scores.overallInterest),low=Number(rows[i].intelligence.scores.overallInterest);
+    const before=numeric(rows[i-1].intelligence.scores.overallInterest),low=numeric(rows[i].intelligence.scores.overallInterest);
     if(before-low<8)continue;
     for(let j=i+1;j<rows.length;j++){
-      const value=Number(rows[j].intelligence.scores.overallInterest);
+      const value=numeric(rows[j].intelligence.scores.overallInterest);
       if(value>=before*.9){const days=Math.max(0,(Date.parse(rows[j].publishedAt)-Date.parse(rows[i].publishedAt))/86400000);if(Number.isFinite(days))best=best===null?days:Math.min(best,days);break;}
     }
   }
@@ -61,6 +62,29 @@ function classifyHeadline(row={},base={}){
   else if(/출마|선언|영입|합류/.test(title))category='MOBILIZATION';
   else if(/정책|공약|개혁|성과/.test(title))category='POLICY SIGNAL';
   return {title,category,negative,positive,digital,demographic,shock,opportunity,source:String(row?.source||''),ts:row?.ts||null,...base};
+}
+const CORE_SCORE_KEYS=['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread'];
+function analysisCoverage(scores={}){
+  const coreScoreCount=CORE_SCORE_KEYS.filter(key=>numeric(scores?.[key])!==null).length;
+  const totalScoreCount=Object.values(scores||{}).filter(value=>numeric(value)!==null).length;
+  return {state:coreScoreCount>=3?'VALID':'INSUFFICIENT_DATA',coreScoreCount,totalScoreCount,requiredCoreScoreCount:3};
+}
+function evidencePayload(evidence={},externalCount=0){
+  return {basis:externalCount?'JCS 현재 관측 + HISTORY + 외부기관 공개 근거':'JCS 현재 관측 + HISTORY 기반 추정',external:(evidence?.sources||[]).map(x=>({fingerprint:x.fingerprint||'',observedAt:x.observedAt,collectedAt:x.collectedAt||x.ingestedAt||null,institution:x.institution,sourceType:x.sourceType,origin:x.origin||'',relationship:x.relationship||'',title:x.title,url:x.url,note:String(x.note||'').slice(0,600),values:x.values&&typeof x.values==='object'?{...x.values}:null}))};
+}
+function insufficientPoliticalIntelligence({view={},history={},evidence={},asOf,coverage}){
+  const observedDays=Number(history?.summary?.dailySampleSize??history?.daily?.length??0)||0;
+  const externalCount=Array.isArray(evidence?.sources)?evidence.sources.length:0;
+  return {
+    version:VERSION,asOf,validity:{...coverage,reason:'CORE_ANALYSIS_INPUT_REQUIRED'},
+    diagnosis:{label:'INSUFFICIENT DATA · 현재 분석 입력 축적 중',condition:null},
+    support:{ageMomentum:{age2030:null,age4050:null,age60plus:null},coreAttritionPct:null,newSupportInflowPct:null,quality:{core:null,active:null,soft:null,floating:null}},
+    media:{momentum:{news:null,youtube:null,sns:null,community:null},persistence:'INSUFFICIENT_DATA',burst:null,breadth:null},
+    issueImpacts:[],riskOpportunity:{risks:['현재 분석 입력이 충분하지 않아 위험 신호를 확정하지 않습니다.'],opportunities:['추가 관측 후 확장 신호를 판정합니다.']},
+    resilience:{score:null,recoveryDays:null,volatility:null},attentionSupportGap:{attention:null,support:null,gap:null,label:'관측 부족'},competitorFlow:[],
+    strategicSolution:{basisDiagnosis:'INSUFFICIENT DATA',priorities:[],conclusion:'분석 입력이 충분해진 뒤 우선 대응방향을 제시합니다.'},
+    confidence:{score:null,observedDays,externalEvidenceCount:externalCount,label:'INSUFFICIENT'},evidence:evidencePayload(evidence,externalCount)
+  };
 }
 function currentSignals(view={},history={}){
   const s=view?.analysis?.scores||{},summary=history?.summary||{};
@@ -95,6 +119,8 @@ function deriveStrategicSolution({diagnosis={},ageMomentum={},coreAttritionPct=0
   return {basisDiagnosis:String(diagnosis?.label||''),priorities,conclusion:`현재 가장 중요한 것은 ${focusText}입니다. 구체적인 실행전략은 정치적 환경과 대상별 상황을 함께 고려하여 설계되어야 합니다.`};
 }
 function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],demographic:null},asOf=new Date().toISOString()}={}){
+  const coverage=analysisCoverage(view?.analysis?.scores||{});
+  if(coverage.state!=='VALID')return insufficientPoliticalIntelligence({view,history,evidence,asOf,coverage});
   const sig=currentSignals(view,history),headlines=headlineRows(view).map(h=>classifyHeadline(h));
   const shock=avg(headlines.slice(0,5).map(x=>x.shock)),opportunity=avg(headlines.slice(0,5).map(x=>x.opportunity)),digitalHits=headlines.slice(0,8).reduce((n,x)=>n+x.digital,0);
   const digitalPressure=clamp(scoreAxis(sig.s.mobileResponse)*.55+scoreAxis(sig.s.issueExplosiveness)*.45+digitalHits*2,-50,50);
@@ -108,9 +134,9 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
   const coreAttritionPct=pct(coreWeakness*.18+Math.max(0,-sig.engagementTrend)*.11+Math.max(0,-sig.rankDelta)*.07,20);
   const newSupportInflowPct=pct(Math.max(0,sig.massTrend)*.08+Math.max(0,scoreAxis(sig.s.audienceExpansion))*.06+opportunity*.08+Math.max(0,sig.rankDelta)*.04,20);
   const quality=normalizeQuality([
-    18+finite(sig.s.coreRetention)*.32-coreAttritionPct*1.4,
-    20+finite(sig.s.highEngagement)*.30+Math.max(0,sig.engagementTrend)*.6,
-    20+finite(sig.s.massExpansion)*.23+newSupportInflowPct*1.1,
+    18+finite(sig.s.coreRetention,50)*.32-coreAttritionPct*1.4,
+    20+finite(sig.s.highEngagement,50)*.30+Math.max(0,sig.engagementTrend)*.6,
+    20+finite(sig.s.massExpansion,50)*.23+newSupportInflowPct*1.1,
     16+(100-finite(sig.s.coreRetention,50))*.18+historyVolatility(history)*1.2
   ]);
   const newsMomentum=axis(scoreAxis(sig.s.newsAcceleration)*.55+sig.mediaTrend*.6+sig.issueTrend*.25);
@@ -166,7 +192,7 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
   const diagnosisObject={label:diagnosis,condition:axis((supportComposite+sig.attention)/2)};
   const strategicSolution=deriveStrategicSolution({diagnosis:diagnosisObject,ageMomentum,coreAttritionPct,newSupportInflowPct,media,attentionSupportGap:{attention:sig.attention,support:supportComposite,gap:attentionSupportGap},resilience:{score:resilienceScore,recoveryDays,volatility:Math.round(volatility*10)/10}});
   return {
-    version:VERSION,asOf,
+    version:VERSION,asOf,validity:coverage,
     diagnosis:diagnosisObject,
     support:{ageMomentum,coreAttritionPct,newSupportInflowPct,quality},
     media,
@@ -177,8 +203,8 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
     competitorFlow,
     strategicSolution,
     confidence:{score:confidenceScore,observedDays,externalEvidenceCount:externalCount,label:confidenceScore>=75?'HIGH':confidenceScore>=55?'MEDIUM':'LOW'},
-    evidence:{basis:externalCount?'JCS 현재 관측 + HISTORY + 외부기관 공개 근거':'JCS 현재 관측 + HISTORY 기반 추정',external:(evidence?.sources||[]).map(x=>({fingerprint:x.fingerprint||'',observedAt:x.observedAt,collectedAt:x.collectedAt||x.ingestedAt||null,institution:x.institution,sourceType:x.sourceType,origin:x.origin||'',relationship:x.relationship||'',title:x.title,url:x.url,note:String(x.note||'').slice(0,600),values:x.values&&typeof x.values==='object'?{...x.values}:null}))}
+    evidence:evidencePayload(evidence,externalCount)
   };
 }
 
-module.exports={VERSION,derivePoliticalIntelligenceV1,_internals:{axis,classifyHeadline,normalizeQuality,historyRecoveryDays,deriveStrategicSolution}};
+module.exports={VERSION,derivePoliticalIntelligenceV1,_internals:{axis,classifyHeadline,normalizeQuality,historyVolatility,historyRecoveryDays,deriveStrategicSolution}};

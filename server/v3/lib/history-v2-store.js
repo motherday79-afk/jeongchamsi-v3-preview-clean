@@ -2,7 +2,7 @@ const redis=require('../../../lib/v3/redis');
 const rosterLib=require('./politician-live-roster');
 const signals=require('./now-public-signals');
 const {getPoliticalIntelligenceEvidence}=require('../data/political-intelligence-evidence');
-const {derivePoliticalIntelligenceV1}=require('./political-intelligence-v1');
+const {derivePoliticalIntelligenceV1,VERSION:POLITICAL_INTELLIGENCE_VERSION}=require('./political-intelligence-v1');
 const {readPoliticalIntelligenceSnapshotPersonV1,readLatestPoliticalIntelligenceSnapshotPersonV1}=require('./political-intelligence-store');
 const {mergeLegacyObservations}=require('./history-core');
 const {
@@ -125,10 +125,11 @@ function createHistoryV2Store(overrides={}){
 
   async function readPoliticalIntelligenceV2(personId,personHistory=null){
     const id=String(personId||'').trim();if(!id)return null;
+    const compatible=row=>row&&String(row.version||'')===POLITICAL_INTELLIGENCE_VERSION;
+    try{const latestFrozen=await deps.readLatestPoliticalIntelligenceSnapshotPersonV1(id);if(compatible(latestFrozen))return latestFrozen;}catch{}
     const current=await deps.getJSON('nowDataCurrent');
     if(!current?.draftId||!Array.isArray(current?.ranked)||!current.ranked.length)return null;
-    try{const latestFrozen=await deps.readLatestPoliticalIntelligenceSnapshotPersonV1(id);if(latestFrozen)return latestFrozen;}catch{}
-    try{const frozen=await deps.readPoliticalIntelligenceSnapshotPersonV1(current.draftId,id);if(frozen)return frozen;}catch{}
+    try{const frozen=await deps.readPoliticalIntelligenceSnapshotPersonV1(current.draftId,id);if(compatible(frozen))return frozen;}catch{}
     const legacyHistory=(await deps.getJSON('nowDataHistory'))||{items:[]};
     const view=deps.derivePersonView(current,legacyHistory,id);if(!view?.row)return null;
     const history=personHistory||await readPersonHistoryV2(id,{days:30,limit:365});

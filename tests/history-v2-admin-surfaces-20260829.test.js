@@ -17,7 +17,9 @@ test('HISTORY browser requests live in a separate repository module while public
 
 test('politician detail requests HISTORY only behind an admin-session guard',()=>{
   const s=read('src/views/people.js');
-  assert.match(s,/isAdmin\s*\?\s*getAdminHistoryPerson/);
+  assert.match(s,/isAdmin\?adminPersonIntelligenceSlot\(p\):""/);
+  assert.match(s,/hydratePersonAdminIntelligence/);
+  assert.match(s,/getAdminHistoryPersonDetail/);
   assert.match(s,/HISTORY INTELLIGENCE/);
   assert.match(s,/INTERNAL_ADMIN/);
 });

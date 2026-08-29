@@ -29,7 +29,7 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
     const view = await import("./views/boards.js");
     const domain = p[0] === "column" ? "columns" : p[0];
@@ -169,6 +169,13 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
     requestAnimationFrame(() => {
       import("./views/home.js?v=03683-history-v2-main-perf-app-return")
         .then(mod => mod.hydrateHomeAdminHistory?.())
+        .catch(() => {});
+    });
+  }
+  if (app.querySelector("[data-person-admin-intelligence-slot]")) {
+    requestAnimationFrame(() => {
+      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1")
+        .then(mod => mod.hydratePersonAdminIntelligence?.())
         .catch(() => {});
     });
   }

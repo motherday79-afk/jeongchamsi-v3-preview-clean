@@ -17,9 +17,15 @@ module.exports=async function historyAdmin(req,res){
     if(req.method==='GET'){
       const summary=String(req.query?.summary||'').trim();
       if(summary==='home')return res.status(200).json({ok:true,...await historyHomeSummaryV2()});
-      const overview=await historyOverviewV2();
-      const personId=String(req.query?.personId||'').trim();
+      const personId=String(req.query?.personId||'').trim(),view=String(req.query?.view||'').trim();
       const range=String(req.query?.range||req.query?.days||'30');
+      if(view==='detail'&&personId){
+        const person=await readPersonHistoryV2(personId,{days:range==='all'?'all':Number(range)||30,limit:320});
+        const politicalIntelligence=await readPoliticalIntelligenceV2(personId,person);
+        const compactPerson={...person,observations:(person.observations||[]).slice(-3),daily:[],events:[]};
+        return res.status(200).json({ok:true,personId,person:compactPerson,politicalIntelligence});
+      }
+      const overview=await historyOverviewV2();
       const person=personId?await readPersonHistoryV2(personId,{days:range==='all'?'all':Number(range)||30,limit:730}):null;
       const politicalIntelligence=personId?await readPoliticalIntelligenceV2(personId,person):null;
       return res.status(200).json({ok:true,...overview,personId:personId||null,person,politicalIntelligence});

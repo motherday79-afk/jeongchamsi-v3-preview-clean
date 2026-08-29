@@ -44,6 +44,7 @@ function sourceSummary(bundle={}){return {
 
 function createPoliticalIntelligenceStore(overrides={}){
   const deps={command:redis.command,derivePersonView,derivePoliticalIntelligenceV1,getPoliticalIntelligenceEvidence,...overrides};
+  let latestCacheDraftId='',latestCacheSnapshot=null;
 
   async function recordPoliticalIntelligenceSnapshotV1({current={},legacyHistory={items:[]},personViews=[],evidenceBundle={records:[]}}={}){
     const draftId=String(current?.draftId||'').trim(),publishedAt=current?.publishedAt||null;
@@ -67,7 +68,11 @@ function createPoliticalIntelligenceStore(overrides={}){
 
   async function readPoliticalIntelligenceSnapshotV1(draftId){const id=String(draftId||'').trim();if(!id)return null;return decodeSnapshot(await deps.command(['GET',snapshotKey(id)]));}
   async function readPoliticalIntelligenceSnapshotPersonV1(draftId,personId){const snap=await readPoliticalIntelligenceSnapshotV1(draftId);return snap?.people?.[String(personId||'')]||null;}
-  async function readLatestPoliticalIntelligenceSnapshotPersonV1(personId){const ids=await deps.command(['ZREVRANGE',INDEX_KEY,0,0]);const draftId=Array.isArray(ids)?ids[0]||'':'';return draftId?readPoliticalIntelligenceSnapshotPersonV1(draftId,personId):null;}
+  async function readLatestPoliticalIntelligenceSnapshotPersonV1(personId){
+    const ids=await deps.command(['ZREVRANGE',INDEX_KEY,0,0]),draftId=Array.isArray(ids)?ids[0]||'':'';if(!draftId)return null;
+    if(draftId!==latestCacheDraftId||!latestCacheSnapshot){latestCacheSnapshot=await readPoliticalIntelligenceSnapshotV1(draftId);latestCacheDraftId=draftId;}
+    return latestCacheSnapshot?.people?.[String(personId||'')]||null;
+  }
 
   return {recordPoliticalIntelligenceSnapshotV1,readPoliticalIntelligenceSnapshotV1,readPoliticalIntelligenceSnapshotPersonV1,readLatestPoliticalIntelligenceSnapshotPersonV1,_deps:deps};
 }

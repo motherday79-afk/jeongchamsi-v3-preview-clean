@@ -120,7 +120,7 @@ test('temporary external evidence is included in safe NOW draft cleanup',()=>{
 test('admin person Political Intelligence reads latest frozen refresh snapshot first and uses live derivation only as fallback',async()=>{
   const {createHistoryV2Store}=require('../server/v3/lib/history-v2-store');
   let liveDerives=0;
-  const frozen={version:'JCS_POLITICAL_INTELLIGENCE_V1',asOf:'frozen'};
+  const frozen={version:'JCS_POLITICAL_INTELLIGENCE_V1_2',validity:{state:'VALID'},asOf:'frozen'};
   const store=createHistoryV2Store({
     getJSON:async key=>key==='nowDataCurrent'?{draftId:'now-x',publishedAt:'2026-08-29T12:00:00.000Z',ranked:[{person:{id:'assembly-023'}}]}:{items:[]},
     readLatestPoliticalIntelligenceSnapshotPersonV1:async id=>id==='assembly-023'?frozen:null,

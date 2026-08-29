@@ -59,7 +59,7 @@ test('Political Intelligence V1 derives bounded admin estimates and transparent 
   const {derivePoliticalIntelligenceV1}=require('../server/v3/lib/political-intelligence-v1');
   const evidence=require('../server/v3/data/political-intelligence-evidence').getPoliticalIntelligenceEvidence('assembly-023',{asOf:'2026-08-29T00:00:00.000Z'});
   const result=derivePoliticalIntelligenceV1({view:sampleView(),history:sampleHistory,evidence,asOf:'2026-08-29T00:00:00.000Z'});
-  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1_1');
+  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1_2');
   for(const value of Object.values(result.support.ageMomentum))assert.ok(value>=-50&&value<=50);
   for(const key of ['news','youtube','sns','community'])assert.ok(result.media.momentum[key]>=-50&&result.media.momentum[key]<=50);
   assert.ok(result.support.coreAttritionPct>=0&&result.support.coreAttritionPct<=20);
@@ -112,7 +112,8 @@ test('admin politician detail renders the approved English intelligence sections
     ['JCS STRATEGIC CONCLUSION','전략적 결론']
   ];
   for(const [en,ko] of labels){assert.ok(source.includes(en),en);assert.ok(source.includes(ko),ko);}
-  assert.match(source,/isAdmin\?adminPoliticalIntelligence\(history,p\):""/);
+  assert.match(source,/isAdmin\?adminPersonIntelligenceSlot\(p\):""/);
+  assert.match(source,/hydratePersonAdminIntelligence/);
   assert.match(source,/JCS EST\./);
   assert.match(source,/SEARCH ENGINE · NEWS PORTAL · JCS HISTORY/);
   assert.match(source,/LEADING EXTERNAL INSTITUTIONS/);
