@@ -117,6 +117,17 @@
 .article-body{min-height:260px;font-size:16px;line-height:1.9;white-space:normal;overflow-wrap:anywhere}
 .article-body p{margin:0 0 1.15em}
 .article-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:24px;padding-top:16px;border-top:1px solid #edf1ef}
+.content-share-panel{margin-top:28px;padding:15px 16px;border:1px solid #e1e9e6;border-radius:14px;background:#f8fbfa}
+.content-share-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.content-share-head>div span{display:block;color:#18382f;font-size:11px;font-weight:950;letter-spacing:.08em}
+.content-share-head>div small{display:block;margin-top:3px;color:#70807a;font-size:11px}
+.content-share-head p{margin:0;color:#7a8883;font-size:11px;text-align:right}
+.content-share-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.content-share-button{min-height:40px;padding:0 14px;border:1px solid #d9e4e0;border-radius:10px;background:#fff;color:#203a32;font:inherit;font-size:12px;font-weight:850;cursor:pointer}
+.content-share-button:hover{border-color:#9fc5ba;background:#f2f8f6}
+.content-share-button:disabled{opacity:.55;cursor:wait}
+.content-share-state{min-height:16px;margin-top:7px;color:#397363;font-size:11px;font-weight:750}
+@media(max-width:640px){.content-share-head{display:block}.content-share-head p{margin-top:5px;text-align:left}.content-share-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.content-share-button{width:100%;min-height:44px}}
 
 /* ---------- polls / academy / existing features ---------- */
 .poll-page-list{display:grid;gap:12px}

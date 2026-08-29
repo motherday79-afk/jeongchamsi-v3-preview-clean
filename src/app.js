@@ -29,9 +29,9 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
-    const view = await import("./views/boards.js");
+    const view = await import("./views/boards.js?v=jcs-share-v1");
     const domain = p[0] === "column" ? "columns" : p[0];
     if (p[1] === "write") return view.renderBoardWriter(domain, state.search);
     return p[1] ? view.renderBoardDetail(domain, p[1]) : view.renderBoard(domain, state.search);
@@ -42,7 +42,7 @@ async function resolveView(state) {
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03686");
+  const view = await import("./views/features.js?v=03686-jcs-share-v1");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -174,7 +174,7 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
   }
   if (app.querySelector("[data-person-admin-intelligence-slot]")) {
     requestAnimationFrame(() => {
-      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1")
+      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1")
         .then(mod => mod.hydratePersonAdminIntelligence?.())
         .catch(() => {});
     });
@@ -316,6 +316,27 @@ document.addEventListener("click", async event => {
     if (!r?.ok) {
       nowMore.disabled = false;
       alert("정치인 목록을 더 불러오지 못했습니다");
+    }
+    return;
+  }
+  const shareButton = event.target.closest("[data-content-share]");
+  if (shareButton) {
+    const panel = shareButton.closest("[data-content-share-panel]");
+    const state = panel?.querySelector("[data-content-share-state]");
+    shareButton.disabled = true;
+    if (state) state.textContent = "";
+    try {
+      const { shareContent } = await import("./core/content-share.js?v=jcs-share-v1");
+      const result = await shareContent({
+        platform: shareButton.dataset.contentShare || "copy",
+        title: panel?.dataset.shareTitle || document.title || "정참시",
+        path: panel?.dataset.sharePath || window.location.pathname
+      });
+      if (state && !result?.cancelled) state.textContent = result?.message || (result?.ok ? "공유 작업을 완료했습니다." : "공유하지 못했습니다.");
+    } catch {
+      if (state) state.textContent = "공유 기능을 실행하지 못했습니다.";
+    } finally {
+      shareButton.disabled = false;
     }
     return;
   }

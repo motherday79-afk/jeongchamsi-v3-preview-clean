@@ -77,12 +77,12 @@ function insufficientPoliticalIntelligence({view={},history={},evidence={},asOf,
   const externalCount=Array.isArray(evidence?.sources)?evidence.sources.length:0;
   return {
     version:VERSION,asOf,validity:{...coverage,reason:'CORE_ANALYSIS_INPUT_REQUIRED'},
-    diagnosis:{label:'INSUFFICIENT DATA · 현재 분석 입력 축적 중',condition:null},
+    diagnosis:{label:'SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지',condition:null},
     support:{ageMomentum:{age2030:null,age4050:null,age60plus:null},coreAttritionPct:null,newSupportInflowPct:null,quality:{core:null,active:null,soft:null,floating:null}},
     media:{momentum:{news:null,youtube:null,sns:null,community:null},persistence:'INSUFFICIENT_DATA',burst:null,breadth:null},
     issueImpacts:[],riskOpportunity:{risks:['현재 분석 입력이 충분하지 않아 위험 신호를 확정하지 않습니다.'],opportunities:['추가 관측 후 확장 신호를 판정합니다.']},
     resilience:{score:null,recoveryDays:null,volatility:null},attentionSupportGap:{attention:null,support:null,gap:null,label:'관측 부족'},competitorFlow:[],
-    strategicSolution:{basisDiagnosis:'INSUFFICIENT DATA',priorities:[],conclusion:'분석 입력이 충분해진 뒤 우선 대응방향을 제시합니다.'},
+    strategicSolution:{basisDiagnosis:'SIGNAL CONFIDENCE LIMITED',priorities:[],conclusion:'현재 특정 신호의 신뢰도가 제한적입니다. JCS HISTORY 관측기록은 정상 유지되며, 유효신호가 기준을 충족하는 시점에 우선 대응방향을 제시합니다.'},
     confidence:{score:null,observedDays,externalEvidenceCount:externalCount,label:'INSUFFICIENT'},evidence:evidencePayload(evidence,externalCount)
   };
 }

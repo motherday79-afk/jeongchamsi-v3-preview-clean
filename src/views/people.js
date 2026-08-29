@@ -181,17 +181,17 @@ function piNumber(value){
   if(value===null||value===undefined||value==='')return null;
   const n=Number(value);return Number.isFinite(n)?n:null;
 }
-function piSigned(value){const n=piNumber(value);return n===null?'INSUFFICIENT DATA':`${n>0?'+':''}${Math.round(n)}`;}
+function piSigned(value){const n=piNumber(value);return n===null?'SIGNAL CONFIDENCE LIMITED':`${n>0?'+':''}${Math.round(n)}`;}
 function adminPiAxis(label,meaning,value){
   const raw=piNumber(value);
-  if(raw===null)return `<article class="admin-pi-axis is-insufficient"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>INSUFFICIENT DATA</strong></div><div class="admin-pi-axis-track"><i></i></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
+  if(raw===null)return `<article class="admin-pi-axis is-insufficient"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>SIGNAL CONFIDENCE LIMITED</strong></div><div class="admin-pi-axis-track"><i></i></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
   const x=Math.max(-50,Math.min(50,raw));
   const pos=x+50,intensity=axisIntensityBand(x),text=x>0?`+${Math.round(x)}`:String(Math.round(x));
   return `<article class="admin-pi-axis intensity-${intensity}"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>${text}</strong></div><div class="admin-pi-axis-track"><i></i><em style="left:${pos}%"></em></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
 }
 function adminPiMetric(label,meaning,value,suffix=""){
   const missing=value===null||value===undefined||value==='';
-  return `<article class="admin-pi-metric${missing?' is-insufficient':''}"><small>${esc(label)}</small><b>${esc(meaning)}</b><strong>${missing?'INSUFFICIENT DATA':`${esc(String(value))}${esc(suffix)}`}</strong></article>`;
+  return `<article class="admin-pi-metric${missing?' is-insufficient':''}"><small>${esc(label)}</small><b>${esc(meaning)}</b><strong>${missing?'SIGNAL CONFIDENCE LIMITED':`${esc(String(value))}${esc(suffix)}`}</strong></article>`;
 }
 function adminPiQuality(quality={}){
   const rows=[['CORE','강성',quality.core],['ACTIVE','적극',quality.active],['SOFT','약지지',quality.soft],['FLOATING','유동',quality.floating]];
@@ -217,7 +217,7 @@ function adminPoliticalIntelligence(history,p){
   const competitors=Array.isArray(pi.competitorFlow)?pi.competitorFlow:[];
   return `<section class="content-card admin-political-intelligence" data-admin-political-intelligence>
     <div class="admin-pi-hero"><div><span class="eyebrow">JCS POLITICAL INTELLIGENCE</span><h2>관리자 전용 정치 인텔리전스</h2><p>SEARCH ENGINE · NEWS PORTAL · JCS HISTORY를 포함한 LEADING EXTERNAL INSTITUTIONS의 데이터를 JCS INTELLIGENCE ENGINE으로 재해석한 분석결과입니다.</p></div><div class="admin-pi-trust"><b>JCS EST.</b><strong>${piNumber(confidence.score)===null?'—':`${Math.round(piNumber(confidence.score))}%`}</strong><small>CONFIDENCE ${esc(confidence.label||'LOW')} · ${Number(confidence.observedDays)||0} DAYS OBSERVED</small></div></div>
-    <div class="admin-pi-diagnosis"><div><span>JCS CURRENT DIAGNOSIS</span><small>현재 정치상태 진단</small></div><strong>${esc(pi.diagnosis?.label||'분석 신호를 축적 중입니다.')}</strong><em>${piSigned(pi.diagnosis?.condition)}</em></div>
+    <div class="admin-pi-diagnosis"><div><span>JCS CURRENT DIAGNOSIS</span><small>현재 정치상태 진단</small></div><strong>${esc(pi.diagnosis?.label||'SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지')}</strong><em>${piSigned(pi.diagnosis?.condition)}</em></div>
 
     <div class="admin-pi-section-head"><div><span>SUPPORT BASE MOVEMENT</span><h3>연령별 지지 흐름</h3></div><small>JCS EST. · -50 감소 / 0 중립 / +50 증가</small></div>
     <div class="admin-pi-axis-grid">${adminPiAxis('2030 SUPPORT','20·30대 지지 변화',age.age2030)}${adminPiAxis('4050 SUPPORT','40·50대 지지 변화',age.age4050)}${adminPiAxis('60+ SUPPORT','60대 이상 지지 변화',age.age60plus)}</div>

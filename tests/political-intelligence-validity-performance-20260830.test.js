@@ -56,13 +56,23 @@ test('null legacy HISTORY scores are ignored instead of being interpreted as zer
   assert.equal(_internals.historyVolatility(h),0);
 });
 
-test('admin Intelligence UI renders missing axes and metrics as INSUFFICIENT DATA instead of zero',()=>{
+test('admin Intelligence UI describes limited signal confidence without implying data collection has just begun',()=>{
   const source=read('src/views/people.js');
-  assert.match(source,/INSUFFICIENT DATA/);
+  assert.match(source,/SIGNAL CONFIDENCE LIMITED/);
+  assert.match(source,/JCS HISTORY 정상 유지/);
+  assert.doesNotMatch(source,/INSUFFICIENT DATA/);
+  assert.doesNotMatch(source,/현재 분석 입력 축적 중/);
   const axis=source.slice(source.indexOf('function adminPiAxis'),source.indexOf('function adminPiMetric'));
   assert.match(axis,/piNumber\(value\)/);
   assert.match(axis,/raw===null/);
   assert.doesNotMatch(axis,/Number\(value\)\|\|0/);
+});
+
+test('limited engine diagnosis preserves the meaning of continuing JCS HISTORY observation',()=>{
+  const source=read('server/v3/lib/political-intelligence-v1.js');
+  assert.match(source,/SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지/);
+  assert.doesNotMatch(source,/INSUFFICIENT DATA · 현재 분석 입력 축적 중/);
+  assert.doesNotMatch(source,/분석 입력이 충분해진 뒤/);
 });
 
 test('admin person detail does not block first paint on HISTORY and hydrates Intelligence after DOM commit',()=>{
