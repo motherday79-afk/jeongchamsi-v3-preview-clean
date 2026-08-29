@@ -1,23 +1,14 @@
-JCS STORAGE COMMAND BUDGET HOTFIX — 2026-08-29
+JCV3 NOW TEMP STORAGE CLEANUP HOTFIX — 2026-08-29
 
-MODIFIED RUNTIME
+ADDED
+- server/v3/lib/now-temp-cleanup.js
+- tests/now-temp-cleanup-20260829.test.js
+- NOW_TEMP_STORAGE_CLEANUP_HOTFIX_20260829.md
+- PATCH_MANIFEST.txt
+
+MODIFIED
 - lib/v3/redis.js
 - server/v3/routes/admin/now-data.js
-- src/app.js
-- src/views/admin.js
-- index.html
 
-TEST CONTRACT UPDATES
-- tests/history-integration-admin-20260829.test.js
-- tests/history-v2-integration-20260829.test.js
-
-ADDED TEST
-- tests/storage-command-budget-hotfix-20260829.test.js
-
-DOC
-- STORAGE_COMMAND_BUDGET_HOTFIX_20260829.md
-
-NO DELETIONS
-NO NEW DATABASE
-NO NEW ENVIRONMENT VARIABLE
-NO EXISTING HISTORY DATA DELETION
+DELETE
+- none

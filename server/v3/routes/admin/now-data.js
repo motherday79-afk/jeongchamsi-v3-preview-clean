@@ -6,6 +6,7 @@ const { credentials: newsCredentials, availability: newsAvailability } = require
 const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resultState, compactRankRow } = require('../../lib/now-data-engine');
 const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots, mergePersonTrend } = require('../../lib/now-public-snapshot');
 const { recordPublishedSnapshotV2 } = require('../../lib/history-v2-store');
+const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -80,8 +81,9 @@ module.exports=async function nowDataAdmin(req,res){
       const configured=configState();if(configured.missingEnv.length)return res.status(409).json({ok:false,error:'NAVER_CONFIG_REQUIRED',missingEnv:configured.missingEnv,missingGroups:configured.missingGroups,configured:{searchAds:configured.searchAds,news:configured.news,newsNaver:configured.newsNaver},newsProvider:configured.newsProvider});
       const people=allPeople(),ids=people.map(x=>x.id),batches=makeBatches(ids,10),w=weights(req.body),draftId=`now-${Date.now().toString(36)}`;
       const meta={draftId,status:'collecting',total:ids.length,batchSize:10,batchCount:batches.length,batches,weights:w,newsProvider:configured.newsProvider,startedAt:new Date().toISOString(),createdBy:admin.id};
+      const tempCleanup=await cleanupAllNowTemp();
       await setJSON(META,meta);
-      return res.status(200).json({ok:true,draftId,batchCount:batches.length,batchSize:10,total:ids.length,weights:w,performance:{browserWorkers:2,serverConcurrency:5}});
+      return res.status(200).json({ok:true,draftId,batchCount:batches.length,batchSize:10,total:ids.length,weights:w,tempCleanup,performance:{browserWorkers:2,serverConcurrency:5}});
     }
     let meta=await getJSON(META);if(!meta||String(req.body?.draftId||'')!==meta.draftId)return res.status(409).json({ok:false,error:'NOW_DRAFT_MISMATCH'});
     meta=await migrateLegacyMeta(meta);
@@ -128,7 +130,9 @@ module.exports=async function nowDataAdmin(req,res){
       const historyWarnings=[];
       // HISTORY V1 remains readable as a legacy layer. New formal publish snapshots are recorded only in V2.
       try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}
-      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings});
+      let tempCleanup={matched:0,deleted:0};
+      try{tempCleanup=await cleanupDraftNowTemp(meta.draftId,meta.batchCount);}catch(cleanupError){console.error('[NOW_TEMP_CLEANUP_NON_BLOCKING]',cleanupError);historyWarnings.push('NOW_TEMP_CLEANUP_FAILED');}
+      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,tempCleanup});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
   }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}
