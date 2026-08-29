@@ -200,7 +200,7 @@ function adminPoliticalIntelligence(history,p){
   const persistenceKo={FLASH:'단기 폭발',BUILDING:'확산 형성',SUSTAINED:'지속 흐름',COOLING:'확산 둔화',STABLE:'안정'}[media.persistence]||'분석 중';
   const competitors=Array.isArray(pi.competitorFlow)?pi.competitorFlow:[];
   return `<section class="content-card admin-political-intelligence" data-admin-political-intelligence>
-    <div class="admin-pi-hero"><div><span class="eyebrow">JCS POLITICAL INTELLIGENCE</span><h2>관리자 전용 정치 인텔리전스</h2><p>외부 공개 근거 · 현재 검색/뉴스 · HISTORY를 JCS 방식으로 재해석한 내부 분석입니다.</p></div><div class="admin-pi-trust"><b>JCS EST.</b><strong>${Number(confidence.score)||0}%</strong><small>CONFIDENCE ${esc(confidence.label||'LOW')} · ${Number(confidence.observedDays)||0} DAYS OBSERVED</small></div></div>
+    <div class="admin-pi-hero"><div><span class="eyebrow">JCS POLITICAL INTELLIGENCE</span><h2>관리자 전용 정치 인텔리전스</h2><p>SEARCH ENGINE · NEWS PORTAL · JCS HISTORY를 포함한 LEADING EXTERNAL INSTITUTIONS의 데이터를 JCS INTELLIGENCE ENGINE으로 재해석한 분석결과입니다.</p></div><div class="admin-pi-trust"><b>JCS EST.</b><strong>${Number(confidence.score)||0}%</strong><small>CONFIDENCE ${esc(confidence.label||'LOW')} · ${Number(confidence.observedDays)||0} DAYS OBSERVED</small></div></div>
     <div class="admin-pi-diagnosis"><div><span>JCS CURRENT DIAGNOSIS</span><small>현재 정치상태 진단</small></div><strong>${esc(pi.diagnosis?.label||'분석 신호를 축적 중입니다.')}</strong><em>${Number(pi.diagnosis?.condition)>0?'+':''}${Math.round(Number(pi.diagnosis?.condition)||0)}</em></div>
 
     <div class="admin-pi-section-head"><div><span>SUPPORT BASE MOVEMENT</span><h3>연령별 지지 흐름</h3></div><small>JCS EST. · -50 감소 / 0 중립 / +50 증가</small></div>
@@ -224,7 +224,7 @@ function adminPoliticalIntelligence(history,p){
     <div class="admin-pi-two-col"><section><div class="admin-pi-section-head compact"><div><span>ATTENTION → SUPPORT GAP</span><h3>관심 대비 지지전환</h3></div></div><div class="admin-pi-gap"><span><b>ATTENTION</b><strong>${gap.attention>0?'+':''}${Number(gap.attention)||0}</strong></span><i>→</i><span><b>SUPPORT</b><strong>${gap.support>0?'+':''}${Number(gap.support)||0}</strong></span><p>${esc(gap.label||'분석 중')}</p></div></section><section><div class="admin-pi-section-head compact"><div><span>COMPETITOR FLOW</span><h3>경쟁자 이동 추정</h3></div></div><div class="admin-pi-competitors">${competitors.length?competitors.map(x=>`<p><b>${esc(x.name||x.id)}</b><span>+${Number(x.estimatedShare||0).toFixed(1)}% JCS EST.</span></p>`).join(''):`<p><b>관망·기타</b><span>경쟁자 이동 관측 대기</span></p>`}</div></section></div>
 
     <div class="admin-pi-section-head"><div><span>EVIDENCE BASE</span><h3>분석 근거</h3></div><small>${esc(pi.evidence?.basis||'JCS 현재 관측 기반')}</small></div>
-    <div class="admin-pi-evidence"><article><b>JCS INTERNAL</b><p>현재 검색 · 뉴스 · NOW · HISTORY</p></article>${external.map(x=>`<article><b>${esc(x.institution||'EXTERNAL')}</b><p>${esc(x.title||x.sourceType||'공개 근거')}</p><a href="${esc(x.url||'#')}" target="_blank" rel="noopener noreferrer">SOURCE ↗</a></article>`).join('')}</div>
+    <div class="admin-pi-evidence"><article><b>JCS DATA LAYER</b><p>SEARCH ENGINE · NEWS PORTAL · NOW · JCS HISTORY</p></article><article><b>EXTERNAL INSTITUTIONAL SIGNALS</b><p>유력 외부기관 분석근거 · EVIDENCE ${external.length} · ${external.length?'VERIFIED PUBLIC DATA':'NO MATCHED EXTERNAL EVIDENCE'}</p></article></div>
   </section>`;
 }
 

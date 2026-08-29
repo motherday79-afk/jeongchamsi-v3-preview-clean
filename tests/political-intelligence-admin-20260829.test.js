@@ -108,6 +108,16 @@ test('admin politician detail renders the approved English intelligence sections
   for(const [en,ko] of labels){assert.ok(source.includes(en),en);assert.ok(source.includes(ko),ko);}
   assert.match(source,/isAdmin\?adminPoliticalIntelligence\(history,p\):""/);
   assert.match(source,/JCS EST\./);
+  assert.match(source,/SEARCH ENGINE · NEWS PORTAL · JCS HISTORY/);
+  assert.match(source,/LEADING EXTERNAL INSTITUTIONS/);
+  assert.match(source,/JCS INTELLIGENCE ENGINE/);
+  assert.match(source,/JCS DATA LAYER/);
+  assert.match(source,/EXTERNAL INSTITUTIONAL SIGNALS/);
+  assert.match(source,/EVIDENCE \${external.length}/);
+  assert.doesNotMatch(source,/x\.institution/,'admin evidence UI must not expose institution names');
+  assert.doesNotMatch(source,/SOURCE ↗/,'admin evidence UI must not expose source links');
+  assert.match(read('src/app.js'),/people\.js\?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2/);
+  assert.match(read('index.html'),/jcs-intelligence-source-layer-v2/);
 });
 
 test('public NOW serving contracts stay isolated from Political Intelligence admin module',()=>{
