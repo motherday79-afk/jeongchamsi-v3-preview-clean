@@ -3,6 +3,7 @@ const rosterLib=require('./politician-live-roster');
 const signals=require('./now-public-signals');
 const {getPoliticalIntelligenceEvidence}=require('../data/political-intelligence-evidence');
 const {derivePoliticalIntelligenceV1}=require('./political-intelligence-v1');
+const {readPoliticalIntelligenceSnapshotPersonV1,readLatestPoliticalIntelligenceSnapshotPersonV1}=require('./political-intelligence-store');
 const {mergeLegacyObservations}=require('./history-core');
 const {
   V2_VERSIONS,V2_PREFIX,V2_ACCESS,V2_SNAPSHOT_INDEX_KEY,V2_EVENT_INDEX_KEY,
@@ -26,7 +27,7 @@ function createHistoryV2Store(overrides={}){
   const deps={
     command:redis.command,pipeline:redis.pipeline,getJSON:redis.getJSON,mgetJSON:redis.mgetJSON,mgetRawJSON:redis.mgetRawJSON,
     allPeople:rosterLib.allPeople,derivePersonView:signals.derivePersonView,
-    getPoliticalIntelligenceEvidence,derivePoliticalIntelligenceV1,
+    getPoliticalIntelligenceEvidence,derivePoliticalIntelligenceV1,readPoliticalIntelligenceSnapshotPersonV1,readLatestPoliticalIntelligenceSnapshotPersonV1,
     ...overrides
   };
 
@@ -124,12 +125,15 @@ function createHistoryV2Store(overrides={}){
 
   async function readPoliticalIntelligenceV2(personId,personHistory=null){
     const id=String(personId||'').trim();if(!id)return null;
-    const [current,legacyHistory]=await Promise.all([deps.getJSON('nowDataCurrent'),deps.getJSON('nowDataHistory')]);
+    const current=await deps.getJSON('nowDataCurrent');
     if(!current?.draftId||!Array.isArray(current?.ranked)||!current.ranked.length)return null;
-    const view=deps.derivePersonView(current,legacyHistory||{items:[]},id);if(!view?.row)return null;
+    try{const latestFrozen=await deps.readLatestPoliticalIntelligenceSnapshotPersonV1(id);if(latestFrozen)return latestFrozen;}catch{}
+    try{const frozen=await deps.readPoliticalIntelligenceSnapshotPersonV1(current.draftId,id);if(frozen)return frozen;}catch{}
+    const legacyHistory=(await deps.getJSON('nowDataHistory'))||{items:[]};
+    const view=deps.derivePersonView(current,legacyHistory,id);if(!view?.row)return null;
     const history=personHistory||await readPersonHistoryV2(id,{days:30,limit:365});
     const asOf=current?.publishedAt||new Date().toISOString();
-    const evidence=deps.getPoliticalIntelligenceEvidence(id,{asOf});
+    const evidence=deps.getPoliticalIntelligenceEvidence(id,{asOf,person:view.row.person||null});
     return deps.derivePoliticalIntelligenceV1({view,history,evidence,asOf});
   }
 

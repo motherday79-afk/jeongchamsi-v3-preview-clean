@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 
-test('NOW temp cleanup only targets batch, batch-status, and ranked workspace domains', async () => {
+test('NOW temp cleanup only targets batch, batch-status, ranked, and external-evidence workspace domains', async () => {
   const calls = [];
   const helperPath = require.resolve('../server/v3/lib/now-temp-cleanup');
   delete require.cache[helperPath];
@@ -27,15 +27,16 @@ test('NOW temp cleanup only targets batch, batch-status, and ranked workspace do
 
   const result = await cleanup.cleanupAllNowTemp();
 
-  assert.deepEqual(calls.slice(0, 3), [
+  assert.deepEqual(calls.slice(0, 4), [
     ['scan', 'nowDataBatch:*'],
     ['scan', 'nowDataBatchStatus:*'],
-    ['scan', 'nowDataDraftRanked:*']
+    ['scan', 'nowDataDraftRanked:*'],
+    ['scan', 'nowDataExternalEvidence:*']
   ]);
   const deleted = calls.find(x => x[0] === 'delete')[1];
   assert.equal(result.deleted, 4);
   assert.equal(deleted.length, 4);
-  assert.ok(deleted.every(key => /^(nowDataBatch:|nowDataBatchStatus:|nowDataDraftRanked:)/.test(key)));
+  assert.ok(deleted.every(key => /^(nowDataBatch:|nowDataBatchStatus:|nowDataDraftRanked:|nowDataExternalEvidence:)/.test(key)));
   assert.ok(deleted.every(key => !/nowData(Current|History|Public|Person)/.test(key)));
 });
 
@@ -50,7 +51,7 @@ test('publish cleanup deletes only the finished draft temporary workspace', asyn
   });
 
   const result = await cleanup.cleanupDraftNowTemp('now-abc', 3);
-  assert.equal(result.deleted, 7);
+  assert.equal(result.deleted, 8);
   assert.deepEqual(deleted, [
     'nowDataBatch:now-abc:0',
     'nowDataBatchStatus:now-abc:0',
@@ -58,7 +59,8 @@ test('publish cleanup deletes only the finished draft temporary workspace', asyn
     'nowDataBatchStatus:now-abc:1',
     'nowDataBatch:now-abc:2',
     'nowDataBatchStatus:now-abc:2',
-    'nowDataDraftRanked:now-abc'
+    'nowDataDraftRanked:now-abc',
+    'nowDataExternalEvidence:now-abc'
   ]);
 });
 

@@ -151,7 +151,7 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
     attentionSupportGap:{attention:sig.attention,support:supportComposite,gap:attentionSupportGap,label:attentionSupportGap>=15?'화제성 대비 지지전환 낮음':attentionSupportGap<=-15?'노출 대비 지지 기반 강함':'관심과 지지 신호 균형'},
     competitorFlow,
     confidence:{score:confidenceScore,observedDays,externalEvidenceCount:externalCount,label:confidenceScore>=75?'HIGH':confidenceScore>=55?'MEDIUM':'LOW'},
-    evidence:{basis:externalCount?'JCS 현재 관측 + HISTORY + 외부기관 공개 근거':'JCS 현재 관측 + HISTORY 기반 추정',external:(evidence?.sources||[]).map(x=>({observedAt:x.observedAt,institution:x.institution,sourceType:x.sourceType,title:x.title,url:x.url}))}
+    evidence:{basis:externalCount?'JCS 현재 관측 + HISTORY + 외부기관 공개 근거':'JCS 현재 관측 + HISTORY 기반 추정',external:(evidence?.sources||[]).map(x=>({fingerprint:x.fingerprint||'',observedAt:x.observedAt,collectedAt:x.collectedAt||x.ingestedAt||null,institution:x.institution,sourceType:x.sourceType,origin:x.origin||'',relationship:x.relationship||'',title:x.title,url:x.url,note:String(x.note||'').slice(0,600),values:x.values&&typeof x.values==='object'?{...x.values}:null}))}
   };
 }
 

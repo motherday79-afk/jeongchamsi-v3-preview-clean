@@ -3,7 +3,8 @@ const redis = require('../../../lib/v3/redis');
 const TEMP_PATTERNS = Object.freeze([
   'nowDataBatch:*',
   'nowDataBatchStatus:*',
-  'nowDataDraftRanked:*'
+  'nowDataDraftRanked:*',
+  'nowDataExternalEvidence:*'
 ]);
 
 function createNowTempCleanup(deps = {}) {
@@ -31,6 +32,7 @@ function createNowTempCleanup(deps = {}) {
       domains.push(`nowDataBatchStatus:${id}:${index}`);
     }
     domains.push(`nowDataDraftRanked:${id}`);
+    domains.push(`nowDataExternalEvidence:${id}`);
     const deleted = domains.length ? await deleteDomains(domains) : 0;
     return { matched: domains.length, deleted };
   }

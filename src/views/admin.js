@@ -489,7 +489,12 @@ export async function runNowDataRefresh() {
   setNowProgress(0,start.total,"JCS INTELLIGENT DATA COLLECTION IN PROGRESS");
   const queue = await runBatchQueue({draftId:start.draftId,batchIndexes:Array.from({length:start.batchCount},(_,i)=>i),total:start.total,batchSize:start.batchSize,action:"collect-batch"});
   if (!queue.ok) return queue;
-  setNowProgress(start.total,start.total,"NOW 순위 계산 중");
+  setNowProgress(start.total,start.total,"EXTERNAL EVIDENCE COLLECTION (외부 근거자료 수집)");
+  const evidence = await nowApi({ action:"collect-external-evidence", draftId:start.draftId });
+  if (!evidence.ok) return evidence;
+  const state = document.querySelector("[data-now-live-state]");
+  if (state) state.textContent = `외부근거 ${num(evidence.recordCount)}건 · 정치인 매칭 ${num(evidence.matchedPeople)}명${evidence.warnings?.length ? ` · 경고 ${num(evidence.warnings.length)}건` : ""}`;
+  setNowProgress(start.total,start.total,"NOW RANK CALCULATION (순위 계산 중)");
   return nowApi({ action:"finalize", draftId:start.draftId });
 }
 export async function retryNowDataFailures() {

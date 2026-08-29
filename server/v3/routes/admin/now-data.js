@@ -6,6 +6,8 @@ const { credentials: newsCredentials, availability: newsAvailability } = require
 const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resultState, compactRankRow } = require('../../lib/now-data-engine');
 const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots, mergePersonTrend } = require('../../lib/now-public-snapshot');
 const { recordPublishedSnapshotV2 } = require('../../lib/history-v2-store');
+const { collectExternalEvidence } = require('../../lib/external-evidence-collector');
+const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
@@ -13,6 +15,7 @@ const categoryDomain=type=>`nowDataPublicCategory:${type}`;
 const batchDomain=(draftId,index)=>`nowDataBatch:${draftId}:${index}`;
 const batchStatusDomain=(draftId,index)=>`nowDataBatchStatus:${draftId}:${index}`;
 const rankedDomain=draftId=>`nowDataDraftRanked:${draftId}`;
+const evidenceDomain=draftId=>`nowDataExternalEvidence:${draftId}`;
 
 function configState(){
   const search=searchCredentials(),news=newsCredentials(),newsState=newsAvailability(),missingEnv=[];
@@ -42,7 +45,7 @@ function publicMeta(meta,statuses=[]){
   if((meta.status==='preview'||meta.status==='published')&&!summary.completed)summary={total:meta.total,completed:meta.total,success:meta.total,partial:0,failed:0,remaining:0};
   const completed=statuses.some(Boolean)?statuses.map((x,i)=>x?i:null).filter(x=>x!==null):(meta.completedBatchIndexes||((meta.status==='preview'||meta.status==='published')?Array.from({length:meta.batchCount},(_,i)=>i):[]));
   const failed=statuses.some(Boolean)?failedBatchIndexes(statuses):(meta.failedBatchIndexes||[]);
-  return {draftId:meta.draftId,status:meta.status,total:meta.total,batchSize:meta.batchSize,batchCount:meta.batchCount,startedAt:meta.startedAt,finalizedAt:meta.finalizedAt||null,publishedAt:meta.publishedAt||null,weights:meta.weights,summary,completedBatchIndexes:completed,failedBatchIndexes:failed,top30:meta.top30||[]};
+  return {draftId:meta.draftId,status:meta.status,total:meta.total,batchSize:meta.batchSize,batchCount:meta.batchCount,startedAt:meta.startedAt,finalizedAt:meta.finalizedAt||null,publishedAt:meta.publishedAt||null,weights:meta.weights,summary,completedBatchIndexes:completed,failedBatchIndexes:failed,top30:meta.top30||[],externalEvidence:meta.externalEvidence||null,intelligenceSnapshot:meta.intelligenceSnapshot||null};
 }
 async function migrateLegacyMeta(meta){
   if(!meta||!Array.isArray(meta.ranked))return meta;
@@ -101,13 +104,36 @@ module.exports=async function nowDataAdmin(req,res){
       const summary=await saveBatchAndStatus(meta,index,old);
       return res.status(200).json({ok:true,batchIndex:index,count:retryIds.length,summary});
     }
+    if(action==='collect-external-evidence'){
+      const evidence=await collectExternalEvidence({people:allPeople()});
+      const externalEvidence={
+        status:'collected',collectedAt:evidence.collectedAt,recordCount:Number(evidence.recordCount)||0,matchedPeople:Number(evidence.matchedPeople)||0,
+        sources:(evidence.sources||[]).map(x=>({sourceId:x.sourceId,institution:x.institution,url:x.url,ok:Boolean(x.ok),records:Number(x.records)||0,elapsedMs:Number(x.elapsedMs)||0,error:x.error||''})),
+        warnings:Array.isArray(evidence.warnings)?evidence.warnings.slice(0,20):[]
+      };
+      const next={...meta,externalEvidence};
+      await msetJSON([[evidenceDomain(meta.draftId),evidence],[META,next]]);
+      return res.status(200).json({ok:true,draftId:meta.draftId,...externalEvidence});
+    }
     if(action==='finalize'){
       const batches=await loadBatches(meta);if(batches.some(x=>!x))return res.status(409).json({ok:false,error:'NOW_BATCHES_INCOMPLETE',summary:aggregateBatchSummaries(batches,meta.total)});
       const rows=batches.flatMap(x=>x.results||[]),ranked=scoreSnapshot(rows,{searchWeight:meta.weights.search,newsWeight:meta.weights.news}).map(compactRankRow),summary=aggregateBatchSummaries(batches,meta.total);
-      const statuses=await loadBatchStatuses(meta),top30=ranked.slice(0,30).map(compactPreviewRow);
-      const next={...meta,status:'preview',finalizedAt:new Date().toISOString(),top30,summary,completedBatchIndexes:Array.from({length:meta.batchCount},(_,i)=>i),failedBatchIndexes:failedBatchIndexes(statuses)};delete next.ranked;
+      const statuses=await loadBatchStatuses(meta),top30=ranked.slice(0,30).map(compactPreviewRow),finalizedAt=new Date().toISOString();
+      let next={...meta,status:'preview',finalizedAt,top30,summary,completedBatchIndexes:Array.from({length:meta.batchCount},(_,i)=>i),failedBatchIndexes:failedBatchIndexes(statuses)};delete next.ranked;
       await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
-      return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights});
+      let intelligenceSnapshot=null;const intelligenceWarnings=[];
+      try{
+        const previousHistory=compactHistory((await getJSON(HISTORY))||{items:[]});
+        const previewCurrent={schemaVersion:1,draftId:meta.draftId,publishedAt:finalizedAt,snapshotKind:'REFRESH_FINALIZE',weights:meta.weights,ranked,batchCount:meta.batchCount,batches:meta.batches,providers:['naver-search-ads',meta.newsProvider||'news-auto-fallback']};
+        const previewEntries=buildPersonPublicEntries(previewCurrent,previousHistory,Date.parse(finalizedAt));
+        const previousPersonEntries=await mgetJSON(previewEntries.map(([key])=>key));
+        const trendedPreviewEntries=previewEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
+        const evidenceBundle=(await getJSON(evidenceDomain(meta.draftId)))||{version:'JCS_EXTERNAL_EVIDENCE_V1',collectedAt:finalizedAt,records:[],sources:[],warnings:[{sourceId:'refresh',error:'EXTERNAL_EVIDENCE_NOT_COLLECTED'}],matchedPeople:0,recordCount:0};
+        intelligenceSnapshot=await recordPoliticalIntelligenceSnapshotV1({current:previewCurrent,legacyHistory:previousHistory,personViews:trendedPreviewEntries,evidenceBundle});
+        next={...next,intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0}};
+        await setJSON(META,next);
+      }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
+      return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights,intelligenceSnapshot,intelligenceWarnings});
     }
     if(action==='publish'){
       const ranked=await getJSON(rankedDomain(meta.draftId));
@@ -130,9 +156,15 @@ module.exports=async function nowDataAdmin(req,res){
       const historyWarnings=[];
       // HISTORY V1 remains readable as a legacy layer. New formal publish snapshots are recorded only in V2.
       try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}
+      let intelligenceSnapshot=null;
+      try{
+        const evidenceBundle=(await getJSON(evidenceDomain(meta.draftId)))||{version:'JCS_EXTERNAL_EVIDENCE_V1',collectedAt:publishedAt,records:[],sources:[],warnings:[{sourceId:'refresh',error:'EXTERNAL_EVIDENCE_NOT_COLLECTED'}],matchedPeople:0,recordCount:0};
+        intelligenceSnapshot=await recordPoliticalIntelligenceSnapshotV1({current,legacyHistory:previousHistory,personViews:trendedPersonEntries,evidenceBundle});
+        await setJSON(META,{...nextMeta,intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0}});
+      }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_SNAPSHOT_NON_BLOCKING]',intelligenceError);historyWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
       let tempCleanup={matched:0,deleted:0};
       try{tempCleanup=await cleanupDraftNowTemp(meta.draftId,meta.batchCount);}catch(cleanupError){console.error('[NOW_TEMP_CLEANUP_NON_BLOCKING]',cleanupError);historyWarnings.push('NOW_TEMP_CLEANUP_FAILED');}
-      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,tempCleanup});
+      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,tempCleanup});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
   }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}

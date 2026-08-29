@@ -70,6 +70,7 @@ test('Political Intelligence V1 derives bounded admin estimates and transparent 
   assert.equal(result.confidence.observedDays,2);
   assert.ok(result.issueImpacts.length>=1);
   assert.ok(result.riskOpportunity.risks.length+result.riskOpportunity.opportunities.length>=1);
+  assert.ok(result.evidence.external.some(x=>x.collectedAt&&Number(x.values?.age2030)>0),'frozen JCS judgment must retain source values and JCS collection time');
 });
 
 test('Political Intelligence does not invent external evidence when none exists',()=>{
