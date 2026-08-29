@@ -224,10 +224,8 @@ function adminPiSummaryCard(label,row,kind='value'){
   else main=`${esc(row.cohort||'—')} · ${piSigned(row.value)}`;
   return `<article><small>${esc(label)}</small><strong>${main}</strong></article>`;
 }
-function adminPiDemographicSection(pi,legacyAge={}){
-  const isV2=pi.version==='JCS_POLITICAL_INTELLIGENCE_V2'&&pi.cohorts;
-  if(!isV2)return `<div class="admin-pi-section-head"><div><span>SUPPORT BASE MOVEMENT</span><h3>연령별 지지 흐름</h3></div><small>JCS EST. · -50 감소 / 0 중립 / +50 증가</small></div><div class="admin-pi-axis-grid">${adminPiAxis('2030 SUPPORT','20·30대 지지 변화',legacyAge.age2030)}${adminPiAxis('4050 SUPPORT','40·50대 지지 변화',legacyAge.age4050)}${adminPiAxis('60+ SUPPORT','60대 이상 지지 변화',legacyAge.age60plus)}</div>`;
-  const cohorts=pi.cohorts||{},age=cohorts.age||{},gender=cohorts.gender||{},cells=cohorts.cells||{},summary=cohorts.summary||{};
+function adminPiDemographicSection(pi){
+  const cohorts=pi?.cohorts||{},age=cohorts.age||{},gender=cohorts.gender||{},cells=cohorts.cells||{},summary=cohorts.summary||{};
   const ages=[['18–29','18-29'],['30–39','30-39'],['40–49','40-49'],['50–59','50-59'],['60–69','60-69'],['70+','70+']];
   const matrix=[['18–29','18_29_m','18_29_f'],['30–39','30_39_m','30_39_f'],['40–49','40_49_m','40_49_f'],['50–59','50_59_m','50_59_f'],['60–69','60_69_m','60_69_f'],['70+','70_plus_m','70_plus_f']];
   const summaryCards=[adminPiSummaryCard('STRONGEST POSITIVE SIGNAL',summary.strongestPositive),adminPiSummaryCard('STRONGEST NEGATIVE SIGNAL',summary.strongestNegative),adminPiSummaryCard('WIDEST GENDER GAP',summary.widestGenderGap,'gap'),adminPiSummaryCard('FASTEST 30D CHANGE',summary.fastest30dChange),adminPiSummaryCard('MOST STABLE COHORT',summary.mostStableCohort,'stable')].filter(Boolean).join('');

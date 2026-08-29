@@ -151,7 +151,7 @@ function createHistoryV2Store(overrides={}){
   async function readPoliticalIntelligenceV2(personId,personHistory=null){
     const id=String(personId||'').trim();if(!id)return null;
     const compatibleV1=row=>row&&String(row.version||'')===POLITICAL_INTELLIGENCE_VERSION;
-    const compatibleV2=row=>row&&String(row.version||'')===POLITICAL_INTELLIGENCE_V2_VERSION&&row.cohorts&&String(row.cohorts?.validity?.state||'')==='VALID_SIGNAL';
+    const compatibleV2=row=>row&&String(row.version||'')===POLITICAL_INTELLIGENCE_V2_VERSION&&row.cohorts;
 
     // Fast path: combine the two immutable latest layers. This avoids loading the
     // large NOW payload on ordinary admin detail reads.

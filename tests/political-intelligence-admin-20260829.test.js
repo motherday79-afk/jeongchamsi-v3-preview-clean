@@ -99,7 +99,9 @@ test('admin politician detail renders the approved English intelligence sections
   const labels=[
     ['JCS POLITICAL INTELLIGENCE','관리자 전용'],
     ['JCS CURRENT DIAGNOSIS','현재 정치상태 진단'],
-    ['SUPPORT BASE MOVEMENT','연령별 지지 흐름'],
+    ['AGE COHORT SUPPORT MOMENTUM','연령별 지지 흐름'],
+    ['GENDER SUPPORT MOMENTUM','성별 지지 흐름'],
+    ['AGE × GENDER MATRIX','연령 × 성별 세부 흐름'],
     ['CORE SUPPORT DYNAMICS','강성지지층 변화'],
     ['SUPPORT QUALITY','지지 기반의 질'],
     ['MEDIA PROPAGATION','미디어 확산 흐름'],
