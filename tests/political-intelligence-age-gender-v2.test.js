@@ -157,3 +157,31 @@ test('official 12-dimensional age-gender ecological baseline is treated as sex-s
   const c=cellConfidence({baseline,view,history:{summary:{dailySampleSize:0}},events:[],evidence:{sources:[]},cellIndex:0,detailedAnchor:null,anchorAgreement:1,anchorFreshness:0});
   assert.ok(c>=55,`official neutral-sex cell confidence ${c}`);
 });
+
+test('high common momentum does not flatten a non-flat official age-gender baseline into one repeated score',()=>{
+  const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
+  const baseline={...directBaseline(),sourceState:'OFFICIAL_FILE_ECOLOGICAL_ESTIMATE',matchedGeoUnits:12};
+  const view=validView([
+    {title:'청년 주거 정책 성과 확대',source:'A'},
+    {title:'청년 취업 정책 지지 상승',source:'B'},
+    {title:'청년 주택 정책 호평',source:'C'}
+  ]);
+  view.rankDelta=10;
+  view.analysis.scores={overallInterest:90,highEngagement:88,massExpansion:85,activity:80,issueHeat:92,mediaSpread:90};
+  const history={daily:Array.from({length:60},()=>({})),summary:{dailySampleSize:60,coreDeltas:{overallInterest:20,highEngagement:18,massExpansion:16,mediaSpread:20,issueHeat:22}}};
+  const out=deriveAgeGenderCohortsV2({person:view.row.person,baseline,view,history,evidence:{sources:[]},asOf:'2026-08-30T00:00:00.000Z'});
+  const cellValues=COHORT_KEYS.map(k=>out.cells[k].value).filter(Number.isFinite);
+  const ageValues=Object.values(out.age).map(x=>x.value).filter(Number.isFinite);
+  assert.ok(new Set(cellValues).size>=3,`cohort cells flattened: ${cellValues.join(',')}`);
+  assert.ok(new Set(ageValues).size>=2,`age aggregates flattened: ${ageValues.join(',')}`);
+});
+
+test('a previously flattened V2 snapshot does not permanently lock later official cohort values together',()=>{
+  const {deriveAgeGenderCohortsV2}=require('../server/v3/lib/age-gender-cohort-core');
+  const baseline={...directBaseline(),sourceState:'OFFICIAL_FILE_ECOLOGICAL_ESTIMATE',matchedGeoUnits:12};
+  const view=validView([{title:'청년 주거 정책 성과 확대',source:'A'}]);
+  const previous={cohorts:{cells:Object.fromEntries(COHORT_KEYS.map(k=>[k,{value:10,status:'VALID_SIGNAL',confidence:80}]))}};
+  const out=deriveAgeGenderCohortsV2({person:view.row.person,baseline,view,history:validHistory(),evidence:{sources:[]},previous,asOf:'2026-08-30T00:00:00.000Z'});
+  const cellValues=COHORT_KEYS.map(k=>out.cells[k].value).filter(Number.isFinite);
+  assert.ok(new Set(cellValues).size>=2,`flattened prior remained locked: ${cellValues.join(',')}`);
+});
