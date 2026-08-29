@@ -1,14 +1,24 @@
-JCV3 NOW TEMP STORAGE CLEANUP HOTFIX — 2026-08-29
+JCV3 JCS POLITICAL INTELLIGENCE ADMIN PATCH · 2026-08-29
 
-ADDED
-- server/v3/lib/now-temp-cleanup.js
-- tests/now-temp-cleanup-20260829.test.js
-- NOW_TEMP_STORAGE_CLEANUP_HOTFIX_20260829.md
-- PATCH_MANIFEST.txt
+ADD
+- JCS_POLITICAL_INTELLIGENCE_ADMIN_20260829.md
+- docs/superpowers/plans/2026-08-29-jcs-political-intelligence-admin.md
+- docs/superpowers/specs/2026-08-29-jcs-political-intelligence-admin-design.md
+- server/v3/data/political-intelligence-evidence.js
+- server/v3/lib/political-intelligence-v1.js
+- tests/political-intelligence-admin-20260829.test.js
 
-MODIFIED
-- lib/v3/redis.js
-- server/v3/routes/admin/now-data.js
+MODIFY
+- css/pages.css
+- index.html
+- server/v3/lib/history-v2-store.js
+- server/v3/routes/admin/history.js
+- src/app.js
+- src/views/admin.js
+- src/views/people.js
 
 DELETE
 - none
+
+No new DB / env / runtime external API integration.
+Public NOW serving contracts are not modified.

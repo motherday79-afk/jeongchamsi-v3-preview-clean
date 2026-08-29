@@ -1,6 +1,8 @@
 const redis=require('../../../lib/v3/redis');
 const rosterLib=require('./politician-live-roster');
 const signals=require('./now-public-signals');
+const {getPoliticalIntelligenceEvidence}=require('../data/political-intelligence-evidence');
+const {derivePoliticalIntelligenceV1}=require('./political-intelligence-v1');
 const {mergeLegacyObservations}=require('./history-core');
 const {
   V2_VERSIONS,V2_PREFIX,V2_ACCESS,V2_SNAPSHOT_INDEX_KEY,V2_EVENT_INDEX_KEY,
@@ -24,6 +26,7 @@ function createHistoryV2Store(overrides={}){
   const deps={
     command:redis.command,pipeline:redis.pipeline,getJSON:redis.getJSON,mgetJSON:redis.mgetJSON,mgetRawJSON:redis.mgetRawJSON,
     allPeople:rosterLib.allPeople,derivePersonView:signals.derivePersonView,
+    getPoliticalIntelligenceEvidence,derivePoliticalIntelligenceV1,
     ...overrides
   };
 
@@ -119,6 +122,17 @@ function createHistoryV2Store(overrides={}){
     return {observations,daily,summary,events,rangeDays:days};
   }
 
+  async function readPoliticalIntelligenceV2(personId,personHistory=null){
+    const id=String(personId||'').trim();if(!id)return null;
+    const [current,legacyHistory]=await Promise.all([deps.getJSON('nowDataCurrent'),deps.getJSON('nowDataHistory')]);
+    if(!current?.draftId||!Array.isArray(current?.ranked)||!current.ranked.length)return null;
+    const view=deps.derivePersonView(current,legacyHistory||{items:[]},id);if(!view?.row)return null;
+    const history=personHistory||await readPersonHistoryV2(id,{days:30,limit:365});
+    const asOf=current?.publishedAt||new Date().toISOString();
+    const evidence=deps.getPoliticalIntelligenceEvidence(id,{asOf});
+    return deps.derivePoliticalIntelligenceV1({view,history,evidence,asOf});
+  }
+
   async function appendPoliticalEventV2(input={}){
     const occurredAt=input.occurredAt&&Number.isFinite(Date.parse(input.occurredAt))?new Date(input.occurredAt).toISOString():new Date().toISOString();
     const eventId=cleanId(input.eventId||`event-${Date.now().toString(36)}`),title=String(input.title||'').trim().slice(0,180);
@@ -161,7 +175,7 @@ function createHistoryV2Store(overrides={}){
     return {accessScope:V2_ACCESS,versions:{...V2_VERSIONS},snapshotCount:Number(count)||0,latestDraftId,latestSnapshot,rosterTotal:roster.length,roster,currentDraftId:current?.draftId||null,currentPublishedAt:current?.publishedAt||null,currentCaptured:Boolean(currentHeader),backfill:{pageSize:BACKFILL_PAGE_SIZE_V2,total:roster.length}};
   }
 
-  return {BACKFILL_PAGE_SIZE_V2,recordPublishedSnapshotV2,captureCurrentSnapshot,backfillLegacyPageV2,readPersonHistoryV2,historyOverviewV2,historyHomeSummaryV2,appendPoliticalEventV2,readEventsForPerson,_deps:deps};
+  return {BACKFILL_PAGE_SIZE_V2,recordPublishedSnapshotV2,captureCurrentSnapshot,backfillLegacyPageV2,readPersonHistoryV2,readPoliticalIntelligenceV2,historyOverviewV2,historyHomeSummaryV2,appendPoliticalEventV2,readEventsForPerson,_deps:deps};
 }
 
 const defaultStore=createHistoryV2Store();

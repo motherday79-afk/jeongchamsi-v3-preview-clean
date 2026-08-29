@@ -5,7 +5,8 @@ const {
   captureCurrentSnapshot,
   backfillLegacyPageV2,
   appendPoliticalEventV2,
-  readPersonHistoryV2
+  readPersonHistoryV2,
+  readPoliticalIntelligenceV2
 }=require('../../lib/history-v2-store');
 
 module.exports=async function historyAdmin(req,res){
@@ -20,7 +21,8 @@ module.exports=async function historyAdmin(req,res){
       const personId=String(req.query?.personId||'').trim();
       const range=String(req.query?.range||req.query?.days||'30');
       const person=personId?await readPersonHistoryV2(personId,{days:range==='all'?'all':Number(range)||30,limit:730}):null;
-      return res.status(200).json({ok:true,...overview,personId:personId||null,person});
+      const politicalIntelligence=personId?await readPoliticalIntelligenceV2(personId,person):null;
+      return res.status(200).json({ok:true,...overview,personId:personId||null,person,politicalIntelligence});
     }
     if(req.method!=='POST')return res.status(405).json({ok:false,error:'METHOD_NOT_ALLOWED'});
     const action=String(req.body?.action||'');

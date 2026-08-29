@@ -477,7 +477,7 @@ async function runBatchQueue({draftId,batchIndexes,total,batchSize,action}) {
       if (!r.ok) { await new Promise(resolve => setTimeout(resolve, 350)); r = await nowApi({ action, draftId, batchIndex }); }
       if (!r.ok && !firstError) { firstError = r.error || "BATCH_FAILED"; firstDetail = r.detail || ""; }
       doneBatches++;
-      setNowProgress(Math.min(total, doneBatches * batchSize), total, action === "retry-batch" ? "오류 재수집 중" : "네이버 데이터 수집 중");
+      setNowProgress(Math.min(total, doneBatches * batchSize), total, "JCS INTELLIGENT DATA COLLECTION IN PROGRESS");
       const state = document.querySelector("[data-now-live-state]"); if (state) state.textContent = `배치 ${doneBatches}/${batchIndexes.length} · 최근 처리 #${batchIndex + 1}${r.elapsedMs ? ` · ${(r.elapsedMs/1000).toFixed(1)}초` : ""}`;
     }
   });
@@ -486,7 +486,7 @@ async function runBatchQueue({draftId,batchIndexes,total,batchSize,action}) {
 export async function runNowDataRefresh() {
   const searchWeight = Number(document.querySelector("[data-now-search-weight]")?.value || 50), newsWeight = Number(document.querySelector("[data-now-news-weight]")?.value || 50);
   const start = await nowApi({ action:"start", searchWeight, newsWeight }); if (!start.ok) return start;
-  setNowProgress(0,start.total,"네이버 데이터 수집 시작");
+  setNowProgress(0,start.total,"JCS INTELLIGENT DATA COLLECTION IN PROGRESS");
   const queue = await runBatchQueue({draftId:start.draftId,batchIndexes:Array.from({length:start.batchCount},(_,i)=>i),total:start.total,batchSize:start.batchSize,action:"collect-batch"});
   if (!queue.ok) return queue;
   setNowProgress(start.total,start.total,"NOW 순위 계산 중");
