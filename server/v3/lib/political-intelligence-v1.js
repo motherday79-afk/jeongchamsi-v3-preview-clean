@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION='JCS_POLITICAL_INTELLIGENCE_V1';
+const VERSION='JCS_POLITICAL_INTELLIGENCE_V1_1';
 const NEGATIVE_TERMS=['사퇴','사임','내려놓','탈당','논란','수사','기소','구속','폭로','갈등','비판','사과','패배','낙선','해임','불출마','의혹','충격','반발','파문'];
 const POSITIVE_TERMS=['출마','선언','승리','영입','합류','지지','공약','정책','개혁','성과','회복','상승','확대','돌파','협력'];
 const DIGITAL_TERMS=['유튜브','youtube','sns','커뮤니티','온라인','영상','숏폼','실시간','단독','폭로','논란','충격','긴급'];
@@ -71,6 +71,29 @@ function currentSignals(view={},history={}){
   const attention=axis(scoreAxis(s.overallInterest)*.35+scoreAxis(s.issueHeat)*.25+scoreAxis(s.mediaSpread)*.25+rankDelta*.7+interestTrend*.6);
   return {s,summary,rankDelta,interestTrend,engagementTrend,massTrend,mediaTrend,issueTrend,supportBase,attention};
 }
+function strategicPriorityBand(weight=0){return weight>=28?'HIGH':weight>=16?'MEDIUM':'WATCH';}
+function deriveStrategicSolution({diagnosis={},ageMomentum={},coreAttritionPct=0,newSupportInflowPct=0,media={},attentionSupportGap={},resilience={}}={}){
+  const rows=[];
+  const add=(code,label,meaning,direction,weight)=>rows.push({code,label,meaning,direction,priority:strategicPriorityBand(weight),weight:Math.round(weight*10)/10});
+  const attr=finite(coreAttritionPct,0),inflow=finite(newSupportInflowPct,0),attention=finite(attentionSupportGap?.attention,0),gap=finite(attentionSupportGap?.gap,0);
+  if(attr>=0.6)add('CORE SUPPORT STABILIZATION','핵심지지층 안정','기존 핵심 지지기반의 흔들림을 먼저 낮추는 방향',`핵심지지층의 이탈 압력이 관측되는 만큼 불확실성을 줄이고 기존 지지기반을 안정시키는 방향이 우선입니다.`,20+attr*8);
+  const ageRows=[['age2030','2030','2030 RECOVERY'],['age4050','4050','4050 RECOVERY'],['age60plus','60+','60+ RECOVERY']].map(([key,label,code])=>({key,label,code,value:finite(ageMomentum?.[key],0)})).sort((a,b)=>a.value-b.value);
+  if(ageRows[0]?.value<=-5){const a=ageRows[0];add(a.code,`${a.label} 회복`,`${a.label} 지지 약화 신호의 반전`,`${a.label}에서 약화 신호가 나타나는 만큼 해당 연령대의 신뢰와 지지기반을 회복하는 방향이 우선입니다.`,15+Math.abs(a.value)*1.25);}
+  if(attention<=-8)add('ATTENTION RECOVERY','관심 회복','둔화된 관심 흐름의 재정렬',`관심 둔화 구간인 만큼 단순 노출 확대보다 현재의 정치적 위치와 다음 방향을 선명하게 만드는 전환이 필요합니다.`,14+Math.abs(attention)*1.05);
+  if(gap>=10)add('SUPPORT CONVERSION','지지 전환','높은 관심을 실제 지지 신호로 연결',`관심과 노출이 지지 신호보다 앞서 있는 만큼 단기 화제성에 머물지 않고 지지 기반으로 연결하는 방향이 필요합니다.`,15+gap*.9);
+  const mediaMax=Math.max(0,...Object.values(media?.momentum||{}).map(v=>finite(v,0)));
+  if(mediaMax>=12&&media?.persistence!=='COOLING')add('MEDIA CONVERSION','미디어 확산 전환','확산 중인 관심의 지속 가능한 전환',`이미 형성된 미디어 확산을 일시적 화제성으로 소진하지 않고 지속 가능한 관심으로 연결하는 방향이 필요합니다.`,12+mediaMax*.55+(media?.persistence==='FLASH'?5:0));
+  if(finite(resilience?.score,60)<48)add('RESILIENCE STABILIZATION','회복력 안정','정치적 충격 이후 회복 기반 보강',`현재 회복력이 상대적으로 낮게 나타나는 만큼 추가 변동보다 지지기반 안정과 회복 여력을 먼저 확보하는 방향이 필요합니다.`,12+(48-finite(resilience?.score,48))*.8);
+  if(inflow>=1)add('NEW SUPPORT EXPANSION','신규지지층 확장','새로 유입되는 지지 신호의 안정적 확대',`신규지지층 유입 신호가 나타나는 만큼 기존 기반을 해치지 않는 범위에서 확장 흐름을 안정적으로 이어가는 방향이 유효합니다.`,10+inflow*5);
+  const positiveAge=[...ageRows].sort((a,b)=>b.value-a.value)[0];
+  if(positiveAge?.value>=10)add(`${positiveAge.label.replace('+','PLUS')} EXPANSION`,`${positiveAge.label} 확장`,`강하게 나타나는 연령별 확장 신호 활용`,`${positiveAge.label}에서 상대적으로 강한 확장 신호가 확인되는 만큼 이 강점을 유지하면서 다른 지지층으로 확장하는 방향이 유효합니다.`,9+positiveAge.value*.7);
+  if(rows.length<2)add('BASE CONSOLIDATION','지지기반 정비','현재 지지 흐름의 안정적 유지',`뚜렷한 급변 신호가 제한적인 만큼 현재 지지기반을 안정적으로 유지하며 다음 변화를 준비하는 방향이 적절합니다.`,10);
+  if(rows.length<2)add('SIGNAL MONITORING','변화 신호 관찰','단기 변동보다 반복 신호 확인',`단일 이슈보다 반복적으로 이어지는 연령·지지층·미디어 변화를 확인하면서 우선순위를 조정하는 방향이 필요합니다.`,8);
+  const priorities=rows.sort((a,b)=>b.weight-a.weight).filter((row,index,self)=>self.findIndex(x=>x.code===row.code)===index).slice(0,4).map(({weight,...row})=>row);
+  const focus=priorities.slice(0,2).map(x=>x.label);
+  const focusText=focus.length>1?`‘${focus[0]}’과 ‘${focus[1]}’`:focus.length?`‘${focus[0]}’`:'현재 지지기반 안정';
+  return {basisDiagnosis:String(diagnosis?.label||''),priorities,conclusion:`현재 가장 중요한 것은 ${focusText}입니다. 구체적인 실행전략은 정치적 환경과 대상별 상황을 함께 고려하여 설계되어야 합니다.`};
+}
 function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],demographic:null},asOf=new Date().toISOString()}={}){
   const sig=currentSignals(view,history),headlines=headlineRows(view).map(h=>classifyHeadline(h));
   const shock=avg(headlines.slice(0,5).map(x=>x.shock)),opportunity=avg(headlines.slice(0,5).map(x=>x.opportunity)),digitalHits=headlines.slice(0,8).reduce((n,x)=>n+x.digital,0);
@@ -140,9 +163,11 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
     `${ageLabel} ${strongestAge?.[1]>=8?'확장':strongestAge?.[1]<=-8?'약화':'변화'} 신호`,
     media.persistence==='FLASH'?'미디어 확산 단기성':media.persistence==='SUSTAINED'?'미디어 지속성':'미디어 확산 진행'
   ].join(' · ');
+  const diagnosisObject={label:diagnosis,condition:axis((supportComposite+sig.attention)/2)};
+  const strategicSolution=deriveStrategicSolution({diagnosis:diagnosisObject,ageMomentum,coreAttritionPct,newSupportInflowPct,media,attentionSupportGap:{attention:sig.attention,support:supportComposite,gap:attentionSupportGap},resilience:{score:resilienceScore,recoveryDays,volatility:Math.round(volatility*10)/10}});
   return {
     version:VERSION,asOf,
-    diagnosis:{label:diagnosis,condition:axis((supportComposite+sig.attention)/2)},
+    diagnosis:diagnosisObject,
     support:{ageMomentum,coreAttritionPct,newSupportInflowPct,quality},
     media,
     issueImpacts,
@@ -150,9 +175,10 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
     resilience:{score:resilienceScore,recoveryDays,volatility:Math.round(volatility*10)/10},
     attentionSupportGap:{attention:sig.attention,support:supportComposite,gap:attentionSupportGap,label:attentionSupportGap>=15?'화제성 대비 지지전환 낮음':attentionSupportGap<=-15?'노출 대비 지지 기반 강함':'관심과 지지 신호 균형'},
     competitorFlow,
+    strategicSolution,
     confidence:{score:confidenceScore,observedDays,externalEvidenceCount:externalCount,label:confidenceScore>=75?'HIGH':confidenceScore>=55?'MEDIUM':'LOW'},
     evidence:{basis:externalCount?'JCS 현재 관측 + HISTORY + 외부기관 공개 근거':'JCS 현재 관측 + HISTORY 기반 추정',external:(evidence?.sources||[]).map(x=>({fingerprint:x.fingerprint||'',observedAt:x.observedAt,collectedAt:x.collectedAt||x.ingestedAt||null,institution:x.institution,sourceType:x.sourceType,origin:x.origin||'',relationship:x.relationship||'',title:x.title,url:x.url,note:String(x.note||'').slice(0,600),values:x.values&&typeof x.values==='object'?{...x.values}:null}))}
   };
 }
 
-module.exports={VERSION,derivePoliticalIntelligenceV1,_internals:{axis,classifyHeadline,normalizeQuality,historyRecoveryDays}};
+module.exports={VERSION,derivePoliticalIntelligenceV1,_internals:{axis,classifyHeadline,normalizeQuality,historyRecoveryDays,deriveStrategicSolution}};

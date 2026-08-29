@@ -59,7 +59,7 @@ test('Political Intelligence V1 derives bounded admin estimates and transparent 
   const {derivePoliticalIntelligenceV1}=require('../server/v3/lib/political-intelligence-v1');
   const evidence=require('../server/v3/data/political-intelligence-evidence').getPoliticalIntelligenceEvidence('assembly-023',{asOf:'2026-08-29T00:00:00.000Z'});
   const result=derivePoliticalIntelligenceV1({view:sampleView(),history:sampleHistory,evidence,asOf:'2026-08-29T00:00:00.000Z'});
-  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1');
+  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1_1');
   for(const value of Object.values(result.support.ageMomentum))assert.ok(value>=-50&&value<=50);
   for(const key of ['news','youtube','sns','community'])assert.ok(result.media.momentum[key]>=-50&&result.media.momentum[key]<=50);
   assert.ok(result.support.coreAttritionPct>=0&&result.support.coreAttritionPct<=20);
@@ -70,6 +70,10 @@ test('Political Intelligence V1 derives bounded admin estimates and transparent 
   assert.equal(result.confidence.observedDays,2);
   assert.ok(result.issueImpacts.length>=1);
   assert.ok(result.riskOpportunity.risks.length+result.riskOpportunity.opportunities.length>=1);
+  assert.ok(Array.isArray(result.strategicSolution?.priorities));
+  assert.ok(result.strategicSolution.priorities.length>=2&&result.strategicSolution.priorities.length<=4);
+  assert.ok(result.strategicSolution.priorities.every(x=>x.code&&x.label&&x.direction&&['HIGH','MEDIUM','WATCH'].includes(x.priority)));
+  assert.match(result.strategicSolution.conclusion,/구체적인 실행전략은 정치적 환경과 대상별 상황을 함께 고려하여 설계되어야 합니다/);
   assert.ok(result.evidence.external.some(x=>x.collectedAt&&Number(x.values?.age2030)>0),'frozen JCS judgment must retain source values and JCS collection time');
 });
 
@@ -103,7 +107,9 @@ test('admin politician detail renders the approved English intelligence sections
     ['RISK & OPPORTUNITY','위험·기회 신호'],
     ['POLITICAL RESILIENCE','정치적 회복력'],
     ['ATTENTION → SUPPORT GAP','관심 대비 지지전환'],
-    ['EVIDENCE BASE','분석 근거']
+    ['EVIDENCE BASE','분석 근거'],
+    ['JCS STRATEGIC SOLUTION','현재 분석을 기반으로 한 대응 방향'],
+    ['JCS STRATEGIC CONCLUSION','전략적 결론']
   ];
   for(const [en,ko] of labels){assert.ok(source.includes(en),en);assert.ok(source.includes(ko),ko);}
   assert.match(source,/isAdmin\?adminPoliticalIntelligence\(history,p\):""/);
@@ -114,6 +120,8 @@ test('admin politician detail renders the approved English intelligence sections
   assert.match(source,/JCS DATA LAYER/);
   assert.match(source,/EXTERNAL INSTITUTIONAL SIGNALS/);
   assert.match(source,/EVIDENCE \${external.length}/);
+  assert.ok(source.indexOf('${adminPiStrategicSolution',source.indexOf('EVIDENCE BASE'))>source.indexOf('EVIDENCE BASE'),'strategic solution must close the intelligence page after evidence');
+  assert.match(source,/구체적인 실행전략은 정치적 환경과 대상별 상황을 함께 고려하여 설계되어야 합니다|strategicSolution\?\.conclusion/);
   assert.doesNotMatch(source,/x\.institution/,'admin evidence UI must not expose institution names');
   assert.doesNotMatch(source,/SOURCE ↗/,'admin evidence UI must not expose source links');
   assert.match(read('src/app.js'),/people\.js\?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2/);

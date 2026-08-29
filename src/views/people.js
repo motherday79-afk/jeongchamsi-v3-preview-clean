@@ -193,6 +193,15 @@ function adminPiQuality(quality={}){
 function adminPiSignalList(title,meaning,items=[],tone="risk"){
   return `<article class="admin-pi-signal-list ${tone}"><div><b>${esc(title)}</b><small>${esc(meaning)}</small></div>${items.map(x=>`<p>${esc(x)}</p>`).join('')}</article>`;
 }
+function adminPiStrategicSolution(solution={}){
+  const priorities=Array.isArray(solution?.priorities)?solution.priorities:[];
+  if(!priorities.length)return '';
+  return `<div class="admin-pi-strategic">
+    <div class="admin-pi-section-head"><div><span>JCS STRATEGIC SOLUTION</span><h3>현재 분석을 기반으로 한 대응 방향</h3></div><small>방향과 우선순위만 제시 · 구체 실행은 별도 전략 설계 영역</small></div>
+    <div class="admin-pi-strategic-grid">${priorities.map((x,index)=>`<article><div><span>PRIORITY ${String(index+1).padStart(2,'0')}</span><em>${esc(x.priority||'WATCH')}</em></div><b>${esc(x.code||'STRATEGIC DIRECTION')}</b><small>${esc(x.label||x.meaning||'대응 방향')}</small><p>${esc(x.direction||'현재 분석 신호를 기준으로 대응 방향을 조정할 필요가 있습니다.')}</p></article>`).join('')}</div>
+    <div class="admin-pi-conclusion"><div><span>JCS STRATEGIC CONCLUSION</span><small>전략적 결론</small></div><strong>${esc(solution?.conclusion||'구체적인 실행전략은 정치적 환경과 대상별 상황을 함께 고려하여 설계되어야 합니다.')}</strong></div>
+  </div>`;
+}
 function adminPoliticalIntelligence(history,p){
   const pi=history?.politicalIntelligence;if(!pi)return '';
   const support=pi.support||{},media=pi.media||{},confidence=pi.confidence||{},gap=pi.attentionSupportGap||{},resilience=pi.resilience||{};
@@ -225,6 +234,8 @@ function adminPoliticalIntelligence(history,p){
 
     <div class="admin-pi-section-head"><div><span>EVIDENCE BASE</span><h3>분석 근거</h3></div><small>${esc(pi.evidence?.basis||'JCS 현재 관측 기반')}</small></div>
     <div class="admin-pi-evidence"><article><b>JCS DATA LAYER</b><p>SEARCH ENGINE · NEWS PORTAL · NOW · JCS HISTORY</p></article><article><b>EXTERNAL INSTITUTIONAL SIGNALS</b><p>유력 외부기관 분석근거 · EVIDENCE ${external.length} · ${external.length?'VERIFIED PUBLIC DATA':'NO MATCHED EXTERNAL EVIDENCE'}</p></article></div>
+
+    ${adminPiStrategicSolution(pi.strategicSolution||{})}
   </section>`;
 }
 
