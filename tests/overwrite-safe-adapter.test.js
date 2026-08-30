@@ -1,0 +1,10 @@
+const fs=require('fs');
+const path=require('path');
+const assert=require('assert');
+const route=fs.readFileSync(path.join(__dirname,'../server/v3/routes/admin/now-data.js'),'utf8');
+assert(route.includes("../../../../lib/v3/redis-now-safe-20260830"),'admin NOW route must use unique non-overwritable storage adapter');
+const redis=fs.readFileSync(path.join(__dirname,'../lib/v3/redis-now-safe-20260830.js'),'utf8');
+assert(redis.includes('JCV3_NOW_STORAGE_SAFE_20260830_R1'),'safe adapter revision marker missing');
+assert(redis.includes('writeSerializedJSON'),'large JSON chunking missing');
+assert(redis.includes('JSON_CHUNK_RAW_BYTES'),'chunk sizing missing');
+console.log('overwrite-safe-adapter contract PASS');

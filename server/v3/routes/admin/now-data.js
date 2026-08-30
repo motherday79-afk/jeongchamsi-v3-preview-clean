@@ -1,5 +1,5 @@
 const { requireAdmin } = require('../../../../lib/v3/access');
-const { getJSON, setJSON, mgetJSON, msetJSON } = require('../../../../lib/v3/redis');
+const { getJSON, setJSON, mgetJSON, msetJSON, ADAPTER_REVISION } = require('../../../../lib/v3/redis-now-safe-20260830');
 const { allPeople } = require('../../lib/politician-live-roster');
 const { credentials: searchCredentials } = require('../../lib/naver-searchad');
 const { credentials: newsCredentials, availability: newsAvailability } = require('../../lib/naver-news');
@@ -223,5 +223,5 @@ module.exports=async function nowDataAdmin(req,res){
       return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
-  }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}
+  }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:`${String(error?.message||'')} [storage:${ADAPTER_REVISION}]`});}
 };
