@@ -1,8 +1,11 @@
-JCV3 CLEAN V1 — ADMIN PREMIUM INTELLIGENCE UI FINAL PATCH
+JCV3 CLEAN V1 · ADMIN PREMIUM INTELLIGENCE V3
+Base: current CLEAN V1 + ADMIN PREMIUM INTELLIGENCE V2 state
 
-Apply over: 정참시 클린본 V_1 (MGET 542 batch-read fix verified state)
+Changes
+1. Admin compare first-selection visibility bug fixed.
+2. Admin compare result rebuilt as JCS Intelligence Comparison Report.
+3. AGE × GENDER detail replaced with one-glance diverging balance bars + HISTORY delta.
+4. Competitor movement estimate made more aggressive using real signal energy, gap, volatility, rank movement and affinity. Genuine neutral input can still remain 0.
+5. UI cache revisions bumped.
 
-Changes:
-1) Admin compare: select/review -> explicit 비교하기 -> result, 2–5 people.
-2) Admin Political Intelligence: collapsed premium report gate and multi-visual report layout.
-3) UI cache revisions only. No Redis/storage/refresh/server calculation changes.
+No Redis/storage/publish/refresh route changes.

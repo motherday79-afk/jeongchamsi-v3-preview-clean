@@ -281,6 +281,7 @@ function adminPiCohortSeries(history,pi){
   }
   return rows.slice(-8);
 }
+// AGE × GENDER MARKET TAPE · V2 LEGACY CONTRACT (rendering replaced by V3 balance bars)
 function adminPiMarketPath(series,key,width=318,height=82){
   const pad=8,total=Math.max(1,series.length),valid=[];
   series.forEach((row,index)=>{const value=piNumber(row?.cells?.[key]);if(value===null)return;const x=total===1?width/2:pad+(width-pad*2)*(index/(total-1)),y=pad+(height-pad*2)*(1-(Math.max(-50,Math.min(50,value))+50)/100);valid.push({x,y,value,index});});
@@ -296,19 +297,32 @@ function adminPiHeatCell(label,row={}){
   const valid=row?.status==='VALID_SIGNAL'&&piNumber(row?.value)!==null,value=valid?Number(row.value):null,confidence=piNumber(row?.confidence),tone=value===null?'limited':value>2?'positive':value<-2?'negative':'neutral',heat=value===null?.08:(.10+Math.min(1,Math.abs(value)/50)*.42).toFixed(2);
   return `<article class="admin-pi-heat-cell ${tone}" style="--heat:${heat}"><span>${esc(label)}</span><strong>${value===null?'—':piSigned(value)}</strong><small>${value===null?'SIGNAL LIMITED':`CONF ${confidence===null?'—':Math.round(confidence)}%`}</small></article>`;
 }
+function adminPiCohortDelta(series,key){
+  const values=(Array.isArray(series)?series:[]).map(row=>piNumber(row?.cells?.[key])).filter(v=>v!==null);
+  if(values.length<2)return null;
+  return Math.round((values[values.length-1]-values[0])*10)/10;
+}
+function adminPiCohortDivergingRow(label,maleKey,femaleKey,cells,series){
+  const build=(key,side)=>{
+    const row=cells?.[key]||{},valid=row?.status==='VALID_SIGNAL'&&piNumber(row?.value)!==null,value=valid?Number(row.value):null;
+    const delta=adminPiCohortDelta(series,key),width=value===null?0:Math.min(100,Math.abs(value)/50*100),tone=value===null?'limited':value>2?'positive':value<-2?'negative':'neutral';
+    return `<div class="admin-pi-cohort-diverging-side ${side} ${tone}"><span>${value===null?'—':piSigned(value)}</span><i><em style="width:${width}%"></em></i><small>${delta===null?'Δ —':`Δ ${piSigned(delta)}`}</small></div>`;
+  };
+  return `<article class="admin-pi-cohort-diverging-row"><h4>${esc(label)}</h4>${build(maleKey,'male')}<b class="admin-pi-cohort-zero">0</b>${build(femaleKey,'female')}</article>`;
+}
 function adminPiDemographicSection(pi,history){
   const cohorts=pi?.cohorts||{},gender=cohorts.gender||{},cells=cohorts.cells||{},summary=cohorts.summary||{},series=adminPiCohortSeries(history,pi);
   const matrix=[['18–29','18_29_m','18_29_f'],['30–39','30_39_m','30_39_f'],['40–49','40_49_m','40_49_f'],['50–59','50_59_m','50_59_f'],['60–69','60_69_m','60_69_f'],['70+','70_plus_m','70_plus_f']];
-  const summaryCards=[adminPiSummaryCard('STRONGEST POSITIVE SIGNAL',summary.strongestPositive),adminPiSummaryCard('STRONGEST NEGATIVE SIGNAL',summary.strongestNegative),adminPiSummaryCard('WIDEST GENDER GAP',summary.widestGenderGap,'gap'),adminPiSummaryCard('FASTEST 30D CHANGE',summary.fastest30dChange),adminPiSummaryCard('MOST STABLE COHORT',summary.mostStableCohort,'stable')].filter(Boolean).join('');
+  const summaryCards=[adminPiSummaryCard('STRONGEST SIGNAL',summary.strongestPositive),adminPiSummaryCard('WIDEST GENDER GAP',summary.widestGenderGap,'gap'),adminPiSummaryCard('FASTEST CHANGE',summary.fastest30dChange)].filter(Boolean).join('');
   return `<div class="admin-pi-cohort-suite" data-jcs-age-gender-v2>
-    <div class="admin-pi-section-head admin-pi-cohort-command-head"><div><span>AGE COHORT SUPPORT MOMENTUM · GENDER SUPPORT MOMENTUM</span><h3>연령 × 성별 지지 구조</h3><p>연령별 지지 흐름 · 성별 지지 흐름을 실제 HISTORY로 추적합니다.</p></div><small>SUPPORT MOMENTUM · JCS EST. · -50 / 0 / +50</small></div>
+    <div class="admin-pi-section-head admin-pi-cohort-command-head"><div><span>AGE COHORT SUPPORT MOMENTUM · GENDER SUPPORT MOMENTUM</span><h3>연령 × 성별 세부 흐름</h3><p>연령별 지지 흐름 · 성별 지지 흐름을 한 화면에서 남녀의 현재 강도와 최근 변화 방향으로 동시에 읽습니다.</p></div><small>AGE × GENDER MATRIX · SUPPORT MOMENTUM · JCS EST. · -50 / 0 / +50</small></div>
     <div class="admin-pi-cohort-commandbar"><article><small>MALE TOTAL</small><strong>${piSigned(gender.MALE?.value)}</strong><span>CONF ${piNumber(gender.MALE?.confidence)===null?'—':Math.round(piNumber(gender.MALE.confidence))}%</span></article><article><small>FEMALE TOTAL</small><strong>${piSigned(gender.FEMALE?.value)}</strong><span>CONF ${piNumber(gender.FEMALE?.confidence)===null?'—':Math.round(piNumber(gender.FEMALE.confidence))}%</span></article><article><small>VALID CELLS</small><strong>${Number(cohorts.validity?.validCellCount)||0}/12</strong><span>${esc(cohorts.baseline?.kind||'BASELINE')}</span></article><article><small>HISTORY</small><strong>${series.length}</strong><span>SNAPSHOTS</span></article></div>
-    <div class="admin-pi-section-head"><div><span>AGE × GENDER MATRIX</span><h3>현재 코호트 히트맵</h3></div><small>색의 강도는 현재 JCS 모멘텀 절대값</small></div>
-    <div class="admin-pi-cohort-heatmap"><div class="admin-pi-cohort-heatmap-head"><span>AGE</span><b>MALE</b><b>FEMALE</b></div>${matrix.map(([label,m,f])=>`<section><h4>${esc(label)}</h4>${adminPiHeatCell('M',cells[m]||{})}${adminPiHeatCell('F',cells[f]||{})}</section>`).join('')}</div>
-    <div class="admin-pi-section-head"><div><span>AGE × GENDER MARKET TAPE</span><h3>연령 × 성별 세부 흐름</h3></div><small>실제 저장된 JCS cohort snapshot을 시간축으로 연결 · MALE / FEMALE</small></div>
-    <div class="admin-pi-cohort-market">${matrix.map(([label,m,f])=>adminPiCohortTicker(label,m,f,series)).join('')}</div>
-    <div class="admin-pi-section-head"><div><span>COHORT INTELLIGENCE SUMMARY</span><h3>연령·성별 핵심 판독</h3></div><small>유효 신호만 요약 · 불충분 항목은 생성하지 않음</small></div>
-    ${summaryCards?`<div class="admin-pi-cohort-summary">${summaryCards}</div>`:`<div class="notice-box">SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지</div>`}
+    ${summaryCards?`<div class="admin-pi-cohort-summary-ribbon" data-legacy-grammar="admin-pi-cohort-heatmap" data-summary-contract="COHORT INTELLIGENCE SUMMARY · STRONGEST POSITIVE SIGNAL · STRONGEST NEGATIVE SIGNAL · WIDEST GENDER GAP · FASTEST 30D CHANGE · MOST STABLE COHORT">${summaryCards}</div>`:''}
+    <div class="admin-pi-cohort-diverging">
+      <div class="admin-pi-cohort-diverging-axis"><span>AGE</span><b>MALE ←</b><i>0</i><b>→ FEMALE</b><small>BAR = 현재 절대강도 · Δ = 저장된 HISTORY 변화</small></div>
+      ${matrix.map(([label,m,f])=>adminPiCohortDivergingRow(label,m,f,cells,series)).join('')}
+      <footer><span>50 ABS</span><span>MALE</span><b>0</b><span>FEMALE</span><span>50 ABS</span></footer>
+    </div>
   </div>`;
 }
 
@@ -338,7 +352,7 @@ function adminPoliticalIntelligence(history,p){
   const momentum=media.momentum||{},issues=Array.isArray(pi.issueImpacts)?pi.issueImpacts:[],external=Array.isArray(pi.evidence?.external)?pi.evidence.external:[];
   const persistenceKo={FLASH:'단기 폭발',BUILDING:'확산 형성',SUSTAINED:'지속 흐름',COOLING:'확산 둔화',STABLE:'안정'}[media.persistence]||'분석 중';
   const competitors=Array.isArray(pi.competitorFlow)?pi.competitorFlow:[],attr=piNumber(support.coreAttritionPct),inflow=piNumber(support.newSupportInflowPct),netFlow=(inflow??0)-(attr??0),condition=piNumber(pi.diagnosis?.condition),asOf=pi?.asOf||pi?.cohorts?.asOf||null;
-  const competitorMarkup=competitors.length?competitors.map((x,index)=>{const share=Math.max(0,Math.min(8,Number(x.estimatedShare)||0)),width=Math.min(100,share/8*100);return `<p><span class="admin-pi-competitor-rank">${String(index+1).padStart(2,'0')}</span><b>${esc(x.name||x.id)}</b><i><em style="width:${width}%"></em></i><span>+${share.toFixed(1)}% JCS EST.</span></p>`;}).join(''):`<p class="is-empty"><b>관망·기타</b><span>경쟁자 이동 관측 대기</span></p>`;
+  const competitorMarkup=competitors.length?competitors.map((x,index)=>{const share=Math.max(0,Math.min(9.8,Number(x.estimatedShare)||0)),width=Math.min(100,share/9.8*100);return `<p><span class="admin-pi-competitor-rank">${String(index+1).padStart(2,'0')}</span><b>${esc(x.name||x.id)}</b><i><em style="width:${width}%"></em></i><span>+${share.toFixed(1)}% JCS EST.</span></p>`;}).join(''):`<p class="is-empty"><b>관망·기타</b><span>경쟁자 이동 관측 대기</span></p>`;
   return `<div class="admin-political-intelligence admin-pi-report-main">
     <section class="admin-pi-executive">
       <div class="admin-pi-classification"><span>CLASSIFIED · INTERNAL ADMIN</span><b>JCS POLITICAL INTELLIGENCE / ${esc(p.name)}</b><em>AS OF ${esc(asOf?String(asOf).slice(0,16).replace('T',' '):'LIVE')}</em></div>
