@@ -151,6 +151,27 @@ function deriveStrategicSolution({diagnosis={},ageMomentum={},coreAttritionPct=0
   const focusText=focus.length>1?`‘${focus[0]}’과 ‘${focus[1]}’`:focus.length?`‘${focus[0]}’`:'현재 지지기반 안정';
   return {basisDiagnosis:String(diagnosis?.label||''),priorities,conclusion:`현재 가장 중요한 것은 ${focusText}입니다. 구체적인 실행전략은 정치적 환경과 대상별 상황을 함께 고려하여 설계되어야 합니다.`};
 }
+function competitorAffinity(view={},row={},index=0){
+  const selfRank=finite(view?.row?.rank,0),otherRank=finite(row?.rank,0),selfScore=finite(view?.row?.score,50),otherScore=finite(row?.score,50);
+  const rankGap=selfRank>0&&otherRank>0?Math.abs(selfRank-otherRank):12,scoreGap=Math.abs(selfScore-otherScore);
+  const rankProximity=clamp(1-rankGap/30,0,1),scoreProximity=clamp(1-scoreGap/40,0,1);
+  return clamp(.28+rankProximity*.18+scoreProximity*.14-index*.035,.18,.62);
+}
+function deriveCompetitorFlow({view={},coreAttritionPct=0,attentionSupportGap=0,supportComposite=0,volatility=0}={}){
+  const rows=(Array.isArray(view.related)?view.related:[]).slice(0,3);
+  if(!rows.length)return [];
+  const pressure=clamp(
+    finite(coreAttritionPct,0)*1.35+
+    Math.max(0,finite(attentionSupportGap,0))*.17+
+    Math.max(0,-finite(supportComposite,0))*.10+
+    Math.max(0,finite(volatility,0))*.08,
+    0,14
+  );
+  return rows.map((row,index)=>({
+    id:row?.person?.id||'',name:row?.person?.name||'',
+    estimatedShare:pct(pressure*competitorAffinity(view,row,index),8)
+  })).filter(x=>x.id);
+}
 function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],demographic:null},asOf=new Date().toISOString()}={}){
   const rawCoverage=analysisCoverage(view?.analysis?.scores||{}),scores=materializeScores(view,history,evidence);
   view={...view,analysis:{...(view?.analysis||{}),scores}};
@@ -212,7 +233,7 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
   const resilienceScore=score(62+scoreAxis(sig.s.coreRetention)*.35+scoreAxis(sig.s.activityPersistence)*.25-volatility*.9-coreAttritionPct*1.1);
   const supportComposite=axis(avg(Object.values(ageMomentum))+(newSupportInflowPct-coreAttritionPct)*1.4);
   const attentionSupportGap=axis(sig.attention-supportComposite);
-  const competitorFlow=(Array.isArray(view.related)?view.related:[]).slice(0,3).map((row,index)=>({id:row?.person?.id||'',name:row?.person?.name||'',estimatedShare:pct(coreAttritionPct*(0.28-index*.06),8)})).filter(x=>x.id);
+  const competitorFlow=deriveCompetitorFlow({view,coreAttritionPct,attentionSupportGap,supportComposite,volatility});
   const observedDays=Number(history?.summary?.dailySampleSize??history?.daily?.length??0)||0,externalCount=Array.isArray(evidence?.sources)?evidence.sources.length:0;
   const currentSearch=String(view?.row?.search?.state||'').toUpperCase()==='READY',currentNews=String(view?.row?.news?.state||'').toUpperCase()==='READY';
   const confidenceScore=score(Math.min(95,34+Math.min(24,observedDays*2.5)+(currentSearch?8:0)+(currentNews?8:0)+Math.min(21,externalCount*10.5)));
@@ -242,4 +263,4 @@ function derivePoliticalIntelligenceV1({view={},history={},evidence={sources:[],
   };
 }
 
-module.exports={VERSION,derivePoliticalIntelligenceV1,_internals:{axis,classifyHeadline,normalizeQuality,historyVolatility,historyRecoveryDays,deriveStrategicSolution,materializeScores,convictionAxis}};
+module.exports={VERSION,derivePoliticalIntelligenceV1,_internals:{axis,classifyHeadline,normalizeQuality,historyVolatility,historyRecoveryDays,deriveStrategicSolution,deriveCompetitorFlow,competitorAffinity,materializeScores,convictionAxis}};

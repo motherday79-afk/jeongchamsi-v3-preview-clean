@@ -47,6 +47,20 @@ function createPoliticalIntelligenceV2Store(overrides={}){
   async function readPoliticalIntelligenceSnapshotPersonV2(draftId,personId){const snap=await readPoliticalIntelligenceSnapshotV2(draftId);const packed=snap?.people?.[String(personId||'')];return packed?{version:ANALYSIS_VERSION,engineVersion:ENGINE_VERSION,storeVersion:STORE_VERSION,calculationRevision:snap.calculationRevision||null,draftId:snap.draftId,publishedAt:snap.publishedAt,cohorts:unpackCohorts(packed)}:null;}
   async function latestSnapshot(){const ids=await deps.command(['ZREVRANGE',ACTIVE_INDEX_KEY,0,0]),draftId=Array.isArray(ids)?ids[0]||'':'';if(!draftId)return null;if(draftId!==latestCacheDraftId||!latestCacheSnapshot){latestCacheSnapshot=decodeSnapshot(await deps.command(['GET',activeSnapshotKey(draftId)]));latestCacheDraftId=draftId;}return latestCacheSnapshot;}
   async function readLatestPoliticalIntelligenceSnapshotPersonV2(personId){const snap=await latestSnapshot();const packed=snap?.people?.[String(personId||'')];return packed?{version:ANALYSIS_VERSION,engineVersion:ENGINE_VERSION,storeVersion:STORE_VERSION,calculationRevision:snap.calculationRevision||null,draftId:snap.draftId,publishedAt:snap.publishedAt,cohorts:unpackCohorts(packed)}:null;}
+  async function readPoliticalIntelligenceCohortSeriesV2(personId,{limit=8}={}){
+    const id=String(personId||'').trim();if(!id)return [];
+    const capped=Math.max(2,Math.min(12,Number(limit)||8));
+    const draftIds=await deps.command(['ZREVRANGE',ACTIVE_INDEX_KEY,0,capped-1]);
+    const ids=Array.isArray(draftIds)?draftIds.filter(Boolean):[];if(!ids.length)return [];
+    const rows=await Promise.all(ids.map(async draftId=>{
+      const snap=decodeSnapshot(await deps.command(['GET',activeSnapshotKey(draftId)]));
+      const packed=snap?.people?.[id];if(!packed)return null;
+      const cohorts=unpackCohorts(packed),cells={};
+      for(const key of COHORT_KEYS){const row=cohorts?.cells?.[key];cells[key]=row?.status==='VALID_SIGNAL'&&Number.isFinite(Number(row?.value))?Number(row.value):null;}
+      return {draftId:String(snap?.draftId||draftId),publishedAt:snap?.publishedAt||cohorts?.asOf||null,cells};
+    }));
+    return rows.filter(Boolean).sort((a,b)=>(Date.parse(a.publishedAt)||0)-(Date.parse(b.publishedAt)||0));
+  }
   async function recordPoliticalIntelligenceSnapshotV2({current={},legacyHistory={items:[]},personViews=[],evidenceBundle={records:[]}}={}){
     let baselineBundle=null,baselineForPerson=null,trusted=false;
     if(legacyBaselineOverrides){trusted=Boolean(deps.hasTrustedBaselineV2());baselineForPerson=id=>deps.getAgeGenderBaselineV2(id);}
@@ -58,7 +72,7 @@ function createPoliticalIntelligenceV2Store(overrides={}){
     for(const row of current.ranked){const id=String(row?.person?.id||row?.id||'').trim();if(!id)continue;const view=views.get(id)||deps.derivePersonView(current,legacyHistory||{items:[]},id,Date.parse(publishedAt));if(!view?.row)continue;const history=historyFromPersonTrend(view),evidence=deps.getPoliticalIntelligenceEvidence(id,{asOf:publishedAt,dynamicBundle:evidenceBundle,person:view.row.person||row.person||null}),baseline=baselineForPerson(id);if(!baseline)continue;const v1=deps.derivePoliticalIntelligenceV1({view,history,evidence,asOf:publishedAt});const prevPacked=previous?.people?.[id],previousV2=prevPacked?{cohorts:unpackCohorts(prevPacked)}:null;const marketContext=deps.deriveMarketContextV2({view,allViews});const v2=deps.derivePoliticalIntelligenceV2({v1,view,history,evidence,baseline,previousV2,marketContext,asOf:publishedAt});people[id]=packCohorts(v2.cohorts);}
     const snapshot={schemaVersion:2,immutable:true,accessScope:ACCESS_SCOPE,storeVersion:STORE_VERSION,analysisVersion:ANALYSIS_VERSION,engineVersion:ENGINE_VERSION,calculationRevision:CALCULATION_REVISION,baselineVersion:BASELINE_VERSION,draftId,publishedAt,snapshotKind:String(current?.snapshotKind||'PUBLISHED'),rosterTotal:Object.keys(people).length,people};const packed=encodeSnapshot(snapshot);if(packed.compressedBytes>MAX_COMPRESSED_BYTES){const error=new Error('JCS_INTELLIGENCE_V2_SNAPSHOT_TOO_LARGE');error.code='STORAGE_REQUEST';throw error;}const created=Boolean(await deps.command(['SET',activeSnapshotKey(draftId),packed.encoded,'NX']));if(created)await deps.command(['ZADD',ACTIVE_INDEX_KEY,String(Date.parse(publishedAt)||Date.now()),draftId]);if(created){latestCacheDraftId=draftId;latestCacheSnapshot=snapshot;}return {ok:true,created,draftId,analysisAt:publishedAt,rosterTotal:snapshot.rosterTotal,compressedBytes:packed.compressedBytes,baselineVersion:BASELINE_VERSION,calculationRevision:CALCULATION_REVISION};
   }
-  return {recordPoliticalIntelligenceSnapshotV2,readPoliticalIntelligenceSnapshotV2,readPoliticalIntelligenceSnapshotPersonV2,readLatestPoliticalIntelligenceSnapshotPersonV2,_deps:deps};
+  return {recordPoliticalIntelligenceSnapshotV2,readPoliticalIntelligenceSnapshotV2,readPoliticalIntelligenceSnapshotPersonV2,readLatestPoliticalIntelligenceSnapshotPersonV2,readPoliticalIntelligenceCohortSeriesV2,_deps:deps};
 }
 const defaults=createPoliticalIntelligenceV2Store();
 module.exports={STORE_VERSION,PREFIX,INDEX_KEY,ACTIVE_INDEX_KEY,CALCULATION_REVISION,ACCESS_SCOPE,MAX_COMPRESSED_BYTES,COMPONENT_KEYS,snapshotKey,activeSnapshotKey,encodeSnapshot,decodeSnapshot,packCohorts,unpackCohorts,createPoliticalIntelligenceV2Store,...defaults};

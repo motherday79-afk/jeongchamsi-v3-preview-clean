@@ -58,9 +58,9 @@ test('premium Political Intelligence uses multiple visualization grammars and se
 test('premium UI cache revisions are wired through stylesheet and dynamic view imports',()=>{
   const index=read('index.html');
   const app=read('src/app.js');
-  assert.match(index,/admin-premium-intelligence-v1/);
-  assert.match(app,/features\.js\?v=[^"']*admin-premium-intelligence-v1/);
-  assert.match(app,/people\.js\?v=[^"']*admin-premium-intelligence-v1/);
+  assert.match(index,/admin-premium-intelligence-v2/);
+  assert.match(app,/features\.js\?v=[^"']*admin-premium-intelligence-v2/);
+  assert.match(app,/people\.js\?v=[^"']*admin-premium-intelligence-v2/);
 });
 
 test('admin compare add preserves an existing legacy a or b selection before converting to repeated p params',()=>{
