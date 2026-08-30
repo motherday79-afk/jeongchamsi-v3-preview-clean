@@ -330,11 +330,12 @@ async function brandPanel() {
     artImage:"",
     ...(data.hero || {})
   };
+  const storedAbout = data.about || {};
+  const legacyAbout = !String(storedAbout.body || "").trim() || String(storedAbout.body || "").startsWith("정참시는 정치인을 지지하거나 공격하기 위해 만든 곳이 아닙니다.");
   const about = {
     title:"왜 정참시인가",
-    intro:"정치는 선거일 하루에만 존재하지 않습니다. 우리의 일상과 선택, 지역과 미래를 매일 움직입니다",
-    body:"",
-    ...(data.about || {})
+    intro:legacyAbout ? APPROVED_ABOUT_INTRO : String(storedAbout.intro || APPROVED_ABOUT_INTRO),
+    body:legacyAbout ? APPROVED_ABOUT_BODY : String(storedAbout.body || APPROVED_ABOUT_BODY)
   };
   const support = {
     title:"정참시 후원하기",
@@ -897,3 +898,6 @@ export async function sendPushNotification(form, scope = "test") {
     return r.ok ? {ok:true,...b} : {ok:false,error:b.error || "PUSH_SEND_FAILED"};
   } catch { return {ok:false,error:"PUSH_SEND_FAILED"}; }
 }
+const APPROVED_ABOUT_INTRO = '훌륭한 배우도 끊임없이 훈련합니다.';
+const APPROVED_ABOUT_BODY = '작품이 없는 시간에는 발성과 호흡, 표정과 감정 표현을 다시 점검하고,\n작품 중에도 필요한 순간마다 조언을 구하며 자신을 다듬습니다.\n\n정치도 다르지 않다고 생각합니다.\n\n정참시는 정치를 하려는 곳도, 정치인이 되려는 곳도 아닙니다.\n다만 정치를 꿈꾸는 사람과 이미 정치의 현장에 있는 사람에게\n더 정확한 데이터와 더 선명한 분석을 제공하는 곳입니다.\n\n정참시는 정참시가 가장 잘하는 일을 하겠습니다.\n\n데이터를 수집하고,\nJCS의 레시피로 분석하고,\n시장이 요구하는 신호를 읽어\n가장 필요한 순간에 전달하겠습니다.\n\n그다음은 여러분의 몫입니다.\n시장을 향해 마음껏 목소리를 내십시오.\n\n목적지를 정하는 것은 여러분입니다.\n가장 정확한 길을 찾는 것은 정참시가 하겠습니다.';
+

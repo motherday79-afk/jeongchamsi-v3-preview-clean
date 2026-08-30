@@ -1,5 +1,9 @@
-import { pageShell, esc } from "./layout.js";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 import { getDomain } from "../core/repository.js";
+
+const ABOUT_V2_INTRO = '훌륭한 배우도 끊임없이 훈련합니다.';
+const ABOUT_V2_BODY = '작품이 없는 시간에는 발성과 호흡, 표정과 감정 표현을 다시 점검하고,\n작품 중에도 필요한 순간마다 조언을 구하며 자신을 다듬습니다.\n\n정치도 다르지 않다고 생각합니다.\n\n정참시는 정치를 하려는 곳도, 정치인이 되려는 곳도 아닙니다.\n다만 정치를 꿈꾸는 사람과 이미 정치의 현장에 있는 사람에게\n더 정확한 데이터와 더 선명한 분석을 제공하는 곳입니다.\n\n정참시는 정참시가 가장 잘하는 일을 하겠습니다.\n\n데이터를 수집하고,\nJCS의 레시피로 분석하고,\n시장이 요구하는 신호를 읽어\n가장 필요한 순간에 전달하겠습니다.\n\n그다음은 여러분의 몫입니다.\n시장을 향해 마음껏 목소리를 내십시오.\n\n목적지를 정하는 것은 여러분입니다.\n가장 정확한 길을 찾는 것은 정참시가 하겠습니다.';
+
 
 function paragraphs(text = "") {
   return String(text || "").split(/\n{2,}/).map(x => x.trim()).filter(Boolean).map(x => `<p>${esc(x)}</p>`).join("");
@@ -9,8 +13,8 @@ function defaults(data = {}) {
   return {
     about: {
       title: "왜 정참시인가",
-      intro: "정치는 선거일 하루에만 존재하지 않습니다. 우리의 일상과 선택, 지역과 미래를 매일 움직입니다",
-      body: "정참시는 정치인을 지지하거나 공격하기 위해 만든 곳이 아닙니다. 더 알고, 비교하고, 질문하고, 선택하고, 평가하기 위해 만들었습니다\n\n정치인을 알아보는 것도 참여입니다. 정책과 기록을 비교하는 것도 참여입니다. 시민의 생각을 표현하고, 선출된 이후에도 계속 지켜보며 평가하는 것도 참여입니다\n\n정치는 정치인만의 것이 아닙니다. 정치의 결과를 살아가는 사람이 시민이라면, 정치의 과정에도 시민의 자리가 있어야 합니다\n\n한 사람의 관심은 작을 수 있습니다. 하지만 수많은 한 사람이 알고, 묻고, 비교하고, 선택하기 시작하면 정치의 방향은 달라질 수 있습니다\n\n그래서 우리는 정참시를 만들었습니다. 바라볼 때가 아닌, 행동할 때 정치가 시작되니까요",
+      intro: ABOUT_V2_INTRO,
+      body: ABOUT_V2_BODY,
       ...(data.about || {})
     },
     support: {
@@ -24,7 +28,9 @@ function defaults(data = {}) {
 }
 
 export async function renderAbout() {
-  const data = defaults(await getDomain("brand"));
+  const raw = await getDomain("brand");
+  if (!raw.about || !String(raw.about.body || "").trim() || String(raw.about.body || "").startsWith("정참시는 정치인을 지지하거나 공격하기 위해 만든 곳이 아닙니다.")) raw.about = { ...(raw.about || {}), intro:ABOUT_V2_INTRO, body:ABOUT_V2_BODY };
+  const data = defaults(raw);
   return pageShell(`<main class="subpage brand-story-page">
     <section class="brand-story-hero">
       <span class="eyebrow">WHY JEONGCHAMSI</span>

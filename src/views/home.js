@@ -220,21 +220,29 @@ function academyRows(slots = []) {
 }
 
 
-function homeHistoryIntelligence(history){
-  if(!history)return '';
-  const movers=history?.latestSnapshot?.intelligenceSummary?.movers||[];
-  const status=history.currentCaptured?'CURRENT SAVED':'BASELINE READY';
-  return `<section class="home-history-intelligence" aria-label="관리자 전용 HISTORY 인텔리전스"><div class="home-history-head"><div><span>ADMIN INTELLIGENCE · INTERNAL_ADMIN</span><b>HISTORY V2</b></div><button type="button" data-go="/admin?tab=history">전체 HISTORY →</button></div><div class="home-history-status"><span>IMMUTABLE ${Number(history.snapshotCount||0)}회</span><span>${esc(status)}</span><span>${esc(history.latestDraftId||history.currentDraftId||'첫 기준점 대기')}</span></div>${movers.length?`<div class="home-history-movers">${movers.slice(0,5).map((m,i)=>`<button type="button" data-go="/admin?tab=history&person=${encodeURIComponent(m.id)}&range=30"><em>${i+1}</em><span><b>${esc(m.name||m.id)}</b><small>NOW ${m.globalRank??'—'}위 · ${esc(m.signal||'관측')}</small></span><strong>${m.rankDelta===null||m.rankDelta===undefined?'—':`${Number(m.rankDelta)>0?'▲ ':Number(m.rankDelta)<0?'▼ ':''}${Math.abs(Number(m.rankDelta))}`}</strong></button>`).join('')}</div>`:`<div class="home-history-empty">첫 FULL SNAPSHOT을 저장하면 관리자에게만 최근 변화와 급변 신호가 표시됩니다.</div>`}</section>`;
-}
 
-export async function hydrateHomeAdminHistory(){
-  const slot=document.querySelector('[data-home-history-slot]');
-  if(!slot)return;
-  const {getAdminHistoryHomeSummary}=await import('../core/history-repository.js?v=history-v2-perf');
-  const history=await getAdminHistoryHomeSummary();
-  if(!slot.isConnected)return;
-  if(!history||history.ok===false){slot.remove();return;}
-  slot.outerHTML=homeHistoryIntelligence(history);
+export function hydrateHomeNowCarousel(){
+  const root=document.querySelector("[data-now-rank-carousel]");
+  if(!root||root.dataset.nowRankReady==="1")return;
+  root.dataset.nowRankReady="1";
+  const pages=Array.from(root.querySelectorAll("[data-now-rank-page]"));
+  const pageCount=pages.length;
+  if(pageCount<2){root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.hidden=true);return;}
+  let pageIndex=0,timer=0,paused=false;
+  const show=index=>{
+    pageIndex=(index+pageCount)%pageCount;
+    pages.forEach((page,i)=>{const active=i===pageIndex;page.hidden=!active;page.setAttribute("aria-hidden",active?"false":"true");});
+  };
+  const stop=()=>{if(timer){clearInterval(timer);timer=0;}};
+  const start=()=>{stop();if(!paused)timer=setInterval(()=>show(pageIndex+1),4000);};
+  root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.addEventListener("click",()=>{show(pageIndex+(btn.dataset.nowRankNav==="prev"?-1:1));start();}));
+  root.addEventListener("mouseenter",()=>{paused=true;stop();});
+  root.addEventListener("mouseleave",()=>{paused=false;start();});
+  root.addEventListener("focusin",()=>{paused=true;stop();});
+  root.addEventListener("focusout",event=>{if(!root.contains(event.relatedTarget)){paused=false;start();}});
+  root.addEventListener("pointerdown",()=>{paused=true;stop();},{passive:true});
+  root.addEventListener("pointerup",()=>{paused=false;start();},{passive:true});
+  start();
 }
 
 export async function renderHome() {
@@ -242,8 +250,6 @@ export async function renderHome() {
   const userSummary = getUserSummary();
   const userSession = userSummary.session;
   const userReady = !document.documentElement.classList.contains("jcv3-user-pending");
-  const isAdmin = userReady && userSession.authenticated && userSession.user?.role === "admin";
-  const adminHistoryMarkup = isAdmin ? `<section class="home-history-intelligence home-history-loading" data-home-history-slot aria-busy="true"><div class="home-history-head"><div><span>ADMIN INTELLIGENCE · INTERNAL_ADMIN</span><b>HISTORY V2</b></div></div><div class="home-history-empty">HISTORY 요약을 불러오는 중입니다.</div></section>` : "";
   let getPerson = null;
   const generationDisplayResults = data.generation?.demoMode === true ? (data.generation?.demoResults || {}) : (data.generation?.results || {});
   const generationHasVotes = Object.values(generationDisplayResults).some(votes => Object.values(votes || {}).some(v => Number(v || 0) > 0));
@@ -329,11 +335,19 @@ export async function renderHome() {
     if (name.includes("사회민주당")) return "사";
     return "무";
   };
-  const rankTop10 = nowPeople.slice(0,10).map((p,i)=>{
+  const rankCard = (p, absoluteIndex) => {
     const photo=politicianPhoto(p.id,"mini");
     const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low">` : "";
-    return `<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${i+1}</div><div class="rank-top-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`;
-  }).join("");
+    const rank=Number(p.rank || absoluteIndex + 1);
+    return `<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-now-rank="${rank}" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${rank}</div><div class="rank-top-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`;
+  };
+  const nowTop30 = nowPeople.slice(0,30);
+  const nowRankPages = Array.from({length:3},(_,pageIndex)=>{
+    const rows=nowTop30.slice(pageIndex*10,pageIndex*10+10);
+    if(!rows.length)return "";
+    return `<div class="rank-top-grid rank-top-grid-10 now-rank-page" data-now-rank-page="${pageIndex}" ${pageIndex===0?"":`hidden aria-hidden="true"`}>${rows.map((p,i)=>rankCard(p,pageIndex*10+i)).join("")}</div>`;
+  }).filter(Boolean);
+  const nowRankCarousel = `<div class="now-rank-carousel" data-now-rank-carousel data-now-rank-page-count="${nowRankPages.length}"><button class="now-rank-arrow is-prev" type="button" data-now-rank-nav="prev" aria-label="이전 NOW RANK 10명">‹</button><div class="now-rank-pages">${nowRankPages.join("")}</div><button class="now-rank-arrow is-next" type="button" data-now-rank-nav="next" aria-label="다음 NOW RANK 10명">›</button></div>`;
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
   const loginMobile = !userReady
@@ -390,7 +404,7 @@ export async function renderHome() {
   return `<div class="site-shell">
     ${siteHeader({ memberCount:data.memberCount, liveBar:data.brand?.liveBar, badgeCelebrations:data.badgeCelebrations || [] })}
 
-    <div class="page-wrap product-home-wrap">${productHero(data.brand || {})}${adminHistoryMarkup}${productLauncher()}<div class="portal-layout product-content-grid">
+    <div class="page-wrap product-home-wrap">${productHero(data.brand || {})}${productLauncher()}<div class="portal-layout product-content-grid">
       <section class="mobile-utility" aria-label="모바일 내 정참시">
         ${loginMobile}
         <section class="mobile-participation participation-card"><div class="side-head"><b>내 참여 · 배지</b><span class="side-action" role="button" tabindex="0" data-go="/mypage/activity">MY</span></div>${badgePreview}</section>
@@ -409,7 +423,7 @@ export async function renderHome() {
 
         <section class="module" id="compare"><div class="module-header"><div><span class="eyebrow">COMPARE · SAMPLE</span><h2>정치인 비교분석</h2></div><button class="more-btn" type="button" data-go="/compare">비교하기</button></div><div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div><div class="compare-layout"><div class="compare-person"><span class="compare-avatar sample-a"></span><b>가상후보 A</b><small>정책·민생형</small></div><div class="compare-metrics"><div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div><div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div><div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div><div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div></div><div class="compare-person"><span class="compare-avatar sample-b"></span><b>가상후보 B</b><small>개혁·소통형</small></div></div><div class="compare-summary"><b>비교 결과 예시</b><span>정참시의 AI 인텔리전트 데이터 무브먼트로 22개의 항목을 비교분석 합니다</span></div></section>
 
-        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow live-heading-inline">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="rank-top-grid rank-top-grid-10">${rankTop10}</div></section>
+        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow live-heading-inline">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div>${nowRankCarousel}</section>
 
         <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div><div class="column-grid">${columnCards.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 

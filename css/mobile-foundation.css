@@ -149,7 +149,7 @@
   .admin-page>.page-hero{grid-column:1}
   .admin-tabs{position:static;top:auto;max-height:none;display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:7px;padding:1px 0 7px;scrollbar-width:none}
   .admin-tabs::-webkit-scrollbar{display:none}
-  .admin-tabs a{width:auto;min-width:max-content;white-space:nowrap}
+  .admin-tabs button{width:auto;min-width:max-content;white-space:nowrap}
   .admin-form-row,.member-edit-grid,.member-access-expanded{grid-template-columns:minmax(0,1fr)}
   .admin-stat-grid,.people-admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .member-access-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -257,3 +257,8 @@
   #column .column-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .side-news,.side-rising{min-height:100%}
 }
+
+
+/* NOW RANK TOP30 CAROUSEL — mobile */
+@media(max-width:1024px){.now-rank-carousel{padding:0 24px}.now-rank-arrow{width:28px;height:48px;margin-top:-24px;font-size:24px}.now-rank-arrow.is-prev{left:-7px}.now-rank-arrow.is-next{right:-7px}}
+@media(max-width:560px){.now-rank-carousel{padding:0 20px}.now-rank-arrow{width:25px;height:44px;margin-top:-22px}.now-rank-arrow.is-prev{left:-6px}.now-rank-arrow.is-next{right:-6px}}

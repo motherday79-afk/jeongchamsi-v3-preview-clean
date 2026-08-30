@@ -1,0 +1,17 @@
+JCV3 NOW RANK 30 / HOME CLEANUP / HISTORY REFRESH / BRAND COPY
+FINAL VERIFICATION — 2026-08-30
+
+Changed scope:
+- Main NOW RANK 30-person carousel: 1-10 / 11-20 / 21-30, arrows, 4s rotation.
+- Admin-only HOME HISTORY V2 hero block removed; HISTORY remains available elsewhere.
+- JCS HISTORY CONTEXT finalize-state bug fixed so preview status is preserved and VERIFY closes even with non-blocking intelligence warnings.
+- "왜 정참시인가" actor / JCS recipe copy applied to public brand defaults and admin editor normalization.
+- Cache-bust markers and responsive carousel styling updated.
+
+Fresh focused verification:
+- Changed JavaScript syntax checks: PASS.
+- Affected-path regression suite: 39 tests / 39 pass / 0 fail.
+- Includes admin multi-compare, aggressive intelligence, AGE/GENDER V2, refresh pipeline, and new NOW30/HISTORY/brand regression coverage.
+
+Note:
+- Completion criterion uses the focused affected-path suite. The reconstructed local full-project tree does not contain every unchanged dependency from later patch-only archives, so a full reconstructed suite is not claimed here.
