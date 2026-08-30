@@ -9,8 +9,32 @@ const app = document.querySelector("#app");
 let renderEpoch = 0;
 let liveBarRotationTimer = 0;
 let liveBarCelebrationTimer = 0;
+let nowRankRotationTimer = 0;
 const viewPrefetchCache = new Map();
 const VIEW_PREFETCH_TTL = 20_000;
+function stopNowRankRotation(){
+  if(nowRankRotationTimer){ clearInterval(nowRankRotationTimer); nowRankRotationTimer=0; }
+}
+function hydrateHomeNowRank(){
+  stopNowRankRotation();
+  const carousel=app.querySelector('[data-now-rank-carousel]');
+  if(!carousel)return;
+  const pages=[...carousel.querySelectorAll('[data-now-rank-page]')];
+  if(pages.length<1)return;
+  let index=Math.max(0,Math.min(pages.length-1,Number(carousel.dataset.page||0)));
+  const status=carousel.querySelector('[data-now-rank-status]');
+  const show=next=>{
+    index=(next+pages.length)%pages.length;
+    carousel.dataset.page=String(index);
+    pages.forEach((page,i)=>{page.hidden=i!==index;page.classList.toggle('is-active',i===index);});
+    if(status)status.textContent=`${index+1} / ${pages.length}`;
+  };
+  carousel.querySelector('[data-now-rank-prev]')?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();show(index-1);});
+  carousel.querySelector('[data-now-rank-next]')?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();show(index+1);});
+  show(index);
+  if(pages.length>1)nowRankRotationTimer=setInterval(()=>show(index+1),4000);
+}
+
 function prefetchStateFromPath(path="") {
   try { const url=new URL(path,window.location.origin); return { pathname:url.pathname, search:url.search }; } catch { return null; }
 }
@@ -32,7 +56,7 @@ function nowFailureText(label, r) {
 }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1-jcs-plan-a-r1")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
     if (p[0] === "login") return view.renderLogin();
@@ -69,7 +93,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
+  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1-jcs-plan-a-r1")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -167,6 +191,7 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
   if (epoch !== renderEpoch) return;
 
   document.documentElement.classList.add("jcv3-route-swapping");
+  stopNowRankRotation();
   app.innerHTML = html;
   document.body.classList.remove("drawer-open");
 
@@ -181,9 +206,7 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
 
   syncCurrentScroll();
   hydrateLiveCommunityBar();
-  if (app.querySelector("[data-now-rank-carousel]")) {
-    requestAnimationFrame(() => import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1").then(mod=>mod.hydrateHomeNowRank?.()).catch(()=>{}));
-  }
+  if (app.querySelector("[data-now-rank-carousel]")) requestAnimationFrame(hydrateHomeNowRank);
   if (app.querySelector("[data-person-admin-intelligence-slot]")) {
     requestAnimationFrame(() => {
       import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2")
