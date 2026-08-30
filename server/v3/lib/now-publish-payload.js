@@ -16,6 +16,48 @@ function compactHeadline(headline){
   if(!headline || typeof headline!=='object') return null;
   return { title:headline.title||'', source:headline.source||'', ts:Number(headline.ts)||0 };
 }
+function compactPersonHeadline(headline){
+  if(!headline || typeof headline!=='object') return null;
+  return { title:headline.title||'', link:headline.link||'', source:headline.source||'', ts:Number(headline.ts)||0 };
+}
+function compactPersonLatest(latest){
+  if(!latest || typeof latest!=='object') return null;
+  return { title:latest.title||'', link:latest.link||'', source:latest.source||'', ts:Number(latest.ts)||0 };
+}
+function compactPersonPublicView(view){
+  if(!view || typeof view!=='object') return view;
+  const next={...view};
+  const row=view.row&&typeof view.row==='object'?view.row:null;
+  if(!row)return next;
+  const search=row.search&&typeof row.search==='object'?row.search:{};
+  const news=row.news&&typeof row.news==='object'?row.news:{};
+  next.row={
+    rank:Number(row.rank)||0,score:Number(row.score)||0,state:row.state||'',searchScore:Number(row.searchScore)||0,newsScore:Number(row.newsScore)||0,
+    person:row.person||null,
+    search:{
+      state:search.state||'ERROR',monthlyPcQcCnt:Number(search.monthlyPcQcCnt)||0,monthlyMobileQcCnt:Number(search.monthlyMobileQcCnt)||0,
+      monthlyTotalQcCnt:Number(search.monthlyTotalQcCnt)||0,ambiguousName:Boolean(search.ambiguousName)
+    },
+    news:{
+      state:news.state||'ERROR',count6:Number(news.count6)||0,count24:Number(news.count24)||0,count7d:Number(news.count7d)||0,
+      sources24:Number(news.sources24)||0,
+      ...(news.latest?{latest:compactPersonLatest(news.latest)}:{}),
+      headlines:(Array.isArray(news.headlines)?news.headlines:[]).slice(0,12).map(compactPersonHeadline).filter(Boolean)
+    },
+    providers:Array.isArray(row.providers)?row.providers:[]
+  };
+  return next;
+}
+function fitPersonPublishEntries(entries=[], targetBytes=TARGET_BYTES){
+  const source=Array.isArray(entries)?entries:[];
+  const beforeBytes=requestBytes(source);
+  if(beforeBytes<=targetBytes)return {entries:source,beforeBytes,bytes:beforeBytes,savedBytes:0,phase:'unchanged'};
+  const candidate=source.map(([domain,view])=>[domain,compactPersonPublicView(view)]);
+  const bytes=requestBytes(candidate);
+  if(bytes<=targetBytes)return {entries:candidate,beforeBytes,bytes,savedBytes:beforeBytes-bytes,phase:'compact-person-public-row'};
+  const e=new Error(`NOW_PERSON_PUBLISH_PAYLOAD_TOO_LARGE:${bytes}`);
+  e.code='NOW_PERSON_PUBLISH_PAYLOAD_TOO_LARGE';e.bytes=bytes;e.targetBytes=targetBytes;throw e;
+}
 function compactStoredCurrent(current, headlineLimit=12, keepLatest=true){
   const next=clone(current)||{};
   next.ranked=(Array.isArray(next.ranked)?next.ranked:[]).map(row=>{
@@ -60,4 +102,4 @@ function fitNowPublishEntries(entries=[], targetBytes=TARGET_BYTES){
   const e=new Error(`NOW_PUBLISH_PAYLOAD_TOO_LARGE:${last?.bytes||beforeBytes}`);e.code='NOW_PUBLISH_PAYLOAD_TOO_LARGE';e.bytes=last?.bytes||beforeBytes;e.targetBytes=targetBytes;throw e;
 }
 
-module.exports={TARGET_BYTES,requestBytes,fitNowPublishEntries,compactStoredCurrent};
+module.exports={TARGET_BYTES,requestBytes,fitNowPublishEntries,compactStoredCurrent,compactPersonPublicView,fitPersonPublishEntries};

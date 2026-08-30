@@ -12,7 +12,7 @@ const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = requir
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
-const { fitNowPublishEntries } = require('../../lib/now-publish-payload');
+const { fitNowPublishEntries, fitPersonPublishEntries } = require('../../lib/now-publish-payload');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -61,7 +61,13 @@ async function migrateLegacyMeta(meta){
 }
 async function writePersonEntries(entries=[]){
   const chunks=[];for(let i=0;i<entries.length;i+=40)chunks.push(entries.slice(i,i+40));
-  for(let i=0;i<chunks.length;i+=4)await Promise.all(chunks.slice(i,i+4).map(chunk=>msetJSON(chunk)));
+  const stats=[];
+  for(let i=0;i<chunks.length;i+=4){
+    const fitted=chunks.slice(i,i+4).map(chunk=>fitPersonPublishEntries(chunk));
+    stats.push(...fitted.map(x=>({beforeBytes:x.beforeBytes,bytes:x.bytes,savedBytes:x.savedBytes,phase:x.phase})));
+    await Promise.all(fitted.map(x=>msetJSON(x.entries)));
+  }
+  return {chunks:stats.length,maxBeforeBytes:stats.reduce((m,x)=>Math.max(m,x.beforeBytes),0),maxBytes:stats.reduce((m,x)=>Math.max(m,x.bytes),0),savedBytes:stats.reduce((s,x)=>s+x.savedBytes,0),phases:[...new Set(stats.map(x=>x.phase))]};
 }
 async function saveBatchAndStatus(meta,index,stored){
   const summary=aggregateBatchSummaries([stored],stored.ids?.length||stored.results?.length||0);
@@ -187,7 +193,7 @@ module.exports=async function nowDataAdmin(req,res){
         ...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])
       ]);
       await msetJSON(publishPayload.entries);
-      await writePersonEntries(trendedPersonEntries);
+      const personPublishPayload=await writePersonEntries(trendedPersonEntries);
       const historyWarnings=[];
       // HISTORY V1 remains readable as a legacy layer. New formal publish snapshots are recorded only in V2.
       try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}
@@ -202,7 +208,7 @@ module.exports=async function nowDataAdmin(req,res){
       }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_SNAPSHOT_NON_BLOCKING]',intelligenceError);historyWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
       let tempCleanup={matched:0,deleted:0};
       try{tempCleanup=await cleanupDraftNowTemp(meta.draftId,meta.batchCount);}catch(cleanupError){console.error('[NOW_TEMP_CLEANUP_NON_BLOCKING]',cleanupError);historyWarnings.push('NOW_TEMP_CLEANUP_FAILED');}
-      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup,publishPayload:{beforeBytes:publishPayload.beforeBytes,bytes:publishPayload.bytes,savedBytes:publishPayload.savedBytes,targetBytes:9500000,phase:publishPayload.phase}});
+      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup,publishPayload:{beforeBytes:publishPayload.beforeBytes,bytes:publishPayload.bytes,savedBytes:publishPayload.savedBytes,targetBytes:9500000,phase:publishPayload.phase},personPublishPayload});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
   }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}
