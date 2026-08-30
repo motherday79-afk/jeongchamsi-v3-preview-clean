@@ -68,7 +68,7 @@ test('V2 wrapper preserves V1 analysis while adding cohort intelligence and vers
   const result=derivePoliticalIntelligenceV2({v1,view:validView(),history:validHistory(),evidence:{sources:[]},baseline:directBaseline(),asOf:'2026-08-30T00:00:00.000Z'});
   assert.equal(VERSION,'JCS_POLITICAL_INTELLIGENCE_V2');
   assert.equal(result.version,VERSION);
-  assert.equal(result.engineVersion,'JCS_AGE_GENDER_INTELLIGENCE_V2_AGGRESSIVE_R1');
+  assert.equal(result.engineVersion,'JCS_AGE_GENDER_INTELLIGENCE_V2_AGGRESSIVE_R2_TOPIC_SHAPE');
   assert.equal(result.diagnosis.label,'테스트 진단');
   assert.ok(result.cohorts&&result.cohorts.cells);
 });

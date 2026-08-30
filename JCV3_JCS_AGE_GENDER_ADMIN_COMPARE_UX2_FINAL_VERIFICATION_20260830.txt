@@ -1,0 +1,18 @@
+JCV3 JCS AGE/GENDER + ADMIN MULTI COMPARE UX2 FINAL VERIFICATION
+Date: 2026-08-30
+
+Changes
+- AGE/GENDER engine revision: JCS_AGE_GENDER_INTELLIGENCE_V2_AGGRESSIVE_R2_TOPIC_SHAPE
+- Flat official/proxy cohort baselines can now be shaped by observed current issue mix + global movement direction instead of copying one global score across ages.
+- No random numeric spreading: topic allocation is derived from actual collected headline topics and JCS issue rules.
+- V2 calculation revision bumped to JCS_AGGRESSIVE_INTELLIGENCE_20260830_R2_TOPIC_SHAPE so prior R1 snapshots are not reused.
+- Admin multi compare selector redesigned to one search box + dynamic selected chips.
+- 2 to 5 politicians can be added/removed without five permanent selector rows.
+- Responsive layout updated to keep selector content within viewport.
+
+Verification
+- JS syntax: PASS
+- Focused regression suite: 33/33 PASS, 0 FAIL
+- 542-person synthetic numeric-output sweep: PASS
+- Flat baseline + observed youth-topic fixture produces age spread: 18-29 33 / 30-39 28 / 40-49 9 / 50-59 4 / 60-69 -5 / 70+ -10
+  (fixture only; not a real politician result)

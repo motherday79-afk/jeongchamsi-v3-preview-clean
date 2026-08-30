@@ -11,6 +11,18 @@ let liveBarRotationTimer = 0;
 let liveBarCelebrationTimer = 0;
 const viewPrefetchCache = new Map();
 const VIEW_PREFETCH_TTL = 20_000;
+function adminCompareSelectedIds(form) {
+  return [...new Set(Array.from(form?.querySelectorAll('input[name="p"]') || []).map(x=>String(x.value||"").trim()).filter(Boolean))].slice(0,5);
+}
+function syncAdminCompareSelection(form) {
+  if (!form) return;
+  const selectedIds=adminCompareSelectedIds(form),count=form.querySelector("[data-admin-compare-count]"),guide=form.querySelector("[data-admin-compare-guide]"),submit=form.querySelector('button[type="submit"]'),search=form.querySelector("[data-admin-compare-search]"),empty=form.querySelector("[data-admin-compare-empty]");
+  if(count)count.textContent=`${selectedIds.length} / 5`;
+  if(guide)guide.textContent=selectedIds.length<2?"2명 이상 선택하면 비교할 수 있습니다.":`${selectedIds.length}명 선택됨 · 바로 비교할 수 있습니다.`;
+  if(submit){submit.disabled=selectedIds.length<2;submit.textContent=selectedIds.length>=2?`${selectedIds.length}명 비교하기`:"비교하기";}
+  if(search){search.disabled=selectedIds.length>=5;search.placeholder=selectedIds.length>=5?"최대 5명까지 선택했습니다":"이름·정당·지역 검색";}
+  if(empty)empty.hidden=selectedIds.length>0;
+}
 function prefetchStateFromPath(path="") {
   try { const url=new URL(path,window.location.origin); return { pathname:url.pathname, search:url.search }; } catch { return null; }
 }
@@ -56,7 +68,7 @@ async function resolveView(state) {
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini");
+  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-ux2");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -268,11 +280,34 @@ document.addEventListener("click", async event => {
     return;
   }
 
+  const adminCompareRemove = event.target.closest("[data-admin-compare-chip-remove]");
+  if (adminCompareRemove) {
+    const form=adminCompareRemove.closest('[data-compare-form][data-compare-mode="admin"]');
+    adminCompareRemove.closest("[data-admin-compare-chip]")?.remove();
+    const list=form?.querySelector("[data-admin-compare-selected-list]");
+    if(list&&!list.querySelector("[data-admin-compare-chip]")){const empty=document.createElement("span");empty.className="admin-compare-selected-empty";empty.dataset.adminCompareEmpty="";empty.textContent="정치인을 검색해 추가하세요.";list.append(empty);}
+    syncAdminCompareSelection(form);
+    return;
+  }
   const quickSelect = event.target.closest("[data-person-quick-option]");
   if (quickSelect) {
     const select = document.querySelector(quickSelect.dataset.selectTarget || "");
     const input = document.querySelector(quickSelect.dataset.inputTarget || "");
     const results = quickSelect.closest(".person-quick-results");
+    const adminForm=quickSelect.closest('[data-compare-form][data-compare-mode="admin"]');
+    if(adminForm&&input?.matches("[data-admin-compare-search]")){
+      const id=String(quickSelect.dataset.personQuickOption||"").trim(),selectedIds=adminCompareSelectedIds(adminForm);
+      if(id&&!selectedIds.includes(id)&&selectedIds.length>=5){syncAdminCompareSelection(adminForm);if(results)results.hidden=true;return;}
+      if(id&&!selectedIds.includes(id)){
+        const list=adminForm.querySelector("[data-admin-compare-selected-list]");
+        list?.querySelector("[data-admin-compare-empty]")?.remove();
+        const chip=document.createElement("span");chip.className="admin-compare-chip";chip.dataset.adminCompareChip="";chip.dataset.personId=id;
+        const text=document.createElement("span"),name=document.createElement("b"),remove=document.createElement("button"),hidden=document.createElement("input");
+        name.textContent=String(quickSelect.dataset.label||quickSelect.textContent||"").trim();text.append(name);remove.type="button";remove.dataset.adminCompareChipRemove="";remove.setAttribute("aria-label",`${name.textContent} 선택 해제`);remove.textContent="×";hidden.type="hidden";hidden.name = "p";hidden.value=id;chip.append(text,remove,hidden);list?.append(chip);
+        import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini").then(({prefetchCompareSelection})=>prefetchCompareSelection([...selectedIds,id])).catch(()=>{});
+      }
+      if(select)select.value="";input.value="";if(results)results.hidden=true;syncAdminCompareSelection(adminForm);input.focus();return;
+    }
     if (select) { select.value = quickSelect.dataset.personQuickOption || ""; select.dispatchEvent(new Event("change", { bubbles:true })); }
     if (input) input.value = quickSelect.dataset.label || quickSelect.textContent.trim();
     if (results) results.hidden = true;
@@ -624,7 +659,8 @@ document.addEventListener("input", async event => {
     if (select && results) {
       const q = String(quickSearch.value || "").trim().toLowerCase().replace(/\s+/g,"");
       const options = Array.from(select.options).slice(1);
-      const matches = q ? options.filter(opt => `${opt.textContent || ""} ${opt.value || ""}`.toLowerCase().replace(/\s+/g,"").includes(q)).slice(0,6) : [];
+      const adminForm=quickSearch.closest('[data-compare-form][data-compare-mode="admin"]'),selectedIds=adminForm?adminCompareSelectedIds(adminForm):[];
+      const matches = q ? options.filter(opt => !selectedIds.includes(String(opt.value||"")) && `${opt.textContent || ""} ${opt.value || ""}`.toLowerCase().replace(/\s+/g,"").includes(q)).slice(0,6) : [];
       results.innerHTML = matches.map(opt => `<button type="button" data-person-quick-option="${String(opt.value).replace(/"/g,"&quot;")}" data-label="${String(opt.textContent||"").replace(/"/g,"&quot;")}" data-select-target="${quickSearch.dataset.personQuickSearch}" data-input-target="#${quickSearch.id}"><b>${opt.textContent}</b><span>바로 선택</span></button>`).join("");
       results.hidden = !matches.length;
     }
