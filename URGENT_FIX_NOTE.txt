@@ -1,0 +1,6 @@
+JCV3 URGENT NOW STORAGE REQUEST SIZE FIX - 2026-08-30
+
+- Root cause: Upstash REST request body exceeded 10 MiB during NOW publish MSET.
+- Fix: msetJSON now chunks writes below 7.5 MB per request while preserving the same Redis keys/values.
+- AGE/GENDER engine/calculation files are not modified by this patch.
+- Regression: synthetic 10.4 MB combined payload is split into 2 requests; largest request ~5.2 MB.
