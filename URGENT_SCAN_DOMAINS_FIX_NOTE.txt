@@ -1,0 +1,8 @@
+JCV3 urgent hotfix - 2026-08-30
+- Restores redis.scanDomains() removed by the previous storage-size hotfix.
+- Keeps chunked MSET writes below provider request-size ceiling.
+- AGE/GENDER engine/calculation files are untouched.
+Verification:
+- scanDomains export + paged SCAN regression PASS
+- storage request chunking regression PASS
+- lib/v3/redis.js syntax PASS
