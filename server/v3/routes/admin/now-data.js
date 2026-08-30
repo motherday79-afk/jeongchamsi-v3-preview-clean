@@ -13,6 +13,7 @@ const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-i
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
 const { fitNowPublishEntries, fitPersonPublishEntries } = require('../../lib/now-publish-payload');
+const { mgetJSONInBatches } = require('../../lib/storage-safe-mget');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -161,7 +162,7 @@ module.exports=async function nowDataAdmin(req,res){
         const previousHistory=compactHistory((await getJSON(HISTORY))||{items:[]});
         const previewCurrent={schemaVersion:1,draftId:meta.draftId,publishedAt:finalizedAt,snapshotKind:'REFRESH_FINALIZE',weights:meta.weights,ranked,batchCount:meta.batchCount,batches:meta.batches,providers:['naver-search-ads',meta.newsProvider||'news-auto-fallback']};
         const previewEntries=buildPersonPublicEntries(previewCurrent,previousHistory,Date.parse(finalizedAt));
-        const previousPersonEntries=await mgetJSON(previewEntries.map(([key])=>key));
+        const previousPersonEntries=await mgetJSONInBatches(previewEntries.map(([key])=>key),mgetJSON,25);
         const trendedPreviewEntries=previewEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
         const evidenceBundle=(await getJSON(evidenceDomain(meta.draftId)))||{version:'JCS_EXTERNAL_EVIDENCE_V1',collectedAt:finalizedAt,records:[],sources:[],warnings:[{sourceId:'refresh',error:'EXTERNAL_EVIDENCE_NOT_COLLECTED'}],matchedPeople:0,recordCount:0};
         meta={...meta,pipeline:{stage:'cohort',detail:'AGE_GENDER_COHORT_ANALYSIS',updatedAt:new Date().toISOString()}};await setJSON(META,meta);
@@ -183,7 +184,7 @@ module.exports=async function nowDataAdmin(req,res){
       const publicHome=buildHomePublicSnapshot(current,previousHistory,Date.parse(publishedAt));
       const publicAdmin=buildAdminPublicSnapshot(current);
       const personEntries=buildPersonPublicEntries(current,previousHistory,Date.parse(publishedAt));
-      const previousPersonEntries=await mgetJSON(personEntries.map(([key])=>key));
+      const previousPersonEntries=await mgetJSONInBatches(personEntries.map(([key])=>key),mgetJSON,25);
       const trendedPersonEntries=personEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
