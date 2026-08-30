@@ -1,0 +1,6 @@
+JCV3 URGENT NOW TEMP CLEANUP ROOT FIX — 2026-08-30
+- Root cause: now-temp-cleanup.js assumed redis.scanDomains/deleteDomains always existed.
+- Fix: feature-detect helpers; fall back to redis.command SCAN/DEL when exports are absent.
+- Does NOT replace lib/v3/redis.js.
+- Does NOT touch AGE/GENDER engine/data.
+- Regression reproduces prior "scanDomains is not a function" failure and now passes.
