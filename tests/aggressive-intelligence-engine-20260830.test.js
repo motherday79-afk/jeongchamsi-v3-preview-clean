@@ -31,7 +31,7 @@ test('aggressive cohort engine lets aligned profile issue and external evidence 
 test('aggressive calculation revision prevents reuse of the prior conservative cohort snapshot index',()=>{
   const fs=require('node:fs'),path=require('node:path');
   const source=fs.readFileSync(path.join(__dirname,'../server/v3/lib/political-intelligence-v2-store.js'),'utf8');
-  assert.match(source,/JCS_AGGRESSIVE_INTELLIGENCE_20260830_R2_TOPIC_SHAPE/);
+  assert.match(source,/JCS_AGGRESSIVE_INTELLIGENCE_20260830_R1/);
   assert.doesNotMatch(source,/COHORT_JCS_STRUCTURAL_REFINEMENT_20260830_R4/);
 });
 

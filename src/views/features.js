@@ -12,7 +12,7 @@ import {
 } from "../core/user.js";
 import { authorIdentity, authorOwnerIds } from "./author-identity.js";
 import { renderContentShare } from "./content-share.js?v=jcs-share-v1";
-import { getFastNowPerson, getFastAdminCompare, prefetchNowPerson } from "../core/compare-data.js?v=admin-multi-compare-inforeghini-ux2";
+import { getFastNowPerson, getFastAdminCompare, prefetchNowPerson } from "../core/compare-data.js?v=admin-multi-compare-inforeghini";
 import {
   CORE_COMPARE_METRICS, AUDIENCE_COMPARE_METRICS, ACTIVITY_COMPARE_METRICS, FLOW_COMPARE_METRICS,
   scoreFor, buildDifferences, buildCompareInsight, relativeCompareAxisValue, axisIntensityBand, trendScoreDelta, trendRankDelta
@@ -543,11 +543,11 @@ function adminCompareHistoryTable(people,entries){
   return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">HISTORY</span><h2>최근 변화 비교</h2></div><span>JCS HISTORY DELTA</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>변화</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${rows.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(e?.person?.summary?.coreDeltas?.[key])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
 }
 function adminComparePicker(selected=[]){
-  const ids=[...new Set((Array.isArray(selected)?selected:[]).map(x=>String(x||"").trim()).filter(Boolean))].slice(0,5);
-  const people=ids.map(getPersonSlotById).filter(Boolean);
-  const chips=people.map(person=>`<span class="admin-compare-chip" data-admin-compare-chip data-person-id="${esc(person.id)}">${personPhotoMarkup(person,"admin-compare-chip-avatar",{size:42})}<span><b>${esc(person.name)}</b><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</small></span><button type="button" aria-label="${esc(person.name)} 선택 해제" data-admin-compare-chip-remove>×</button><input type="hidden" name="p" value="${esc(person.id)}"></span>`).join("");
-  const disabled=people.length>=5?"disabled":"";
-  return `<section class="content-card compare-picker-card admin-compare-picker-card"><form class="admin-compare-picker-dynamic" data-compare-form data-compare-mode="admin"><div class="admin-compare-selected-head"><div><span class="eyebrow">SELECT POLITICIANS</span><h2>비교할 정치인을 검색하세요</h2><p>이름·정당·지역으로 검색해서 최대 5명까지 추가할 수 있습니다.</p></div><strong data-admin-compare-count>${people.length} / 5</strong></div><div class="admin-compare-selected-list" data-admin-compare-selected-list>${chips||`<span class="admin-compare-selected-empty" data-admin-compare-empty>정치인을 검색해 추가하세요.</span>`}</div><label class="person-quick-picker admin-compare-search-wrap" data-admin-compare-search-wrap><span>정치인 검색</span><input type="search" id="admin-compare-search" data-admin-compare-search placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#admin-compare-candidate" data-person-quick-results="#admin-compare-results" ${disabled}><div class="person-quick-results" id="admin-compare-results" hidden></div><select id="admin-compare-candidate" aria-hidden="true" tabindex="-1"><option value="">정치인 선택</option>${personOptions()}</select></label><div class="admin-compare-picker-actions"><span data-admin-compare-guide>${people.length<2?"2명 이상 선택하면 비교할 수 있습니다.":`${people.length}명 선택됨 · 바로 비교할 수 있습니다.`}</span><button class="primary-btn" type="submit" ${people.length<2?"disabled":""}>${people.length>=2?`${people.length}명 비교하기`:"비교하기"}</button></div></form></section>`;
+  const slots=Array.from({length:5},(_,i)=>{
+    const id=selected[i]||"",person=getPersonSlotById(id),label=person?slotLabel(person):"";
+    return `<label class="person-quick-picker admin-compare-picker-slot"><span>POLITICIAN ${i+1}${i<2?" · REQUIRED":" · OPTIONAL"}</span><input type="search" value="${esc(label)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#admin-compare-person-${i}" data-person-quick-results="#admin-compare-results-${i}"><div class="person-quick-results" id="admin-compare-results-${i}" hidden></div><select id="admin-compare-person-${i}" name="p" ${i<2?"required":""} aria-hidden="true" tabindex="-1"><option value="">${i<2?"정치인 선택":"선택 안 함"}</option>${personOptions(id)}</select></label>`;
+  }).join("");
+  return `<section class="content-card compare-picker-card admin-compare-picker-card"><form class="admin-compare-picker-grid" data-compare-form data-compare-mode="admin">${slots}<button class="primary-btn" type="submit">2–5명 비교하기</button></form></section>`;
 }
 async function renderAdminCompare(search=""){
   await ensurePersonProvider();

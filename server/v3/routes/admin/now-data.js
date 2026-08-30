@@ -1,5 +1,5 @@
 const { requireAdmin } = require('../../../../lib/v3/access');
-const { getJSON, setJSON, mgetJSON, msetJSON, ADAPTER_REVISION } = require('../../../../lib/v3/redis-now-safe-20260830');
+const { getJSON, setJSON, mgetJSON, msetJSON } = require('../../../../lib/v3/redis');
 const { allPeople } = require('../../lib/politician-live-roster');
 const { credentials: searchCredentials } = require('../../lib/naver-searchad');
 const { credentials: newsCredentials, availability: newsAvailability } = require('../../lib/naver-news');
@@ -12,7 +12,6 @@ const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = requir
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
-const { compactCurrentForStorage } = require('../../lib/now-storage-compact');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -60,25 +59,8 @@ async function migrateLegacyMeta(meta){
   return next;
 }
 async function writePersonEntries(entries=[]){
-  // Keep person-public batches intentionally small. This is independent of the
-  // Redis adapter's own request-budget logic, so an older deployed adapter
-  // cannot rebuild a >10 MiB MSET request here.
-  const chunks=[];for(let i=0;i<entries.length;i+=8)chunks.push(entries.slice(i,i+8));
+  const chunks=[];for(let i=0;i<entries.length;i+=40)chunks.push(entries.slice(i,i+40));
   for(let i=0;i<chunks.length;i+=4)await Promise.all(chunks.slice(i,i+4).map(chunk=>msetJSON(chunk)));
-}
-async function writePublishedSnapshotEntries(entries=[]){
-  // Never bundle CURRENT + HISTORY + public/category snapshots into one MSET.
-  // Upstash enforces the HTTP request limit per command request, so each domain
-  // is written independently and CURRENT is compacted before this point.
-  for(let i=0;i<entries.length;i+=4){
-    await Promise.all(entries.slice(i,i+4).map(async([domain,value])=>{
-      try{return await setJSON(domain,value);}catch(error){
-        const original=String(error?.message||'STORAGE_REQUEST');
-        error.message=`${domain}: ${original}`;
-        throw error;
-      }
-    }));
-  }
 }
 async function saveBatchAndStatus(meta,index,stored){
   const summary=aggregateBatchSummaries([stored],stored.ids?.length||stored.results?.length||0);
@@ -166,7 +148,6 @@ module.exports=async function nowDataAdmin(req,res){
       const statuses=await loadBatchStatuses(meta),top30=ranked.slice(0,30).map(compactPreviewRow),finalizedAt=new Date().toISOString();
       let next={...meta,status:'preview',finalizedAt,top30,summary,completedBatchIndexes:Array.from({length:meta.batchCount},(_,i)=>i),failedBatchIndexes:failedBatchIndexes(statuses)};delete next.ranked;
       await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
-      meta=next;
       let intelligenceSnapshot=null,ageGenderV2Snapshot=null;const intelligenceWarnings=[];
       try{
         meta={...meta,pipeline:{stage:'history',detail:'HISTORY_CONTEXT_PREPARED',updatedAt:new Date().toISOString()}};await setJSON(META,meta);
@@ -184,7 +165,7 @@ module.exports=async function nowDataAdmin(req,res){
         if(ageGenderV2Snapshot?.error==='BASELINE_INGESTION_REQUIRED')intelligenceWarnings.push('BASELINE_INGESTION_REQUIRED');
         next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFIED_SAVED',updatedAt:new Date().toISOString()},intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0},ageGenderV2Snapshot:ageGenderV2Snapshot?{created:Boolean(ageGenderV2Snapshot.created),skipped:Boolean(ageGenderV2Snapshot.skipped),error:ageGenderV2Snapshot.error||null,analysisAt:ageGenderV2Snapshot.analysisAt||finalizedAt,rosterTotal:Number(ageGenderV2Snapshot.rosterTotal)||0,compressedBytes:Number(ageGenderV2Snapshot.compressedBytes)||0,baselineVersion:ageGenderV2Snapshot.baselineVersion||null}:null};
         await setJSON(META,next);
-      }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFIED_WITH_WARNINGS',updatedAt:new Date().toISOString()},intelligenceWarnings:[...intelligenceWarnings]};meta=next;await setJSON(META,next);}
+      }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
       return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights,intelligenceSnapshot,ageGenderV2Snapshot,intelligenceWarnings});
     }
     if(action==='publish'){
@@ -200,9 +181,8 @@ module.exports=async function nowDataAdmin(req,res){
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
-      const storageCurrent=compactCurrentForStorage(current);
-      await writePublishedSnapshotEntries([
-        [CURRENT,storageCurrent],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
+      await msetJSON([
+        [CURRENT,current],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
         ...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])
       ]);
       await writePersonEntries(trendedPersonEntries);
@@ -223,5 +203,5 @@ module.exports=async function nowDataAdmin(req,res){
       return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
-  }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:`${String(error?.message||'')} [storage:${ADAPTER_REVISION}]`});}
+  }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}
 };
