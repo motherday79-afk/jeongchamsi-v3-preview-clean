@@ -44,7 +44,7 @@ function nowFailureText(label, r) {
 }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=03687-now30-home-cleanup")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=03687-now30-home-history-removed")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
     if (p[0] === "login") return view.renderLogin();
@@ -81,7 +81,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=03687-now30-home-cleanup")).renderHome();
+  return (await import("./views/home.js?v=03687-now30-home-history-removed")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -195,7 +195,7 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
   hydrateLiveCommunityBar();
   if (app.querySelector("[data-now-rank-carousel]")) {
     requestAnimationFrame(() => {
-      import("./views/home.js?v=03687-now30-home-cleanup")
+      import("./views/home.js?v=03687-now30-home-history-removed")
         .then(mod => mod.hydrateHomeNowCarousel?.())
         .catch(() => {});
     });

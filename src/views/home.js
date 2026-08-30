@@ -227,19 +227,31 @@ export function hydrateHomeNowCarousel(){
   root.dataset.nowRankReady="1";
   const pages=Array.from(root.querySelectorAll("[data-now-rank-page]"));
   const pageCount=pages.length;
-  if(pageCount<2){root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.hidden=true);return;}
+  if(pageCount<2){
+    root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.hidden=true);
+    return;
+  }
   let pageIndex=0,timer=0,paused=false;
   const show=index=>{
     pageIndex=(index+pageCount)%pageCount;
-    pages.forEach((page,i)=>{const active=i===pageIndex;page.hidden=!active;page.setAttribute("aria-hidden",active?"false":"true");});
+    pages.forEach((page,i)=>{
+      const active=i===pageIndex;
+      page.hidden=!active;
+      page.setAttribute("aria-hidden",active?"false":"true");
+    });
   };
   const stop=()=>{if(timer){clearInterval(timer);timer=0;}};
   const start=()=>{stop();if(!paused)timer=setInterval(()=>show(pageIndex+1),4000);};
-  root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.addEventListener("click",()=>{show(pageIndex+(btn.dataset.nowRankNav==="prev"?-1:1));start();}));
+  root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.addEventListener("click",()=>{
+    show(pageIndex+(btn.dataset.nowRankNav==="prev"?-1:1));
+    start();
+  }));
   root.addEventListener("mouseenter",()=>{paused=true;stop();});
   root.addEventListener("mouseleave",()=>{paused=false;start();});
   root.addEventListener("focusin",()=>{paused=true;stop();});
-  root.addEventListener("focusout",event=>{if(!root.contains(event.relatedTarget)){paused=false;start();}});
+  root.addEventListener("focusout",event=>{
+    if(!root.contains(event.relatedTarget)){paused=false;start();}
+  });
   root.addEventListener("pointerdown",()=>{paused=true;stop();},{passive:true});
   root.addEventListener("pointerup",()=>{paused=false;start();},{passive:true});
   start();
