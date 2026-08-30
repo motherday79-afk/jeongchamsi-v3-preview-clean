@@ -3,7 +3,7 @@
 const crypto=require('node:crypto');
 const {COHORT_KEYS}=require('./age-gender-baseline-v2');
 
-const ENGINE_VERSION='JCS_AGE_GENDER_INTELLIGENCE_V2_AGGRESSIVE_R1';
+const ENGINE_VERSION='JCS_AGE_GENDER_INTELLIGENCE_V2_AGGRESSIVE_R2';
 const CONFIDENCE_THRESHOLD=55;
 const AGE_GROUPS=[['18-29',0,1],['30-39',2,3],['40-49',4,5],['50-59',6,7],['60-69',8,9],['70+',10,11]];
 const ISSUE_RULES=[
@@ -62,6 +62,20 @@ function issueEffectForCell(events=[],cellIndex=0){
   const ageIdx=Math.floor(cellIndex/2),sexIdx=cellIndex%2;let effect=0,matched=0;
   for(const event of events){const t=normalizeEventTitle(event.title),dir=eventDirection(event.title);if(!dir)continue;for(const rule of ISSUE_RULES){if(!rule.terms.some(term=>t.includes(term)))continue;effect+=dir*(rule.age[ageIdx]||.5)*(1+(rule.gender[sexIdx]||0));matched++;break;}}
   return {effect:clamp(effect,-10,10),matched};
+}
+function issueStructureEffectForCell(events=[],cellIndex=0,directionSeed=0){
+  const ageIdx=Math.floor(cellIndex/2),sexIdx=cellIndex%2,seed=clamp(directionSeed,-24,24);let effect=0,matched=0;
+  if(Math.abs(seed)<2)return {effect:0,matched:0};
+  for(const event of events){
+    const t=normalizeEventTitle(event.title);if(eventDirection(event.title))continue;
+    for(const rule of ISSUE_RULES){
+      if(!rule.terms.some(term=>t.includes(term)))continue;
+      const ageMean=rule.age.reduce((a,b)=>a+b,0)/rule.age.length,relative=(rule.age[ageIdx]||.5)-ageMean;
+      const direction=Math.sign(seed)*clamp(Math.abs(seed)/8,.35,2.2),genderScale=1+(rule.gender[sexIdx]||0),propagation=clamp(1+(Number(event.propagation||1)-1)*.12,1,1.5);
+      effect+=direction*relative*2.4*genderScale*propagation;matched++;break;
+    }
+  }
+  return {effect:clamp(effect,-8,8),matched};
 }
 function evidenceRows(evidence={}){const rows=Array.isArray(evidence?.sources)?evidence.sources:[];const seen=new Set();return rows.filter(r=>{const k=String(r?.fingerprint||[r?.institution,r?.url,r?.title,r?.observedAt].join('|'));if(seen.has(k))return false;seen.add(k);return true;});}
 function detailedAnchorValues(evidence={},key){const vals=[];for(const row of evidenceRows(evidence)){const n=num(row?.values?.[key]);if(n!==null)vals.push({value:n,row});}return vals;}
@@ -127,13 +141,13 @@ function aggressiveTarget(value,parts={}){
   return clamp(out,-50,50);
 }
 function computeCell({key,index,baseline,view,history,evidence,events,previous,marketContext={},asOf=null}){
-  const detailed=detailedAnchorForCell(evidence,key),coarse=coarseAnchorForCell(evidence,index),aff=num(baseline?.cohortAffinity?.[index]);const issue=issueEffectForCell(events,index);const global=globalMovement(view,history);
+  const detailed=detailedAnchorForCell(evidence,key),coarse=coarseAnchorForCell(evidence,index),aff=num(baseline?.cohortAffinity?.[index]);const issue=issueEffectForCell(events,index);const global=globalMovement(view,history),issueStructure=issueStructureEffectForCell(events,index,global);
   const party=clamp(num(marketContext?.partyMovement)||0,-8,8),regional=clamp(num(marketContext?.regionalMovement)||0,-8,8),competitor=clamp(num(marketContext?.competitorMovement)||0,-8,8),hDays=historyDays(history);
   const anchorDiag=anchorDiagnostics(evidence,key,index,aff,asOf),external=anchorEffect(detailed!==null?detailed:coarse,aff)*anchorDiag.freshness,compressedPrevious=previousProfileCompressed(previous),prior=compressedPrevious?null:previousCell(previous,key),profile=cohortProfileEffect(baseline,index),cap=movementCap({events,evidence,cellKey:key,cellIndex:index,baselineAffinity:aff,asOf});let target,components;
   const shared=fitSharedComponents({personalEffect:global*.42,partyEffect:party*.08,regionalEffect:regional*.06,competitorEffect:competitor*.08},cap*.8);
-  components={personalEffect:shared.personalEffect+profile,partyEffect:shared.partyEffect,regionalEffect:shared.regionalEffect,competitorEffect:shared.competitorEffect,issueEffect:issue.effect*.45,externalAnchorEffect:external*.72,historyPriorEffect:prior?prior.value:0};
-  target=profile+shared.personalEffect+shared.partyEffect+shared.regionalEffect+shared.competitorEffect+components.issueEffect+components.externalAnchorEffect;
-  target=aggressiveTarget(target,{profile,global:shared.personalEffect,party:shared.partyEffect,regional:shared.regionalEffect,competitor:shared.competitorEffect,issue:components.issueEffect,external:components.externalAnchorEffect});
+  components={personalEffect:shared.personalEffect+profile,partyEffect:shared.partyEffect,regionalEffect:shared.regionalEffect,competitorEffect:shared.competitorEffect,issueEffect:issue.effect*.45,issueStructureEffect:issueStructure.effect,externalAnchorEffect:external*.72,historyPriorEffect:prior?prior.value:0};
+  target=profile+shared.personalEffect+shared.partyEffect+shared.regionalEffect+shared.competitorEffect+components.issueEffect+components.issueStructureEffect+components.externalAnchorEffect;
+  target=aggressiveTarget(target,{profile,global:shared.personalEffect,party:shared.partyEffect,regional:shared.regionalEffect,competitor:shared.competitorEffect,issue:components.issueEffect,issueStructure:components.issueStructureEffect,external:components.externalAnchorEffect});
   let value=prior?prior.value+clamp(target-prior.value,-cap,cap):target;
   value=round(clamp(value,-50,50));const confidence=cellConfidence({baseline,view,history,events,evidence,cellIndex:index,detailedAnchor:detailed,anchorAgreement:anchorDiag.agreement,anchorFreshness:anchorDiag.freshness});const status='VALID_SIGNAL';
   return {key,value,status,confidence,baselineQuality:Number(baseline.baselineQuality)||0,evidenceCount:evidenceRows(evidence).length,independentEventCount:events.length,historyDays:hDays,lastValidatedAt:detailed!==null?String(evidenceRows(evidence).find(r=>num(r?.values?.[key])!==null)?.observedAt||'')||null:null,reason:null,components:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,round(v,1)]))};
@@ -159,4 +173,4 @@ function deriveAgeGenderCohortsV2({person={},baseline={},view={},history={},evid
   return {engineVersion:ENGINE_VERSION,asOf:asOf||null,baseline:{kind:baseline?.baselineKind||'LIMITED',quality:Number(baseline?.baselineQuality)||0,sourceState:String(baseline?.sourceState||''),limitedReasons:Array.isArray(baseline?.limitedReasons)?baseline.limitedReasons.slice(0,8):[]},cells,age:aggregates.age,gender:aggregates.gender,summary:summaryFromCells(cells,reference30d,volatility30d),validity:{state:validCount?'VALID_SIGNAL':'LIMITED_SIGNAL',validCellCount:validCount,totalCellCount:12,independentEventCount:events.length,evidenceCount:evidenceRows(evidence).length,historyDays:historyDays(history),confidenceThreshold:CONFIDENCE_THRESHOLD}};
 }
 
-module.exports={ENGINE_VERSION,CONFIDENCE_THRESHOLD,deriveAgeGenderCohortsV2,deriveMarketContextV2,_internals:{aggregateCells,collectEvents,eventFingerprint,normalizeEventTitle,issueEffectForCell,globalMovement,detailedAnchorForCell,coarseAnchorForCell,movementCap,baselineUsable,cellConfidence,summaryFromCells,currentViewSignal,broadRegion,eventTokens,similarEvent,anchorDiagnostics,sourceReadiness,isOfficialDemographicBaseline,officialBaselineEvidenceBonus,cohortProfileEffect,fitSharedComponents,previousProfileCompressed,aggressiveTarget}};
+module.exports={ENGINE_VERSION,CONFIDENCE_THRESHOLD,deriveAgeGenderCohortsV2,deriveMarketContextV2,_internals:{aggregateCells,collectEvents,eventFingerprint,normalizeEventTitle,issueEffectForCell,issueStructureEffectForCell,globalMovement,detailedAnchorForCell,coarseAnchorForCell,movementCap,baselineUsable,cellConfidence,summaryFromCells,currentViewSignal,broadRegion,eventTokens,similarEvent,anchorDiagnostics,sourceReadiness,isOfficialDemographicBaseline,officialBaselineEvidenceBonus,cohortProfileEffect,fitSharedComponents,previousProfileCompressed,aggressiveTarget}};

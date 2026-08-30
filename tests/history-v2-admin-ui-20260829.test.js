@@ -60,7 +60,7 @@ test('HISTORY observation timeline exposes saved competitor context when present
   assert.match(s,/row\.related/);
 });
 
-test('HISTORY V2 changed browser modules use a fresh cache tag',()=>{
+test('HISTORY V2 changed browser modules remain cache-busted after removing only the home summary',()=>{
   const index=read('index.html');
   const app=read('src/app.js');
   const admin=read('src/views/admin.js');
@@ -73,7 +73,7 @@ test('HISTORY V2 changed browser modules use a fresh cache tag',()=>{
   assert.match(app,/views\/home\.js\?v=03683-history-v2/);
   assert.match(admin,/core\/history-repository\.js\?v=history-v2/);
   assert.match(people,/core\/history-repository\.js\?v=history-v2/);
-  assert.match(home,/core\/history-repository\.js\?v=history-v2/);
+  assert.doesNotMatch(home,/core\/history-repository\.js\?v=history-v2/);
 });
 
 test('HISTORY six-core cards expose volatility alongside momentum deltas',()=>{

@@ -5,17 +5,13 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('admin HISTORY never blocks home HTML generation and hydrates after the home DOM is committed',()=>{
+test('removing the home HISTORY summary keeps home HTML independent from admin HISTORY requests',()=>{
   const home=read('src/views/home.js');
   const app=read('src/app.js');
-  const renderHome=home.slice(home.indexOf('export async function renderHome()'),home.indexOf('export async function renderHome()')+2200);
-  assert.doesNotMatch(renderHome,/await\s+getAdminHistory(?:Overview|HomeSummary)\s*\(/);
-  assert.match(home,/data-home-history-slot/);
-  assert.match(home,/export async function hydrateHomeAdminHistory/);
-  assert.match(home,/getAdminHistoryHomeSummary/);
-  assert.doesNotMatch(home,/^import\s+\{[^}]*getAdminHistoryHomeSummary[^}]*\}\s+from/m);
-  assert.match(app,/hydrateHomeAdminHistory/);
-  assert.match(app,/requestAnimationFrame/);
+  const renderHome=home.slice(home.indexOf('export async function renderHome()'),home.indexOf('export async function renderHome()')+2600);
+  assert.doesNotMatch(renderHome,/getAdminHistory(?:Overview|HomeSummary)/);
+  assert.doesNotMatch(home,/data-home-history-slot|hydrateHomeAdminHistory|getAdminHistoryHomeSummary/);
+  assert.doesNotMatch(app,/hydrateHomeAdminHistory/);
 });
 
 test('home HISTORY uses a compact summary endpoint rather than the 542-person overview payload',()=>{

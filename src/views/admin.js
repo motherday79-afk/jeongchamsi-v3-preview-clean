@@ -6,6 +6,7 @@ import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
 import { normalizeNationalEvaluation, makeNationalEvaluationId, votesForEvaluationSlot } from "./national-evaluation-model.js";
 import { stageProgress, stageLabel } from "../core/refresh-progress.js?v=jcs-aggressive-r1";
+import { FINAL_ABOUT_INTRO, FINAL_ABOUT_BODY, normalizeAboutCopy } from "../core/brand-about-copy.js?v=jcs-clean-rebuild-r1";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["badges", "배지센터"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["history", "HISTORY"], ["president", "대통령"],
@@ -330,12 +331,7 @@ async function brandPanel() {
     artImage:"",
     ...(data.hero || {})
   };
-  const about = {
-    title:"왜 정참시인가",
-    intro:"정치는 선거일 하루에만 존재하지 않습니다. 우리의 일상과 선택, 지역과 미래를 매일 움직입니다",
-    body:"",
-    ...(data.about || {})
-  };
+  const about = normalizeAboutCopy({ title:"왜 정참시인가", intro:FINAL_ABOUT_INTRO, body:FINAL_ABOUT_BODY, ...(data.about || {}) });
   const support = {
     title:"정참시 후원하기",
     intro:"정치에 참여할 수 있는 더 나은 공간을 함께 만들어 주세요",

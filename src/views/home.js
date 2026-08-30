@@ -220,41 +220,21 @@ function academyRows(slots = []) {
 }
 
 
-
-export function hydrateHomeNowCarousel(){
-  const root=document.querySelector("[data-now-rank-carousel]");
-  if(!root||root.dataset.nowRankReady==="1")return;
-  root.dataset.nowRankReady="1";
-  const pages=Array.from(root.querySelectorAll("[data-now-rank-page]"));
-  const pageCount=pages.length;
-  if(pageCount<2){
-    root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.hidden=true);
-    return;
-  }
-  let pageIndex=0,timer=0,paused=false;
-  const show=index=>{
-    pageIndex=(index+pageCount)%pageCount;
-    pages.forEach((page,i)=>{
-      const active=i===pageIndex;
-      page.hidden=!active;
-      page.setAttribute("aria-hidden",active?"false":"true");
-    });
-  };
-  const stop=()=>{if(timer){clearInterval(timer);timer=0;}};
-  const start=()=>{stop();if(!paused)timer=setInterval(()=>show(pageIndex+1),4000);};
-  root.querySelectorAll("[data-now-rank-nav]").forEach(btn=>btn.addEventListener("click",()=>{
-    show(pageIndex+(btn.dataset.nowRankNav==="prev"?-1:1));
-    start();
-  }));
-  root.addEventListener("mouseenter",()=>{paused=true;stop();});
-  root.addEventListener("mouseleave",()=>{paused=false;start();});
-  root.addEventListener("focusin",()=>{paused=true;stop();});
-  root.addEventListener("focusout",event=>{
-    if(!root.contains(event.relatedTarget)){paused=false;start();}
-  });
-  root.addEventListener("pointerdown",()=>{paused=true;stop();},{passive:true});
-  root.addEventListener("pointerup",()=>{paused=false;start();},{passive:true});
-  start();
+let nowRankRotationTimer = 0;
+export function hydrateHomeNowRank(){
+  const carousel=document.querySelector('[data-now-rank-carousel]');
+  if(!carousel)return;
+  const pages=[...carousel.querySelectorAll('[data-now-rank-page]')];
+  if(!pages.length)return;
+  let index=Math.max(0,Math.min(pages.length-1,Number(carousel.dataset.page||0)));
+  const status=carousel.querySelector('[data-now-rank-status]');
+  const show=next=>{index=(next+pages.length)%pages.length;carousel.dataset.page=String(index);pages.forEach((page,i)=>{page.hidden=i!==index;page.classList.toggle('is-active',i===index);});if(status)status.textContent=`${index+1} / ${pages.length}`;};
+  const stop=()=>{if(nowRankRotationTimer){clearInterval(nowRankRotationTimer);nowRankRotationTimer=0;}};
+  const start=()=>{stop();if(pages.length>1)nowRankRotationTimer=setInterval(()=>show(index+1),4000);};
+  carousel.querySelector('[data-now-rank-prev]')?.addEventListener('click',()=>{show(index-1);start();});
+  carousel.querySelector('[data-now-rank-next]')?.addEventListener('click',()=>{show(index+1);start();});
+  carousel.addEventListener('pointerenter',stop);carousel.addEventListener('pointerleave',start);carousel.addEventListener('focusin',stop);carousel.addEventListener('focusout',start);
+  show(index);start();
 }
 
 export async function renderHome() {
@@ -347,19 +327,16 @@ export async function renderHome() {
     if (name.includes("사회민주당")) return "사";
     return "무";
   };
-  const rankCard = (p, absoluteIndex) => {
-    const photo=politicianPhoto(p.id,"mini");
-    const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low">` : "";
-    const rank=Number(p.rank || absoluteIndex + 1);
-    return `<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-now-rank="${rank}" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${rank}</div><div class="rank-top-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`;
-  };
-  const nowTop30 = nowPeople.slice(0,30);
-  const nowRankPages = Array.from({length:3},(_,pageIndex)=>{
-    const rows=nowTop30.slice(pageIndex*10,pageIndex*10+10);
-    if(!rows.length)return "";
-    return `<div class="rank-top-grid rank-top-grid-10 now-rank-page" data-now-rank-page="${pageIndex}" ${pageIndex===0?"":`hidden aria-hidden="true"`}>${rows.map((p,i)=>rankCard(p,pageIndex*10+i)).join("")}</div>`;
-  }).filter(Boolean);
-  const nowRankCarousel = `<div class="now-rank-carousel" data-now-rank-carousel data-now-rank-page-count="${nowRankPages.length}"><button class="now-rank-arrow is-prev" type="button" data-now-rank-nav="prev" aria-label="이전 NOW RANK 10명">‹</button><div class="now-rank-pages">${nowRankPages.join("")}</div><button class="now-rank-arrow is-next" type="button" data-now-rank-nav="next" aria-label="다음 NOW RANK 10명">›</button></div>`;
+  const rankTop30 = nowPeople.slice(0,30);
+  const rankPages = Array.from({length:Math.max(1,Math.ceil(rankTop30.length/10))},(_,pageIndex)=>{
+    const cards=rankTop30.slice(pageIndex*10,pageIndex*10+10).map((p,localIndex)=>{
+      const absoluteIndex=pageIndex*10+localIndex,photo=politicianPhoto(p.id,"mini");
+      const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="lazy" decoding="async" fetchpriority="low">` : "";
+      return `<article class="rank-top-card ${partyToneClass(p.party)}" role="button" tabindex="0" data-go="/person/${esc(p.id)}"><span class="rank-party-flag" title="${esc(p.party || "무소속")}" aria-label="${esc(p.party || "무소속")}">${partyToneMark(p.party)}</span><div class="rank-top-no">${Number(p.rank)||absoluteIndex+1}</div><div class="rank-top-avatar ${photo ? "has-photo" : ""}"${photo ? ` style="--photo-position:${esc(photo.focus)}"` : ""}>${photoMarkup}</div><div class="rank-top-copy"><b>${esc(p.name)}</b><span>${esc(p.party)} · ${esc(p.jurisdiction)}</span></div></article>`;
+    }).join("");
+    return `<div class="rank-top-grid rank-top-grid-10 now-rank-page" data-now-rank-page="${pageIndex}" ${pageIndex?"hidden":""}>${cards}</div>`;
+  }).join("");
+  const rankPageCount=Math.max(1,Math.ceil(rankTop30.length/10));
   const sideRows = count => Array.from({ length: count }, (_, i) => `<div class="side-row"><span>${i + 1}</span><i></i></div>`).join("");
 
   const loginMobile = !userReady
@@ -435,7 +412,7 @@ export async function renderHome() {
 
         <section class="module" id="compare"><div class="module-header"><div><span class="eyebrow">COMPARE · SAMPLE</span><h2>정치인 비교분석</h2></div><button class="more-btn" type="button" data-go="/compare">비교하기</button></div><div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div><div class="compare-layout"><div class="compare-person"><span class="compare-avatar sample-a"></span><b>가상후보 A</b><small>정책·민생형</small></div><div class="compare-metrics"><div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div><div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div><div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div><div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div></div><div class="compare-person"><span class="compare-avatar sample-b"></span><b>가상후보 B</b><small>개혁·소통형</small></div></div><div class="compare-summary"><b>비교 결과 예시</b><span>정참시의 AI 인텔리전트 데이터 무브먼트로 22개의 항목을 비교분석 합니다</span></div></section>
 
-        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow live-heading-inline">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div>${nowRankCarousel}</section>
+        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow live-heading-inline">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="now-rank-carousel" data-now-rank-carousel data-page-count="${rankPageCount}" data-page="0"><button class="now-rank-nav now-rank-prev" type="button" data-now-rank-prev aria-label="이전 NOW 순위" ${rankPageCount<=1?"disabled":""}>‹</button><div class="now-rank-pages">${rankPages}</div><button class="now-rank-nav now-rank-next" type="button" data-now-rank-next aria-label="다음 NOW 순위" ${rankPageCount<=1?"disabled":""}>›</button><div class="now-rank-status" data-now-rank-status>${rankPageCount?`1 / ${rankPageCount}`:""}</div></div></section>
 
         <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div><div class="column-grid">${columnCards.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 

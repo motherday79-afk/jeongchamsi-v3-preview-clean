@@ -32,7 +32,7 @@ function nowFailureText(label, r) {
 }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
     if (p[0] === "login") return view.renderLogin();
@@ -56,7 +56,7 @@ async function resolveView(state) {
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini");
+  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -69,7 +69,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return")).renderHome();
+  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -181,12 +181,8 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
 
   syncCurrentScroll();
   hydrateLiveCommunityBar();
-  if (app.querySelector("[data-home-history-slot]")) {
-    requestAnimationFrame(() => {
-      import("./views/home.js?v=03683-history-v2-main-perf-app-return")
-        .then(mod => mod.hydrateHomeAdminHistory?.())
-        .catch(() => {});
-    });
+  if (app.querySelector("[data-now-rank-carousel]")) {
+    requestAnimationFrame(() => import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1").then(mod=>mod.hydrateHomeNowRank?.()).catch(()=>{}));
   }
   if (app.querySelector("[data-person-admin-intelligence-slot]")) {
     requestAnimationFrame(() => {
@@ -268,6 +264,15 @@ document.addEventListener("click", async event => {
     return;
   }
 
+  const adminCompareRemove = event.target.closest("[data-admin-compare-remove]");
+  if (adminCompareRemove) {
+    const state=currentRoute(),params=new URLSearchParams(state.search||"");
+    const removeId=String(adminCompareRemove.dataset.adminCompareRemove||"");
+    const ids=params.getAll("p").filter(id=>id&&id!==removeId).slice(0,5);
+    const query=new URLSearchParams();ids.forEach(id=>query.append("p",id));
+    return route(`/compare${query.toString()?`?${query}`:""}`);
+  }
+
   const quickSelect = event.target.closest("[data-person-quick-option]");
   if (quickSelect) {
     const select = document.querySelector(quickSelect.dataset.selectTarget || "");
@@ -341,7 +346,7 @@ document.addEventListener("click", async event => {
   if (nowMore) {
     if (nowMore.disabled) return;
     nowMore.disabled = true;
-    const tools = await import("./views/features.js?v=03686");
+    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
     const r = await tools.appendNowRankMore(nowMore);
     if (!r?.ok) {
       nowMore.disabled = false;
@@ -686,6 +691,14 @@ document.addEventListener("change", async event => {
       if (saveButton) saveButton.disabled = true;
       return;
     }
+  }
+  const adminCompareAdd = event.target.closest('[data-admin-compare-add]');
+  if (adminCompareAdd && adminCompareAdd.value) {
+    const state=currentRoute(),params=new URLSearchParams(state.search||"");
+    const ids=[...new Set([...params.getAll('p'),String(adminCompareAdd.value)].filter(Boolean))].slice(0,5);
+    const query=new URLSearchParams();ids.forEach(id=>query.append('p',id));
+    import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini").then(({prefetchCompareSelection})=>prefetchCompareSelection(ids)).catch(()=>{});
+    return route(`/compare?${query.toString()}`);
   }
   const compareSelect = event.target.closest('[data-compare-form] select');
   if (compareSelect) {

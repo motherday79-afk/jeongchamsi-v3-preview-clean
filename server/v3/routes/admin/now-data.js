@@ -165,7 +165,12 @@ module.exports=async function nowDataAdmin(req,res){
         if(ageGenderV2Snapshot?.error==='BASELINE_INGESTION_REQUIRED')intelligenceWarnings.push('BASELINE_INGESTION_REQUIRED');
         next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFIED_SAVED',updatedAt:new Date().toISOString()},intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0},ageGenderV2Snapshot:ageGenderV2Snapshot?{created:Boolean(ageGenderV2Snapshot.created),skipped:Boolean(ageGenderV2Snapshot.skipped),error:ageGenderV2Snapshot.error||null,analysisAt:ageGenderV2Snapshot.analysisAt||finalizedAt,rosterTotal:Number(ageGenderV2Snapshot.rosterTotal)||0,compressedBytes:Number(ageGenderV2Snapshot.compressedBytes)||0,baselineVersion:ageGenderV2Snapshot.baselineVersion||null}:null};
         await setJSON(META,next);
-      }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
+      }catch(intelligenceError){
+        console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);
+        intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');
+        next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFY_COMPLETE_WITH_WARNINGS',updatedAt:new Date().toISOString()}};
+        await setJSON(META,next);
+      }
       return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights,intelligenceSnapshot,ageGenderV2Snapshot,intelligenceWarnings});
     }
     if(action==='publish'){

@@ -30,20 +30,16 @@ test('politician detail HISTORY card links to full admin browser and shows six-c
   for(const key of ['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread'])assert.match(s,new RegExp(key));
 });
 
-test('home reserves an admin-only HISTORY slot and hydrates it asynchronously',()=>{
-  const s=read('src/views/home.js');
-  assert.match(s,/userSession\.authenticated\s*&&\s*userSession\.user\?\.role\s*===\s*"admin"/);
-  assert.match(s,/data-home-history-slot/);
-  assert.match(s,/getAdminHistoryHomeSummary/);
-  const renderHome=s.slice(s.indexOf('export async function renderHome()'),s.indexOf('export async function renderHome()')+2200);
-  assert.doesNotMatch(renderHome,/await\s+getAdminHistoryHomeSummary/);
-  assert.match(s,/ADMIN INTELLIGENCE/);
+test('home no longer renders the admin HISTORY V2 summary while admin HISTORY browser remains available',()=>{
+  const home=read('src/views/home.js');
+  const admin=read('src/views/admin.js');
+  assert.doesNotMatch(home,/data-home-history-slot|homeHistoryIntelligence|hydrateHomeAdminHistory/);
+  assert.match(admin,/HISTORY V2/);
 });
 
-test('admin-only HISTORY surfaces are styled without important declarations',()=>{
+test('admin HISTORY browser styling remains available after the home summary removal',()=>{
   const s=read('css/pages.css');
   assert.match(s,/admin-history-intelligence/);
-  assert.match(s,/home-history-intelligence/);
   const block=s.slice(s.indexOf('HISTORY V2 — admin-only surfaces'));
   assert.doesNotMatch(block,/!important/);
 });

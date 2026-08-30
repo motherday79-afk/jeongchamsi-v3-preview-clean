@@ -543,11 +543,10 @@ function adminCompareHistoryTable(people,entries){
   return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">HISTORY</span><h2>최근 변화 비교</h2></div><span>JCS HISTORY DELTA</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>변화</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${rows.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(e?.person?.summary?.coreDeltas?.[key])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
 }
 function adminComparePicker(selected=[]){
-  const slots=Array.from({length:5},(_,i)=>{
-    const id=selected[i]||"",person=getPersonSlotById(id),label=person?slotLabel(person):"";
-    return `<label class="person-quick-picker admin-compare-picker-slot"><span>POLITICIAN ${i+1}${i<2?" · REQUIRED":" · OPTIONAL"}</span><input type="search" value="${esc(label)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#admin-compare-person-${i}" data-person-quick-results="#admin-compare-results-${i}"><div class="person-quick-results" id="admin-compare-results-${i}" hidden></div><select id="admin-compare-person-${i}" name="p" ${i<2?"required":""} aria-hidden="true" tabindex="-1"><option value="">${i<2?"정치인 선택":"선택 안 함"}</option>${personOptions(id)}</select></label>`;
-  }).join("");
-  return `<section class="content-card compare-picker-card admin-compare-picker-card"><form class="admin-compare-picker-grid" data-compare-form data-compare-mode="admin">${slots}<button class="primary-btn" type="submit">2–5명 비교하기</button></form></section>`;
+  const ids=[...new Set(selected.filter(Boolean))].slice(0,5);
+  const chips=ids.map((id,index)=>{const person=getPersonSlotById(id);if(!person)return "";return `<span class="admin-compare-selected-chip"><b>${index+1}. ${esc(person.name)}</b><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</small><button type="button" data-admin-compare-remove="${esc(id)}" aria-label="${esc(person.name)} 비교에서 제거">×</button></span>`;}).join("");
+  const add=ids.length<5?`<label class="person-quick-picker admin-compare-add-picker"><span>${ids.length<2?"정치인을 추가하세요 · 최소 2명":"정치인 추가 · 최대 5명"}</span><input type="search" id="admin-compare-search" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#admin-compare-add-select" data-person-quick-results="#admin-compare-add-results"><div class="person-quick-results" id="admin-compare-add-results" hidden></div><select id="admin-compare-add-select" data-admin-compare-add aria-hidden="true" tabindex="-1"><option value="">정치인 추가</option>${personOptions("")}</select></label>`:`<div class="admin-compare-max"><b>5명 선택 완료</b><span>다른 인물을 비교하려면 위 선택에서 한 명을 제거하세요.</span></div>`;
+  return `<section class="content-card compare-picker-card admin-compare-picker-card"><div class="admin-compare-selected">${chips||`<span class="admin-compare-empty">선택된 정치인이 없습니다.</span>`}</div>${add}</section>`;
 }
 async function renderAdminCompare(search=""){
   await ensurePersonProvider();
