@@ -60,8 +60,25 @@ async function migrateLegacyMeta(meta){
   return next;
 }
 async function writePersonEntries(entries=[]){
-  const chunks=[];for(let i=0;i<entries.length;i+=40)chunks.push(entries.slice(i,i+40));
+  // Keep person-public batches intentionally small. This is independent of the
+  // Redis adapter's own request-budget logic, so an older deployed adapter
+  // cannot rebuild a >10 MiB MSET request here.
+  const chunks=[];for(let i=0;i<entries.length;i+=8)chunks.push(entries.slice(i,i+8));
   for(let i=0;i<chunks.length;i+=4)await Promise.all(chunks.slice(i,i+4).map(chunk=>msetJSON(chunk)));
+}
+async function writePublishedSnapshotEntries(entries=[]){
+  // Never bundle CURRENT + HISTORY + public/category snapshots into one MSET.
+  // Upstash enforces the HTTP request limit per command request, so each domain
+  // is written independently and CURRENT is compacted before this point.
+  for(let i=0;i<entries.length;i+=4){
+    await Promise.all(entries.slice(i,i+4).map(async([domain,value])=>{
+      try{return await setJSON(domain,value);}catch(error){
+        const original=String(error?.message||'STORAGE_REQUEST');
+        error.message=`${domain}: ${original}`;
+        throw error;
+      }
+    }));
+  }
 }
 async function saveBatchAndStatus(meta,index,stored){
   const summary=aggregateBatchSummaries([stored],stored.ids?.length||stored.results?.length||0);
@@ -184,7 +201,7 @@ module.exports=async function nowDataAdmin(req,res){
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
       const storageCurrent=compactCurrentForStorage(current);
-      await msetJSON([
+      await writePublishedSnapshotEntries([
         [CURRENT,storageCurrent],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
         ...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])
       ]);
