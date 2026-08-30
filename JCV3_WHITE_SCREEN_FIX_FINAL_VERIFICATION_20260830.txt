@@ -1,0 +1,15 @@
+JCV3 WHITE SCREEN FIX + FINAL BRAND COPY — 2026-08-30
+
+ROOT CAUSE
+- src/core/repository.js contained a raw multiline single-quoted string in an ES module.
+- Browser module parsing failed before app boot, producing a white screen.
+
+FIX
+- Replaced the invalid multiline string with a valid template literal.
+- Applied the user's final "왜 정참시인가" copy to repository defaults, public brand fallback, and admin brand editor defaults.
+- Added migration recognition for the immediately previous actor-copy version.
+- Bumped the app module cache marker in index.html.
+
+VERIFICATION
+- ES-module syntax checks: PASS for repository.js, brand.js, admin.js, app.js, home.js.
+- Focused regression tests: 15/15 PASS.

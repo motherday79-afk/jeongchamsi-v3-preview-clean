@@ -64,20 +64,28 @@ const defaults = {
     },
     about: {
       title: "왜 정참시인가",
-      intro: '훌륭한 배우도 끊임없이 훈련합니다.',
-      body: '작품이 없는 시간에는 발성과 호흡, 표정과 감정 표현을 다시 점검하고,
-작품 중에도 필요한 순간마다 조언을 구하며 자신을 다듬습니다.
+      intro: "세계적으로 유명한 배우들도 끊임없이 훈련합니다.",
+      body: `작품을 쉬는 기간에는 발성과 호흡,
+감정을 전달하는 방법을 배우고 다듬습니다.
+
+작품 중에도 필요한 순간마다
+조언을 구하며 자신을 정비합니다.
 
 정치도 다르지 않다고 생각합니다.
 
-정참시는 정치를 하려는 곳도, 정치인이 되려는 곳도 아닙니다.
-다만 정치를 꿈꾸는 사람과 이미 정치의 현장에 있는 사람에게
-더 정확한 데이터와 더 선명한 분석을 제공하는 곳입니다.
+정참시는
+정치를 하려는 곳도,
+정치인이 되려는 곳도 아닙니다.
+
+다만 현장에서 더 나은 방법이 필요할 때,
+현장의 시각과는 다른 방향에서 해답을 찾고자 할 때,
+의도와는 다르게 난처한 상황을 겪게 될 때,
+정참시는 분명한 데이터를 기반으로 더 선명한 방법을 제공합니다.
 
 정참시는 정참시가 가장 잘하는 일을 하겠습니다.
 
-데이터를 수집하고,
-JCS의 레시피로 분석하고,
+막대한 양의 데이터를 빠짐없이 수집하고,
+JCS만의 독자적인 시스템을 통해 분석하고,
 시장이 요구하는 신호를 읽어
 가장 필요한 순간에 전달하겠습니다.
 
@@ -85,7 +93,7 @@ JCS의 레시피로 분석하고,
 시장을 향해 마음껏 목소리를 내십시오.
 
 목적지를 정하는 것은 여러분입니다.
-가장 정확한 길을 찾는 것은 정참시가 하겠습니다.'
+가장 정확한 길을 찾는 것은 정참시가 하겠습니다.`
     },
     liveBar: { useActualCount: true, overrideCount: 0 },
     support: {
@@ -130,7 +138,7 @@ export async function getDomain(domain, { fresh = false } = {}) {
     const bust = fresh ? `&r=${Date.now()}` : "";
     const body = await requestJSON(`/api/v3/content?domain=${encodeURIComponent(domain)}${bust}`);
     const data = body?.data || defaultDomain(domain);
-    if (domain === "brand" && (!data.about || !String(data.about.body || "").trim() || String(data.about.body || "").startsWith("정참시는 정치인을 지지하거나 공격하기 위해 만든 곳이 아닙니다."))) {
+    if (domain === "brand" && (!data.about || !String(data.about.body || "").trim() || (String(data.about.body || "").startsWith("정참시는 정치인을 지지하거나 공격하기 위해 만든 곳이 아닙니다.") || String(data.about.body || "").startsWith("작품이 없는 시간에는 발성과 호흡")))) {
       const approved = defaultDomain("brand").about;
       data.about = { ...(data.about || {}), intro:approved.intro, body:approved.body };
     }
