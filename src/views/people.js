@@ -197,6 +197,42 @@ function adminPiQuality(quality={}){
   const rows=[['CORE','강성',quality.core],['ACTIVE','적극',quality.active],['SOFT','약지지',quality.soft],['FLOATING','유동',quality.floating]];
   return `<div class="admin-pi-quality">${rows.map(([key,ko,value])=>{const n=piNumber(value);return `<article><div><b>${key}</b><small>${ko}</small><strong>${n===null?'—':`${Math.round(n)}%`}</strong></div><span><i style="width:${n===null?0:Math.max(0,Math.min(100,n))}%"></i></span></article>`;}).join('')}</div>`;
 }
+function adminPiSupportDonut(quality={}){
+  const clamp=value=>Math.max(0,Math.min(100,piNumber(value)??0));
+  const core=clamp(quality.core),active=clamp(quality.active),soft=clamp(quality.soft),floating=clamp(quality.floating);
+  const a=core,b=Math.min(100,a+active),c=Math.min(100,b+soft),d=Math.min(100,c+floating);
+  const background=`conic-gradient(#173f78 0 ${a}%,#3c82c9 ${a}% ${b}%,#71b8a6 ${b}% ${c}%,#d3a75e ${c}% ${d}%,#e8edf0 ${d}% 100%)`;
+  return `<div class="admin-pi-support-donut-wrap"><div class="admin-pi-support-donut" style="background:${background}"><span><b>${Math.round(core+active)}%</b><small>CORE + ACTIVE</small></span></div><div class="admin-pi-support-donut-legend"><span><i class="core"></i>강성 ${Math.round(core)}%</span><span><i class="active"></i>적극 ${Math.round(active)}%</span><span><i class="soft"></i>약지지 ${Math.round(soft)}%</span><span><i class="floating"></i>유동 ${Math.round(floating)}%</span></div></div>`;
+}
+function adminPiResilienceGauge(resilience={}){
+  const raw=piNumber(resilience.score),score=raw===null?0:Math.max(0,Math.min(100,raw));
+  return `<div class="admin-pi-resilience-gauge-wrap"><div class="admin-pi-resilience-gauge" style="--gauge:${score}%"><span><b>${raw===null?'—':Math.round(score)}</b><small>/100</small></span></div><div><b>${raw===null?'관측 축적 중':score>=70?'높은 회복력':score>=45?'중간 회복력':'회복력 주의'}</b><p>${resilience.recoveryDays===null||resilience.recoveryDays===undefined?'회복기간 관측 축적 중':`과거 충격 후 회복 ${Number(resilience.recoveryDays).toFixed(1)}일`} · 변동성 ${Number(resilience.volatility||0).toFixed(1)}</p></div></div>`;
+}
+function adminPiImpactBar(label,value){
+  const raw=piNumber(value)??0,x=Math.max(-50,Math.min(50,raw)),width=Math.abs(x)*2,tone=x>0?'positive':x<0?'negative':'neutral';
+  return `<span class="admin-pi-issue-bar ${tone}"><b>${esc(label)}</b><i><em style="width:${width}%"></em></i><strong>${x>0?'+':''}${Math.round(x)}</strong></span>`;
+}
+function adminPiIssueBars(issue={}){
+  return `<div class="admin-pi-issue-bars">${adminPiImpactBar('2030',issue.age2030)}${adminPiImpactBar('4050',issue.age4050)}${adminPiImpactBar('60+',issue.age60plus)}${adminPiImpactBar('CORE',issue.core)}</div>`;
+}
+function adminPiPulsePath(observations,key,width=520,height=126){
+  const values=(Array.isArray(observations)?observations:[]).map(o=>piNumber(o?.intelligence?.scores?.[key]??o?.scores?.[key])).filter(v=>v!==null).slice(-12);
+  if(!values.length)return {points:'',last:null,count:0};
+  const pad=10;
+  const points=values.map((value,index)=>{
+    const x=values.length===1?width/2:pad+(width-pad*2)*(index/(values.length-1));
+    const y=pad+(height-pad*2)*(1-Math.max(0,Math.min(100,value))/100);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return {points,last:values[values.length-1],count:values.length};
+}
+function adminPiVisualPulse(history={}){
+  const observations=history?.person?.observations||[];
+  const interest=adminPiPulsePath(observations,'overallInterest');
+  const media=adminPiPulsePath(observations,'mediaSpread');
+  return `<section class="admin-pi-visual-pulse"><div class="admin-pi-visual-pulse-head"><div><span>30D INTELLIGENCE PULSE</span><h3>관심 · 미디어 흐름</h3></div><div class="admin-pi-pulse-legend"><span><i class="interest"></i>종합 관심 ${interest.last===null?'—':Math.round(interest.last)}</span><span><i class="media"></i>미디어 확산 ${media.last===null?'—':Math.round(media.last)}</span></div></div>${interest.count||media.count?`<svg class="admin-pi-pulse-svg" viewBox="0 0 520 126" role="img" aria-label="최근 정치 인텔리전스 변화"><line x1="10" y1="31" x2="510" y2="31"></line><line x1="10" y1="63" x2="510" y2="63"></line><line x1="10" y1="95" x2="510" y2="95"></line>${interest.points?`<polyline class="interest" points="${interest.points}"></polyline>`:''}${media.points?`<polyline class="media" points="${media.points}"></polyline>`:''}</svg>`:`<div class="admin-pi-pulse-empty">HISTORY 관측이 쌓이면 이곳에 시계열 흐름이 표시됩니다.</div>`}</section>`;
+}
+
 function adminPiSignalList(title,meaning,items=[],tone="risk"){
   return `<article class="admin-pi-signal-list ${tone}"><div><b>${esc(title)}</b><small>${esc(meaning)}</small></div>${items.map(x=>`<p>${esc(x)}</p>`).join('')}</article>`;
 }
@@ -256,38 +292,58 @@ function adminPoliticalIntelligence(history,p){
   const age=support.ageMomentum||{},momentum=media.momentum||{},issues=Array.isArray(pi.issueImpacts)?pi.issueImpacts:[],external=Array.isArray(pi.evidence?.external)?pi.evidence.external:[];
   const persistenceKo={FLASH:'단기 폭발',BUILDING:'확산 형성',SUSTAINED:'지속 흐름',COOLING:'확산 둔화',STABLE:'안정'}[media.persistence]||'분석 중';
   const competitors=Array.isArray(pi.competitorFlow)?pi.competitorFlow:[];
-  return `<section class="content-card admin-political-intelligence" data-admin-political-intelligence>
-    <div class="admin-pi-hero"><div><span class="eyebrow">JCS POLITICAL INTELLIGENCE</span><h2>관리자 전용 정치 인텔리전스</h2><p>SEARCH ENGINE · NEWS PORTAL · JCS HISTORY를 포함한 LEADING EXTERNAL INSTITUTIONS의 데이터를 JCS INTELLIGENCE ENGINE으로 재해석한 분석결과입니다.</p></div><div class="admin-pi-trust"><b>JCS EST.</b><strong>${piNumber(confidence.score)===null?'—':`${Math.round(piNumber(confidence.score))}%`}</strong><small>CONFIDENCE ${esc(confidence.label||'LOW')} · ${Number(confidence.observedDays)||0} DAYS OBSERVED</small></div></div>
-    <div class="admin-pi-diagnosis"><div><span>JCS CURRENT DIAGNOSIS</span><small>현재 정치상태 진단</small></div><strong>${esc(pi.diagnosis?.label||'SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지')}</strong><em>${piSigned(pi.diagnosis?.condition)}</em></div>
+  return `<div class="admin-political-intelligence admin-pi-report-main">
+    <section class="admin-pi-executive">
+      <div class="admin-pi-hero"><div><span class="eyebrow">JCS POLITICAL INTELLIGENCE</span><h2>${esc(p.name)} Intelligence Brief</h2><p>SEARCH ENGINE · NEWS PORTAL · JCS HISTORY를 포함한 LEADING EXTERNAL INSTITUTIONS의 데이터를 JCS INTELLIGENCE ENGINE으로 재해석한 관리자 전용 분석결과입니다.</p></div><div class="admin-pi-trust"><b>JCS EST.</b><strong>${piNumber(confidence.score)===null?'—':`${Math.round(piNumber(confidence.score))}%`}</strong><small>CONFIDENCE ${esc(confidence.label||'LOW')} · ${Number(confidence.observedDays)||0} DAYS OBSERVED</small></div></div>
+      <div class="admin-pi-diagnosis"><div><span>JCS CURRENT DIAGNOSIS</span><small>현재 정치상태 진단</small></div><strong>${esc(pi.diagnosis?.label||'SIGNAL CONFIDENCE LIMITED · JCS HISTORY 정상 유지')}</strong><em>${piSigned(pi.diagnosis?.condition)}</em></div>
+      ${adminPiVisualPulse(history)}
+    </section>
 
-    ${adminPiDemographicSection(pi,age)}
+    <section class="admin-pi-report-block admin-pi-tone-demographic">
+      ${adminPiDemographicSection(pi,age)}
+    </section>
 
-    <div class="admin-pi-section-head"><div><span>CORE SUPPORT DYNAMICS</span><h3>강성지지층 변화</h3></div><small>핵심 지지 기반의 이탈과 신규 유입 추정</small></div>
-    <div class="admin-pi-metric-grid">${adminPiMetric('CORE SUPPORT ATTRITION','강성지지층 이탈 추정',piNumber(support.coreAttritionPct)===null?null:piNumber(support.coreAttritionPct).toFixed(1),'%')}${adminPiMetric('NEW SUPPORT INFLOW','신규지지층 유입 추정',piNumber(support.newSupportInflowPct)===null?null:piNumber(support.newSupportInflowPct).toFixed(1),'%')}${adminPiMetric('ATTENTION → SUPPORT GAP','관심 대비 지지전환',piNumber(gap.gap)===null?null:piSigned(gap.gap),'')}${adminPiMetric('POLITICAL RESILIENCE','정치적 회복력',piNumber(resilience.score)===null?null:Math.round(piNumber(resilience.score)),'/100')}</div>
+    <section class="admin-pi-report-block admin-pi-tone-support">
+      <div class="admin-pi-section-head"><div><span>CORE SUPPORT DYNAMICS</span><h3>강성지지층 변화</h3></div><small>핵심 지지 기반의 이탈과 신규 유입 추정</small></div>
+      <div class="admin-pi-metric-grid">${adminPiMetric('CORE SUPPORT ATTRITION','강성지지층 이탈 추정',piNumber(support.coreAttritionPct)===null?null:piNumber(support.coreAttritionPct).toFixed(1),'%')}${adminPiMetric('NEW SUPPORT INFLOW','신규지지층 유입 추정',piNumber(support.newSupportInflowPct)===null?null:piNumber(support.newSupportInflowPct).toFixed(1),'%')}${adminPiMetric('ATTENTION → SUPPORT GAP','관심 대비 지지전환',piNumber(gap.gap)===null?null:piSigned(gap.gap),'')}${adminPiMetric('POLITICAL RESILIENCE','정치적 회복력',piNumber(resilience.score)===null?null:Math.round(piNumber(resilience.score)),'/100')}</div>
+      <div class="admin-pi-visual-duo"><section class="admin-pi-support-quality-visual"><div class="admin-pi-section-head compact"><div><span>SUPPORT QUALITY</span><h3>지지 기반의 질</h3></div><small>구성비</small></div>${adminPiSupportDonut(support.quality||{})}${adminPiQuality(support.quality||{})}</section><section class="admin-pi-resilience-visual"><div class="admin-pi-section-head compact"><div><span>POLITICAL RESILIENCE</span><h3>정치적 회복력</h3></div><small>회복 속도 · 변동성</small></div>${adminPiResilienceGauge(resilience)}</section></div>
+    </section>
 
-    <div class="admin-pi-two-col"><section><div class="admin-pi-section-head compact"><div><span>SUPPORT QUALITY</span><h3>지지 기반의 질</h3></div></div>${adminPiQuality(support.quality||{})}</section><section><div class="admin-pi-section-head compact"><div><span>POLITICAL RESILIENCE</span><h3>정치적 회복력</h3></div></div><div class="admin-pi-resilience"><strong>${piNumber(resilience.score)===null?'—':Math.round(piNumber(resilience.score))}</strong><span>/100</span><p>${resilience.recoveryDays===null||resilience.recoveryDays===undefined?'회복기간 관측 축적 중':`과거 충격 후 회복 ${Number(resilience.recoveryDays).toFixed(1)}일`} · 변동성 ${Number(resilience.volatility||0).toFixed(1)}</p></div></section></div>
+    <section class="admin-pi-report-block admin-pi-tone-media">
+      <div class="admin-pi-section-head"><div><span>MEDIA PROPAGATION</span><h3>미디어 확산 흐름</h3></div><small>현재 뉴스·검색·이슈 구조 기반 확산 추정</small></div>
+      <div class="admin-pi-axis-grid media">${adminPiAxis('NEWS MOMENTUM','뉴스 확산 흐름',momentum.news)}${adminPiAxis('YOUTUBE MOMENTUM','유튜브 확산 추정',momentum.youtube)}${adminPiAxis('SNS MOMENTUM','SNS 확산 추정',momentum.sns)}${adminPiAxis('COMMUNITY MOMENTUM','커뮤니티 확산 추정',momentum.community)}</div>
+      <div class="admin-pi-media-meta"><span><b>PERSISTENCE</b>${esc(media.persistence||'STABLE')} · ${esc(persistenceKo)}</span><span><b>BURST</b>${piNumber(media.burst)===null?'—':`×${piNumber(media.burst).toFixed(1)}`}</span><span><b>SOURCE BREADTH</b>${piNumber(media.breadth)===null?'—':`${Math.round(piNumber(media.breadth))}/4`}</span></div>
+    </section>
 
-    <div class="admin-pi-section-head"><div><span>MEDIA PROPAGATION</span><h3>미디어 확산 흐름</h3></div><small>실측 언급량이 없을 때는 현재 뉴스·검색·이슈 구조 기반 확산 추정</small></div>
-    <div class="admin-pi-axis-grid media">${adminPiAxis('NEWS MOMENTUM','뉴스 확산 흐름',momentum.news)}${adminPiAxis('YOUTUBE MOMENTUM','유튜브 확산 추정',momentum.youtube)}${adminPiAxis('SNS MOMENTUM','SNS 확산 추정',momentum.sns)}${adminPiAxis('COMMUNITY MOMENTUM','커뮤니티 확산 추정',momentum.community)}</div>
-    <div class="admin-pi-media-meta"><span><b>PERSISTENCE</b>${esc(media.persistence||'STABLE')} · ${esc(persistenceKo)}</span><span><b>BURST</b>${piNumber(media.burst)===null?'—':`×${piNumber(media.burst).toFixed(1)}`}</span><span><b>SOURCE BREADTH</b>${piNumber(media.breadth)===null?'—':`${Math.round(piNumber(media.breadth))}/4`}</span></div>
+    <section class="admin-pi-report-block admin-pi-tone-issues">
+      <div class="admin-pi-section-head"><div><span>ISSUE IMPACT MAP</span><h3>이슈별 영향</h3></div><small>최근 기사 제목과 현재 신호를 사건 유형으로 분류한 JCS 추정</small></div>
+      <div class="admin-pi-issues">${issues.length?issues.map(x=>`<article><span>${esc(x.category||'GENERAL')}</span><b>${esc(x.title||'')}</b>${adminPiIssueBars(x)}</article>`).join(''):`<div class="notice-box">분석 가능한 최근 이슈 제목을 축적 중입니다.</div>`}</div>
+    </section>
 
-    <div class="admin-pi-section-head"><div><span>ISSUE IMPACT MAP</span><h3>이슈별 영향</h3></div><small>최근 기사 제목과 현재 신호를 사건 유형으로 분류한 JCS 추정</small></div>
-    <div class="admin-pi-issues">${issues.length?issues.map(x=>`<article><span>${esc(x.category||'GENERAL')}</span><b>${esc(x.title||'')}</b><div><small>2030 <em>${Number(x.age2030)>0?'+':''}${Number(x.age2030)||0}</em></small><small>4050 <em>${Number(x.age4050)>0?'+':''}${Number(x.age4050)||0}</em></small><small>60+ <em>${Number(x.age60plus)>0?'+':''}${Number(x.age60plus)||0}</em></small><small>CORE <em>${Number(x.core)>0?'+':''}${Number(x.core)||0}</em></small></div></article>`).join(''):`<div class="notice-box">분석 가능한 최근 이슈 제목을 축적 중입니다.</div>`}</div>
+    <section class="admin-pi-report-block admin-pi-tone-risk">
+      <div class="admin-pi-section-head"><div><span>RISK & OPPORTUNITY</span><h3>위험·기회 신호</h3></div><small>현재 신호에서 먼저 확인할 포인트</small></div>
+      <div class="admin-pi-risk-grid">${adminPiSignalList('EARLY WARNING','위험 신호',pi.riskOpportunity?.risks||[],'risk')}${adminPiSignalList('OPPORTUNITY SIGNAL','기회 신호',pi.riskOpportunity?.opportunities||[],'opportunity')}</div>
+      <div class="admin-pi-two-col"><section><div class="admin-pi-section-head compact"><div><span>ATTENTION → SUPPORT GAP</span><h3>관심 대비 지지전환</h3></div></div><div class="admin-pi-gap"><span><b>ATTENTION</b><strong>${piSigned(gap.attention)}</strong></span><i>→</i><span><b>SUPPORT</b><strong>${piSigned(gap.support)}</strong></span><p>${esc(gap.label||'분석 중')}</p></div></section><section><div class="admin-pi-section-head compact"><div><span>COMPETITOR FLOW</span><h3>경쟁자 이동 추정</h3></div></div><div class="admin-pi-competitors">${competitors.length?competitors.map(x=>`<p><b>${esc(x.name||x.id)}</b><span>+${Number(x.estimatedShare||0).toFixed(1)}% JCS EST.</span></p>`).join(''):`<p><b>관망·기타</b><span>경쟁자 이동 관측 대기</span></p>`}</div></section></div>
+    </section>
 
-    <div class="admin-pi-section-head"><div><span>RISK & OPPORTUNITY</span><h3>위험·기회 신호</h3></div><small>현재 신호에서 먼저 확인할 포인트</small></div>
-    <div class="admin-pi-risk-grid">${adminPiSignalList('EARLY WARNING','위험 신호',pi.riskOpportunity?.risks||[],'risk')}${adminPiSignalList('OPPORTUNITY SIGNAL','기회 신호',pi.riskOpportunity?.opportunities||[],'opportunity')}</div>
+    <section class="admin-pi-report-block admin-pi-tone-evidence">
+      <div class="admin-pi-section-head"><div><span>EVIDENCE BASE</span><h3>분석 근거</h3></div><small>${esc(pi.evidence?.basis||'JCS 현재 관측 기반')}</small></div>
+      <div class="admin-pi-evidence"><article><b>JCS DATA LAYER</b><p>SEARCH ENGINE · NEWS PORTAL · NOW · JCS HISTORY</p></article><article><b>EXTERNAL INSTITUTIONAL SIGNALS</b><p>유력 외부기관 분석근거 · EVIDENCE ${external.length} · ${external.length?'VERIFIED PUBLIC DATA':'NO MATCHED EXTERNAL EVIDENCE'}</p></article></div>
+    </section>
 
-    <div class="admin-pi-two-col"><section><div class="admin-pi-section-head compact"><div><span>ATTENTION → SUPPORT GAP</span><h3>관심 대비 지지전환</h3></div></div><div class="admin-pi-gap"><span><b>ATTENTION</b><strong>${piSigned(gap.attention)}</strong></span><i>→</i><span><b>SUPPORT</b><strong>${piSigned(gap.support)}</strong></span><p>${esc(gap.label||'분석 중')}</p></div></section><section><div class="admin-pi-section-head compact"><div><span>COMPETITOR FLOW</span><h3>경쟁자 이동 추정</h3></div></div><div class="admin-pi-competitors">${competitors.length?competitors.map(x=>`<p><b>${esc(x.name||x.id)}</b><span>+${Number(x.estimatedShare||0).toFixed(1)}% JCS EST.</span></p>`).join(''):`<p><b>관망·기타</b><span>경쟁자 이동 관측 대기</span></p>`}</div></section></div>
-
-    <div class="admin-pi-section-head"><div><span>EVIDENCE BASE</span><h3>분석 근거</h3></div><small>${esc(pi.evidence?.basis||'JCS 현재 관측 기반')}</small></div>
-    <div class="admin-pi-evidence"><article><b>JCS DATA LAYER</b><p>SEARCH ENGINE · NEWS PORTAL · NOW · JCS HISTORY</p></article><article><b>EXTERNAL INSTITUTIONAL SIGNALS</b><p>유력 외부기관 분석근거 · EVIDENCE ${external.length} · ${external.length?'VERIFIED PUBLIC DATA':'NO MATCHED EXTERNAL EVIDENCE'}</p></article></div>
-
-    ${adminPiStrategicSolution(pi.strategicSolution||{})}
-  </section>`;
+    <section class="admin-pi-report-block admin-pi-tone-strategy">${adminPiStrategicSolution(pi.strategicSolution||{})}</section>
+  </div>`;
 }
-
+function adminIntelligenceReport(history,p){
+  const pi=history?.politicalIntelligence||{},confidence=pi?.confidence||{};
+  const confidenceScore=piNumber(confidence.score),diagnosis=pi?.diagnosis?.label||'JCS INTELLIGENCE REPORT';
+  return `<details class="content-card admin-intelligence-report-shell" data-admin-political-intelligence>
+    <summary class="admin-intelligence-report-gate"><span class="admin-intelligence-report-seal">JCS<small>ADMIN</small></span><div class="admin-intelligence-report-title"><span>PRIVATE POLITICAL INTELLIGENCE · ${esc(p.name)}</span><h2>JCS Political Intelligence Report</h2><p>관리자 전용 분석을 고급 리포트 모드로 확인합니다. 핵심 진단부터 AGE × GENDER · 미디어 · 위험/기회 · HISTORY까지 한 흐름으로 구성했습니다.</p></div><div class="admin-intelligence-report-meta"><small>CONFIDENCE</small><b>${confidenceScore===null?'—':`${Math.round(confidenceScore)}%`}</b><em>${esc(diagnosis)}</em><strong class="admin-intelligence-report-open"><span class="closed-label">리포트 열기</span><span class="open-label">리포트 닫기</span><i>+</i></strong></div></summary>
+    <div class="admin-intelligence-report-body">${adminPoliticalIntelligence(history,p)}${adminHistoryIntelligence(history,p)}</div>
+  </details>`;
+}
 function adminPersonIntelligenceSlot(p){
-  return `<section class="content-card admin-political-intelligence admin-pi-loading" data-person-admin-intelligence-slot data-person-id="${esc(p.id)}" aria-busy="true"><div class="admin-pi-section-head"><div><span>JCS POLITICAL INTELLIGENCE</span><h3>관리자 전용 분석을 불러오는 중입니다.</h3></div><small>PUBLIC DETAIL FIRST · ADMIN DATA ASYNC</small></div></section>`;
+  return `<section class="content-card admin-intelligence-report-shell admin-pi-loading" data-person-admin-intelligence-slot data-person-id="${esc(p.id)}" aria-busy="true"><div class="admin-intelligence-report-gate loading"><span class="admin-intelligence-report-seal">JCS<small>ADMIN</small></span><div class="admin-intelligence-report-title"><span>PRIVATE POLITICAL INTELLIGENCE · ${esc(p.name)}</span><h2>JCS Political Intelligence Report</h2><p>관리자 전용 인텔리전스 리포트를 준비하고 있습니다.</p></div><div class="admin-intelligence-report-meta"><small>LOADING</small><b>···</b></div></div></section>`;
 }
 export async function hydratePersonAdminIntelligence(){
   const slot=document.querySelector('[data-person-admin-intelligence-slot]');if(!slot)return;
@@ -295,7 +351,7 @@ export async function hydratePersonAdminIntelligence(){
   const {getAdminHistoryPersonDetail}=await import('../core/history-repository.js?v=history-v2-detail-perf');
   const history=await getAdminHistoryPersonDetail(personId,'30');
   if(!slot.isConnected)return;
-  slot.outerHTML=`${adminPoliticalIntelligence(history,p)}${adminHistoryIntelligence(history,p)}`;
+  slot.outerHTML=adminIntelligenceReport(history,p);
 }
 
 function adminHistoryDelta(value){

@@ -542,28 +542,49 @@ function adminCompareHistoryTable(people,entries){
   const rows=[["30D 종합관심 변화","overallInterest"],["30D 심층관심 변화","highEngagement"],["30D 대중확산 변화","massExpansion"],["30D 활동성 변화","activity"],["30D 이슈온도 변화","issueHeat"],["30D 미디어확산 변화","mediaSpread"]];
   return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">HISTORY</span><h2>최근 변화 비교</h2></div><span>JCS HISTORY DELTA</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>변화</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${rows.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(e?.person?.summary?.coreDeltas?.[key])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
 }
+function adminCompareRunUrl(ids=[]){
+  const query=new URLSearchParams();
+  ids.filter(Boolean).slice(0,5).forEach(id=>query.append("p",id));
+  query.set("run","1");
+  return `/compare?${query.toString()}`;
+}
 function adminComparePicker(selected=[]){
   const ids=[...new Set(selected.filter(Boolean))].slice(0,5);
-  const chips=ids.map((id,index)=>{const person=getPersonSlotById(id);if(!person)return "";return `<span class="admin-compare-selected-chip"><b>${index+1}. ${esc(person.name)}</b><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</small><button type="button" data-admin-compare-remove="${esc(id)}" aria-label="${esc(person.name)} 비교에서 제거">×</button></span>`;}).join("");
-  const add=ids.length<5?`<label class="person-quick-picker admin-compare-add-picker"><span>${ids.length<2?"정치인을 추가하세요 · 최소 2명":"정치인 추가 · 최대 5명"}</span><input type="search" id="admin-compare-search" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#admin-compare-add-select" data-person-quick-results="#admin-compare-add-results"><div class="person-quick-results" id="admin-compare-add-results" hidden></div><select id="admin-compare-add-select" data-admin-compare-add aria-hidden="true" tabindex="-1"><option value="">정치인 추가</option>${personOptions("")}</select></label>`:`<div class="admin-compare-max"><b>5명 선택 완료</b><span>다른 인물을 비교하려면 위 선택에서 한 명을 제거하세요.</span></div>`;
-  return `<section class="content-card compare-picker-card admin-compare-picker-card"><div class="admin-compare-selected">${chips||`<span class="admin-compare-empty">선택된 정치인이 없습니다.</span>`}</div>${add}</section>`;
+  const cards=ids.map((id,index)=>{
+    const person=getPersonSlotById(id);if(!person)return "";
+    return `<article class="admin-compare-selection-card"><span class="admin-compare-selection-index">0${index+1}</span>${personPhotoMarkup(person,"admin-compare-selection-avatar",{eager:index<2,size:96})}<div><b>${esc(person.name)}</b><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</small></div><button type="button" data-admin-compare-remove="${esc(id)}" aria-label="${esc(person.name)} 비교에서 제거">×</button></article>`;
+  }).join("");
+  const search=ids.length<5?`<label class="person-quick-picker admin-compare-add-picker admin-compare-search-panel"><span>POLITICIAN SEARCH</span><b>${ids.length<2?"비교할 정치인을 추가하세요":"비교 대상을 더 추가할 수 있습니다"}</b><input type="search" id="admin-compare-search" placeholder="이름 · 정당 · 지역으로 검색" autocomplete="off" data-person-quick-search="#admin-compare-add-select" data-person-quick-results="#admin-compare-add-results"><div class="person-quick-results" id="admin-compare-add-results" hidden></div><select id="admin-compare-add-select" data-admin-compare-add aria-hidden="true" tabindex="-1"><option value="">정치인 추가</option>${personOptions("")}</select><small>검색 결과에서 정치인을 선택하면 비교 보드에 추가됩니다.</small></label>`:`<div class="admin-compare-max admin-compare-search-panel"><span>SELECTION COMPLETE</span><b>최대 5명을 선택했습니다</b><small>다른 정치인을 추가하려면 선택된 인물 한 명을 먼저 제거하세요.</small></div>`;
+  const canRun=ids.length>=2;
+  const runButton=canRun?`<button class="primary-btn admin-compare-run-btn" type="button" data-admin-compare-run data-go="${esc(adminCompareRunUrl(ids))}"><span>비교하기</span><small>${ids.length}명 Intelligence 실행</small><em>→</em></button>`:`<button class="primary-btn admin-compare-run-btn" type="button" data-admin-compare-run disabled><span>비교하기</span><small>2명 이상 선택 필요</small><em>→</em></button>`;
+  return `<section class="content-card compare-picker-card admin-compare-picker-card admin-compare-command-deck">
+    <div class="admin-compare-stage"><span class="is-active"><b>01</b>SELECT</span><i></i><span class="${ids.length>=2?'is-active':''}"><b>02</b>REVIEW</span><i></i><span><b>03</b>COMPARE</span></div>
+    <div class="admin-compare-deck-head"><div><span>COMPARE CONTROL</span><h2>비교 대상을 구성하세요</h2><p>인물을 먼저 선택한 뒤 비교하기 버튼을 눌러야 JCS 관리자 인텔리전스 비교가 실행됩니다.</p></div><div class="admin-compare-count"><strong>${ids.length}</strong><span>/ 5</span><small>현재 ${ids.length}명 선택 · 최소 2명 · 최대 5명</small></div></div>
+    <div class="admin-compare-selection-grid">${cards||`<div class="admin-compare-selection-empty"><b>아직 선택된 정치인이 없습니다</b><span>아래 검색창에서 첫 번째 비교 대상을 선택하세요.</span></div>`}</div>
+    <div class="admin-compare-deck-bottom">${search}<div class="admin-compare-actions"><button class="ghost-btn" type="button" data-go="/compare">선택 초기화</button>${runButton}</div></div>
+  </section>`;
 }
 async function renderAdminCompare(search=""){
   await ensurePersonProvider();
   const params=new URLSearchParams(search||"");
+  const execute=params.get("run")==="1";
   let ids=params.getAll("p").filter(Boolean);
   if(ids.length<2)ids=[params.get("a"),params.get("b")].filter(Boolean);
   ids=[...new Set(ids)].slice(0,5);
   ids.forEach(prefetchNowPerson);
   const people=ids.map(getPersonSlotById).filter(Boolean);
   let result="";
-  if(people.length>=2){
+  if(execute&&people.length>=2){
     const data=await getFastAdminCompare(people.map(p=>p.id),"30");
     const byId=new Map((data?.people||[]).map(x=>[String(x.personId),x]));
     const entries=people.map(p=>byId.get(String(p.id))||{});
-    result=`<div class="admin-multi-compare"><section class="admin-compare-grid">${people.map((p,i)=>adminComparePersonCard(p,entries[i],i)).join("")}</section>${adminCompareMetricTable(people,entries)}${adminCompareCohortTable(people,entries)}${adminCompareHistoryTable(people,entries)}</div>`;
-  } else result=`<section class="content-card empty-state"><h2>관리자 다자간 비교</h2><p>최소 2명, 최대 5명의 정치인을 선택하세요.</p></section>`;
-  return pageShell(`<main class="subpage compare-live-page admin-compare-page"><section class="page-hero"><span class="eyebrow">ADMIN INTELLIGENCE COMPARE</span><h1>관리자 다자간 정치 인텔리전스 비교</h1><p>2–5명의 정치인을 JCS 관리자 데이터 · AGE × GENDER · HISTORY · CORE INTELLIGENCE 기준으로 한 번에 비교합니다.</p></section>${adminComparePicker(ids)}${result}</main>`);
+    result=`<div class="admin-multi-compare"><section class="admin-compare-result-head"><div><span>INTELLIGENCE COMPARE READY</span><h2>${people.length}인 관리자 비교 리포트</h2></div><button class="ghost-btn" type="button" data-go="/compare?${ids.map(id=>`p=${encodeURIComponent(id)}`).join('&')}">대상 다시 선택</button></section><section class="admin-compare-grid">${people.map((p,i)=>adminComparePersonCard(p,entries[i],i)).join("")}</section>${adminCompareMetricTable(people,entries)}${adminCompareCohortTable(people,entries)}${adminCompareHistoryTable(people,entries)}</div>`;
+  } else if(people.length>=2){
+    result=`<section class="content-card admin-compare-ready-state"><div class="admin-compare-ready-icon">JCS</div><div><span>READY TO COMPARE</span><h2>${people.length}명의 비교 대상이 준비되었습니다</h2><p>선택을 확인한 뒤 위의 <b>비교하기</b> 버튼을 누르면 AGE × GENDER · HISTORY · CORE INTELLIGENCE 분석을 한 번에 불러옵니다.</p></div></section>`;
+  } else {
+    result=`<section class="content-card admin-compare-ready-state is-empty"><div class="admin-compare-ready-icon">+</div><div><span>SELECT POLITICIANS</span><h2>최소 2명의 정치인을 선택하세요</h2><p>최대 5명까지 한 번에 비교할 수 있습니다. 선택 중에는 분석을 실행하지 않습니다.</p></div></section>`;
+  }
+  return pageShell(`<main class="subpage compare-live-page admin-compare-page"><section class="page-hero admin-compare-hero"><span class="eyebrow">ADMIN INTELLIGENCE COMPARE</span><h1>관리자 다자간 정치 인텔리전스 비교</h1><p>2–5명의 정치인을 먼저 구성하고, 비교 실행 시점에만 JCS 관리자 데이터를 불러오는 전문 다자간 Intelligence Compare입니다.</p></section>${adminComparePicker(ids)}${result}</main>`);
 }
 
 export async function renderCompare(search=""){

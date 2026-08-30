@@ -67,7 +67,7 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v1")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
     const view = await import("./views/boards.js?v=jcs-share-v1");
     const domain = p[0] === "column" ? "columns" : p[0];
@@ -80,7 +80,7 @@ async function resolveView(state) {
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
+  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v1");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -209,7 +209,7 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
   if (app.querySelector("[data-now-rank-carousel]")) requestAnimationFrame(hydrateHomeNowRank);
   if (app.querySelector("[data-person-admin-intelligence-slot]")) {
     requestAnimationFrame(() => {
-      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2")
+      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-admin-premium-intelligence-v1")
         .then(mod => mod.hydratePersonAdminIntelligence?.())
         .catch(() => {});
     });
@@ -369,7 +369,7 @@ document.addEventListener("click", async event => {
   if (nowMore) {
     if (nowMore.disabled) return;
     nowMore.disabled = true;
-    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
+    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v1");
     const r = await tools.appendNowRankMore(nowMore);
     if (!r?.ok) {
       nowMore.disabled = false;
@@ -718,9 +718,11 @@ document.addEventListener("change", async event => {
   const adminCompareAdd = event.target.closest('[data-admin-compare-add]');
   if (adminCompareAdd && adminCompareAdd.value) {
     const state=currentRoute(),params=new URLSearchParams(state.search||"");
-    const ids=[...new Set([...params.getAll('p'),String(adminCompareAdd.value)].filter(Boolean))].slice(0,5);
+    const existing=params.getAll('p').filter(Boolean);
+    if(!existing.length)existing.push(params.get('a'),params.get('b'));
+    const ids=[...new Set([...existing,String(adminCompareAdd.value)].filter(Boolean))].slice(0,5);
     const query=new URLSearchParams();ids.forEach(id=>query.append('p',id));
-    import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini").then(({prefetchCompareSelection})=>prefetchCompareSelection(ids)).catch(()=>{});
+    import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini-admin-premium-intelligence-v1").then(({prefetchCompareSelection})=>prefetchCompareSelection(ids)).catch(()=>{});
     return route(`/compare?${query.toString()}`);
   }
   const compareSelect = event.target.closest('[data-compare-form] select');
