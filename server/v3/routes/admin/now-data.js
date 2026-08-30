@@ -12,6 +12,7 @@ const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = requir
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
+const { compactCurrentForStorage } = require('../../lib/now-storage-compact');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -182,8 +183,9 @@ module.exports=async function nowDataAdmin(req,res){
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
+      const storageCurrent=compactCurrentForStorage(current);
       await msetJSON([
-        [CURRENT,current],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
+        [CURRENT,storageCurrent],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
         ...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])
       ]);
       await writePersonEntries(trendedPersonEntries);
