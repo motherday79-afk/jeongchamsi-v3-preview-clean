@@ -12,6 +12,7 @@ import {
 } from "../core/user.js";
 import { authorIdentity, authorOwnerIds } from "./author-identity.js";
 import { renderContentShare } from "./content-share.js?v=jcs-share-v1";
+import { getFastNowPerson, getFastAdminCompare, prefetchNowPerson } from "../core/compare-data.js?v=admin-multi-compare-inforeghini";
 import {
   CORE_COMPARE_METRICS, AUDIENCE_COMPARE_METRICS, ACTIVITY_COMPARE_METRICS, FLOW_COMPARE_METRICS,
   scoreFor, buildDifferences, buildCompareInsight, relativeCompareAxisValue, axisIntensityBand, trendScoreDelta, trendRankDelta
@@ -487,7 +488,7 @@ function compareLiveResult(personA,liveA,personB,liveB) {
   </div>`;
 }
 
-export async function renderCompare(search = "") {
+async function renderPublicCompare(search = "") {
   await ensurePersonProvider();
   const params = new URLSearchParams(search || "");
   const a = params.get("a") || "";
@@ -498,12 +499,78 @@ export async function renderCompare(search = "") {
   if (pa && pb && pa.id === pb.id) {
     result = `<section class="content-card empty-state"><h2>서로 다른 정치인을 선택해주세요</h2><p>같은 기준에서 두 정치인의 현재 흐름을 비교합니다.</p></section>`;
   } else if (pa && pb) {
-    const [liveA,liveB] = await Promise.all([getNowPerson(pa.id), getNowPerson(pb.id)]);
+    const [liveA,liveB] = await Promise.all([getFastNowPerson(pa.id), getFastNowPerson(pb.id)]);
     result = compareLiveResult(pa,liveA,pb,liveB);
   }
   const aLabel = pa ? slotLabel(pa) : "";
   const bLabel = pb ? slotLabel(pb) : "";
   return pageShell(`<main class="subpage compare-live-page"><section class="page-hero"><span class="eyebrow">COMPARE POLITICIANS · MULTI-INTELLIGENCE</span><h1>정치인 비교분석</h1><p>두 정치인의 NOW 순위와 관심·활동·미디어 흐름을 동일한 정참시 분석기준으로 비교합니다.</p></section><section class="content-card compare-picker-card"><form class="compare-picker compare-picker-quick" data-compare-form><label class="person-quick-picker compare-person-quick-picker">정치인 A 검색<input type="search" id="compare-person-search-a" value="${esc(aLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-a" data-person-quick-results="#compare-person-results-a"><div class="person-quick-results" id="compare-person-results-a" hidden></div><select id="compare-person-a" name="a" required aria-hidden="true" tabindex="-1"><option value="">정치인 A 선택</option>${personOptions(a)}</select></label><span class="compare-vs">VS</span><label class="person-quick-picker compare-person-quick-picker">정치인 B 검색<input type="search" id="compare-person-search-b" value="${esc(bLabel)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#compare-person-b" data-person-quick-results="#compare-person-results-b"><div class="person-quick-results" id="compare-person-results-b" hidden></div><select id="compare-person-b" name="b" required aria-hidden="true" tabindex="-1"><option value="">정치인 B 선택</option>${personOptions(b)}</select></label><button class="primary-btn" type="submit">비교하기</button></form></section>${result}</main>`);
+}
+
+
+function adminCompareNumber(value, suffix="") {
+  const n=Number(value);return Number.isFinite(n)?`${n>0?"+":""}${Math.round(n*10)/10}${suffix}`:"—";
+}
+function adminComparePi(entry){return entry?.politicalIntelligence||{};}
+function adminComparePersonCard(person,entry,index){
+  const pi=adminComparePi(entry),confidence=Number(pi?.confidence?.score),diagnosis=pi?.diagnosis?.label||"JCS INTELLIGENCE";
+  return `<article class="admin-compare-person-card"><span class="admin-compare-order">#${index+1}</span>${personPhotoMarkup(person,"admin-compare-avatar",{eager:true,size:120})}<div><h3>${esc(person.name)}</h3><p>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</p><strong>${esc(diagnosis)}</strong><small>CONFIDENCE ${Number.isFinite(confidence)?Math.round(confidence):"—"}</small></div><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세</button></article>`;
+}
+const ADMIN_COMPARE_METRICS=[
+  ["종합 관심","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.overallInterest],
+  ["심층 관심","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.highEngagement],
+  ["대중 확산","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.massExpansion],
+  ["활동성","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.activity],
+  ["이슈 온도","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.issueHeat],
+  ["미디어 확산","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.mediaSpread],
+  ["강성지지 이탈","SUPPORT",e=>adminComparePi(e)?.support?.coreAttritionPct],
+  ["신규지지 유입","SUPPORT",e=>adminComparePi(e)?.support?.newSupportInflowPct],
+  ["관심→지지 GAP","SUPPORT",e=>adminComparePi(e)?.attentionSupportGap?.gap],
+  ["정치 회복력","SUPPORT",e=>adminComparePi(e)?.resilience?.score],
+  ["뉴스 모멘텀","MEDIA",e=>adminComparePi(e)?.media?.momentum?.news],
+  ["SNS 모멘텀","MEDIA",e=>adminComparePi(e)?.media?.momentum?.sns]
+];
+function adminCompareMetricTable(people,entries){
+  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">CORE INTELLIGENCE</span><h2>다자간 핵심 비교</h2></div><span>선택 인물 동일축 비교</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>지표</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${ADMIN_COMPARE_METRICS.map(([label,group,getter])=>{const vals=entries.map(getter);const finite=vals.map((v,i)=>[Number(v),i]).filter(([v])=>Number.isFinite(v)).sort((a,b)=>b[0]-a[0]);const top=finite[0]?.[1];return `<tr><th><small>${esc(group)}</small>${esc(label)}</th>${vals.map((v,i)=>`<td class="${i===top?"is-leader":""}">${adminCompareNumber(v)}</td>`).join("")}</tr>`;}).join("")}</tbody></table></div></section>`;
+}
+const ADMIN_AGES=[["18–29","18-29"],["30–39","30-39"],["40–49","40-49"],["50–59","50-59"],["60–69","60-69"],["70+","70+"]];
+function adminCompareCohortTable(people,entries){
+  const cells=[["18–29 M","18_29_m"],["18–29 F","18_29_f"],["30–39 M","30_39_m"],["30–39 F","30_39_f"],["40–49 M","40_49_m"],["40–49 F","40_49_f"],["50–59 M","50_59_m"],["50–59 F","50_59_f"],["60–69 M","60_69_m"],["60–69 F","60_69_f"],["70+ M","70_plus_m"],["70+ F","70_plus_f"]];
+  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">AGE × GENDER</span><h2>연령·성별 다자간 비교</h2></div><span>JCS SUPPORT MOMENTUM</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>COHORT</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${ADMIN_AGES.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.age?.[key]?.value)}</td>`).join("")}</tr>`).join("")}<tr><th>MALE</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.gender?.MALE?.value)}</td>`).join("")}</tr><tr><th>FEMALE</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.gender?.FEMALE?.value)}</td>`).join("")}</tr>${cells.map(([label,key])=>`<tr><th><small>AGE × GENDER CELL</small>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.cells?.[key]?.value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
+}
+function adminCompareHistoryTable(people,entries){
+  const rows=[["30D 종합관심 변화","overallInterest"],["30D 심층관심 변화","highEngagement"],["30D 대중확산 변화","massExpansion"],["30D 활동성 변화","activity"],["30D 이슈온도 변화","issueHeat"],["30D 미디어확산 변화","mediaSpread"]];
+  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">HISTORY</span><h2>최근 변화 비교</h2></div><span>JCS HISTORY DELTA</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>변화</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${rows.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(e?.person?.summary?.coreDeltas?.[key])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
+}
+function adminComparePicker(selected=[]){
+  const slots=Array.from({length:5},(_,i)=>{
+    const id=selected[i]||"",person=getPersonSlotById(id),label=person?slotLabel(person):"";
+    return `<label class="person-quick-picker admin-compare-picker-slot"><span>POLITICIAN ${i+1}${i<2?" · REQUIRED":" · OPTIONAL"}</span><input type="search" value="${esc(label)}" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#admin-compare-person-${i}" data-person-quick-results="#admin-compare-results-${i}"><div class="person-quick-results" id="admin-compare-results-${i}" hidden></div><select id="admin-compare-person-${i}" name="p" ${i<2?"required":""} aria-hidden="true" tabindex="-1"><option value="">${i<2?"정치인 선택":"선택 안 함"}</option>${personOptions(id)}</select></label>`;
+  }).join("");
+  return `<section class="content-card compare-picker-card admin-compare-picker-card"><form class="admin-compare-picker-grid" data-compare-form data-compare-mode="admin">${slots}<button class="primary-btn" type="submit">2–5명 비교하기</button></form></section>`;
+}
+async function renderAdminCompare(search=""){
+  await ensurePersonProvider();
+  const params=new URLSearchParams(search||"");
+  let ids=params.getAll("p").filter(Boolean);
+  if(ids.length<2)ids=[params.get("a"),params.get("b")].filter(Boolean);
+  ids=[...new Set(ids)].slice(0,5);
+  ids.forEach(prefetchNowPerson);
+  const people=ids.map(getPersonSlotById).filter(Boolean);
+  let result="";
+  if(people.length>=2){
+    const data=await getFastAdminCompare(people.map(p=>p.id),"30");
+    const byId=new Map((data?.people||[]).map(x=>[String(x.personId),x]));
+    const entries=people.map(p=>byId.get(String(p.id))||{});
+    result=`<div class="admin-multi-compare"><section class="admin-compare-grid">${people.map((p,i)=>adminComparePersonCard(p,entries[i],i)).join("")}</section>${adminCompareMetricTable(people,entries)}${adminCompareCohortTable(people,entries)}${adminCompareHistoryTable(people,entries)}</div>`;
+  } else result=`<section class="content-card empty-state"><h2>관리자 다자간 비교</h2><p>최소 2명, 최대 5명의 정치인을 선택하세요.</p></section>`;
+  return pageShell(`<main class="subpage compare-live-page admin-compare-page"><section class="page-hero"><span class="eyebrow">ADMIN INTELLIGENCE COMPARE</span><h1>관리자 다자간 정치 인텔리전스 비교</h1><p>2–5명의 정치인을 JCS 관리자 데이터 · AGE × GENDER · HISTORY · CORE INTELLIGENCE 기준으로 한 번에 비교합니다.</p></section>${adminComparePicker(ids)}${result}</main>`);
+}
+
+export async function renderCompare(search=""){
+  const session=getUserSession();
+  const isAdmin=Boolean(session?.authenticated&&session.user?.role==="admin");
+  return isAdmin?renderAdminCompare(search):renderPublicCompare(search);
 }
 
 export async function renderGeneration(search = "") {

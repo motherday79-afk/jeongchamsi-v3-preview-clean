@@ -37,7 +37,8 @@ const sampleHistory={
 
 test('NOW admin progress uses JCS intelligent collection copy instead of Naver-branded copy',()=>{
   const source=read('src/views/admin.js');
-  assert.match(source,/JCS INTELLIGENT DATA COLLECTION IN PROGRESS/);
+  assert.match(source,/NOW SEARCH \+ NEWS COLLECTION/);
+  assert.match(read('src/core/refresh-progress.js'),/AGGRESSIVE JCS INTELLIGENCE/);
   assert.doesNotMatch(source,/네이버 데이터 수집 중/);
   assert.doesNotMatch(source,/네이버 데이터 수집 시작/);
 });
@@ -59,7 +60,7 @@ test('Political Intelligence V1 derives bounded admin estimates and transparent 
   const {derivePoliticalIntelligenceV1}=require('../server/v3/lib/political-intelligence-v1');
   const evidence=require('../server/v3/data/political-intelligence-evidence').getPoliticalIntelligenceEvidence('assembly-023',{asOf:'2026-08-29T00:00:00.000Z'});
   const result=derivePoliticalIntelligenceV1({view:sampleView(),history:sampleHistory,evidence,asOf:'2026-08-29T00:00:00.000Z'});
-  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1_2');
+  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1_3_AGGRESSIVE');
   for(const value of Object.values(result.support.ageMomentum))assert.ok(value>=-50&&value<=50);
   for(const key of ['news','youtube','sns','community'])assert.ok(result.media.momentum[key]>=-50&&result.media.momentum[key]<=50);
   assert.ok(result.support.coreAttritionPct>=0&&result.support.coreAttritionPct<=20);

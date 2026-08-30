@@ -48,7 +48,7 @@ function publicMeta(meta,statuses=[]){
   if((meta.status==='preview'||meta.status==='published')&&!summary.completed)summary={total:meta.total,completed:meta.total,success:meta.total,partial:0,failed:0,remaining:0};
   const completed=statuses.some(Boolean)?statuses.map((x,i)=>x?i:null).filter(x=>x!==null):(meta.completedBatchIndexes||((meta.status==='preview'||meta.status==='published')?Array.from({length:meta.batchCount},(_,i)=>i):[]));
   const failed=statuses.some(Boolean)?failedBatchIndexes(statuses):(meta.failedBatchIndexes||[]);
-  return {draftId:meta.draftId,status:meta.status,total:meta.total,batchSize:meta.batchSize,batchCount:meta.batchCount,startedAt:meta.startedAt,finalizedAt:meta.finalizedAt||null,publishedAt:meta.publishedAt||null,weights:meta.weights,summary,completedBatchIndexes:completed,failedBatchIndexes:failed,top30:meta.top30||[],externalEvidence:meta.externalEvidence||null,ageGenderBaseline:meta.ageGenderBaseline||null,intelligenceSnapshot:meta.intelligenceSnapshot||null};
+  return {draftId:meta.draftId,status:meta.status,total:meta.total,batchSize:meta.batchSize,batchCount:meta.batchCount,startedAt:meta.startedAt,finalizedAt:meta.finalizedAt||null,publishedAt:meta.publishedAt||null,weights:meta.weights,summary,completedBatchIndexes:completed,failedBatchIndexes:failed,top30:meta.top30||[],externalEvidence:meta.externalEvidence||null,ageGenderBaseline:meta.ageGenderBaseline||null,intelligenceSnapshot:meta.intelligenceSnapshot||null,pipeline:meta.pipeline||null};
 }
 async function migrateLegacyMeta(meta){
   if(!meta||!Array.isArray(meta.ranked))return meta;
@@ -86,7 +86,7 @@ module.exports=async function nowDataAdmin(req,res){
     if(action==='start'){
       const configured=configState();if(configured.missingEnv.length)return res.status(409).json({ok:false,error:'NAVER_CONFIG_REQUIRED',missingEnv:configured.missingEnv,missingGroups:configured.missingGroups,configured:{searchAds:configured.searchAds,news:configured.news,newsNaver:configured.newsNaver},newsProvider:configured.newsProvider});
       const people=allPeople(),ids=people.map(x=>x.id),batches=makeBatches(ids,10),w=weights(req.body),draftId=`now-${Date.now().toString(36)}`;
-      const meta={draftId,status:'collecting',total:ids.length,batchSize:10,batchCount:batches.length,batches,weights:w,newsProvider:configured.newsProvider,startedAt:new Date().toISOString(),createdBy:admin.id};
+      const meta={draftId,status:'collecting',total:ids.length,batchSize:10,batchCount:batches.length,batches,weights:w,newsProvider:configured.newsProvider,startedAt:new Date().toISOString(),createdBy:admin.id,pipeline:{stage:'now',detail:'SEARCH_NEWS_COLLECTION',updatedAt:new Date().toISOString()}};
       const tempCleanup=await cleanupAllNowTemp();
       await setJSON(META,meta);
       return res.status(200).json({ok:true,draftId,batchCount:batches.length,batchSize:10,total:ids.length,weights:w,tempCleanup,performance:{browserWorkers:2,serverConcurrency:5}});
@@ -114,7 +114,7 @@ module.exports=async function nowDataAdmin(req,res){
         sources:(evidence.sources||[]).map(x=>({sourceId:x.sourceId,institution:x.institution,url:x.url,ok:Boolean(x.ok),records:Number(x.records)||0,elapsedMs:Number(x.elapsedMs)||0,error:x.error||''})),
         warnings:Array.isArray(evidence.warnings)?evidence.warnings.slice(0,20):[]
       };
-      const next={...meta,externalEvidence};
+      const next={...meta,externalEvidence,pipeline:{stage:'evidence',detail:'PUBLIC_RESEARCH_POLL_EVIDENCE_COMPLETE',updatedAt:new Date().toISOString()}};
       await msetJSON([[evidenceDomain(meta.draftId),evidence],[META,next]]);
       return res.status(200).json({ok:true,draftId:meta.draftId,...externalEvidence});
     }
@@ -126,22 +126,23 @@ module.exports=async function nowDataAdmin(req,res){
         if(!manifest.trustedBaselineReady){
           if(previous?.manifest?.trustedBaselineReady){
             const ageGenderBaseline={status:'reused',warning:'USING_PREVIOUS_TRUSTED_BASELINE',collectedAt:previous.generatedAt||null,rosterTotal:Number(previous.manifest.rosterTotal)||0,directCount:Number(previous.manifest.directCount)||0,partyProxyCount:Number(previous.manifest.partyProxyCount)||0,regionalPartyProxyCount:Number(previous.manifest.regionalPartyProxyCount)||0,limitedCount:Number(previous.manifest.limitedCount)||0,coverage:Number(previous.manifest.coverage)||0};
-            const next={...meta,ageGenderBaseline};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
+            const next={...meta,ageGenderBaseline,pipeline:{stage:'official',detail:'OFFICIAL_ELECTION_POPULATION_AGE_GENDER_COMPLETE',updatedAt:new Date().toISOString()}};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
           }
           return res.status(409).json({ok:false,error:'AGE_GENDER_BASELINE_COVERAGE_INSUFFICIENT',manifest});
         }
         const stored=await writeAgeGenderBaselineBundleV2(bundle);
         const ageGenderBaseline={status:'collected',collectedAt:bundle.generatedAt,rosterTotal:Number(manifest.rosterTotal)||0,usableCount:Number(manifest.usableCount)||0,directCount:Number(manifest.directCount)||0,partyProxyCount:Number(manifest.partyProxyCount)||0,regionalPartyProxyCount:Number(manifest.regionalPartyProxyCount)||0,limitedCount:Number(manifest.limitedCount)||0,coverage:Number(manifest.coverage)||0,partyProfileCount:Number(manifest.partyProfileCount)||0,compressedBytes:Number(stored.compressedBytes)||0,sources:(manifest.sourceStatus||[]).map(x=>({sourceId:x.sourceId,authority:x.authority,ok:Boolean(x.ok),bytes:Number(x.bytes)||0,error:x.error||''})),warnings:Array.isArray(manifest.warnings)?manifest.warnings.slice(0,20):[]};
-        const next={...meta,ageGenderBaseline};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
+        const next={...meta,ageGenderBaseline,pipeline:{stage:'official',detail:'OFFICIAL_ELECTION_POPULATION_AGE_GENDER_COMPLETE',updatedAt:new Date().toISOString()}};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
       }catch(error){
         if(previous?.manifest?.trustedBaselineReady){
           const ageGenderBaseline={status:'reused',warning:'USING_PREVIOUS_TRUSTED_BASELINE',sourceError:String(error?.code||error?.message||'OFFICIAL_BASELINE_COLLECTION_FAILED'),collectedAt:previous.generatedAt||null,rosterTotal:Number(previous.manifest.rosterTotal)||0,directCount:Number(previous.manifest.directCount)||0,partyProxyCount:Number(previous.manifest.partyProxyCount)||0,regionalPartyProxyCount:Number(previous.manifest.regionalPartyProxyCount)||0,limitedCount:Number(previous.manifest.limitedCount)||0,coverage:Number(previous.manifest.coverage)||0};
-          const next={...meta,ageGenderBaseline};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
+          const next={...meta,ageGenderBaseline,pipeline:{stage:'official',detail:'OFFICIAL_ELECTION_POPULATION_AGE_GENDER_COMPLETE',updatedAt:new Date().toISOString()}};await setJSON(META,next);return res.status(200).json({ok:true,draftId:meta.draftId,...ageGenderBaseline});
         }
         return res.status(502).json({ok:false,error:error?.code||'AGE_GENDER_OFFICIAL_BASELINE_COLLECTION_FAILED',detail:String(error?.message||'')});
       }
     }
     if(action==='finalize'){
+      meta={...meta,pipeline:{stage:'market',detail:'RANK_PARTY_REGION_COMPETITOR_CONTEXT',updatedAt:new Date().toISOString()}};await setJSON(META,meta);
       const batches=await loadBatches(meta);if(batches.some(x=>!x))return res.status(409).json({ok:false,error:'NOW_BATCHES_INCOMPLETE',summary:aggregateBatchSummaries(batches,meta.total)});
       const rows=batches.flatMap(x=>x.results||[]),ranked=scoreSnapshot(rows,{searchWeight:meta.weights.search,newsWeight:meta.weights.news}).map(compactRankRow),summary=aggregateBatchSummaries(batches,meta.total);
       const statuses=await loadBatchStatuses(meta),top30=ranked.slice(0,30).map(compactPreviewRow),finalizedAt=new Date().toISOString();
@@ -149,17 +150,20 @@ module.exports=async function nowDataAdmin(req,res){
       await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
       let intelligenceSnapshot=null,ageGenderV2Snapshot=null;const intelligenceWarnings=[];
       try{
+        meta={...meta,pipeline:{stage:'history',detail:'HISTORY_CONTEXT_PREPARED',updatedAt:new Date().toISOString()}};await setJSON(META,meta);
         const previousHistory=compactHistory((await getJSON(HISTORY))||{items:[]});
         const previewCurrent={schemaVersion:1,draftId:meta.draftId,publishedAt:finalizedAt,snapshotKind:'REFRESH_FINALIZE',weights:meta.weights,ranked,batchCount:meta.batchCount,batches:meta.batches,providers:['naver-search-ads',meta.newsProvider||'news-auto-fallback']};
         const previewEntries=buildPersonPublicEntries(previewCurrent,previousHistory,Date.parse(finalizedAt));
         const previousPersonEntries=await mgetJSON(previewEntries.map(([key])=>key));
         const trendedPreviewEntries=previewEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
         const evidenceBundle=(await getJSON(evidenceDomain(meta.draftId)))||{version:'JCS_EXTERNAL_EVIDENCE_V1',collectedAt:finalizedAt,records:[],sources:[],warnings:[{sourceId:'refresh',error:'EXTERNAL_EVIDENCE_NOT_COLLECTED'}],matchedPeople:0,recordCount:0};
-        intelligenceSnapshot=await recordPoliticalIntelligenceSnapshotV1({current:previewCurrent,legacyHistory:previousHistory,personViews:trendedPreviewEntries,evidenceBundle});
+        meta={...meta,pipeline:{stage:'cohort',detail:'AGE_GENDER_COHORT_ANALYSIS',updatedAt:new Date().toISOString()}};await setJSON(META,meta);
         try{ageGenderV2Snapshot=await recordPoliticalIntelligenceSnapshotV2({current:previewCurrent,legacyHistory:previousHistory,personViews:trendedPreviewEntries,evidenceBundle});}
         catch(v2Error){console.error('[JCS_AGE_GENDER_V2_REFRESH_SNAPSHOT_NON_BLOCKING]',v2Error);intelligenceWarnings.push('JCS_AGE_GENDER_V2_SNAPSHOT_FAILED');}
+        meta={...meta,pipeline:{stage:'intelligence',detail:'AGGRESSIVE_JCS_INTELLIGENCE',updatedAt:new Date().toISOString()}};await setJSON(META,meta);
+        intelligenceSnapshot=await recordPoliticalIntelligenceSnapshotV1({current:previewCurrent,legacyHistory:previousHistory,personViews:trendedPreviewEntries,evidenceBundle});
         if(ageGenderV2Snapshot?.error==='BASELINE_INGESTION_REQUIRED')intelligenceWarnings.push('BASELINE_INGESTION_REQUIRED');
-        next={...next,intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0},ageGenderV2Snapshot:ageGenderV2Snapshot?{created:Boolean(ageGenderV2Snapshot.created),skipped:Boolean(ageGenderV2Snapshot.skipped),error:ageGenderV2Snapshot.error||null,analysisAt:ageGenderV2Snapshot.analysisAt||finalizedAt,rosterTotal:Number(ageGenderV2Snapshot.rosterTotal)||0,compressedBytes:Number(ageGenderV2Snapshot.compressedBytes)||0,baselineVersion:ageGenderV2Snapshot.baselineVersion||null}:null};
+        next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFIED_SAVED',updatedAt:new Date().toISOString()},intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0},ageGenderV2Snapshot:ageGenderV2Snapshot?{created:Boolean(ageGenderV2Snapshot.created),skipped:Boolean(ageGenderV2Snapshot.skipped),error:ageGenderV2Snapshot.error||null,analysisAt:ageGenderV2Snapshot.analysisAt||finalizedAt,rosterTotal:Number(ageGenderV2Snapshot.rosterTotal)||0,compressedBytes:Number(ageGenderV2Snapshot.compressedBytes)||0,baselineVersion:ageGenderV2Snapshot.baselineVersion||null}:null};
         await setJSON(META,next);
       }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
       return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights,intelligenceSnapshot,ageGenderV2Snapshot,intelligenceWarnings});

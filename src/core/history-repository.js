@@ -40,3 +40,11 @@ export async function getAdminHistoryPersonDetail(id, range = "30") {
   const safeRange = ["7","30","90","365","all"].includes(String(range)) ? String(range) : "30";
   return requestHistory(`/api/v3/admin/history?personId=${encodeURIComponent(personId)}&range=${encodeURIComponent(safeRange)}&view=detail&r=${Date.now()}`);
 }
+
+
+export async function getAdminHistoryCompare(ids = [], range = "30") {
+  const personIds = [...new Set((Array.isArray(ids) ? ids : []).map(x => String(x || "").trim()).filter(Boolean))].slice(0,5);
+  if (personIds.length < 2) return { ok:false, error:"COMPARE_MIN_2_REQUIRED", people:[] };
+  const safeRange = ["7","30","90","365","all"].includes(String(range)) ? String(range) : "30";
+  return requestHistory(`/api/v3/admin/history?view=compare&personIds=${encodeURIComponent(personIds.join(","))}&range=${encodeURIComponent(safeRange)}&r=${Date.now()}`);
+}

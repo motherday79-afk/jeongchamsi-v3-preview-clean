@@ -1,0 +1,30 @@
+JCV3 JCS AGGRESSIVE ENGINE + ADMIN MULTI COMPARE + INFOREGHINI
+FINAL VERIFICATION — 2026-08-30
+
+IMPLEMENTED
+- JCS Political Intelligence V1_3_AGGRESSIVE
+- Sparse current analysis no longer hides numeric intelligence; NOW search/news/HISTORY/public evidence produce JCS estimates.
+- AGE/GENDER engine: JCS_AGE_GENDER_INTELLIGENCE_V2_AGGRESSIVE_R1
+- R4 official structural baseline refinement retained.
+- Aligned independent components may produce stronger conclusions instead of conservative central convergence.
+- V2 calculation revision changed to JCS_AGGRESSIVE_INTELLIGENCE_20260830_R1 so prior conservative R4 active snapshots are not reused.
+- Admin refresh progress now follows the expanded real pipeline:
+  NOW -> public evidence -> official election/population/age-gender -> market context -> HISTORY -> cohort -> aggressive intelligence -> verify/save.
+- Finalize progress is read from the server draft pipeline while the finalize request runs; late phases are no longer all displayed as 100%.
+- Previous PUBLIC compare / ADMIN 2–5 Intelligence compare / info르기니 prefetch-cache work remains bundled.
+
+FRESH TARGETED VERIFICATION
+- admin multi-compare/info르기니 + aggressive engine + cohort + refresh pipeline: 32/32 PASS
+- 542-person synthetic mixed-input sweep: PASS
+  * 542 V1 people: numeric age momentum values
+  * 542 x 12 AGE×GENDER cells: numeric values, no hidden demographic cells
+- Political Intelligence admin selected checks: 2/2 PASS
+- Changed JS syntax checks: PASS
+
+FULL-SUITE LIMITATION
+This reconstruction workspace does not contain some unchanged full-project dependencies (for example lib/v3/redis, politician-live-roster, api/gateway.js). Tests requiring those missing unchanged files cannot be used here as a valid full-project pass/fail signal. No full-project green claim is made.
+
+DEPLOYMENT
+- Overlay this ZIP on the current project.
+- Deploy/restart so server and browser cache-bust markers take effect.
+- Run administrator "전체 데이터 새로고침" once. The aggressive engine revision intentionally creates a new JCS snapshot generation.

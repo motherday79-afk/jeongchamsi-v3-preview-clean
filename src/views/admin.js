@@ -5,6 +5,7 @@ import { getAdminHistoryOverview, getAdminHistoryPerson } from "../core/history-
 import { APP_VERSION, BUILD_NAME } from "../version.js";
 import { BADGE_CATALOG, badgeGemSvg, badgeByKey } from "../data/badge-catalog.js";
 import { normalizeNationalEvaluation, makeNationalEvaluationId, votesForEvaluationSlot } from "./national-evaluation-model.js";
+import { stageProgress, stageLabel } from "../core/refresh-progress.js?v=jcs-aggressive-r1";
 
 const TABS = [
   ["dashboard", "대시보드"], ["brand", "메인 타이틀"], ["members", "회원관리"], ["badges", "배지센터"], ["requests", "요청 · PARTNERS"], ["people", "인물 관리"], ["nowdata", "NOW 데이터"], ["history", "HISTORY"], ["president", "대통령"],
@@ -420,10 +421,11 @@ async function nowDataPanel() {
   const data = await fetchNowDataStatus();
   if (!data.ok) return `<section class="admin-panel"><h2>NOW 데이터 센터</h2><div class="notice-box">상태를 불러오지 못했습니다 · ${esc(data.error || "NOW_STATUS_FAILED")}</div></section>`;
   const draft = data.draft || null, summary = draft?.summary || { total:data.rosterTotal || 542, completed:0, success:0, partial:0, failed:0, remaining:data.rosterTotal || 542 };
-  const pct = summary.total ? Math.min(100, Math.round(summary.completed / summary.total * 100)) : 0;
+  const rawFraction = summary.total ? Math.min(1, summary.completed / summary.total) : 0;
+  const pct = draft?.pipeline?.stage ? stageProgress(draft.pipeline.stage, draft.pipeline.stage === 'now' ? rawFraction : 1) : Math.round(rawFraction * 100);
   const top30 = draft?.top30?.length ? draft.top30 : (data.current?.top30 || []);
   const ready = data.configured?.searchAds && data.configured?.news;
-  const draftStatus = draft?.status || "대기";
+  const draftStatus = draft?.pipeline?.stage ? stageLabel(draft.pipeline.stage) : (draft?.status || "대기");
   return `<section class="admin-panel now-data-center">
     <div class="admin-panel-head"><div><h2>NOW 데이터 센터 <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span></h2><span class="status-pill"><b>JEONGCHAMSI INTELLIGENT LIVE DATA</b></span></div></div>
     <div class="now-data-kpis">
@@ -461,11 +463,21 @@ async function nowApi(body) {
     return r.ok ? b : { ok:false, error:b.error || "NOW_API_FAILED", summary:b.summary, missingEnv:b.missingEnv, missingGroups:b.missingGroups, configured:b.configured, detail:b.detail };
   } catch { return { ok:false, error:"NOW_API_FAILED" }; }
 }
-function setNowProgress(done,total,label="수집 중") {
-  const pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
+function setNowProgress(done,total,label="수집 중",stage="now") {
+  const fraction = total ? Math.min(1, Math.max(0, done / total)) : 0;
+  const pct = stageProgress(stage,fraction);
   const bar = document.querySelector("[data-now-progress-bar]"); if (bar) bar.style.width = `${pct}%`;
-  const count = document.querySelector("[data-now-progress-count]"); if (count) count.textContent = `${num(done)} / ${num(total)}`;
-  const text = document.querySelector("[data-now-progress-label]"); if (text) text.textContent = label;
+  const count = document.querySelector("[data-now-progress-count]"); if (count) count.textContent = stage === "now" ? `${num(done)} / ${num(total)}` : `${pct.toFixed(pct % 1 ? 1 : 0)}%`;
+  const text = document.querySelector("[data-now-progress-label]"); if (text) text.textContent = label || stageLabel(stage);
+}
+function setNowStage(stage,fraction=1,detail="") {
+  const pct=stageProgress(stage,fraction),bar=document.querySelector("[data-now-progress-bar]"),count=document.querySelector("[data-now-progress-count]"),text=document.querySelector("[data-now-progress-label]"),state=document.querySelector("[data-now-live-state]");
+  if(bar)bar.style.width=`${pct}%`;if(count)count.textContent=`${pct.toFixed(pct % 1 ? 1 : 0)}%`;if(text)text.textContent=stageLabel(stage);if(state&&detail)state.textContent=detail;
+}
+async function finalizeWithPipelineProgress(draftId){
+  let settled=false,result=null;const request=nowApi({action:"finalize",draftId}).then(r=>{result=r;settled=true;return r;});
+  while(!settled){const status=await fetchNowDataStatus();const pipe=status?.draft?.pipeline;if(pipe?.stage)setNowStage(pipe.stage,1,pipe.detail||"");await new Promise(resolve=>setTimeout(resolve,280));}
+  await request;return result;
 }
 async function runBatchQueue({draftId,batchIndexes,total,batchSize,action}) {
   let cursor = 0, doneBatches = 0, firstError = "", firstDetail = "";
@@ -477,7 +489,7 @@ async function runBatchQueue({draftId,batchIndexes,total,batchSize,action}) {
       if (!r.ok) { await new Promise(resolve => setTimeout(resolve, 350)); r = await nowApi({ action, draftId, batchIndex }); }
       if (!r.ok && !firstError) { firstError = r.error || "BATCH_FAILED"; firstDetail = r.detail || ""; }
       doneBatches++;
-      setNowProgress(Math.min(total, doneBatches * batchSize), total, "JCS INTELLIGENT DATA COLLECTION IN PROGRESS");
+      setNowProgress(Math.min(total, doneBatches * batchSize), total, "NOW SEARCH + NEWS COLLECTION", "now");
       const state = document.querySelector("[data-now-live-state]"); if (state) state.textContent = `배치 ${doneBatches}/${batchIndexes.length} · 최근 처리 #${batchIndex + 1}${r.elapsedMs ? ` · ${(r.elapsedMs/1000).toFixed(1)}초` : ""}`;
     }
   });
@@ -486,20 +498,21 @@ async function runBatchQueue({draftId,batchIndexes,total,batchSize,action}) {
 export async function runNowDataRefresh() {
   const searchWeight = Number(document.querySelector("[data-now-search-weight]")?.value || 50), newsWeight = Number(document.querySelector("[data-now-news-weight]")?.value || 50);
   const start = await nowApi({ action:"start", searchWeight, newsWeight }); if (!start.ok) return start;
-  setNowProgress(0,start.total,"JCS INTELLIGENT DATA COLLECTION IN PROGRESS");
+  setNowProgress(0,start.total,"NOW SEARCH + NEWS COLLECTION","now");
   const queue = await runBatchQueue({draftId:start.draftId,batchIndexes:Array.from({length:start.batchCount},(_,i)=>i),total:start.total,batchSize:start.batchSize,action:"collect-batch"});
   if (!queue.ok) return queue;
-  setNowProgress(start.total,start.total,"EXTERNAL EVIDENCE COLLECTION (외부 근거자료 수집)");
+  setNowStage("evidence",0,"한국갤럽 · 중앙선거여론조사심의위원회 공개 근거 수집");
   const evidence = await nowApi({ action:"collect-external-evidence", draftId:start.draftId });
   if (!evidence.ok) return evidence;
-  const state = document.querySelector("[data-now-live-state]");
-  if (state) state.textContent = `외부근거 ${num(evidence.recordCount)}건 · 정치인 매칭 ${num(evidence.matchedPeople)}명${evidence.warnings?.length ? ` · 경고 ${num(evidence.warnings.length)}건` : ""}`;
-  setNowProgress(start.total,start.total,"OFFICIAL PUBLIC DATA COLLECTION (선거·인구·연령×성별 자료 수집)");
+  setNowStage("evidence",1,`외부근거 ${num(evidence.recordCount)}건 · 정치인 매칭 ${num(evidence.matchedPeople)}명${evidence.warnings?.length ? ` · 경고 ${num(evidence.warnings.length)}건` : ""}`);
+  setNowStage("official",0,"선거 · 인구 · 연령×성별 공식자료 수집 및 JCS 정규화");
   const baseline = await nowApi({ action:"collect-age-gender-baseline", draftId:start.draftId });
   if (!baseline.ok) return baseline;
-  if (state) state.textContent = `AGE×GENDER ${num(baseline.rosterTotal)}명 · DIRECT ${num(baseline.directCount)} · PARTY ${num(baseline.partyProxyCount)} · REGIONAL ${num(baseline.regionalPartyProxyCount)} · LIMITED ${num(baseline.limitedCount)}${baseline.status === "reused" ? " · 이전 검증 Baseline 재사용" : ""}`;
-  setNowProgress(start.total,start.total,"JCS AGE & GENDER INTELLIGENCE CALCULATION (542명 분석 중)");
-  return nowApi({ action:"finalize", draftId:start.draftId });
+  setNowStage("official",1,`AGE×GENDER ${num(baseline.rosterTotal)}명 · DIRECT ${num(baseline.directCount)} · PARTY ${num(baseline.partyProxyCount)} · REGIONAL ${num(baseline.regionalPartyProxyCount)}`);
+  setNowStage("market",0,"정당 · 지역 · 경쟁자 시장맥락 계산 준비");
+  const finalized=await finalizeWithPipelineProgress(start.draftId);
+  if(finalized?.ok)setNowStage("verify",1,"JCS AGGRESSIVE INTELLIGENCE SNAPSHOT 저장 완료");
+  return finalized;
 }
 export async function retryNowDataFailures() {
   const status = await fetchNowDataStatus(); if (!status.ok || !status.draft) return { ok:false, error:status.error || "NOW_DRAFT_NOT_FOUND" };

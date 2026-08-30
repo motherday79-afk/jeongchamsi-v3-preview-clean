@@ -19,6 +19,20 @@ module.exports=async function historyAdmin(req,res){
       if(summary==='home')return res.status(200).json({ok:true,...await historyHomeSummaryV2()});
       const personId=String(req.query?.personId||'').trim(),view=String(req.query?.view||'').trim();
       const range=String(req.query?.range||req.query?.days||'30');
+      if(view==='compare'){
+        const raw=String(req.query?.personIds||'').split(',').map(x=>x.trim()).filter(Boolean);
+        const personIds=[...new Set(raw)];
+        if(personIds.length<2)return res.status(400).json({ok:false,error:'COMPARE_MIN_2_REQUIRED'});
+        if(personIds.length>5)return res.status(400).json({ok:false,error:'COMPARE_MAX_5_EXCEEDED'});
+        const days=range==='all'?'all':Number(range)||30;
+        const people=await Promise.all(personIds.map(async id=>{
+          const person=await readPersonHistoryV2(id,{days,limit:320});
+          const politicalIntelligence=await readPoliticalIntelligenceV2(id,person);
+          const compactPerson={...person,observations:(person.observations||[]).slice(-12),daily:(person.daily||[]).slice(-30),events:(person.events||[]).slice(-20)};
+          return {personId:id,person:compactPerson,politicalIntelligence};
+        }));
+        return res.status(200).json({ok:true,view:'compare',range,personIds,people});
+      }
       if(view==='detail'&&personId){
         const person=await readPersonHistoryV2(personId,{days:range==='all'?'all':Number(range)||30,limit:320});
         const politicalIntelligence=await readPoliticalIntelligenceV2(personId,person);

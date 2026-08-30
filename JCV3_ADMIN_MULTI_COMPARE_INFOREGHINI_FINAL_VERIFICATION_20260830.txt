@@ -1,0 +1,35 @@
+JCV3 ADMIN MULTI COMPARE + INFOREGHINI FINAL VERIFICATION
+Date: 2026-08-30
+
+Implemented
+- /compare single entry point preserved.
+- Public/non-admin: existing 1:1 compare path remains a/b based.
+- Admin: automatic ADMIN INTELLIGENCE COMPARE mode.
+- Admin comparison supports 2 to 5 unique politicians via repeated p query params.
+- Protected admin batch endpoint: /api/v3/admin/history?view=compare&personIds=...
+- Batch endpoint remains behind requireAdmin().
+- Admin compare includes CORE INTELLIGENCE, support/media metrics, AGE, GENDER, 12 AGE×GENDER cells, and HISTORY deltas.
+- Short-lived in-memory NOW/admin-compare promise caches added.
+- INFOREGHINI prefetch warms route modules and person/compare data.
+- SPA target view HTML is pre-resolved on pointer/focus intent and reused on click when fresh.
+- pointerover, pointerdown, focusin, and compare-picker changes trigger prefetch.
+- Compare route waits for user session on first paint to avoid public/admin mode flash.
+
+Fresh verification
+- node --check src/app.js: PASS
+- node --check src/views/features.js: PASS
+- node --check src/core/history-repository.js: PASS
+- node --check src/core/compare-data.js: PASS
+- node --check src/core/instant-prefetch.js: PASS
+- node --check server/v3/routes/admin/history.js: PASS
+- node --test tests/admin-multi-compare-instant-20260830.test.js: 6/6 PASS, 0 FAIL
+
+Additional related test attempt
+- Related patch-only tests were also invoked.
+- Static HISTORY/Political Intelligence UI checks passed where dependencies were present.
+- Two unrelated checks could not execute in this patch-only workspace because unchanged full-project dependencies are intentionally absent:
+  * src/core/repository.js
+  * lib/v3/redis
+- These are workspace completeness limitations, not failures introduced by this patch.
+
+No AGE/GENDER calculation or HISTORY storage algorithm was changed by this package.

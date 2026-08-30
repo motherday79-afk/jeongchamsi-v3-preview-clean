@@ -3,7 +3,7 @@
 const crypto=require('node:crypto');
 const {COHORT_KEYS}=require('./age-gender-baseline-v2');
 
-const ENGINE_VERSION='JCS_AGE_GENDER_INTELLIGENCE_V2';
+const ENGINE_VERSION='JCS_AGE_GENDER_INTELLIGENCE_V2_AGGRESSIVE_R1';
 const CONFIDENCE_THRESHOLD=55;
 const AGE_GROUPS=[['18-29',0,1],['30-39',2,3],['40-49',4,5],['50-59',6,7],['60-69',8,9],['70+',10,11]];
 const ISSUE_RULES=[
@@ -114,6 +114,18 @@ function previousProfileCompressed(previous={}){
 function fitSharedComponents(parts={},limit=0){
   const total=Object.values(parts).reduce((a,b)=>a+(Number(b)||0),0);if(!(limit>0)||Math.abs(total)<=limit)return parts;const scale=limit/Math.abs(total);return Object.fromEntries(Object.entries(parts).map(([k,v])=>[k,Number(v)*scale]));
 }
+
+function aggressiveTarget(value,parts={}){
+  const directional=Object.entries(parts).map(([key,v])=>({key,value:Number(v)||0})).filter(x=>Math.abs(x.value)>=2);
+  if(directional.length<2)return clamp(value,-50,50);
+  const pos=directional.filter(x=>x.value>0),neg=directional.filter(x=>x.value<0),dominant=pos.length>=neg.length?pos:neg,minor=pos.length>=neg.length?neg:pos;
+  const agreement=dominant.length/directional.length;
+  const strongest=[...directional].sort((a,b)=>Math.abs(b.value)-Math.abs(a.value))[0]?.value||0;
+  let out=value;
+  if(agreement>=.67)out*=1+Math.min(.38,(agreement-.5)*.76);
+  else if(minor.length&&Math.abs(strongest)>=10)out+=strongest*.18;
+  return clamp(out,-50,50);
+}
 function computeCell({key,index,baseline,view,history,evidence,events,previous,marketContext={},asOf=null}){
   const detailed=detailedAnchorForCell(evidence,key),coarse=coarseAnchorForCell(evidence,index),aff=num(baseline?.cohortAffinity?.[index]);const issue=issueEffectForCell(events,index);const global=globalMovement(view,history);
   const party=clamp(num(marketContext?.partyMovement)||0,-8,8),regional=clamp(num(marketContext?.regionalMovement)||0,-8,8),competitor=clamp(num(marketContext?.competitorMovement)||0,-8,8),hDays=historyDays(history);
@@ -121,6 +133,7 @@ function computeCell({key,index,baseline,view,history,evidence,events,previous,m
   const shared=fitSharedComponents({personalEffect:global*.42,partyEffect:party*.08,regionalEffect:regional*.06,competitorEffect:competitor*.08},cap*.8);
   components={personalEffect:shared.personalEffect+profile,partyEffect:shared.partyEffect,regionalEffect:shared.regionalEffect,competitorEffect:shared.competitorEffect,issueEffect:issue.effect*.45,externalAnchorEffect:external*.72,historyPriorEffect:prior?prior.value:0};
   target=profile+shared.personalEffect+shared.partyEffect+shared.regionalEffect+shared.competitorEffect+components.issueEffect+components.externalAnchorEffect;
+  target=aggressiveTarget(target,{profile,global:shared.personalEffect,party:shared.partyEffect,regional:shared.regionalEffect,competitor:shared.competitorEffect,issue:components.issueEffect,external:components.externalAnchorEffect});
   let value=prior?prior.value+clamp(target-prior.value,-cap,cap):target;
   value=round(clamp(value,-50,50));const confidence=cellConfidence({baseline,view,history,events,evidence,cellIndex:index,detailedAnchor:detailed,anchorAgreement:anchorDiag.agreement,anchorFreshness:anchorDiag.freshness});const status='VALID_SIGNAL';
   return {key,value,status,confidence,baselineQuality:Number(baseline.baselineQuality)||0,evidenceCount:evidenceRows(evidence).length,independentEventCount:events.length,historyDays:hDays,lastValidatedAt:detailed!==null?String(evidenceRows(evidence).find(r=>num(r?.values?.[key])!==null)?.observedAt||'')||null:null,reason:null,components:Object.fromEntries(Object.entries(components).map(([k,v])=>[k,round(v,1)]))};
@@ -146,4 +159,4 @@ function deriveAgeGenderCohortsV2({person={},baseline={},view={},history={},evid
   return {engineVersion:ENGINE_VERSION,asOf:asOf||null,baseline:{kind:baseline?.baselineKind||'LIMITED',quality:Number(baseline?.baselineQuality)||0,sourceState:String(baseline?.sourceState||''),limitedReasons:Array.isArray(baseline?.limitedReasons)?baseline.limitedReasons.slice(0,8):[]},cells,age:aggregates.age,gender:aggregates.gender,summary:summaryFromCells(cells,reference30d,volatility30d),validity:{state:validCount?'VALID_SIGNAL':'LIMITED_SIGNAL',validCellCount:validCount,totalCellCount:12,independentEventCount:events.length,evidenceCount:evidenceRows(evidence).length,historyDays:historyDays(history),confidenceThreshold:CONFIDENCE_THRESHOLD}};
 }
 
-module.exports={ENGINE_VERSION,CONFIDENCE_THRESHOLD,deriveAgeGenderCohortsV2,deriveMarketContextV2,_internals:{aggregateCells,collectEvents,eventFingerprint,normalizeEventTitle,issueEffectForCell,globalMovement,detailedAnchorForCell,coarseAnchorForCell,movementCap,baselineUsable,cellConfidence,summaryFromCells,currentViewSignal,broadRegion,eventTokens,similarEvent,anchorDiagnostics,sourceReadiness,isOfficialDemographicBaseline,officialBaselineEvidenceBonus,cohortProfileEffect,fitSharedComponents,previousProfileCompressed}};
+module.exports={ENGINE_VERSION,CONFIDENCE_THRESHOLD,deriveAgeGenderCohortsV2,deriveMarketContextV2,_internals:{aggregateCells,collectEvents,eventFingerprint,normalizeEventTitle,issueEffectForCell,globalMovement,detailedAnchorForCell,coarseAnchorForCell,movementCap,baselineUsable,cellConfidence,summaryFromCells,currentViewSignal,broadRegion,eventTokens,similarEvent,anchorDiagnostics,sourceReadiness,isOfficialDemographicBaseline,officialBaselineEvidenceBonus,cohortProfileEffect,fitSharedComponents,previousProfileCompressed,aggressiveTarget}};

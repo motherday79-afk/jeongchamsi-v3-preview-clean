@@ -16,22 +16,22 @@ function baseRow(){
 
 function history(){return {observations:[],daily:[],summary:{rawSampleSize:0,dailySampleSize:0,coreDeltas:{},rankDelta:{}}};}
 
-test('missing current analysis is explicitly insufficient instead of manufacturing -50 values',()=>{
+test('missing current analysis is converted into explicit JCS estimates instead of hiding values',()=>{
   const {derivePoliticalIntelligenceV1}=require('../server/v3/lib/political-intelligence-v1');
   const result=derivePoliticalIntelligenceV1({
     view:{row:baseRow(),rankDelta:0,related:[],analysis:{scores:{}}},
     history:history(),evidence:{sources:[],demographic:null},asOf:'2026-08-30T00:00:00.000Z'
   });
-  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1_2');
-  assert.equal(result.validity.state,'INSUFFICIENT_DATA');
-  assert.deepEqual(result.support.ageMomentum,{age2030:null,age4050:null,age60plus:null});
-  assert.equal(result.support.coreAttritionPct,null);
-  assert.equal(result.support.newSupportInflowPct,null);
-  assert.deepEqual(result.media.momentum,{news:null,youtube:null,sns:null,community:null});
-  assert.equal(result.resilience.score,null);
-  assert.equal(result.attentionSupportGap.gap,null);
-  assert.equal(result.diagnosis.condition,null);
-  assert.equal(result.strategicSolution.priorities.length,0);
+  assert.equal(result.version,'JCS_POLITICAL_INTELLIGENCE_V1_3_AGGRESSIVE');
+  assert.equal(result.validity.state,'JCS_ESTIMATED');
+  for(const value of Object.values(result.support.ageMomentum))assert.equal(Number.isFinite(value),true);
+  for(const value of Object.values(result.media.momentum))assert.equal(Number.isFinite(value),true);
+  assert.equal(Number.isFinite(result.support.coreAttritionPct),true);
+  assert.equal(Number.isFinite(result.support.newSupportInflowPct),true);
+  assert.equal(Number.isFinite(result.resilience.score),true);
+  assert.equal(Number.isFinite(result.resilience.recoveryDays),true);
+  assert.equal(Number.isFinite(result.attentionSupportGap.gap),true);
+  assert.equal(Number.isFinite(result.diagnosis.condition),true);
 });
 
 test('valid core analysis with optional scores missing treats missing optional inputs as neutral, not -50',()=>{
