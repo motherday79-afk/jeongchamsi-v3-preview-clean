@@ -1,0 +1,10 @@
+const fs=require('fs');
+const assert=require('assert');
+const admin=fs.readFileSync('src/views/admin.js','utf8');
+const gateway=fs.readFileSync('api/gateway.js','utf8');
+const route=fs.readFileSync('server/v3/routes/admin/now-data.js','utf8');
+assert(admin.includes('detail:b.detail'), 'GET status must preserve server detail');
+assert(admin.includes('NOW 오류 상세'), 'admin panel must render detailed NOW error');
+assert(gateway.includes('detail:String(error?.message||"")'), 'gateway must return module/handler detail');
+assert(route.includes("stage:'admin-now-data'"), 'NOW route catch must identify failure stage');
+console.log('PASS now admin error detail hotfix contract');

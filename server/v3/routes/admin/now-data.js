@@ -207,5 +207,5 @@ module.exports=async function nowDataAdmin(req,res){
       return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
-  }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}
+  }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',stage:'admin-now-data',detail:String(error?.message||''),name:String(error?.name||'Error')});}
 };

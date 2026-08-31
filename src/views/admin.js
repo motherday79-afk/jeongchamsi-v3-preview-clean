@@ -410,12 +410,12 @@ async function fetchNowDataStatus() {
   try {
     const r = await fetch("/api/v3/admin/now-data", { credentials:"same-origin", cache:"no-store", headers:{ Accept:"application/json" } });
     const b = await r.json().catch(() => ({}));
-    return r.ok ? b : { ok:false, error:b.error || "NOW_STATUS_FAILED" };
+    return r.ok ? b : { ok:false, error:b.error || "NOW_STATUS_FAILED", detail:b.detail || "", stage:b.stage || "", path:b.path || "" };
   } catch { return { ok:false, error:"NOW_STATUS_FAILED" }; }
 }
 async function nowDataPanel() {
   const data = await fetchNowDataStatus();
-  if (!data.ok) return `<section class="admin-panel"><h2>NOW 데이터 센터</h2><div class="notice-box">상태를 불러오지 못했습니다 · ${esc(data.error || "NOW_STATUS_FAILED")}</div></section>`;
+  if (!data.ok) return `<section class="admin-panel"><h2>NOW 데이터 센터</h2><div class="notice-box"><b>NOW 오류 상세</b><br>코드 · ${esc(data.error || "NOW_STATUS_FAILED")}${data.stage ? `<br>단계 · ${esc(data.stage)}` : ""}${data.path ? `<br>경로 · ${esc(data.path)}` : ""}${data.detail ? `<br>원인 · ${esc(data.detail)}` : ""}</div></section>`;
   const draft = data.draft || null, summary = draft?.summary || { total:data.rosterTotal || 542, completed:0, success:0, partial:0, failed:0, remaining:data.rosterTotal || 542 };
   const rawFraction = summary.total ? Math.min(1, summary.completed / summary.total) : 0;
   const pct = draft?.pipeline?.stage ? stageProgress(draft.pipeline.stage, draft.pipeline.stage === 'now' ? rawFraction : 1) : Math.round(rawFraction * 100);
