@@ -45,7 +45,7 @@ test('politician admin intelligence reads like a paid advisory report with verdi
     'admin-pi-report-chapter',
     'admin-pi-priority-action-plan',
     'JCS PRIORITY ACTION PLAN',
-    '정참시가 제안하는 우선 과제'
+    '현재 분석 기준 우선순위'
   ]);
   hasAll(css,[
     '.admin-pi-verdict-board',

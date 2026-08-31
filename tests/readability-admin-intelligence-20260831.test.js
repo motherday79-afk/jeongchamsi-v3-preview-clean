@@ -15,9 +15,9 @@ test('admin political condition is translated into a plain-language current poli
     assert.ok(people.includes(token),`missing people label ${token}`);
     assert.ok(compare.includes(token),`missing compare label ${token}`);
   }
-  assert.ok(people.includes('현재 정치 흐름'));
-  assert.ok(compare.includes('현재 정치 흐름'));
-  assert.ok(people.includes('지지율이 아니라 최근 관심·지지 기반·미디어·이슈 신호를 종합한 JCS 상태지수'));
+  assert.ok(people.includes('정치 흐름 지수'));
+  assert.ok(compare.includes('정치 흐름 지수'));
+  assert.ok(people.includes('최근 관심·지지 기반·미디어·이슈를 종합한 JCS 상태지수이며 지지율과는 구분됩니다.'));
 });
 
 test('admin compare and intelligence ship a scoped readability override',()=>{
@@ -32,6 +32,6 @@ test('admin compare and intelligence ship a scoped readability override',()=>{
 test('admin report language prioritizes Korean explanations for manager-facing concepts',()=>{
   const people=read('src/views/people.js');
   const compare=read('src/views/features.js');
-  for(const token of ['분석 신뢰도','정치 회복력','가장 큰 기회','가장 큰 위험','이게 무슨 뜻인가','그래서 무엇을 볼 것인가']) assert.ok(people.includes(token),`missing ${token}`);
-  for(const token of ['차이가 가장 크게 나는 네 영역','누가 어디에서 앞서고 밀리는가','대중 확산 × 현재 정치 흐름']) assert.ok(compare.includes(token),`missing ${token}`);
+  for(const token of ['분석 신뢰도','정치 회복력','핵심 기회','핵심 위험','핵심 결론','의미','우선 대응']) assert.ok(people.includes(token),`missing ${token}`);
+  for(const token of ['핵심 격차 지표','비교 대상별 우위 영역','정치 포지션 맵','대중 확산력']) assert.ok(compare.includes(token),`missing ${token}`);
 });

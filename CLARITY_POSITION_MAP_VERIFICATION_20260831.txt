@@ -1,0 +1,46 @@
+정참시 ADMIN INTELLIGENCE CLARITY + POSITION MAP VERIFICATION
+2026-08-31
+
+기준본
+- JCV3_ADMIN_INTELLIGENCE_READABILITY_HOTFIX_20260831.zip
+
+적용 파일
+- index.html
+- css/pages.css
+- src/app.js
+- src/views/features.js
+- src/views/people.js
+- tests/admin-intelligence-clarity-decision-map-20260831.test.js
+- tests/dont-make-me-spend-premium-experience-20260831.test.js
+- tests/readability-admin-intelligence-20260831.test.js
+
+검증 결과
+- node --check src/views/features.js : PASS
+- node --check src/views/people.js : PASS
+- node --check src/app.js : PASS
+- node --test tests/*.test.js : 9/9 PASS
+- tinycss2 CSS parse errors : 0
+- CSS brace balance : 0
+- CLARITY PATCH 신규 맵 최소 font-size : 11px
+- 승인 이전 애매한 문구 잔존 검사 : PASS
+- Decision Map X축 (attention+expansion)/2 제거 : PASS
+- Decision Map X축 latest.massExpansion 사용 : PASS
+- cache marker clarity-v1 : PASS
+
+핵심 승인 반영
+1. 관리자용 문체를 쉬운 말투가 아닌 짧고 단정한 전문 분석 문체로 통일.
+2. 정치 흐름 지수 / 핵심 위험 / 핵심 기회 / 우선 대응 / 분석 근거 등 한국어 우선 표기.
+3. DECISION MAP을 정치 포지션 맵으로 재구성.
+4. 강한 우위 / 확산 기회 / 반등 가능 / 위험 구간 4분면 표시.
+5. 좌표점과 인물별 카드 분리로 이미지 깨짐·겹침이 맵 판독을 방해하지 않도록 개선.
+6. 사진 실패 시 전역 data-politician-photo 오류 처리로 이미지가 제거되어도 이니셜·이름·수치·판정 유지.
+7. 맵 하단 자동 판독 요약 추가.
+
+비변경
+- Redis / Storage
+- Refresh / Publish
+- NOW RANK 계산
+- 원천 데이터 구조
+- JCS 계산 엔진
+- 경쟁자 이동 추정 계산식
+- 토큰 기능
