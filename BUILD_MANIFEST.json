@@ -1,6 +1,6 @@
 {
-  "version": "v3.0.0-alpha6.0.36.32",
-  "build": "MOBILE SCROLL ROOTFIX",
+  "version": "v3.0.0-alpha6.0.35.1",
+  "build": "BENCHMARKED PRODUCT SYSTEM · NAV STABILITY HOTFIX",
   "vercel_function_count": 1,
   "vercel_function": [
     "api/gateway.js"
@@ -20,7 +20,7 @@
     "unknown_api_route": 404
   },
   "layout_font_locked": true,
-  "app_css_sha256": "857a4a9296311117bb242c6c26135ba643dceabf2cdd6312abb71f72d34a5e3c",
+  "app_css_sha256": "5927e8d373f6058aef1b712ba0b588ab8698d0780859c63e82ce33f0538e0936",
   "politician_slots": 543,
   "v2_runtime_references": 0,
   "navigation_stability": {
@@ -28,84 +28,5 @@
     "route_scroll_behavior": "instant",
     "history_entry_scroll_xy": true,
     "back_forward_exact_restore": true
-  },
-  "performance_cleanup": {
-    "internal_js_query_variants": 0,
-    "livebar_endpoint": "/api/v3/livebar",
-    "home_snapshot_memory_cache_ms": 10000,
-    "author_profile_memory_cache_ms": 15000,
-    "performance_monitor": "deferred unless ?perf",
-    "person_light_index": "src/data/person-lite.js",
-    "auth_session_activity": "single session response",
-    "protected": [
-      "auth_singleton",
-      "manual_history_scroll_restore",
-      "now_append_only_load_more",
-      "mobile_foundation"
-    ]
-  },
-  "photo_global_link_rootfix": {
-    "optimizer_quality_fix": "tiny/sidebar q55 to match allowed production optimizer quality",
-    "identity_fix": "HOME top 15 lite identities are connected=true",
-    "linked_surfaces": [
-      "NOW",
-      "person detail",
-      "generation ranking",
-      "national evaluation home/detail",
-      "recent sidebar",
-      "MY recent",
-      "compare",
-      "search politician/evaluation"
-    ]
-  },
-  "photo_chain_rootfix": {
-    "valid_optimizer_variants": {
-      "tiny": "64/q55",
-      "mini": "96/q55",
-      "sidebar": "64/q55",
-      "card": "160/q55",
-      "profile": "384/q65"
-    },
-    "invalid_widths_removed": [
-      72,
-      80
-    ],
-    "graceful_image_failure_fallback": true,
-    "generation_top15_background_image_removed": true,
-    "linked_surfaces": [
-      "NOW",
-      "person detail",
-      "generation ranking",
-      "national evaluation home/detail",
-      "recent sidebar",
-      "MY recent",
-      "compare",
-      "search politician/evaluation"
-    ],
-    "self_contained_files": [
-      "person-lite.js",
-      "person-provider.js",
-      "home-person-preview.js",
-      "politician-photo-index.js"
-    ]
-  },
-  "mobile_scroll_rootfix": {
-    "scroll_history_policy": "memory + bounded 240ms History API flush",
-    "removed": "requestAnimationFrame -> history.replaceState on every scroll frame",
-    "immediate_flush_boundaries": [
-      "route navigation",
-      "scrollend",
-      "touchend",
-      "pointerup",
-      "pagehide",
-      "visibility hidden"
-    ],
-    "protected_navigation": [
-      "manual history.scrollRestoration",
-      "forward route starts at 0,0",
-      "Back/Forward restores saved x/y",
-      "NOW append-only load more unchanged"
-    ],
-    "duplicate_history_write_guard": true
   }
 }

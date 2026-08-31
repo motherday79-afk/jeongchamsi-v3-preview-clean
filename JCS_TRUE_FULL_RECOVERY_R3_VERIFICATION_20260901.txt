@@ -1,0 +1,70 @@
+JCS TRUE FULL RECOVERY R3 — FINAL VERIFICATION
+Date: 2026-09-01 KST
+
+INCIDENT ROOT CAUSE
+- The previous FREEDOM R2 artifact was mislabeled as a full integration package.
+- It contained only 69 files and was actually a changed-files patch bundle.
+- Critical full-project files such as src/data/person-provider.js and the politician source/data layer were not inside that ZIP.
+- Deploying that partial artifact as the project itself therefore made politician data disappear from the browser even though the Redis namespace was not intentionally deleted.
+
+RECOVERY PACKAGE CONTRACT
+- This artifact is a TRUE FULL PROJECT package, not a patch-only ZIP.
+- src/data/person-provider.js: PRESENT
+- src/data/person-meta.js / person-lite.js / government-seed.js / politician-photo-index.js: PRESENT
+- server politician roster/photo source files: PRESENT
+- cumulative user-provided politician photo assets from the Assembly 14 + Basic 7 asset patches: PRESENT
+- current public/admin detail, COMMAND CENTER, compare, Decision System and HISTORY modules: PRESENT
+- lib/v3/redis.js hardened scanDomains/deleteDomains wrapper: PRESENT
+- bounded prior-person read: <=25 keys per MGET: PRESENT
+- safe public person writes + commit-last metadata switch: PRESENT
+
+POLITICIAN SOURCE CHECK
+- Roster slots: 543 = assembly 300 + metropolitan 16 + basic 227.
+- assembly-300 is the recorded vacancy slot (강릉시 국회의원 공석).
+- Real politician rows: 542.
+- Known-person smoke checks: 김민석, 정청래, 서미화, 김은혜: PRESENT.
+
+RUNTIME INTEGRITY
+- Total packaged source/assets/docs/tests before ZIP: 324+ files.
+- Local relative JavaScript imports: 0 unresolved.
+- Public detail module import: PASS.
+- Compare module import: PASS.
+- Admin NOW route require: PASS.
+- Action route require: PASS.
+- Livebar route require: PASS.
+- API gateway require: PASS.
+- Runtime JavaScript syntax checks across api/lib/server/src: 102 PASS.
+- Repaired compare-intelligence module is explicitly cache-busted with full-recovery-r3.
+- App shell/CSS recovery deployment marker: full-recovery-r3.
+
+CURRENT RELEASE GATE
+- Current FREEDOM / Decision / HISTORY / NOW-storage / readability tests + FULL-package recovery tests:
+  103 / 103 PASS.
+- Includes:
+  * 25-key MGET bounded-read regressions
+  * safe public publish commit-last / rollback regressions
+  * scanDomains/deleteDomains refresh contracts
+  * public detail aggressive-fill contract
+  * admin COMMAND CENTER always-open contract
+  * compare decision brief/visual contract
+  * politician-source/full-package import integrity
+
+LEGACY TEST NOTE
+- The reconstructed historical project also carries older tests from previous UI/photo/roster generations.
+- Those historical contracts are not used as the R3 release gate because several intentionally assert superseded UI strings, old 542-slot assumptions (before the explicit vacancy slot), and earlier photo-stage behavior.
+- They are retained in the FULL package for audit rather than deleted to manufacture a green count.
+
+REDIS/DATA SAFETY
+- This recovery does not require deleting Redis data.
+- Existing jcv3:content:v4 data is reused.
+- Do not run a data refresh on the broken partial deployment before replacing it with this FULL recovery.
+
+DEPLOYMENT
+1. Replace the current broken source with this FULL ZIP as the project root.
+2. Deploy to Vercel with the existing environment variables.
+3. BEFORE running refresh, open/search several politicians (for example 서미화 and 김민석) and confirm the static politician source is visible again.
+4. Sign in as admin and verify an admin politician detail opens.
+5. Then run the normal full data refresh.
+6. Publish once and confirm the previous 10MB MGET error does not recur.
+
+This ZIP is intended to be usable as the project source itself. It is not an overlay-only patch.

@@ -70,3 +70,6 @@ Vercel 번들러가 서버 route 모듈을 누락하지 않도록 동적 require
 - New unified header, product hero and service launcher
 - Core API/server/data preserved
 - See BENCHMARK_SYSTEM.md and BENCHMARK_QA.md
+
+## alpha6.0.36.2 color cleanup
+See `COLOR_CLEANUP_0_36_2.md`. This hotfix changes only color presentation and NOW TOP5 party-tone classes; layout and navigation behavior are unchanged.
