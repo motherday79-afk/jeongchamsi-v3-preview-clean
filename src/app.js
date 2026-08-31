@@ -9,40 +9,8 @@ const app = document.querySelector("#app");
 let renderEpoch = 0;
 let liveBarRotationTimer = 0;
 let liveBarCelebrationTimer = 0;
-let nowRankRotationTimer = 0;
 const viewPrefetchCache = new Map();
 const VIEW_PREFETCH_TTL = 20_000;
-
-async function refreshDecisionAdminPerson(personId="") {
-  try {
-    const view = await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2");
-    if (typeof view.refreshAdminDecisionSlot === "function") return view.refreshAdminDecisionSlot(personId);
-  } catch {}
-  return render(currentRoute(), { resetScroll:false });
-}
-function stopNowRankRotation(){
-  if(nowRankRotationTimer){ clearInterval(nowRankRotationTimer); nowRankRotationTimer=0; }
-}
-function hydrateHomeNowRank(){
-  stopNowRankRotation();
-  const carousel=app.querySelector('[data-now-rank-carousel]');
-  if(!carousel)return;
-  const pages=[...carousel.querySelectorAll('[data-now-rank-page]')];
-  if(pages.length<1)return;
-  let index=Math.max(0,Math.min(pages.length-1,Number(carousel.dataset.page||0)));
-  const status=carousel.querySelector('[data-now-rank-status]');
-  const show=next=>{
-    index=(next+pages.length)%pages.length;
-    carousel.dataset.page=String(index);
-    pages.forEach((page,i)=>{page.hidden=i!==index;page.classList.toggle('is-active',i===index);});
-    if(status)status.textContent=`${index+1} / ${pages.length}`;
-  };
-  carousel.querySelector('[data-now-rank-prev]')?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();show(index-1);});
-  carousel.querySelector('[data-now-rank-next]')?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();show(index+1);});
-  show(index);
-  if(pages.length>1)nowRankRotationTimer=setInterval(()=>show(index+1),4000);
-}
-
 function prefetchStateFromPath(path="") {
   try { const url=new URL(path,window.location.origin); return { pathname:url.pathname, search:url.search }; } catch { return null; }
 }
@@ -64,7 +32,7 @@ function nowFailureText(label, r) {
 }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1-jcs-plan-a-r1")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
     if (p[0] === "login") return view.renderLogin();
@@ -75,20 +43,20 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
     const view = await import("./views/boards.js?v=jcs-share-v1");
     const domain = p[0] === "column" ? "columns" : p[0];
     if (p[1] === "write") return view.renderBoardWriter(domain, state.search);
     return p[1] ? view.renderBoardDetail(domain, p[1]) : view.renderBoard(domain, state.search);
   }
-  if (p[0] === "admin") return (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).renderAdmin();
+  if (p[0] === "admin") return (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).renderAdmin();
   if (p[0] === "request-politician") return (await import("./views/participation.js")).renderPoliticianRequest();
   if (p[0] === "partners") return (await import("./views/participation.js")).renderPartners();
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2");
+  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -101,7 +69,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1-jcs-plan-a-r1")).renderHome();
+  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -199,7 +167,6 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
   if (epoch !== renderEpoch) return;
 
   document.documentElement.classList.add("jcv3-route-swapping");
-  stopNowRankRotation();
   app.innerHTML = html;
   document.body.classList.remove("drawer-open");
 
@@ -214,10 +181,12 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
 
   syncCurrentScroll();
   hydrateLiveCommunityBar();
-  if (app.querySelector("[data-now-rank-carousel]")) requestAnimationFrame(hydrateHomeNowRank);
+  if (app.querySelector("[data-now-rank-carousel]")) {
+    requestAnimationFrame(() => import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1").then(mod=>mod.hydrateHomeNowRank?.()).catch(()=>{}));
+  }
   if (app.querySelector("[data-person-admin-intelligence-slot]")) {
     requestAnimationFrame(() => {
-      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2")
+      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2")
         .then(mod => mod.hydratePersonAdminIntelligence?.())
         .catch(() => {});
     });
@@ -279,30 +248,6 @@ document.addEventListener("focusin",event=>warmNavigationIntent(event.target));
 document.addEventListener("click", async event => {
   const insideMore = event.target.closest(".service-more");
   if (!insideMore) closeServiceMore();
-
-
-  const decisionCaseCreate = event.target.closest("[data-decision-case-create]");
-  if (decisionCaseCreate) {
-    const personId=String(decisionCaseCreate.dataset.personId||"");
-    const shell=decisionCaseCreate.closest("[data-decision-war-room]");
-    const note=shell?.querySelector("[data-decision-case-note]")?.value||"";
-    const state=shell?.querySelector("[data-decision-write-state]");
-    decisionCaseCreate.disabled=true;if(state)state.textContent="CASE 저장 중";
-    const repo=await import("./core/decision-repository.js?v=decision-v1");
-    const r=await repo.createAdminDecisionCase(personId,note);
-    if(!r.ok){decisionCaseCreate.disabled=false;if(state)state.textContent=`CASE 저장 실패 · ${r.error||""}`;return;}
-    if(state)state.textContent="현재 판단을 CASE로 저장했습니다.";
-    await refreshDecisionAdminPerson(personId);return;
-  }
-  const decisionCaseClose = event.target.closest("[data-decision-case-close]");
-  if (decisionCaseClose) {
-    const personId=String(decisionCaseClose.dataset.personId||"");
-    decisionCaseClose.disabled=true;
-    const repo=await import("./core/decision-repository.js?v=decision-v1");
-    const r=await repo.closeAdminDecisionCase(decisionCaseClose.dataset.decisionCaseClose||"");
-    if(!r.ok){decisionCaseClose.disabled=false;alert(`CASE 종료 실패 · ${r.error||""}`);return;}
-    await refreshDecisionAdminPerson(personId);return;
-  }
 
   const detailPhotoTrigger = event.target.closest("[data-detail-politician-photo-trigger]");
   if (detailPhotoTrigger) {
@@ -401,7 +346,7 @@ document.addEventListener("click", async event => {
   if (nowMore) {
     if (nowMore.disabled) return;
     nowMore.disabled = true;
-    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2");
+    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
     const r = await tools.appendNowRankMore(nowMore);
     if (!r?.ok) {
       nowMore.disabled = false;
@@ -537,7 +482,7 @@ document.addEventListener("click", async event => {
   const nowRefresh = event.target.closest("[data-now-refresh]");
   if (nowRefresh) {
     nowRefresh.disabled = true;
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).runNowDataRefresh();
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).runNowDataRefresh();
     if (!r.ok) {
       const groups = r.missingGroups || [];
       const need = [groups.includes('searchAds') ? '네이버 검색량' : '', groups.includes('news') ? '네이버 뉴스' : ''].filter(Boolean).join(' + ');
@@ -549,7 +494,7 @@ document.addEventListener("click", async event => {
   const nowRetry = event.target.closest("[data-now-retry]");
   if (nowRetry) {
     nowRetry.disabled = true;
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).retryNowDataFailures();
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).retryNowDataFailures();
     if (!r.ok) alert(`오류 재수집 실패 · ${r.error || ""}`);
     await render(currentRoute(), { resetScroll:false });
     return;
@@ -557,7 +502,7 @@ document.addEventListener("click", async event => {
   const nowFinalize = event.target.closest("[data-now-finalize]");
   if (nowFinalize) {
     nowFinalize.disabled = true;
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).finalizeNowData();
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).finalizeNowData();
     if (!r.ok) alert(`순위 계산 실패 · ${r.error || ""}`);
     await render(currentRoute(), { resetScroll:false });
     return;
@@ -566,7 +511,7 @@ document.addEventListener("click", async event => {
   if (nowPublish) {
     if (!confirm("현재 NOW 데이터 미리보기를 공개 스냅샷으로 게시할까요?")) return;
     nowPublish.disabled = true;
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).publishNowData();
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).publishNowData();
     if (!r.ok) alert(nowFailureText("NOW 게시 실패", r));
     else clearDomainCache();
     await render(currentRoute(), { resetScroll:false });
@@ -576,7 +521,7 @@ document.addEventListener("click", async event => {
   if (historyCaptureCurrent) {
     if (!confirm("현재 공개 중인 542명 NOW 분석을 HISTORY V2의 첫 FULL SNAPSHOT으로 보존할까요? 외부 데이터 새로고침은 하지 않습니다.")) return;
     historyCaptureCurrent.disabled = true;
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).captureHistoryCurrent();
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).captureHistoryCurrent();
     if (!r.ok) alert(`현재 기준점 보존 실패 · ${r.error || ""}`);
     await render(currentRoute(), { resetScroll:false });
     return;
@@ -594,7 +539,7 @@ document.addEventListener("click", async event => {
   if (historyBackfill) {
     if (!confirm("과거 NOW 데이터를 HISTORY에 백필할까요? 정식 immutable Snapshot과 중복되는 관측점은 자동 제외됩니다.")) return;
     historyBackfill.disabled = true;
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).runHistoryBackfill();
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).runHistoryBackfill();
     if (!r.ok) alert(`HISTORY Backfill 실패 · ${r.error || ""}`);
     await render(currentRoute(), { resetScroll:false });
     return;
@@ -602,7 +547,7 @@ document.addEventListener("click", async event => {
   const politicianPhotoCoverage = event.target.closest("[data-politician-photo-coverage-load]");
   if (politicianPhotoCoverage) {
     event.preventDefault();
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).loadPoliticianPhotoCoverageDiagnostic(politicianPhotoCoverage);
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).loadPoliticianPhotoCoverageDiagnostic(politicianPhotoCoverage);
     if (!r?.ok) alert(`사진 노출 진단 실패 · ${r?.error || "오류"}`);
     return;
   }
@@ -610,7 +555,7 @@ document.addEventListener("click", async event => {
   const edit = event.target.closest("[data-admin-edit]"); if (edit) return route(`/admin?tab=${encodeURIComponent(edit.dataset.adminEdit)}&edit=${encodeURIComponent(edit.dataset.id)}`);
   const cancel = event.target.closest("[data-admin-cancel]"); if (cancel) return route(`/admin?tab=${encodeURIComponent(cancel.dataset.domain)}`);
   const del = event.target.closest("[data-admin-delete]");
-  if (del) { if (!confirm("이 항목을 삭제할까요?")) return; const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).deleteAdminItem(del.dataset.adminDelete, del.dataset.id); if (!r.ok) alert(`삭제 실패: ${r.error || "저장소 오류"}`); else { clearDomainCache(); await render(currentRoute(), { resetScroll: false }); } return; }
+  if (del) { if (!confirm("이 항목을 삭제할까요?")) return; const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).deleteAdminItem(del.dataset.adminDelete, del.dataset.id); if (!r.ok) alert(`삭제 실패: ${r.error || "저장소 오류"}`); else { clearDomainCache(); await render(currentRoute(), { resetScroll: false }); } return; }
   const member = event.target.closest("[data-member-access]");
   if (member) {
     const id = member.dataset.memberAccess;
@@ -635,7 +580,7 @@ document.addEventListener("click", async event => {
     const messages = { WEAK_PASSWORD:"비밀번호는 8자 이상이어야 합니다", INVALID_BIRTH_YEAR:"출생연도를 확인해 주세요", LAST_ADMIN_PROTECTED:"마지막 활성 관리자는 정지하거나 일반회원으로 변경할 수 없습니다" };
     member.disabled = true;
     if (st) { st.textContent = "저장 중…"; st.classList.remove("is-success","is-error"); }
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).updateMemberAccess(id, patch);
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).updateMemberAccess(id, patch);
     member.disabled = false;
     if (r.ok) {
       if (st) { st.textContent = "✓ 저장 완료"; st.classList.add("is-success"); }
@@ -650,7 +595,7 @@ document.addEventListener("click", async event => {
 
 document.addEventListener("input", async event => {
   const brandHeroForm = event.target.closest('[data-admin-form="brand-settings"]');
-  if (brandHeroForm) (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).syncBrandHeroPreview(brandHeroForm);
+  if (brandHeroForm) (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).syncBrandHeroPreview(brandHeroForm);
   const search = event.target.closest("[data-member-search]");
   if (search) { const q = String(search.value || "").trim().toLowerCase(); document.querySelectorAll("[data-member-row]").forEach(row => row.hidden = !!q && !String(row.dataset.memberSearchText || "").includes(q)); }
   const historySearch = event.target.closest("[data-history-search-input]");
@@ -716,25 +661,25 @@ document.addEventListener("input", async event => {
     try {
       const form = pushImage.closest("[data-push-form]");
       const holder = form?.querySelector("[data-push-image-preview]");
-      const url = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).preparePushImage(pushImage.files[0], holder);
+      const url = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).preparePushImage(pushImage.files[0], holder);
       const visual = form?.querySelector("[data-push-preview-image]");
       if (visual) { visual.hidden = false; visual.style.backgroundImage = `url('${url}')`; }
     } catch (e) { alert(e.message || "푸시 이미지 처리 실패"); pushImage.value = ""; }
   }
   const cover = event.target.closest("[data-cover-input]");
-  if (cover?.files?.[0]) { try { await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
+  if (cover?.files?.[0]) { try { await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).prepareCoverPreview(cover.files[0], cover.closest("form")?.querySelector("[data-cover-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); cover.value = ""; } }
   const profile = event.target.closest("[data-profile-input]");
-  if (profile?.files?.[0]) { try { await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).prepareProfilePreview(profile.files[0], profile.closest("form")?.querySelector("[data-profile-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); profile.value = ""; } }
+  if (profile?.files?.[0]) { try { await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).prepareProfilePreview(profile.files[0], profile.closest("form")?.querySelector("[data-profile-preview]")); } catch (e) { alert(e.message || "이미지 처리 실패"); profile.value = ""; } }
 });
 
 document.addEventListener("change", async event => {
   const brandHeroForm = event.target.closest('[data-admin-form="brand-settings"]');
-  if (brandHeroForm) (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).syncBrandHeroPreview(brandHeroForm);
+  if (brandHeroForm) (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).syncBrandHeroPreview(brandHeroForm);
   const politicianPhoto = event.target.closest("[data-politician-photo-input]");
   if (politicianPhoto?.files?.[0]) {
     try {
       const form = politicianPhoto.closest("[data-politician-photo-form]");
-      const tools = await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1");
+      const tools = await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1");
       tools.preparePoliticianPhotoPreview(politicianPhoto.files[0], form?.querySelector("[data-politician-photo-preview]"), form?.querySelector("[data-politician-photo-state]"));
       const saveButton = form?.querySelector("[data-politician-photo-save]");
       if (saveButton) saveButton.disabled = false;
@@ -750,11 +695,9 @@ document.addEventListener("change", async event => {
   const adminCompareAdd = event.target.closest('[data-admin-compare-add]');
   if (adminCompareAdd && adminCompareAdd.value) {
     const state=currentRoute(),params=new URLSearchParams(state.search||"");
-    const existing=params.getAll('p').filter(Boolean);
-    if(!existing.length)existing.push(params.get('a'),params.get('b'));
-    const ids=[...new Set([...existing,String(adminCompareAdd.value)].filter(Boolean))].slice(0,5);
+    const ids=[...new Set([...params.getAll('p'),String(adminCompareAdd.value)].filter(Boolean))].slice(0,5);
     const query=new URLSearchParams();ids.forEach(id=>query.append('p',id));
-    import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1").then(({prefetchCompareSelection})=>prefetchCompareSelection(ids)).catch(()=>{});
+    import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini").then(({prefetchCompareSelection})=>prefetchCompareSelection(ids)).catch(()=>{});
     return route(`/compare?${query.toString()}`);
   }
   const compareSelect = event.target.closest('[data-compare-form] select');
@@ -770,25 +713,11 @@ document.addEventListener("change", async event => {
 
 document.addEventListener("submit", async event => {
   const form = event.target;
-  if (form.matches("[data-decision-action-form]")) {
-    event.preventDefault();const fd=new FormData(form);const state=form.querySelector("[data-decision-action-state]");
-    const repo=await import("./core/decision-repository.js?v=decision-v1");
-    const r=await repo.addAdminDecisionAction({caseId:fd.get("caseId"),occurredAt:fd.get("occurredAt"),type:fd.get("type"),title:fd.get("title"),note:fd.get("note"),linkedPriorityRank:fd.get("linkedPriorityRank")});
-    if(!r.ok){if(state)state.textContent=`행동 기록 실패 · ${r.error||""}`;return;}
-    if(state)state.textContent="행동 기록 저장 완료";await refreshDecisionAdminPerson(form.dataset.personId||"");return;
-  }
-  if (form.matches("[data-decision-action-note-form]")) {
-    event.preventDefault();const fd=new FormData(form);const state=form.querySelector("[data-decision-action-note-state]");
-    const repo=await import("./core/decision-repository.js?v=decision-v1");
-    const r=await repo.updateAdminDecisionActionNote(form.dataset.actionId||"",fd.get("note")||"");
-    if(!r.ok){if(state)state.textContent=`메모 저장 실패 · ${r.error||""}`;return;}
-    if(state)state.textContent="메모 저장 완료";await refreshDecisionAdminPerson(form.dataset.personId||"");return;
-  }
   if (form.matches("[data-search-form]")) { event.preventDefault(); const fd = new FormData(form); return route(`/search?q=${encodeURIComponent(String(fd.get("q") || ""))}`); }
   if (form.matches("[data-user-login]")) { event.preventDefault(); const fd = new FormData(form); const r = await loginUser(fd.get("id"), fd.get("password")); const e = form.querySelector("[data-user-auth-error]"); if (!r.ok) { if (e) e.textContent = r.error || "로그인 실패"; return; } await initializeUserState(); if (!getUserSession().authenticated) { if (e) e.textContent = "로그인 세션을 저장하지 못했습니다. 다시 시도해 주세요"; return; } route("/mypage", { replace: true }); return; }
   if (form.matches("[data-user-join]")) { event.preventDefault(); const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) { const e=form.querySelector("[data-user-auth-error]"); if(e)e.textContent="비밀번호 확인이 일치하지 않습니다"; return; } const r = await registerUser(Object.fromEntries(fd.entries())); const e=form.querySelector("[data-user-auth-error]"); if(!r.ok){if(e)e.textContent=r.error||"회원가입 실패";return;} route("/mypage",{replace:true}); return; }
   if (form.matches("[data-user-profile-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await updateMyProfile(Object.fromEntries(fd.entries())); const st=form.querySelector("[data-user-profile-state]"); if(!r.ok){if(st)st.textContent=`저장 실패 · ${r.error||""}`;return;} if(st)st.textContent="저장 완료"; await render(currentRoute(), { resetScroll:false }); return; }
-  if (form.matches("[data-first-admin-setup]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).submitFirstAdmin(form); const e = form.querySelector("[data-admin-setup-error]"); if (!r.ok) { if (e) e.textContent = r.error || "관리자 생성 실패"; return; } route("/admin", { replace: true }); await render(currentRoute()); return; }
+  if (form.matches("[data-first-admin-setup]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).submitFirstAdmin(form); const e = form.querySelector("[data-admin-setup-error]"); if (!r.ok) { if (e) e.textContent = r.error || "관리자 생성 실패"; return; } route("/admin", { replace: true }); await render(currentRoute()); return; }
   if (form.matches("[data-politician-request-form]")) { event.preventDefault(); const fd=new FormData(form); const r=await submitPoliticianRequest(fd.get("name")); const st=form.querySelector("[data-politician-request-state]"); if(!r.ok){if(st)st.textContent=r.error==="USER_LOGIN_REQUIRED"?"로그인이 필요합니다":"등록하지 못했습니다";return;} form.reset(); if(st)st.textContent="등록 요청 완료"; await render(currentRoute(),{resetScroll:false}); return; }
   if (form.matches("[data-partner-application-form]")) { event.preventDefault(); const fd=new FormData(form); const r=await submitPartnerApplication({contact:fd.get("contact"),message:fd.get("message")}); const st=form.querySelector("[data-partner-application-state]"); if(!r.ok){const msg={APPLICATION_PENDING:"이미 검토 중인 신청이 있습니다",APPLICATION_TOO_SHORT:"신청 내용을 조금 더 자세히 적어주세요"};if(st)st.textContent=msg[r.error]||`신청 실패 · ${r.error||""}`;return;} if(st)st.textContent="비밀 신청이 접수되었습니다"; await render(currentRoute(),{resetScroll:false}); return; }
     if (form.matches("[data-user-post-form]")) { event.preventDefault(); const fd = new FormData(form); const domain = form.dataset.userPostForm; const coverImage = form.querySelector("[data-cover-preview]")?.dataset.coverData || ""; const r = await performAction("user-post-save", { domain, id: form.dataset.itemId || "", title: fd.get("title"), summary: fd.get("summary"), category: fd.get("category"), body: fd.get("body"), coverImage }); const e=form.querySelector("[data-user-post-error]"); if(!r.ok){ const messages={ ITSME_TITLE_TOO_LONG:"IT’S ME 제목은 30자까지 입력할 수 있습니다", ITSME_SUMMARY_TOO_LONG:"IT’S ME 요약은 15자까지 입력할 수 있습니다", ITSME_BODY_TOO_LONG:"IT’S ME 내용은 3,000자까지 입력할 수 있습니다" }; if(e)e.textContent=messages[r.error]||`저장 실패 · ${r.error||""}`;return;} clearDomainCache(); const base = { itsme:"itsme", community:"community", columns:"column", news:"news" }[domain] || "community"; route(`/${base}/${r.item.id}`, { replace: true }); return; }
@@ -831,7 +760,7 @@ document.addEventListener("submit", async event => {
   if (form.matches("[data-national-evaluation-form]")) { event.preventDefault(); const fd = new FormData(form); const r = await performAction("national-evaluation-vote", { evaluationId:form.dataset.evaluationId, personId:form.dataset.personId, rating:fd.get("rating") }); const st=form.querySelector("[data-national-evaluation-state]"); if(!r.ok){if(st)st.textContent=r.error==="ALREADY_VOTED"?"이미 이 평가에 참여했습니다":r.error==="EVALUATION_CLOSED"?"이 평가는 종료되었거나 현재 참여할 수 없습니다":`평가 저장 실패 · ${r.error||""}`;return;} await rerenderNoScroll(r.activity); return; }
   if (form.matches("[data-badge-celebration-form]")) {
     event.preventDefault();
-    const r=await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).saveBadgeCelebrationConfig(form);
+    const r=await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).saveBadgeCelebrationConfig(form);
     const st=form.querySelector("[data-badge-celebration-state]");
     if(!r.ok){if(st)st.textContent=`저장 실패 · ${r.error||""}`;return;}
     if(st)st.textContent="저장 완료";
@@ -856,7 +785,7 @@ document.addEventListener("submit", async event => {
     if (scope === "all" && !confirm("등록된 테스트 기기 전체에 이 푸시를 발송할까요?")) return;
     const st = form.querySelector("[data-push-state]");
     if (st) st.textContent = scope === "all" ? "전체 발송 중" : "테스트 발송 중";
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).sendPushNotification(form, scope);
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).sendPushNotification(form, scope);
     if (!r.ok) { if (st) st.textContent = `발송 실패 · ${r.error || ""}`; return; }
     if (st) st.textContent = `발송 완료 · ${Number(r.success || 0)}대 성공${Number(r.failed || 0) ? ` · ${Number(r.failed)}대 실패` : ""}`;
     await render(currentRoute(), { resetScroll:false });
@@ -866,14 +795,14 @@ document.addEventListener("submit", async event => {
     event.preventDefault();
     const st = form.querySelector("[data-politician-photo-state]");
     if (st) st.textContent = "사진 최적화 · 업로드 중";
-    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).savePoliticianPhotoForm(form);
+    const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).savePoliticianPhotoForm(form);
     if (!r.ok) { if (st) st.textContent = `저장 실패 · ${r.error || ""}`; return; }
     if (st) st.textContent = r.message || "사진 저장 완료";
     clearDomainCache("politicianPhotos");
     await render(currentRoute(), { resetScroll:false });
     return;
   }
-  if (form.matches("[data-admin-form]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1-now-diag-r1")).saveAdminForm(form); const st=form.querySelector("[data-save-state]"); if (!r.ok) { if(st) st.textContent=`저장 실패 · ${r.error || "서버 저장소 오류"}`; return; } if(st)st.textContent="저장 완료"; clearDomainCache(); const rawTab=form.dataset.adminForm.replace(/-(settings|list)$/,''); const targetTab=rawTab==="nationalEvaluation"?"national":rawTab==="academy"?"academy":rawTab; setTimeout(()=>route(`/admin?tab=${encodeURIComponent(targetTab)}`,{replace:true}),150); return; }
+  if (form.matches("[data-admin-form]")) { event.preventDefault(); const r = await (await import("./views/admin.js?v=history-v1-v2-search-daily-storage-budget-hotfix-jcs-intelligence-refresh-v1-official-age-gender-baseline-v1-jcs-aggressive-r1")).saveAdminForm(form); const st=form.querySelector("[data-save-state]"); if (!r.ok) { if(st) st.textContent=`저장 실패 · ${r.error || "서버 저장소 오류"}`; return; } if(st)st.textContent="저장 완료"; clearDomainCache(); const rawTab=form.dataset.adminForm.replace(/-(settings|list)$/,''); const targetTab=rawTab==="nationalEvaluation"?"national":rawTab==="academy"?"academy":rawTab; setTimeout(()=>route(`/admin?tab=${encodeURIComponent(targetTab)}`,{replace:true}),150); return; }
 });
 
 document.addEventListener("keydown", event => {

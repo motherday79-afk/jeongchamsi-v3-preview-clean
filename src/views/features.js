@@ -16,7 +16,7 @@ import { getFastNowPerson, getFastAdminCompare, prefetchNowPerson } from "../cor
 import {
   CORE_COMPARE_METRICS, AUDIENCE_COMPARE_METRICS, ACTIVITY_COMPARE_METRICS, FLOW_COMPARE_METRICS,
   scoreFor, buildDifferences, buildCompareInsight, relativeCompareAxisValue, axisIntensityBand, trendScoreDelta, trendRankDelta
-} from "./compare-intelligence.js?v=03686-full-recovery-r3";
+} from "./compare-intelligence.js?v=03686";
 import {
   normalizeNationalEvaluation,
   votesForEvaluationSlot,
@@ -381,25 +381,6 @@ export async function renderItsmeDetail(id) {
   return pageShell(`<main class="subpage"><article class="content-card article-detail"><span class="eyebrow">IT’S ME · ${esc(item.category || "정책 제안")}</span><h1>${esc(item.title)}</h1><div class="article-meta"><span>${authorIdentity(item.author || "정참시 회원", item.ownerId, authorProfiles)}</span><span>${formatDate(item.createdAt)}</span><span>좋아요 ${Number(item.likes || 0)}</span></div>${item.summary ? `<div class="article-lead">${esc(item.summary)}</div>` : ""}<div class="article-body">${bodyHtml(item.body)}</div>${renderContentShare({ title:item.title, path:`/itsme/${id}` })}<div class="article-actions"><button type="button" class="ghost-btn ${liked ? "active" : ""}" data-post-like="itsme" data-post-id="${esc(id)}">${liked ? "♥ 좋아요 취소" : "♡ 좋아요"}</button>${canManage ? `<button type="button" class="ghost-btn" data-go="/itsme/write?id=${encodeURIComponent(id)}">수정</button><button type="button" class="danger-btn" data-user-post-delete="itsme" data-id="${esc(id)}">삭제</button>` : ""}<button type="button" class="primary-btn" data-go="/itsme">IT’S ME 목록으로</button></div></article><section class="content-card comment-section"><div class="section-title"><h2>댓글</h2><span>${comments.length}개</span></div>${session.authenticated ? `<form class="comment-form" data-comment-form="itsme" data-post-id="${esc(id)}"><textarea name="comment" rows="3" maxlength="1000" required placeholder="의견을 남겨보세요"></textarea><div class="admin-form-actions"><button class="primary-btn" type="submit">댓글 등록</button><span data-comment-state></span></div></form>` : `<div class="member-login-prompt"><span>댓글은 로그인 후 작성할 수 있습니다</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>`}${comments.length ? `<div class="comment-list">${comments.map(c => `<article><div><b>${authorIdentity(c.author, c.ownerId, authorProfiles)}</b><span>${formatDate(c.createdAt)}</span></div><p>${esc(c.text)}</p></article>`).join("")}</div>` : `<div class="empty-inline">아직 댓글이 없습니다</div>`}</section></main>`);
 }
 
-function compareStableHash(value=""){let h=2166136261;for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
-function compareAggressiveScore(person,key,live){
-  const observed=Number(live?.analysis?.scores?.[key]);if(Number.isFinite(observed))return Math.max(0,Math.min(100,observed));
-  const row=live?.row||{},rank=Number(row.rank),rowScore=Number(row.score),search=Number(row?.search?.monthlyPcQcCnt||0)+Number(row?.search?.monthlyMobileQcCnt||0),news=Number(row?.news?.count7d||0);
-  let base=50;if(Number.isFinite(rowScore)&&rowScore>0)base=42+(rowScore-50)*.42;if(Number.isFinite(rank)&&rank>0)base+=(272-rank)/542*18;if(search>0)base+=Math.min(12,Math.log10(search+1)*3.6);base+=Math.min(8,news*.18);
-  const offset=(compareStableHash(`${person?.id||'jcs'}:${key}`)%21)-10;
-  return Math.round(Math.max(18,Math.min(92,base+offset)));
-}
-function aggressiveCompareLive(person,live={}){
-  const keys=['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread','audienceExpansion','mobileResponse','massPenetration','coreRetention','activityAcceleration','activityConcentration','activityPersistence','newsAcceleration','issueFreshness','issuePersistence','mediaDiversity','newsSearchTransition','issueInflux','mediaPublicGap','issueExplosiveness'];
-  const scores={...(live?.analysis?.scores||{})};for(const key of keys)scores[key]=compareAggressiveScore(person,key,live);
-  const o=scores.overallInterest,label=o>=76?'강한 관심 국면':o>=63?'관심 상승 국면':o>=48?'경쟁적 관심 국면':o>=34?'관심 재정비 구간':'저강도 관심 구간';
-  const categoryCount=person?.type==='assembly'?300:person?.type==='metropolitan'?16:227;
-  return {...(live||{}),row:{...(live?.row||{}),rank:Number(live?.row?.rank)>0?Number(live.row.rank):(compareStableHash(`${person?.id}:global-rank`)%543)+1,score:Number.isFinite(Number(live?.row?.score))&&Number(live.row.score)>0?Number(live.row.score):Math.round((scores.overallInterest+scores.highEngagement+scores.massExpansion)/3*10)/10},categoryRank:Number(live?.categoryRank)>0?Number(live.categoryRank):(compareStableHash(`${person?.id}:category-rank`)%categoryCount)+1,analysis:{...(live?.analysis||{}),scores,signal:{...(live?.analysis?.signal||{}),label,diagnosis:live?.analysis?.signal?.diagnosis||'JCS 다중신호 보정으로 두 정치인의 관심·활동·확산 구조를 동일 기준에서 비교합니다.'}}};
-}
-function compareScoreboard(personA,liveA,personB,liveB){
-  const rows=[['overallInterest','종합 관심'],['highEngagement','심층 관심'],['massExpansion','대중 확산'],['activity','활동성'],['issueHeat','이슈 온도'],['mediaSpread','미디어 확산']];
-  return `<section class="content-card compare-scoreboard"><div class="section-title"><div><span class="eyebrow">COMPARE SCOREBOARD</span><h2>핵심 신호 스코어보드</h2></div><span>동일 기준 · 0–100</span></div><div class="compare-scoreboard-grid">${rows.map(([key,label])=>{const a=Number(liveA?.analysis?.scores?.[key])||0,b=Number(liveB?.analysis?.scores?.[key])||0,winner=a===b?'tie':a>b?'a':'b';return `<article><header><span>${esc(personA.name)}</span><b>${esc(label)}</b><span>${esc(personB.name)}</span></header><div class="compare-scoreboard-bars"><strong>${Math.round(a)}</strong><i class="a"><em style="width:${a}%"></em></i><i class="b"><em style="width:${b}%"></em></i><strong>${Math.round(b)}</strong></div><small class="${winner}">${winner==='tie'?'근접':winner==='a'?`${esc(personA.name)} 우위`:`${esc(personB.name)} 우위`}</small></article>`;}).join('')}</div></section>`;
-}
 function compareScoreText(value) {
   const n = Number(value);
   return Number.isFinite(n) ? String(Math.round(n * 10) / 10) : "—";
@@ -410,7 +391,7 @@ function compareRankText(value) {
 }
 function comparePersonHero(person, live, side) {
   const avatar = personPhotoMarkup(person, "compare-live-avatar", { side, eager:true, size:180 });
-  const signal = live?.analysis?.signal?.label || "JCS 다중신호 보정";
+  const signal = live?.analysis?.signal?.label || "분석 데이터 대기";
   const rank = live?.row?.rank;
   const categoryRank = live?.categoryRank;
   const categoryLabel = live?.categoryLabel || person?.roleLabel || "분야";
@@ -430,7 +411,7 @@ function compareMetricRow(metric, liveA, liveB, personA, personB) {
   const axisLeft = axis === null ? 50 : axis + 50;
   const axisLabel = axis === null ? "—" : compareScoreText(Math.abs(axis));
   const axisIntensity = axisIntensityBand(axis);
-  const difference = axis === null ? "근접" : diff?.leader === "a" ? `${esc(personA.name)} 상대강세` : diff?.leader === "b" ? `${esc(personB.name)} 상대강세` : "근접";
+  const difference = axis === null ? "관측 대기" : diff?.leader === "a" ? `${esc(personA.name)} 상대강세` : diff?.leader === "b" ? `${esc(personB.name)} 상대강세` : "근접";
   return `<article class="compare-metric-row">
     <div class="compare-metric-center"><b>${esc(metric.label)}</b><small>${esc(metric.description)}</small></div>
     <div class="compare-relative-axis intensity-${axisIntensity}">
@@ -444,23 +425,13 @@ function compareMetricRow(metric, liveA, liveB, personA, personB) {
 function compareMetricSection(eyebrow, title, subtitle, metrics, liveA, liveB, personA, personB, className="") {
   return `<section class="content-card compare-analysis-section ${className}"><div class="section-title"><div><span class="eyebrow">${esc(eyebrow)}</span><h2>${esc(title)}</h2></div><span>${esc(subtitle)}</span></div><div class="compare-metric-list">${metrics.map(metric=>compareMetricRow(metric,liveA,liveB,personA,personB)).join("")}</div></section>`;
 }
-function compareEstimatedTrend(live,key,rankMode=false){
-  const actual=Array.isArray(live?.trend?.points)?live.trend.points:[];
-  const values=actual.map(point=>rankMode?Number(point?.[key]):Number(point?.scores?.[key])).filter(value=>Number.isFinite(value)&&(!rankMode||value>0));
-  if(values.length)return {values,estimated:false};
-  const current=rankMode?(key==='globalRank'?Number(live?.row?.rank):Number(live?.categoryRank)):Number(live?.analysis?.scores?.[key]);
-  const safeCurrent=Number.isFinite(current)&&(!rankMode||current>0)?current:(rankMode?1:50);
-  const seedBase=String(live?.row?.id||live?.row?.personId||live?.row?.name||live?.row?.rank||'jcs');
-  const amplitude=(compareStableHash(`${seedBase}:${key}:trend`)%9)+2;
-  const direction=(compareStableHash(`${seedBase}:${key}:direction`)%2)?1:-1;
-  const estimated=Array.from({length:8},(_,index)=>{const progress=index/7;if(index===7)return safeCurrent;const wobble=((compareStableHash(`${seedBase}:${key}:${index}`)%5)-2)*(1-progress);const value=safeCurrent-direction*amplitude*(1-progress)+wobble;return rankMode?Math.max(1,Math.round(value)):Math.max(5,Math.min(98,Math.round(value*10)/10));});
-  return {values:estimated,estimated:true};
-}
 function compareTrendPoints(live, key, rankMode=false) {
-  return compareEstimatedTrend(live,key,rankMode).values;
+  const points = Array.isArray(live?.trend?.points) ? live.trend.points : [];
+  return points.map(point => rankMode ? Number(point?.[key]) : Number(point?.scores?.[key])).filter(value => Number.isFinite(value) && (!rankMode || value > 0));
 }
 function compareTrendSvg(live, key, rankMode=false) {
   const values = compareTrendPoints(live,key,rankMode);
+  if (!values.length) return `<span class="compare-trend-empty">관측 대기</span>`;
   const width=150,height=38,pad=3;
   const min=rankMode?Math.min(...values):0;
   const max=rankMode?Math.max(...values):100;
@@ -480,7 +451,7 @@ function compareTrendCurrent(live,key,rankMode=false) {
 }
 function compareTrendDeltaLabel(live,key,rankMode=false) {
   const delta=rankMode?trendRankDelta(live,key):trendScoreDelta(live,key);
-  if(delta===null)return "JCS 추정";
+  if(delta===null)return "첫 관측";
   if(rankMode)return delta>0?`▲ ${compareScoreText(delta)}`:delta<0?`▼ ${compareScoreText(Math.abs(delta))}`:"유지";
   return delta>0?`+${compareScoreText(delta)}`:compareScoreText(delta);
 }
@@ -490,7 +461,7 @@ function compareTrendCard(label,key,liveA,liveB,personA,personB,rankMode=false) 
   return `<article class="compare-trend-card"><h3>${esc(label)}</h3><div class="compare-trend-person a"><span><b>${esc(personA.name)}</b><strong>${current(a)}</strong><em>${compareTrendDeltaLabel(liveA,key,rankMode)}</em></span>${compareTrendSvg(liveA,key,rankMode)}</div><div class="compare-trend-person b"><span><b>${esc(personB.name)}</b><strong>${current(b)}</strong><em>${compareTrendDeltaLabel(liveB,key,rankMode)}</em></span>${compareTrendSvg(liveB,key,rankMode)}</div></article>`;
 }
 function compareTrendSection(liveA, liveB, personA, personB) {
-  return `<section class="content-card compare-analysis-trend"><div class="section-title"><div><span class="eyebrow">MOMENTUM TRACK</span><h2>관심 변화 · NOW 이력 비교</h2></div><span>HISTORY + JCS 보정 추세</span></div><div class="compare-trend-grid">
+  return `<section class="content-card compare-analysis-trend"><div class="section-title"><div><span class="eyebrow">ANALYSIS TREND</span><h2>관심 변화 · NOW 이력 비교</h2></div><span>공식 게시 스냅샷 기준 변화</span></div><div class="compare-trend-grid">
     ${compareTrendCard("전체 NOW 순위","globalRank",liveA,liveB,personA,personB,true)}
     ${compareTrendCard("카테고리 순위","categoryRank",liveA,liveB,personA,personB,true)}
     ${compareTrendCard("종합 관심","overallInterest",liveA,liveB,personA,personB)}
@@ -500,21 +471,20 @@ function compareTrendSection(liveA, liveB, personA, personB) {
   </div></section>`;
 }
 function compareLiveResult(personA,liveA,personB,liveB) {
-  liveA=aggressiveCompareLive(personA,liveA||{});liveB=aggressiveCompareLive(personB,liveB||{});
+  if(!liveA?.analysis || !liveB?.analysis) return `<section class="content-card empty-state compare-live-wait"><h2>비교 분석 데이터가 준비되지 않았습니다</h2><p>두 정치인의 최신 NOW 게시 데이터가 모두 준비되면 같은 기준으로 비교합니다.</p></section>`;
   const insight=buildCompareInsight(personA,liveA,personB,liveB);
   return `<div class="compare-live-report">
     <section class="content-card compare-live-hero">
       ${comparePersonHero(personA,liveA,"a")}
-      <div class="compare-live-signal"><span class="eyebrow">COMPARE SIGNAL</span><strong>VS</strong><h2>${esc(insight.headline)}</h2><p>${esc(insight.summary)}</p><div class="compare-signal-counts"><span><b>${insight.advantageA}</b>${esc(personA.name)} 상대강세</span><span><b>${insight.balanced}</b>근접</span><span><b>${insight.advantageB}</b>${esc(personB.name)} 상대강세</span></div><small>JCS 다중신호 보정 · LIVE/검색/뉴스/상대기준 결합</small></div>
+      <div class="compare-live-signal"><span class="eyebrow">COMPARE SIGNAL</span><strong>VS</strong><h2>${esc(insight.headline)}</h2><p>${esc(insight.summary)}</p><div class="compare-signal-counts"><span><b>${insight.advantageA}</b>${esc(personA.name)} 상대강세</span><span><b>${insight.balanced}</b>근접</span><span><b>${insight.advantageB}</b>${esc(personB.name)} 상대강세</span></div></div>
       ${comparePersonHero(personB,liveB,"b")}
     </section>
-    ${compareScoreboard(personA,liveA,personB,liveB)}
-    ${compareMetricSection("SIGNAL PROFILE","핵심 관심지표 비교","비교 상대축 · 50 ← 0 → 50",CORE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-core-section")}
+    ${compareMetricSection("CORE INTELLIGENCE","핵심 관심지표 비교","비교 상대축 · 50 ← 0 → 50 · 초록 → 빨강 = 차이 강도",CORE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-core-section")}
     ${compareMetricSection("AUDIENCE LANDSCAPE","관심 구조 비교","관심의 깊이와 확장 방향",AUDIENCE_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-audience-section")}
     ${compareMetricSection("ACTIVITY & MEDIA","활동 · 미디어 비교","속도 · 집중 · 지속 · 확산",ACTIVITY_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-activity-section")}
     ${compareMetricSection("ATTENTION FLOW","관심 전이 비교","이슈 노출이 실제 관심으로 연결되는 흐름",FLOW_COMPARE_METRICS,liveA,liveB,personA,personB,"compare-flow-section")}
     ${compareTrendSection(liveA,liveB,personA,personB)}
-    <section class="content-card compare-final-diagnosis"><span class="eyebrow">JEONGCHAMSI COMPARE DIAGNOSIS</span><h2>${esc(insight.headline)}</h2><p>${esc(insight.summary)}</p><div><button class="ghost-btn" type="button" data-go="/person/${esc(personA.id)}">${esc(personA.name)} 상세분석</button><button class="ghost-btn" type="button" data-go="/person/${esc(personB.id)}">${esc(personB.name)} 상세분석</button></div><small>동일한 정참시 분석기준에서 현재 관심·활동·미디어·확산 신호의 상대 차이를 분석합니다.</small></section>
+    <section class="content-card compare-final-diagnosis"><span class="eyebrow">JEONGCHAMSI COMPARE DIAGNOSIS</span><h2>${esc(insight.headline)}</h2><p>${esc(insight.summary)}</p><div><button class="ghost-btn" type="button" data-go="/person/${esc(personA.id)}">${esc(personA.name)} 상세분석</button><button class="ghost-btn" type="button" data-go="/person/${esc(personB.id)}">${esc(personB.name)} 상세분석</button></div><small>지표의 상대강세는 정치적 우열이나 지지율을 의미하지 않으며, 동일한 정참시 분석기준에서 현재 관측된 관심·활동 신호의 차이를 보여줍니다.</small></section>
   </div>`;
 }
 
@@ -538,68 +508,18 @@ async function renderPublicCompare(search = "") {
 }
 
 
-function aggressiveAdminCompareEntry(person,entry={},index=0){
-  const source=entry&&typeof entry==='object'?entry:{};
-  const seed=(key,span=20)=>((compareStableHash(`${person?.id||index}:${key}`)%(span*2+1))-span);
-  const score=(value,key,min=22,max=92)=>{const n=Number(value);return Number.isFinite(n)?Math.max(0,Math.min(100,n)):Math.max(min,Math.min(max,58+seed(`score:${key}`,22)));};
-  const axis=(value,key)=>{const n=Number(value);return Number.isFinite(n)?Math.max(-50,Math.min(50,n)):Math.max(-42,Math.min(42,seed(`axis:${key}`,28)));};
-  const pct=(value,key,min=2,max=22)=>{const n=Number(value);return Number.isFinite(n)?Math.max(0,Math.min(100,n)):Math.max(min,Math.min(max,10+Math.abs(seed(`pct:${key}`,15))*.55));};
-  const latest={...(source?.person?.summary?.latest?.scores||{})};
-  for(const key of ['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread'])latest[key]=score(latest[key],key);
-  const coreDeltas={...(source?.person?.summary?.coreDeltas||{})};for(const key of Object.keys(latest)){const n=Number(coreDeltas[key]);if(!Number.isFinite(n))coreDeltas[key]=Math.round(axis(null,`delta:${key}`)*.45*10)/10;}
-  const rawPi=source?.politicalIntelligence||{},support=rawPi?.support||{},media=rawPi?.media||{},cohorts=rawPi?.cohorts||{};
-  const age={...(cohorts.age||{})};for(const key of ['18-29','30-39','40-49','50-59','60-69','70+'])age[key]={...(age[key]||{}),status:'VALID_SIGNAL',value:axis(age[key]?.value,`age:${key}`),confidence:score(age[key]?.confidence,`age-confidence:${key}`,62,88)};
-  const gender={...(cohorts.gender||{})};for(const key of ['MALE','FEMALE'])gender[key]={...(gender[key]||{}),status:'VALID_SIGNAL',value:axis(gender[key]?.value,`gender:${key}`),confidence:score(gender[key]?.confidence,`gender-confidence:${key}`,62,88)};
-  const cells={...(cohorts.cells||{})};for(const key of ['18_29_m','18_29_f','30_39_m','30_39_f','40_49_m','40_49_f','50_59_m','50_59_f','60_69_m','60_69_f','70_plus_m','70_plus_f'])cells[key]={...(cells[key]||{}),status:'VALID_SIGNAL',value:axis(cells[key]?.value,`cell:${key}`),confidence:score(cells[key]?.confidence,`cell-confidence:${key}`,62,88),evidenceCount:Math.max(1,Number(cells[key]?.evidenceCount)||1)};
-  const conditionBasis=(latest.overallInterest+latest.highEngagement+latest.massExpansion+latest.activity+latest.issueHeat+latest.mediaSpread)/6;
-  const politicalIntelligence={...rawPi,diagnosis:{...(rawPi.diagnosis||{}),condition:axis(rawPi?.diagnosis?.condition??Math.round((conditionBasis-50)*.8),'condition'),label:rawPi?.diagnosis?.label||'JCS 다중신호 종합 판독'},confidence:{...(rawPi.confidence||{}),observedDays:Math.max(3,Number(rawPi?.confidence?.observedDays)||3+(compareStableHash(`${person?.id}:days`)%15))},support:{...support,coreAttritionPct:pct(support.coreAttritionPct,'attrition',2,18),newSupportInflowPct:pct(support.newSupportInflowPct,'inflow',2,20),ageMomentum:{...(support.ageMomentum||{}),age2030:axis(support?.ageMomentum?.age2030,'age2030'),age4050:axis(support?.ageMomentum?.age4050,'age4050'),age60plus:axis(support?.ageMomentum?.age60plus,'age60plus')}},attentionSupportGap:{...(rawPi.attentionSupportGap||{}),gap:axis(rawPi?.attentionSupportGap?.gap,'attention-gap')},resilience:{...(rawPi.resilience||{}),score:score(rawPi?.resilience?.score,'resilience',42,90)},media:{...media,momentum:{...(media.momentum||{}),news:axis(media?.momentum?.news,'media-news'),youtube:axis(media?.momentum?.youtube,'media-youtube'),sns:axis(media?.momentum?.sns,'media-sns'),community:axis(media?.momentum?.community,'media-community')}},cohorts:{...cohorts,age,gender,cells},evidence:{...(rawPi.evidence||{}),basis:rawPi?.evidence?.basis||'JCS LIVE · HISTORY · 상대기준 · 다중신호 보정'}};
-  return {...source,personId:source.personId||person?.id,person:{...(source.person||{}),summary:{...(source?.person?.summary||{}),latest:{...(source?.person?.summary?.latest||{}),scores:latest},coreDeltas}},politicalIntelligence};
-}
-function aggressiveAdminDecisionPayload(person,payload={},entry={},index=0){
-  const existing=payload&&typeof payload==='object'?payload:{},decision=existing?.decision||{};
-  if(decision?.causeTrace?.length&&decision?.risks?.length&&decision?.opportunities?.length&&decision?.priorities?.length)return existing;
-  const pi=adminComparePi(entry),latest=entry?.person?.summary?.latest?.scores||{},deltas=entry?.person?.summary?.coreDeltas||{};
-  const metrics=[['종합 관심','overallInterest'],['심층 관심','highEngagement'],['대중 확산','massExpansion'],['활동성','activity'],['이슈 온도','issueHeat'],['미디어 확산','mediaSpread']].map(([label,key])=>({label,key,value:Number(latest[key]),delta:Number(deltas[key])}));
-  const valid=metrics.filter(x=>Number.isFinite(x.value)),strong=[...valid].sort((a,b)=>b.value-a.value)[0]||{label:'대중 확산',key:'massExpansion',value:50},weak=[...valid].sort((a,b)=>a.value-b.value)[0]||{label:'심층 관심',key:'highEngagement',value:50};
-  const mover=[...metrics].filter(x=>Number.isFinite(x.delta)).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta))[0]||strong;
-  const condition=Number(pi?.diagnosis?.condition),safeCondition=Number.isFinite(condition)?condition:0,delta7d=Number.isFinite(mover.delta)?Math.round(mover.delta*.5*10)/10:0;
-  const cause={source:mover.key,title:`${mover.label} 변화가 현재 흐름을 주도`,observedChange:Number.isFinite(mover.delta)?`${mover.delta>0?'+':''}${Math.round(mover.delta*10)/10}`:`현재 ${Math.round(mover.value)}`,basis:'LIVE · HISTORY · 상대기준 교차분석'};
-  const opportunity={title:`${strong.label} 상대 우위`,rationale:`${strong.label} ${Math.round(strong.value)}로 현재 비교축 가운데 가장 강합니다.`,impact:'HIGH'};
-  const risk={title:`${weak.label} 상대 취약`,rationale:`${weak.label} ${Math.round(weak.value)}로 비교축 가운데 가장 약합니다.`,impact:'HIGH'};
-  const priority={rank:1,mode:strong.key==='massExpansion'?'EXPAND':'CONVERT',title:`${strong.label} 우위 확대 · ${weak.label} 약점 방어`,judgement:`강점과 약점의 격차가 현재 전략 우선순위를 결정합니다.`,basis:`${strong.label} ${Math.round(strong.value)} / ${weak.label} ${Math.round(weak.value)}`,direction:`${strong.label}을 확장하면서 ${weak.label}의 상대 격차를 줄입니다.`,successCriteria:[{metric:weak.key,description:`${weak.label} 상승 여부`},{metric:strong.key,description:`${strong.label} 우위 유지 여부`}]} ;
-  return {...existing,ok:existing.ok!==false,personId:existing.personId||person?.id,decision:{...decision,evidenceState:decision.evidenceState||{label:'분석 근거 충분'},currentState:{condition:safeCondition,conditionLabel:adminCompareConditionLabel(safeCondition),delta7d,delta30d:Number.isFinite(mover.delta)?mover.delta:0,...(decision.currentState||{})},causeTrace:decision.causeTrace?.length?decision.causeTrace:[cause],risks:decision.risks?.length?decision.risks:[risk],opportunities:decision.opportunities?.length?decision.opportunities:[opportunity],priorities:decision.priorities?.length?decision.priorities:[priority]}};
-}
 function adminCompareNumber(value, suffix="") {
   const n=Number(value);return Number.isFinite(n)?`${n>0?"+":""}${Math.round(n*10)/10}${suffix}`:"—";
 }
-function adminCompareConditionLabel(value){
-  const n=Number(value);
-  if(!Number.isFinite(n))return "보통";
-  if(n>=30)return "매우 좋음";
-  if(n>=10)return "좋음";
-  if(n>-10)return "보통";
-  if(n>-30)return "주의";
-  return "매우 나쁨";
-}
-function adminCompareConditionReadout(value){
-  const n=Number(value);
-  return Number.isFinite(n)?`${adminCompareNumber(n)} · ${adminCompareConditionLabel(n)}`:"0 · 보통";
-}
 function adminComparePi(entry){return entry?.politicalIntelligence||{};}
-function adminCompareEvidenceLabel(entry={}){
-  const pi=adminComparePi(entry),days=Math.max(0,Number(pi?.confidence?.observedDays)||0),external=Array.isArray(pi?.evidence?.external)?pi.evidence.external.length:Math.max(0,Number(pi?.confidence?.externalEvidenceCount)||0);
-  if(days>=7&&external>0)return "분석 근거 강함";
-  if(days>=3||external>0)return "분석 근거 충분";
-  return "분석 근거 충분";
-}
 function adminComparePersonCard(person,entry,index){
-  const pi=adminComparePi(entry),diagnosis=pi?.diagnosis?.label||"JCS INTELLIGENCE",condition=Number(pi?.diagnosis?.condition),evidence=adminCompareEvidenceLabel(entry);
-  return `<article class="admin-compare-person-card"><span class="admin-compare-order">#${index+1}</span>${personPhotoMarkup(person,"admin-compare-avatar",{eager:true,size:120})}<div><h3>${esc(person.name)}</h3><p>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</p><strong>정치 흐름 지수 ${esc(adminCompareConditionReadout(condition))}</strong><small>${esc(diagnosis)} · ${esc(evidence)}</small></div><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세 분석</button></article>`;
+  const pi=adminComparePi(entry),confidence=Number(pi?.confidence?.score),diagnosis=pi?.diagnosis?.label||"JCS INTELLIGENCE";
+  return `<article class="admin-compare-person-card"><span class="admin-compare-order">#${index+1}</span>${personPhotoMarkup(person,"admin-compare-avatar",{eager:true,size:120})}<div><h3>${esc(person.name)}</h3><p>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</p><strong>${esc(diagnosis)}</strong><small>CONFIDENCE ${Number.isFinite(confidence)?Math.round(confidence):"—"}</small></div><button class="ghost-btn" type="button" data-go="/person/${esc(person.id)}">상세</button></article>`;
 }
 const ADMIN_COMPARE_METRICS=[
   ["종합 관심","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.overallInterest],
   ["심층 관심","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.highEngagement],
-  ["대중 확산력","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.massExpansion],
+  ["대중 확산","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.massExpansion],
   ["활동성","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.activity],
   ["이슈 온도","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.issueHeat],
   ["미디어 확산","CORE INTELLIGENCE",e=>e?.person?.summary?.latest?.scores?.mediaSpread],
@@ -607,175 +527,43 @@ const ADMIN_COMPARE_METRICS=[
   ["신규지지 유입","SUPPORT",e=>adminComparePi(e)?.support?.newSupportInflowPct],
   ["관심→지지 GAP","SUPPORT",e=>adminComparePi(e)?.attentionSupportGap?.gap],
   ["정치 회복력","SUPPORT",e=>adminComparePi(e)?.resilience?.score],
-  ["뉴스 확산 흐름","MEDIA",e=>adminComparePi(e)?.media?.momentum?.news],
-  ["SNS 확산 흐름","MEDIA",e=>adminComparePi(e)?.media?.momentum?.sns]
+  ["뉴스 모멘텀","MEDIA",e=>adminComparePi(e)?.media?.momentum?.news],
+  ["SNS 모멘텀","MEDIA",e=>adminComparePi(e)?.media?.momentum?.sns]
 ];
-const ADMIN_COMPARE_SIGNAL_METRICS=[
-  ["종합 관심","ATTENTION",e=>e?.person?.summary?.latest?.scores?.overallInterest],
-  ["심층 관심","ENGAGEMENT",e=>e?.person?.summary?.latest?.scores?.highEngagement],
-  ["대중 확산력","EXPANSION",e=>e?.person?.summary?.latest?.scores?.massExpansion],
-  ["활동성","ACTIVITY",e=>e?.person?.summary?.latest?.scores?.activity],
-  ["이슈 온도","ISSUE",e=>e?.person?.summary?.latest?.scores?.issueHeat],
-  ["미디어 확산","MEDIA",e=>e?.person?.summary?.latest?.scores?.mediaSpread],
-  ["정치 회복력","RESILIENCE",e=>adminComparePi(e)?.resilience?.score],
-  ["신규지지 유입","INFLOW",e=>adminComparePi(e)?.support?.newSupportInflowPct],
-  ["뉴스 확산 흐름","NEWS",e=>adminComparePi(e)?.media?.momentum?.news],
-  ["SNS 확산 흐름","SNS",e=>adminComparePi(e)?.media?.momentum?.sns]
-];
-function adminCompareSignalStats(people,entries){
-  const wins=people.map((p,index)=>({index,person:p,wins:0}));
-  const rows=ADMIN_COMPARE_SIGNAL_METRICS.map(([label,code,getter])=>{
-    const values=entries.map(getter).map(v=>Number(v));
-    const valid=values.map((value,index)=>({value,index})).filter(x=>Number.isFinite(x.value));
-    const max=valid.length?Math.max(...valid.map(x=>x.value)):null,min=valid.length?Math.min(...valid.map(x=>x.value)):null;
-    const leaders=max===null?[]:valid.filter(x=>x.value===max).map(x=>x.index);
-    if(leaders.length===1)wins[leaders[0]].wins+=1;
-    return {label,code,values,max,min,leaders,spread:max===null||min===null?0:max-min};
-  });
-  const leaderboard=[...wins].sort((a,b)=>b.wins-a.wins||a.index-b.index);
-  const widest=[...rows].sort((a,b)=>b.spread-a.spread)[0]||null;
-  return {rows,leaderboard,widest};
-}
-function adminCompareRowLeader(row,people){
-  if(!row||!Array.isArray(row.values))return {name:'—',value:null,index:-1,spread:0};
-  const valid=row.values.map((value,index)=>({value:Number(value),index})).filter(x=>Number.isFinite(x.value)).sort((a,b)=>b.value-a.value);
-  const top=valid[0]||null,second=valid[1]||null;
-  return {name:top?people[top.index]?.name||'—':'—',value:top?.value??null,index:top?.index??-1,spread:top&&second?top.value-second.value:0};
-}
-function adminCompareExecutive(people,entries){
-  const stats=adminCompareSignalStats(people,entries),top=stats.leaderboard[0],runner=stats.leaderboard[1],widest=stats.widest;
-  const leadName=top?.person?.name||'—',leadWins=top?.wins||0,runnerName=runner?.person?.name||'—',wideLeader=widest?.leaders?.length===1?people[widest.leaders[0]]?.name:'근접';
-  const conditions=entries.map((entry,index)=>({index,value:Number(adminComparePi(entry)?.diagnosis?.condition)})).filter(x=>Number.isFinite(x.value)).sort((a,b)=>b.value-a.value);
-  const conditionLead=conditions[0]?people[conditions[0].index]?.name:'—';
-  return `<section class="admin-compare-executive admin-compare-decision-room" data-legacy-contract="EXECUTIVE COMPARISON SUMMARY">
-    <div class="admin-compare-verdict-copy"><span>JCS EXECUTIVE VERDICT</span><small>핵심 비교 결론</small><h2>${esc(leadName)}가 현재 비교군에서 가장 많은 핵심 신호를 선점하고 있습니다.</h2><p><b>${esc(leadName)}</b>가 ${ADMIN_COMPARE_SIGNAL_METRICS.length}개 관측축 가운데 <strong>${leadWins}개</strong>에서 선두입니다. ${runner?`다음은 <b>${esc(runnerName)}</b>. `:''}가장 크게 벌어진 축은 <b>${esc(widest?.label||'—')}</b>${wideLeader?`이며 <b>${esc(wideLeader)}</b>가 앞섭니다.`:'.'}</p><div class="admin-compare-verdict-note"><span>정치 흐름 지수 선두</span><b>${esc(conditionLead||'—')}</b><em>최근 관심·지지 기반·미디어·이슈를 종합한 JCS 상대지수입니다.</em></div></div>
-    <div class="admin-compare-leaderboard"><div class="admin-compare-leaderboard-head"><span>SIGNAL LEADERS</span><b>${ADMIN_COMPARE_SIGNAL_METRICS.length} METRICS</b></div>${stats.leaderboard.map((row,index)=>`<article><span>0${index+1}</span>${personPhotoMarkup(row.person,"admin-compare-leader-avatar",{eager:index<2,size:72})}<div><b>${esc(row.person.name)}</b><small>${esc([row.person.party,row.person.jurisdiction].filter(Boolean).join(' · '))}</small></div><strong>${row.wins}<em>LEADS</em></strong></article>`).join('')}</div>
-  </section>`;
-}
-
-function adminCompareDecisionBrief(people,decisionEntries){
-  const entries=Array.isArray(decisionEntries)?decisionEntries:[];
-  const cards=people.map((person,index)=>{
-    const payload=entries[index]||{},decision=payload?.decision||{},state=decision?.currentState||{},cause=decision?.causeTrace?.[0]||{},risk=decision?.risks?.[0]||{},opportunity=decision?.opportunities?.[0]||{},priority=decision?.priorities?.[0]||{};
-    const evidence=decision?.evidenceState?.label||'분석 근거 충분';
-    return `<article class="admin-compare-decision-card"><header><span>0${index+1}</span>${personPhotoMarkup(person,"admin-compare-decision-avatar",{eager:index<2,size:82})}<div><h3>${esc(person.name)}</h3><small>${esc(evidence)}</small></div></header><dl><div><dt>현재 위치</dt><dd><strong>${esc(state.conditionLabel||adminCompareConditionLabel(state.condition))}</strong><span>정치 흐름 ${adminCompareNumber(state.condition)} · 7일 ${adminCompareNumber(state.delta7d)}</span></dd></div><div><dt>주요 원인</dt><dd><strong>${esc(cause.title||'현재 흐름의 1차 원인')}</strong><span>${esc(cause.observedChange||'LIVE·HISTORY·상대기준을 교차 분석했습니다.')}</span></dd></div><div class="advantage"><dt>가장 큰 우위</dt><dd><strong>${esc(opportunity.title||'대중 확산 우위 확대')}</strong><span>${esc(opportunity.rationale||'현재 비교 신호에서 상대 우위가 확인됩니다.')}</span></dd></div><div class="risk"><dt>가장 큰 위험</dt><dd><strong>${esc(risk.title||'핵심 신호 격차 관리')}</strong><span>${esc(risk.rationale||'현재 약한 축의 추가 격차 확대를 제한해야 합니다.')}</span></dd></div><div class="priority"><dt>최우선 대응</dt><dd><strong>${esc(priority.title||'핵심 우위 확대와 약점 방어')}</strong><span>${esc(priority.direction||'현재 우위 신호를 확대하면서 취약 신호의 격차를 동시에 줄입니다.')}</span></dd></div></dl></article>`;
-  }).join('');
-  const causeLeaders=entries.map((payload,index)=>({person:people[index],cause:payload?.decision?.causeTrace?.[0]})).filter(x=>x.cause?.title);
-  return `<section class="content-card admin-compare-decision-brief"><div class="admin-compare-section-kicker"><span>COMPARATIVE DECISION BRIEF</span><h2>비교 의사결정 브리프</h2><p>각 인물의 현재 위치와 변화 원인, 가장 큰 우위·위험, 최우선 대응을 같은 기준으로 비교합니다.</p></div><div class="admin-compare-cause-trace"><span>경쟁 원인 추적</span><p>${causeLeaders.length?causeLeaders.map(x=>`${x.person?.name||'—'} · ${x.cause.title}`).join(' / '):'비교 대상의 변화 원인을 HISTORY 기준으로 추적하고 있습니다.'}</p></div><div class="admin-compare-decision-grid">${cards}</div></section>`;
-}
-
-function adminCompareBattlefield(people,entries){
-  const stats=adminCompareSignalStats(people,entries);
-  const picks=[['EXPANSION','대중 확산력','기존 관심층을 넘어 대중 관심이 확장되는 수준'],['ENGAGEMENT','심층 관심','단순 노출을 넘어 더 알아보려는 관심의 깊이'],['RESILIENCE','정치 회복력','이슈 충격 뒤 관심과 지지 기반이 회복되는 힘'],['MEDIA','미디어 확산','뉴스·SNS 등에서 메시지가 퍼지는 정도']];
-  return `<section class="content-card admin-compare-battlefield"><div class="admin-compare-section-kicker"><span>BATTLEFIELD SNAPSHOT</span><h2>핵심 격차 지표</h2><p>비교 대상 간 격차가 가장 큰 핵심 지표를 우선 제시합니다.</p></div><div class="admin-compare-battlefield-grid">${picks.map(([code,title,label],index)=>{const row=stats.rows.find(x=>x.code===code),leader=adminCompareRowLeader(row,people);return `<article><header><span>0${index+1}</span><small>${esc(code)}</small></header><h3>${esc(title)}</h3><strong>${esc(leader.name)}</strong><p>${esc(label)} · 현재 선두 · ${leader.value===null?'—':adminCompareNumber(leader.value)}</p><footer><span>2위와의 격차</span><b>${adminCompareNumber(leader.spread)}</b></footer></article>`;}).join('')}</div></section>`;
-}
-function adminCompareAdvantageLanes(people,entries){
-  const stats=adminCompareSignalStats(people,entries);
-  const lanes=[
-    ['PUBLIC MOMENTUM','대중 관심·확산',['ATTENTION','EXPANSION','ACTIVITY']],
-    ['SUPPORT DEFENSE','지지 기반 방어',['ENGAGEMENT','RESILIENCE','INFLOW']],
-    ['MEDIA PRESSURE','미디어 확산',['MEDIA','NEWS','SNS']],
-    ['ISSUE CONTROL','이슈 장악',['ISSUE']]
-  ];
-  return `<section class="content-card admin-compare-advantage-lanes"><div class="admin-compare-section-kicker"><span>ADVANTAGE LANES</span><h2>비교 대상별 우위 영역</h2><p>관심·지지 기반·미디어·이슈를 묶어 인물별 상대 우위와 취약 영역을 비교합니다.</p></div><div class="admin-compare-lane-list">${lanes.map(([code,label,codes])=>{const counts=people.map((person,index)=>({person,index,wins:0}));stats.rows.filter(row=>codes.includes(row.code)).forEach(row=>{if(row.leaders.length===1)counts[row.leaders[0]].wins+=1;});const sorted=[...counts].sort((a,b)=>b.wins-a.wins||a.index-b.index),max=Math.max(1,codes.length),leader=sorted[0];return `<article><div class="admin-compare-lane-label"><small>${esc(code)}</small><b>${esc(label)}</b><span>${esc(leader?.person?.name||'—')} 우위</span></div><div class="admin-compare-lane-bars">${counts.map(row=>`<p><span>${esc(row.person?.name||'—')}</span><i><em style="width:${Math.max(4,row.wins/max*100)}%"></em></i><strong>${row.wins}/${max}</strong></p>`).join('')}</div></article>`;}).join('')}</div></section>`;
-}
-function adminCompareMapZone(x,y){
-  if(y>=50&&x>=50)return {key:'strong',label:'강한 우위',copy:'정치 흐름과 대중 확산력이 모두 강한 구간'};
-  if(y>=50&&x<50)return {key:'opportunity',label:'확산 기회',copy:'정치 흐름은 강하지만 대중 확산력이 제한된 구간'};
-  if(y<50&&x>=50)return {key:'rebound',label:'반등 가능',copy:'대중 확산력은 있으나 정치 흐름이 약한 구간'};
-  return {key:'risk',label:'위험 구간',copy:'정치 흐름과 대중 확산력이 모두 약한 구간'};
-}
-function adminCompareMapAvatar(person,index){
-  const photo=String(person?.photo||''),focus=String(person?.photoFocus||'50% 28%'),initial=String(person?.name||'—').trim().slice(0,1)||'—';
-  return `<span class="admin-compare-map-avatar${photo?' has-photo':''}" style="--photo-position:${esc(focus)}"><b>${esc(initial)}</b>${photo?`<img data-politician-photo src="${esc(photo)}" alt="" width="52" height="52" loading="lazy" decoding="async" fetchpriority="low">`:''}<em>0${index+1}</em></span>`;
-}
-function adminCompareDecisionMap(people,entries){
-  const points=people.map((person,index)=>{
-    const latest=entries[index]?.person?.summary?.latest?.scores||{};
-    const condition=Number(adminComparePi(entries[index])?.diagnosis?.condition);
-    const expansion=Number(latest.massExpansion);
-    const x=Number.isFinite(expansion)?Math.max(8,Math.min(92,expansion)):50;
-    const y=Number.isFinite(condition)?Math.max(8,Math.min(92,condition+50)):50;
-    return {person,index,x,y,condition:Number.isFinite(condition)?condition:null,expansion:Number.isFinite(expansion)?expansion:null,zone:adminCompareMapZone(x,y)};
-  });
-  const flowLead=[...points].filter(x=>x.condition!==null).sort((a,b)=>b.condition-a.condition)[0];
-  const expansionLead=[...points].filter(x=>x.expansion!==null).sort((a,b)=>b.expansion-a.expansion)[0];
-  const summary=flowLead&&expansionLead
-    ? flowLead.index===expansionLead.index
-      ? `${flowLead.person.name}이 정치 흐름 지수와 대중 확산력 모두 선두입니다.`
-      : `${flowLead.person.name}이 정치 흐름 지수에서 선두이며, ${expansionLead.person.name}이 대중 확산력에서 선두입니다.`
-    : 'JCS 다중신호 기준으로 정치 흐름과 대중 확산력의 현재 위치를 비교합니다.';
-  return `<section class="content-card admin-compare-decision-map admin-compare-position-map"><div class="admin-compare-section-kicker"><span>DECISION MAP</span><h2>정치 포지션 맵</h2><p>정치 흐름 지수와 대중 확산력을 기준으로 비교 대상의 현재 위치와 우위·기회·위험 구간을 표시합니다.</p></div><div class="admin-compare-map-board"><div class="admin-compare-map-zone zone-opportunity"><b>확산 기회</b><span>흐름 강함 · 확산 제한</span></div><div class="admin-compare-map-zone zone-strong"><b>강한 우위</b><span>흐름 강함 · 확산 강함</span></div><div class="admin-compare-map-zone zone-risk"><b>위험 구간</b><span>흐름 약함 · 확산 약함</span></div><div class="admin-compare-map-zone zone-rebound"><b>반등 가능</b><span>흐름 약함 · 확산 강함</span></div><span class="axis-y axis-y-high">정치 흐름 강함</span><span class="axis-y axis-y-low">정치 흐름 약함</span><span class="axis-x axis-x-low">대중 확산력 낮음</span><span class="axis-x axis-x-high">대중 확산력 높음</span><i class="mid-x"></i><i class="mid-y"></i>${points.map(row=>`<span class="admin-compare-map-point zone-${row.zone.key}" style="--map-x:${row.x}%;--map-y:${row.y}%" aria-label="${esc(row.person.name)} · 정치 흐름 ${row.condition===null?'0':adminCompareNumber(row.condition)} · 대중 확산력 ${row.expansion===null?'50':adminCompareNumber(row.expansion)}"><b>0${row.index+1}</b></span>`).join('')}</div><div class="admin-compare-map-people">${points.map(row=>`<article>${adminCompareMapAvatar(row.person,row.index)}<div><h3>${esc(row.person.name)}</h3><p><span>정치 흐름</span><b>${row.condition===null?'0 · 보통':esc(adminCompareConditionReadout(row.condition))}</b></p><p><span>대중 확산력</span><b>${row.expansion===null?'50':adminCompareNumber(row.expansion)}</b></p></div><strong class="zone-${row.zone.key}">${esc(row.zone.label)}</strong></article>`).join('')}</div><div class="admin-compare-map-summary"><span>판독 요약</span><p>${esc(summary)}</p></div></section>`;
-}
-function adminComparePersonVerdicts(people,entries){
-  const stats=adminCompareSignalStats(people,entries);
-  return `<section class="content-card admin-compare-person-verdicts"><div class="admin-compare-section-kicker"><span>PERSON-BY-PERSON READOUT</span><h2>인물별 핵심 판독</h2><p>각 인물의 상대 우위, 취약 지표, 정치 흐름을 분리해 제시합니다.</p></div><div class="admin-compare-person-verdict-grid">${people.map((person,index)=>{const ranked=stats.rows.map(row=>{const value=Number(row.values[index]),valid=Number.isFinite(value);const relative=!valid?0:row.spread===0?50:(value-row.min)/Math.max(1,row.spread)*100;return {row,value,relative};}).filter(x=>Number.isFinite(x.value)).sort((a,b)=>b.relative-a.relative),strong=ranked[0],watch=ranked[ranked.length-1],pi=adminComparePi(entries[index]),evidence=adminCompareEvidenceLabel(entries[index]);return `<article><header><span>0${index+1}</span>${personPhotoMarkup(person,"admin-compare-verdict-avatar",{eager:index<2,size:88})}<div><h3>${esc(person.name)}</h3><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(' · '))}</small></div></header><div class="admin-compare-person-verdict"><small>핵심 우위</small><b>${esc(strong?.row?.label||'—')}</b><strong>${adminCompareNumber(strong?.value)}</strong></div><div class="admin-compare-person-note"><span>우위 해석 <small>WHY IT MATTERS</small></span><p>${strong?`비교군 안에서 <b>${esc(strong.row.label)}</b>의 상대 위치가 가장 강합니다. 이 인물의 현재 우위를 설명할 때 먼저 짚을 축입니다.`:'비교 가능한 신호를 축적 중입니다.'}</p></div><div class="admin-compare-person-note watch"><span>주의 지표 <small>WHAT TO WATCH</small></span><p>${watch?`반대로 <b>${esc(watch.row.label)}</b>은 비교군에서 상대적으로 약한 축입니다. 우위 신호가 유지되는지와 함께 이 격차의 확대 여부를 확인해야 합니다.`:'경계축을 축적 중입니다.'}</p></div><footer><span>정치 흐름 지수 ${esc(adminCompareConditionReadout(pi?.diagnosis?.condition))}</span><b>${esc(evidence)}</b></footer></article>`;}).join('')}</div></section>`;
-}
-function adminCompareSignalMatrix(people,entries){
-  const stats=adminCompareSignalStats(people,entries);
-  return `<section class="content-card admin-compare-signal-matrix"><div class="section-title"><div><span class="eyebrow">RELATIVE SIGNAL MATRIX</span><h2>지표별 상대 우위</h2></div><span>같은 지표 안에서 상대 비교</span></div><div class="admin-compare-signal-matrix-grid">${stats.rows.slice(0,8).map(row=>{const range=Math.max(1,row.spread);return `<div class="admin-compare-signal-row"><header><small>${esc(row.code)}</small><b>${esc(row.label)}</b></header>${row.values.map((value,index)=>{const finite=Number.isFinite(value),ratio=!finite?0:row.spread===0?50:((value-row.min)/range*100),leader=row.leaders.includes(index);return `<article class="${leader?'is-leader':''}"><span>${esc(people[index]?.name||'—')}</span><i><em style="width:${Math.max(4,Math.min(100,ratio))}%"></em></i><strong>${adminCompareNumber(value)}</strong></article>`;}).join('')}</div>`;}).join('')}</div></section>`;
-}
-function adminComparePositionStrip(people,entries){
-  return `<section class="content-card admin-compare-position-strip"><div class="section-title"><div><span class="eyebrow">CURRENT POLITICAL FLOW</span><h2>정치 흐름 지수 비교</h2></div><span>매우 나쁨 -50 · 보통 0 · 매우 좋음 +50</span></div><div class="admin-compare-position-list">${entries.map((entry,index)=>{const value=Number(adminComparePi(entry)?.diagnosis?.condition),valid=Number.isFinite(value),position=valid?Math.max(0,Math.min(100,value+50)):50;return `<article><div><span>0${index+1}</span><b>${esc(people[index]?.name||'—')}</b><strong>${valid?esc(adminCompareConditionReadout(value)):'0 · 보통'}</strong></div><i><em style="left:${position}%"></em></i></article>`;}).join('')}</div></section>`;
-}
 function adminCompareMetricTable(people,entries){
-  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">CORE INTELLIGENCE</span><h2>세부 지표 전체 비교</h2></div><span>선택한 인물을 같은 기준으로 비교</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>지표</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${ADMIN_COMPARE_METRICS.map(([label,group,getter])=>{const vals=entries.map(getter);const finite=vals.map((v,i)=>[Number(v),i]).filter(([v])=>Number.isFinite(v)).sort((a,b)=>b[0]-a[0]);const top=finite[0]?.[1];return `<tr><th><small>${esc(group)}</small>${esc(label)}</th>${vals.map((v,i)=>`<td class="${i===top?"is-leader":""}">${adminCompareNumber(v)}</td>`).join("")}</tr>`;}).join("")}</tbody></table></div></section>`;
+  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">CORE INTELLIGENCE</span><h2>다자간 핵심 비교</h2></div><span>선택 인물 동일축 비교</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>지표</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${ADMIN_COMPARE_METRICS.map(([label,group,getter])=>{const vals=entries.map(getter);const finite=vals.map((v,i)=>[Number(v),i]).filter(([v])=>Number.isFinite(v)).sort((a,b)=>b[0]-a[0]);const top=finite[0]?.[1];return `<tr><th><small>${esc(group)}</small>${esc(label)}</th>${vals.map((v,i)=>`<td class="${i===top?"is-leader":""}">${adminCompareNumber(v)}</td>`).join("")}</tr>`;}).join("")}</tbody></table></div></section>`;
 }
 const ADMIN_AGES=[["18–29","18-29"],["30–39","30-39"],["40–49","40-49"],["50–59","50-59"],["60–69","60-69"],["70+","70+"]];
 function adminCompareCohortTable(people,entries){
   const cells=[["18–29 M","18_29_m"],["18–29 F","18_29_f"],["30–39 M","30_39_m"],["30–39 F","30_39_f"],["40–49 M","40_49_m"],["40–49 F","40_49_f"],["50–59 M","50_59_m"],["50–59 F","50_59_f"],["60–69 M","60_69_m"],["60–69 F","60_69_f"],["70+ M","70_plus_m"],["70+ F","70_plus_f"]];
-  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">AGE × GENDER</span><h2>연령·성별 다자간 비교</h2></div><span>JCS 지지 흐름 지수</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>COHORT</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${ADMIN_AGES.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.age?.[key]?.value)}</td>`).join("")}</tr>`).join("")}<tr><th>MALE</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.gender?.MALE?.value)}</td>`).join("")}</tr><tr><th>FEMALE</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.gender?.FEMALE?.value)}</td>`).join("")}</tr>${cells.map(([label,key])=>`<tr><th><small>AGE × GENDER CELL</small>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.cells?.[key]?.value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
+  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">AGE × GENDER</span><h2>연령·성별 다자간 비교</h2></div><span>JCS SUPPORT MOMENTUM</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>COHORT</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${ADMIN_AGES.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.age?.[key]?.value)}</td>`).join("")}</tr>`).join("")}<tr><th>MALE</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.gender?.MALE?.value)}</td>`).join("")}</tr><tr><th>FEMALE</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.gender?.FEMALE?.value)}</td>`).join("")}</tr>${cells.map(([label,key])=>`<tr><th><small>AGE × GENDER CELL</small>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(adminComparePi(e)?.cohorts?.cells?.[key]?.value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
 }
 function adminCompareHistoryTable(people,entries){
   const rows=[["30D 종합관심 변화","overallInterest"],["30D 심층관심 변화","highEngagement"],["30D 대중확산 변화","massExpansion"],["30D 활동성 변화","activity"],["30D 이슈온도 변화","issueHeat"],["30D 미디어확산 변화","mediaSpread"]];
-  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">HISTORY</span><h2>최근 30일 변화 비교</h2></div><span>JCS HISTORY DELTA</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>변화</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${rows.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(e?.person?.summary?.coreDeltas?.[key])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
+  return `<section class="content-card admin-compare-table-card"><div class="section-title"><div><span class="eyebrow">HISTORY</span><h2>최근 변화 비교</h2></div><span>JCS HISTORY DELTA</span></div><div class="admin-compare-table-wrap"><table class="admin-compare-table"><thead><tr><th>변화</th>${people.map(p=>`<th>${esc(p.name)}</th>`).join("")}</tr></thead><tbody>${rows.map(([label,key])=>`<tr><th>${esc(label)}</th>${entries.map(e=>`<td>${adminCompareNumber(e?.person?.summary?.coreDeltas?.[key])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`;
 }
-function adminCompareRunUrl(ids=[]){
-  const query=new URLSearchParams();
-  ids.filter(Boolean).slice(0,5).forEach(id=>query.append("p",id));
-  query.set("run","1");
-  return `/compare?${query.toString()}`;
-}
-function adminComparePicker(selected=[],executed=false){
+function adminComparePicker(selected=[]){
   const ids=[...new Set(selected.filter(Boolean))].slice(0,5);
-  const cards=ids.map((id,index)=>{
-    const person=getPersonSlotById(id);if(!person)return "";
-    return `<article class="admin-compare-selection-card"><span class="admin-compare-selection-index">0${index+1}</span>${personPhotoMarkup(person,"admin-compare-selection-avatar",{eager:index<2,size:96})}<div><b>${esc(person.name)}</b><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</small></div><button type="button" data-admin-compare-remove="${esc(id)}" aria-label="${esc(person.name)} 비교에서 제거">×</button></article>`;
-  }).join("");
-  const search=ids.length<5?`<label class="person-quick-picker admin-compare-add-picker admin-compare-search-panel"><span>POLITICIAN SEARCH</span><b>${ids.length<2?"비교할 정치인을 추가하세요":"비교 대상을 더 추가할 수 있습니다"}</b><input type="search" id="admin-compare-search" placeholder="이름 · 정당 · 지역으로 검색" autocomplete="off" data-person-quick-search="#admin-compare-add-select" data-person-quick-results="#admin-compare-add-results"><div class="person-quick-results" id="admin-compare-add-results" hidden></div><select id="admin-compare-add-select" data-admin-compare-add aria-hidden="true" tabindex="-1"><option value="">정치인 추가</option>${personOptions("")}</select><small>검색 결과에서 정치인을 선택하면 비교 대상에 추가됩니다.</small></label>`:`<div class="admin-compare-max admin-compare-search-panel"><span>SELECTION COMPLETE</span><b>최대 5명을 선택했습니다</b><small>다른 정치인을 추가하려면 선택된 인물 한 명을 먼저 제거하세요.</small></div>`;
-  const canRun=ids.length>=2;
-  const runButton=canRun?`<button class="primary-btn admin-compare-run-btn" type="button" data-admin-compare-run data-go="${esc(adminCompareRunUrl(ids))}"><span>비교하기</span><small>${ids.length}명 분석 실행</small><em>→</em></button>`:`<button class="primary-btn admin-compare-run-btn" type="button" data-admin-compare-run disabled><span>비교하기</span><small>2명 이상 선택 필요</small><em>→</em></button>`;
-  return `<section class="content-card compare-picker-card admin-compare-picker-card admin-compare-command-deck">
-    <div class="admin-compare-stage"><span class="is-active"><b>01</b>SELECT</span><i></i><span class="${ids.length>=2?'is-active':''}"><b>02</b>REVIEW</span><i></i><span class="${executed?'is-active':''}"><b>03</b>COMPARE</span></div>
-    <div class="admin-compare-deck-head"><div><span>COMPARE CONTROL</span><h2>비교할 정치인을 선택하세요</h2><p>2–5명을 선택하면 동일한 분석 기준으로 핵심 우위·취약 영역·정치 흐름 차이를 비교합니다.</p></div><div class="admin-compare-count"><strong>${ids.length}</strong><span>/ 5</span><small>현재 ${ids.length}명 선택 · 최소 2명 · 최대 5명</small></div></div>
-    <div class="admin-compare-selection-grid">${cards||`<div class="admin-compare-selection-empty"><b>아직 선택된 정치인이 없습니다</b><span>아래 검색창에서 첫 번째 비교 대상을 선택하세요.</span></div>`}</div>
-    <div class="admin-compare-deck-bottom">${search}<div class="admin-compare-actions"><button class="ghost-btn" type="button" data-go="/compare">선택 초기화</button>${runButton}</div></div>
-  </section>`;
+  const chips=ids.map((id,index)=>{const person=getPersonSlotById(id);if(!person)return "";return `<span class="admin-compare-selected-chip"><b>${index+1}. ${esc(person.name)}</b><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(" · "))}</small><button type="button" data-admin-compare-remove="${esc(id)}" aria-label="${esc(person.name)} 비교에서 제거">×</button></span>`;}).join("");
+  const add=ids.length<5?`<label class="person-quick-picker admin-compare-add-picker"><span>${ids.length<2?"정치인을 추가하세요 · 최소 2명":"정치인 추가 · 최대 5명"}</span><input type="search" id="admin-compare-search" placeholder="이름·정당·지역 검색" autocomplete="off" data-person-quick-search="#admin-compare-add-select" data-person-quick-results="#admin-compare-add-results"><div class="person-quick-results" id="admin-compare-add-results" hidden></div><select id="admin-compare-add-select" data-admin-compare-add aria-hidden="true" tabindex="-1"><option value="">정치인 추가</option>${personOptions("")}</select></label>`:`<div class="admin-compare-max"><b>5명 선택 완료</b><span>다른 인물을 비교하려면 위 선택에서 한 명을 제거하세요.</span></div>`;
+  return `<section class="content-card compare-picker-card admin-compare-picker-card"><div class="admin-compare-selected">${chips||`<span class="admin-compare-empty">선택된 정치인이 없습니다.</span>`}</div>${add}</section>`;
 }
 async function renderAdminCompare(search=""){
   await ensurePersonProvider();
   const params=new URLSearchParams(search||"");
-  const execute=params.get("run")==="1";
   let ids=params.getAll("p").filter(Boolean);
-  if(!ids.length)ids=[params.get("a"),params.get("b")].filter(Boolean);
+  if(ids.length<2)ids=[params.get("a"),params.get("b")].filter(Boolean);
   ids=[...new Set(ids)].slice(0,5);
   ids.forEach(prefetchNowPerson);
   const people=ids.map(getPersonSlotById).filter(Boolean);
   let result="";
-  if(execute&&people.length>=2){
-    const decisionPromise=import('../core/decision-repository.js?v=decision-v1-freedom-detail-v2').then(({getAdminDecisionPeople})=>getAdminDecisionPeople(people.map(p=>p.id),'30')).catch(()=>({ok:false,people:[]}));
-    const [data,decisionData]=await Promise.all([getFastAdminCompare(people.map(p=>p.id),"30"),decisionPromise]);
+  if(people.length>=2){
+    const data=await getFastAdminCompare(people.map(p=>p.id),"30");
     const byId=new Map((data?.people||[]).map(x=>[String(x.personId),x]));
-    const entries=people.map((p,index)=>aggressiveAdminCompareEntry(p,byId.get(String(p.id))||{},index));
-    const decisionById=new Map((decisionData?.people||[]).map(x=>[String(x.personId),x]));
-    const decisionEntries=people.map((p,index)=>aggressiveAdminDecisionPayload(p,decisionById.get(String(p.id))||{},entries[index],index));
-    result=`<div class="admin-multi-compare admin-compare-report-shell"><section class="admin-compare-result-head admin-compare-report-cover" data-legacy-title="JCS INTELLIGENCE COMPARISON REPORT"><div><span>CONFIDENTIAL COMPARATIVE INTELLIGENCE</span><h2>JCS DECISION ROOM</h2><p>${people.length}명의 정치 흐름과 핵심 신호를 동일한 기준으로 비교한 관리자 전용 의사결정 리포트</p><div class="admin-compare-cover-people">${people.map((p,i)=>`<span><b>0${i+1}</b>${esc(p.name)}</span>`).join('')}</div></div><button class="ghost-btn" type="button" data-go="/compare?${ids.map(id=>`p=${encodeURIComponent(id)}`).join('&')}">대상 다시 선택</button></section>${adminCompareExecutive(people,entries)}${adminCompareDecisionBrief(people,decisionEntries)}${adminCompareBattlefield(people,entries)}<div class="admin-compare-analysis-pair">${adminCompareDecisionMap(people,entries)}${adminCompareAdvantageLanes(people,entries)}</div>${adminComparePersonVerdicts(people,entries)}${adminCompareSignalMatrix(people,entries)}<section class="admin-compare-grid admin-compare-profile-deck">${people.map((p,i)=>adminComparePersonCard(p,entries[i],i)).join("")}</section><section class="content-card admin-compare-deep-data is-open"><header><span>DEEP DATA TABLES</span><b>세부 원수치 · AGE × GENDER · HISTORY · CORE INTELLIGENCE</b><i>OPEN</i></header><div>${adminCompareMetricTable(people,entries)}${adminCompareCohortTable(people,entries)}${adminCompareHistoryTable(people,entries)}</div></section></div>`;
-  } else if(people.length>=2){
-    result=`<section class="content-card admin-compare-ready-state"><div class="admin-compare-ready-icon">JCS</div><div><span>READY TO COMPARE</span><h2>${people.length}명의 비교 대상이 준비되었습니다</h2><p>선택을 확인한 뒤 <b>비교하기</b>를 누르면 연령·성별 흐름, HISTORY 변화, 핵심 지표를 동일한 기준으로 분석합니다.</p></div></section>`;
-  } else {
-    result=`<section class="content-card admin-compare-ready-state is-empty"><div class="admin-compare-ready-icon">+</div><div><span>SELECT POLITICIANS</span><h2>최소 2명의 정치인을 선택하세요</h2><p>최대 5명까지 선택할 수 있으며, 비교 실행 전에는 분석 데이터를 불러오지 않습니다.</p></div></section>`;
-  }
-  return pageShell(`<main class="subpage compare-live-page admin-compare-page"><section class="page-hero admin-compare-hero"><span class="eyebrow">ADMIN INTELLIGENCE COMPARE</span><h1>관리자 다자간 정치 인텔리전스 비교</h1><p>2–5명의 정치인을 동일한 기준으로 비교해 핵심 우위, 취약 영역, 정치 흐름 차이를 분석합니다.</p></section>${adminComparePicker(ids,execute)}${result}</main>`);
+    const entries=people.map(p=>byId.get(String(p.id))||{});
+    result=`<div class="admin-multi-compare"><section class="admin-compare-grid">${people.map((p,i)=>adminComparePersonCard(p,entries[i],i)).join("")}</section>${adminCompareMetricTable(people,entries)}${adminCompareCohortTable(people,entries)}${adminCompareHistoryTable(people,entries)}</div>`;
+  } else result=`<section class="content-card empty-state"><h2>관리자 다자간 비교</h2><p>최소 2명, 최대 5명의 정치인을 선택하세요.</p></section>`;
+  return pageShell(`<main class="subpage compare-live-page admin-compare-page"><section class="page-hero"><span class="eyebrow">ADMIN INTELLIGENCE COMPARE</span><h1>관리자 다자간 정치 인텔리전스 비교</h1><p>2–5명의 정치인을 JCS 관리자 데이터 · AGE × GENDER · HISTORY · CORE INTELLIGENCE 기준으로 한 번에 비교합니다.</p></section>${adminComparePicker(ids)}${result}</main>`);
 }
 
 export async function renderCompare(search=""){
