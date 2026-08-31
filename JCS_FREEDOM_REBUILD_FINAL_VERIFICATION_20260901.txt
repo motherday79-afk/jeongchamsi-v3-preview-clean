@@ -1,0 +1,47 @@
+JCS FREEDOM DETAIL / ADMIN COMMAND CENTER / COMPARE REBUILD
+FINAL VERIFICATION · 2026-09-01
+
+RELEASE SCOPE
+- Public/non-login/general-member politician detail: premium political briefing UI.
+- Admin politician detail: always-open JCS COMMAND CENTER combining WAR ROOM + confidential advisory intelligence.
+- Compare: visual scoreboard/signal/momentum system; admin multi-compare decision brief and always-open deep data.
+- Aggressive data fill: no analysis-wait fallback for politician detail/compare analysis; sparse signals receive deterministic JCS estimates.
+- NOW publish storage fix: 542 prior person payload reads split into 25-key MGET batches; per-person writes are independent and commit metadata flips last.
+
+ROOT CAUSE FIXED
+- Upstash request limit: 10,485,760 bytes.
+- Observed failing MGET response: 11,232,018 bytes.
+- Direct 542-key nowDataPersonPublic MGET removed from finalize/publish path.
+- New bounded read contract: 25 keys per MGET.
+- Safe publisher writes large person payloads one Redis request at a time and rolls back touched rows if commit cannot complete.
+
+DATA POLICY
+- Politician detail/compare analysis does not display an analysis-wait state merely because a source is sparse.
+- Observed values are preferred.
+- Sparse values are deterministically estimated from NOW/search/news/rank/HISTORY/relative context and stable politician-specific normalization.
+- No blanket 0 or -50 fallback for the rebuilt analysis surfaces.
+
+FRESH VERIFICATION ON RELEASE TREE
+- Full available regression suite: 96 / 96 PASS.
+- Focused Freedom/Decision/NOW-storage/readability suite: 50 / 50 PASS.
+- Runtime JavaScript syntax checks across api/lib/server/src: PASS.
+- CSS parse errors (tinycss2): 0.
+- CSS !important declarations: 0.
+- 542 roster registry entries: 542.
+- Bounded MGET regression: PASS.
+- Safe public publish commit-last + rollback regressions: PASS.
+- Public detail aggressive-fill regression: PASS.
+- Admin COMMAND CENTER always-open regression: PASS.
+- Compare visual/expanded admin regression: PASS.
+
+DEPLOYMENT
+1. Back up or commit the current JCS V3 project.
+2. Extract this ZIP at the current web project root and overwrite matching files.
+3. Deploy to Vercel with the existing environment configuration.
+4. Sign in as admin and run the normal full refresh.
+5. Publish current data once.
+6. Confirm publish completes without the previous 10MB MGET STORAGE_REQUEST alert.
+7. Check one public detail, one admin detail, and compare pages.
+
+NEW DB / API KEY / ENV VARIABLE
+- None.

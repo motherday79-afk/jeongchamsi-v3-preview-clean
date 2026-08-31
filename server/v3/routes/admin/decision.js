@@ -29,7 +29,7 @@ async function loadDecisionPerson(personId,range,deps){
   ]);
   const politicalIntelligence=await deps.readPoliticalIntelligenceV2(personId,history);
   const currentRow=currentRowFrom(personPublic||{});
-  const decision=deriveDecisionIntelligenceV1({politicalIntelligence:politicalIntelligence||{},history:history||{},currentRow,rangeDays:days,asOf:politicalIntelligence?.asOf||history?.summary?.latest?.publishedAt||publicAdmin?.publishedAt||null});
+  const decision=deriveDecisionIntelligenceV1({personId,politicalIntelligence:politicalIntelligence||{},history:history||{},currentRow,rangeDays:days,asOf:politicalIntelligence?.asOf||history?.summary?.latest?.publishedAt||publicAdmin?.publishedAt||null});
   const [cases,actions]=await Promise.all([deps.decisionStore.listCases(personId,{limit:20}),deps.decisionStore.listActions(personId,{limit:40})]);
   const outcomes=actions.map(action=>evaluateDecisionOutcomeV1({action,observations:history?.observations||[],currentCondition:decision?.currentState?.condition,evaluatedAt:new Date().toISOString()}));
   const patterns=deriveCasePatternsV1({actions,outcomes,cases});
