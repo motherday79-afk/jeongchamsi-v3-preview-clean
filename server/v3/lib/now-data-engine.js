@@ -57,7 +57,7 @@ function scoreSnapshot(rows,{searchWeight=50,newsWeight=50}={}){
       state:resultState(row),
       searchScore,newsScore,score,
       scoreInputs:{searchRaw:searchRaw(row),newsRaw:Math.round(newsRaw(row)*100)/100},
-      weights:{search:sw,news:nw},providers:['naver-search-ads',row.news?.provider||'news-auto-fallback']
+      weights:{search:sw,news:nw},providers:['naver-search-ads','naver-news']
     };
   }).sort((a,b)=>b.score-a.score||b.newsScore-a.newsScore||b.searchScore-a.searchScore||String(a.person?.id||'').localeCompare(String(b.person?.id||'')))
     .map((row,i)=>({...row,rank:i+1}));
@@ -83,7 +83,7 @@ function compactRankRow(row={}){
       count7d:Number(row.news?.count7d)||0,sources24:Number(row.news?.sources24)||0,latest:row.news?.latest||null,
       headlines:Array.isArray(row.news?.headlines)?row.news.headlines.slice(0,12):[]
     },
-    providers:['naver-search-ads',row.news?.provider||'news-auto-fallback']
+    providers:['naver-search-ads','naver-news']
   };
 }
 module.exports={makeBatches,resultState,aggregateBatchSummaries,scoreSnapshot,collectBatch,compactRankRow};

@@ -76,9 +76,6 @@ export async function uploadProfileImage(file) {
 }
 
 
-const POLITICIAN_PHOTO_MIN_WIDTH = 120;
-const POLITICIAN_PHOTO_MIN_HEIGHT = 150;
-
 const POLITICIAN_PHOTO_VARIANTS = Object.freeze({
   mini: Object.freeze({ maxWidth: 96, maxHeight: 128, targetBytes: 12 * 1024, quality: 0.68 }),
   card: Object.freeze({ maxWidth: 192, maxHeight: 256, targetBytes: 24 * 1024, quality: 0.72 }),
@@ -134,7 +131,7 @@ export async function uploadPoliticianPhotoSet(file, politicianId) {
 
   const src = await readAsDataURL(file);
   const img = await loadImage(src);
-  if (img.naturalWidth < POLITICIAN_PHOTO_MIN_WIDTH || img.naturalHeight < POLITICIAN_PHOTO_MIN_HEIGHT) throw new Error("사진 해상도가 너무 작습니다. 최소 120×150px 이상이 필요하며 세로 800×1067 이상을 권장합니다");
+  if (img.naturalWidth < 320 || img.naturalHeight < 400) throw new Error("사진 해상도가 너무 작습니다. 세로 800×1067 이상을 권장합니다");
 
   const prepared = Object.fromEntries(Object.entries(POLITICIAN_PHOTO_VARIANTS).map(([key, spec]) => [key, politicianVariantData(img, spec)]));
   const optimizedTotal = Object.values(prepared).reduce((sum, item) => sum + Number(item?.bytes || 0), 0);
@@ -158,4 +155,4 @@ export async function uploadPoliticianPhotoSet(file, politicianId) {
   };
 }
 
-export { POLITICIAN_PHOTO_VARIANTS, POLITICIAN_PHOTO_MIN_WIDTH, POLITICIAN_PHOTO_MIN_HEIGHT };
+export { POLITICIAN_PHOTO_VARIANTS };

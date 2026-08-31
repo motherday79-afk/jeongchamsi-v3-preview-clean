@@ -1,11 +1,5 @@
 const { authenticateUser, getUser } = require("../../../../lib/v3/users");
 const { issueSession, sessionFromRequest, setCookie, clearCookie } = require("../../../../lib/v3/user-auth");
-const { getActivity, emptyActivity, setActivity, recordBadgeEvent } = require("../../../../lib/v3/activity");
-
-async function readActivitySafe(userId) {
-  try { return await getActivity(userId); }
-  catch { return emptyActivity(); }
-}
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -15,13 +9,13 @@ module.exports = async function handler(req, res) {
     try {
       const session = sessionFromRequest(req);
       if (!session?.id) return res.status(200).json({ ok: true, authenticated: false });
-      const [user, activity] = await Promise.all([getUser(session.id), readActivitySafe(session.id)]);
+      const user = await getUser(session.id);
       if (!user || user.status !== "active") {
         clearCookie(res, req);
         return res.status(200).json({ ok: true, authenticated: false });
       }
       const { passwordHash, ...safe } = user;
-      return res.status(200).json({ ok: true, authenticated: true, user: safe, activity });
+      return res.status(200).json({ ok: true, authenticated: true, user: safe });
     } catch (error) {
       {
       const code = error?.code || "SESSION_READ_FAILED";
@@ -40,13 +34,10 @@ module.exports = async function handler(req, res) {
           return res.status(403).json({ ok:false, error:"ACCOUNT_SUSPENDED", suspendedUntil:stored.suspendedUntil || "", reason:stored.suspensionReason || "" });
         }
       }
-      const user = await authenticateUser(req.body?.id, req.body?.password, stored);
+      const user = await authenticateUser(req.body?.id, req.body?.password);
       if (!user) return res.status(401).json({ ok: false, error: "INVALID_CREDENTIALS" });
       setCookie(res, issueSession(user.id), req);
-      let activity = await readActivitySafe(user.id);
-      activity = recordBadgeEvent(activity, "login");
-      activity = await setActivity(user.id, activity);
-      return res.status(200).json({ ok: true, authenticated: true, user, activity });
+      return res.status(200).json({ ok: true, authenticated: true, user });
     } catch (error) {
       {
       const code = error?.code || "LOGIN_FAILED";

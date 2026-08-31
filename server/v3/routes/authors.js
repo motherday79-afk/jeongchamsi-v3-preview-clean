@@ -1,4 +1,4 @@
-const { getUsersByIds } = require("../../../lib/v3/users");
+const { listUsers } = require("../../../lib/v3/users");
 const { getActivities } = require("../../../lib/v3/activity");
 
 module.exports = async function handler(req, res) {
@@ -11,8 +11,8 @@ module.exports = async function handler(req, res) {
   try {
     const ids = [...new Set(String(req.query?.ids || "").split(",").map(x => x.trim().slice(0,24)).filter(Boolean))].slice(0,120);
     if (!ids.length) return res.status(200).json({ ok:true, profiles:{} });
-    const users = await getUsersByIds(ids);
-    const wanted = users.filter(u => u.status === "active");
+    const users = await listUsers();
+    const wanted = users.filter(u => ids.includes(String(u.id)) && u.status === "active");
     const activities = await getActivities(wanted.map(u => u.id));
     const profiles = Object.fromEntries(wanted.map(u => [u.id, {
       id:u.id,

@@ -1,13 +1,8 @@
 const listeners = new Set();
 let started = false;
-let pendingScroll = null;
-let scrollFlushTimer = 0;
+let scrollSyncQueued = false;
 
 const STATE_KEY = "__jcv3Nav";
-// Do not mutate session history every animation frame while the user scrolls.
-// A short bounded throttle keeps Back/Forward restoration accurate without making
-// History API writes part of the mobile scroll hot path.
-const SCROLL_HISTORY_FLUSH_MS = 240;
 
 function scrollPoint() {
   return {
@@ -28,47 +23,15 @@ function makeKey() {
 function writeCurrentScroll(point = scrollPoint()) {
   const state = history.state && typeof history.state === "object" ? history.state : {};
   const current = navState(state) || {};
-  const key = current.key || makeKey();
-  const x = Number(point?.x || 0);
-  const y = Number(point?.y || 0);
-
-  // Replacing an identical history state is pure overhead on the scroll path.
-  if (current.key && current.x === x && current.y === y) return current;
-
-  const next = {
-    ...current,
-    key,
-    x,
-    y
-  };
   history.replaceState({
     ...state,
-    [STATE_KEY]: next
+    [STATE_KEY]: {
+      ...current,
+      key: current.key || makeKey(),
+      x: point.x,
+      y: point.y
+    }
   }, "", location.href);
-  return next;
-}
-
-function cancelScrollFlush() {
-  if (!scrollFlushTimer) return;
-  clearTimeout(scrollFlushTimer);
-  scrollFlushTimer = 0;
-}
-
-function flushCurrentScroll(point = pendingScroll || scrollPoint()) {
-  cancelScrollFlush();
-  pendingScroll = null;
-  return writeCurrentScroll(point);
-}
-
-function rememberCurrentScroll(point = scrollPoint()) {
-  pendingScroll = point;
-  if (scrollFlushTimer) return;
-  scrollFlushTimer = setTimeout(() => {
-    scrollFlushTimer = 0;
-    const pointToSave = pendingScroll || scrollPoint();
-    pendingScroll = null;
-    writeCurrentScroll(pointToSave);
-  }, SCROLL_HISTORY_FLUSH_MS);
 }
 
 function ensureCurrentState() {
@@ -99,8 +62,7 @@ export function route(to, { replace = false, preserveScroll = false } = {}) {
   if (next === current) return;
 
   const point = scrollPoint();
-  // Navigation is a hard boundary: persist the exact current position immediately.
-  flushCurrentScroll(point);
+  writeCurrentScroll(point);
 
   const previousState = history.state && typeof history.state === "object" ? history.state : {};
   const previousNav = navState(previousState) || {};
@@ -133,7 +95,7 @@ export function subscribe(fn) {
 }
 
 export function syncCurrentScroll() {
-  flushCurrentScroll(scrollPoint());
+  writeCurrentScroll(scrollPoint());
 }
 
 export function startRouter() {
@@ -144,8 +106,6 @@ export function startRouter() {
   ensureCurrentState();
 
   addEventListener("popstate", event => {
-    cancelScrollFlush();
-    pendingScroll = null;
     const saved = navState(event.state) || ensureCurrentState() || {};
     const scroll = {
       x: Number.isFinite(saved.x) ? saved.x : 0,
@@ -155,21 +115,15 @@ export function startRouter() {
   });
 
   addEventListener("scroll", () => {
-    rememberCurrentScroll(scrollPoint());
+    if (scrollSyncQueued) return;
+    scrollSyncQueued = true;
+    requestAnimationFrame(() => {
+      scrollSyncQueued = false;
+      writeCurrentScroll(scrollPoint());
+    });
   }, { passive: true });
 
-  // Modern Chromium/Samsung Internet can flush the exact final inertial-scroll point here.
-  // Older browsers simply ignore the unsupported event and use the bounded timer above.
-  addEventListener("scrollend", () => flushCurrentScroll(scrollPoint()), { passive: true });
-
-  // Pointer/touch completion is another cheap boundary before a possible Back gesture.
-  addEventListener("touchend", () => flushCurrentScroll(scrollPoint()), { passive: true });
-  addEventListener("pointerup", () => flushCurrentScroll(scrollPoint()), { passive: true });
-
-  addEventListener("pagehide", () => flushCurrentScroll(scrollPoint()));
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushCurrentScroll(scrollPoint());
-  });
+  addEventListener("pagehide", () => writeCurrentScroll(scrollPoint()));
 
   document.addEventListener("click", event => {
     const anchor = event.target.closest("a[data-route]");

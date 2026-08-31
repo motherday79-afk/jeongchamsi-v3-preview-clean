@@ -1,7 +1,6 @@
 const { requireAdmin } = require("../../../../lib/v3/access");
 const { listUsers, updateUserAccess } = require("../../../../lib/v3/users");
 const { getActivity, setActivity } = require("../../../../lib/v3/activity");
-const { VALID_BADGE_KEYS, loadBadgeStatus } = require("../../../../lib/v3/badge-engine");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -34,10 +33,13 @@ module.exports = async function handler(req, res) {
         password: req.body?.password
       });
       if (!result.ok) return res.status(result.error === "USER_NOT_FOUND" ? 404 : 409).json(result);
+      const validBadges = new Set(["noon-signal","midnight","weekman","superhero","first-participation","citizen-choice","first-penguin","influencer","policy-proposer","opinion-leader","top-community","top-itsme","jungchamsi-partner"]);
       let activity = await getActivity(req.body?.id);
       if (Array.isArray(req.body?.grantedBadges)) {
-        activity.grantedBadges = req.body.grantedBadges.map(String).filter(x => VALID_BADGE_KEYS.has(x) && x !== "operator").filter((x,i,a)=>a.indexOf(x)===i);
-
+        activity.grantedBadges = req.body.grantedBadges.map(String).filter(x => validBadges.has(x)).filter((x,i,a)=>a.indexOf(x)===i);
+        const automaticKeys = new Set(["first-participation","citizen-choice","policy-proposer", ...(result.user?.role === "partner" ? ["jungchamsi-partner"] : [])]);
+        if (activity.representativeBadge && !automaticKeys.has(activity.representativeBadge) && !activity.grantedBadges.includes(activity.representativeBadge)) activity.representativeBadge = "";
+        if (result.user?.role !== "admin") activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => automaticKeys.has(x) || activity.grantedBadges.includes(x)).slice(0,3);
       }
       if (result.user?.role === "partner" && !activity.grantedBadges.includes("jungchamsi-partner")) activity.grantedBadges.push("jungchamsi-partner");
       if (result.user?.role !== "partner" && result.user?.role !== "admin") {
@@ -45,13 +47,7 @@ module.exports = async function handler(req, res) {
         if (activity.representativeBadge === "jungchamsi-partner") activity.representativeBadge = "";
         activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => x !== "jungchamsi-partner");
       }
-      if (typeof req.body?.representativeBadge === "string" && (!req.body.representativeBadge || VALID_BADGE_KEYS.has(req.body.representativeBadge))) { activity.representativeBadge = req.body.representativeBadge; activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => x !== activity.representativeBadge).slice(0,3); }
-      if (result.user?.role !== "admin") {
-        const status = await loadBadgeStatus(result.user, activity);
-        const earned = new Set(status.earnedBadges || []);
-        if (activity.representativeBadge && !earned.has(activity.representativeBadge)) activity.representativeBadge = "";
-        activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => earned.has(x) && x !== activity.representativeBadge).slice(0,3);
-      }
+      if (typeof req.body?.representativeBadge === "string" && (!req.body.representativeBadge || validBadges.has(req.body.representativeBadge))) { activity.representativeBadge = req.body.representativeBadge; activity.showcaseBadges = (activity.showcaseBadges || []).filter(x => x !== activity.representativeBadge).slice(0,3); }
       activity = await setActivity(req.body?.id, activity);
       return res.status(200).json({ ...result, activity });
     }
