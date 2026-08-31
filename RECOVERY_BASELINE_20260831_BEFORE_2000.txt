@@ -1,0 +1,15 @@
+JCS RECOVERY BASELINE — 2026-08-31 BEFORE 20:00 KST
+
+Purpose:
+- Restore a full project tree to the last pre-20:00 2026-08-31 line.
+- Exclude later MUST-BUY/readability/clarity/Political Decision/Freedom rebuild work.
+
+Applied pre-cutoff chain:
+1. CLEAN REBUILD R2 FINAL INTEGRATED
+2. PLAN A PERSON PAYLOAD 9.5MB HOTFIX
+3. MGET 542 BATCH READ HOTFIX
+4. ADMIN PREMIUM INTELLIGENCE UI FINAL
+5. ADMIN PREMIUM INTELLIGENCE V2 FINAL
+6. ADMIN PREMIUM INTELLIGENCE V3 FINAL
+
+This archive is a FULL project tree, not a patch.

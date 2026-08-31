@@ -12,7 +12,7 @@ const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = requir
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
-const { createSafePublicPublisher } = require('../../lib/safe-public-publish');
+const { fitNowPublishEntries, fitPersonPublishEntries } = require('../../lib/now-publish-payload');
 const { mgetJSONInBatches } = require('../../lib/storage-safe-mget');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
@@ -59,6 +59,16 @@ async function migrateLegacyMeta(meta){
   delete next.ranked;
   await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
   return next;
+}
+async function writePersonEntries(entries=[]){
+  const chunks=[];for(let i=0;i<entries.length;i+=40)chunks.push(entries.slice(i,i+40));
+  const stats=[];
+  for(let i=0;i<chunks.length;i+=4){
+    const fitted=chunks.slice(i,i+4).map(chunk=>fitPersonPublishEntries(chunk));
+    stats.push(...fitted.map(x=>({beforeBytes:x.beforeBytes,bytes:x.bytes,savedBytes:x.savedBytes,phase:x.phase})));
+    await Promise.all(fitted.map(x=>msetJSON(x.entries)));
+  }
+  return {chunks:stats.length,maxBeforeBytes:stats.reduce((m,x)=>Math.max(m,x.beforeBytes),0),maxBytes:stats.reduce((m,x)=>Math.max(m,x.bytes),0),savedBytes:stats.reduce((s,x)=>s+x.savedBytes,0),phases:[...new Set(stats.map(x=>x.phase))]};
 }
 async function saveBatchAndStatus(meta,index,stored){
   const summary=aggregateBatchSummaries([stored],stored.ids?.length||stored.results?.length||0);
@@ -163,12 +173,7 @@ module.exports=async function nowDataAdmin(req,res){
         if(ageGenderV2Snapshot?.error==='BASELINE_INGESTION_REQUIRED')intelligenceWarnings.push('BASELINE_INGESTION_REQUIRED');
         next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFIED_SAVED',updatedAt:new Date().toISOString()},intelligenceSnapshot:{created:Boolean(intelligenceSnapshot?.created),analysisAt:intelligenceSnapshot?.analysisAt||finalizedAt,snapshotKind:intelligenceSnapshot?.snapshotKind||'REFRESH_FINALIZE',rosterTotal:Number(intelligenceSnapshot?.rosterTotal)||0,compressedBytes:Number(intelligenceSnapshot?.compressedBytes)||0,evidenceRecords:Number(intelligenceSnapshot?.evidenceRecords)||0,matchedPeople:Number(intelligenceSnapshot?.matchedPeople)||0},ageGenderV2Snapshot:ageGenderV2Snapshot?{created:Boolean(ageGenderV2Snapshot.created),skipped:Boolean(ageGenderV2Snapshot.skipped),error:ageGenderV2Snapshot.error||null,analysisAt:ageGenderV2Snapshot.analysisAt||finalizedAt,rosterTotal:Number(ageGenderV2Snapshot.rosterTotal)||0,compressedBytes:Number(ageGenderV2Snapshot.compressedBytes)||0,baselineVersion:ageGenderV2Snapshot.baselineVersion||null}:null};
         await setJSON(META,next);
-      }catch(intelligenceError){
-        console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);
-        intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');
-        next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFY_COMPLETE_WITH_WARNINGS',updatedAt:new Date().toISOString()}};
-        await setJSON(META,next);
-      }
+      }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_REFRESH_SNAPSHOT_NON_BLOCKING]',intelligenceError);intelligenceWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');next={...next,pipeline:{stage:'verify',detail:'SNAPSHOT_VERIFY_COMPLETE_WITH_WARNINGS',updatedAt:new Date().toISOString()}};await setJSON(META,next);}
       return res.status(200).json({ok:true,draftId:meta.draftId,summary,top30,weights:meta.weights,intelligenceSnapshot,ageGenderV2Snapshot,intelligenceWarnings});
     }
     if(action==='publish'){
@@ -184,12 +189,12 @@ module.exports=async function nowDataAdmin(req,res){
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
-      const safePublisher=createSafePublicPublisher({getJSON,setJSON},{concurrency:4,maxEntryBytes:9_000_000});
-      await safePublisher.publish({
-        personEntries:trendedPersonEntries,
-        controlEntries:[[CURRENT,current],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])],
-        commitEntry:[META,nextMeta]
-      });
+      const publishPayload=fitNowPublishEntries([
+        [CURRENT,current],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
+        ...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])
+      ]);
+      await msetJSON(publishPayload.entries);
+      const personPublishPayload=await writePersonEntries(trendedPersonEntries);
       const historyWarnings=[];
       // HISTORY V1 remains readable as a legacy layer. New formal publish snapshots are recorded only in V2.
       try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}
@@ -204,7 +209,7 @@ module.exports=async function nowDataAdmin(req,res){
       }catch(intelligenceError){console.error('[JCS_INTELLIGENCE_SNAPSHOT_NON_BLOCKING]',intelligenceError);historyWarnings.push('JCS_INTELLIGENCE_SNAPSHOT_FAILED');}
       let tempCleanup={matched:0,deleted:0};
       try{tempCleanup=await cleanupDraftNowTemp(meta.draftId,meta.batchCount);}catch(cleanupError){console.error('[NOW_TEMP_CLEANUP_NON_BLOCKING]',cleanupError);historyWarnings.push('NOW_TEMP_CLEANUP_FAILED');}
-      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup});
+      return res.status(200).json({ok:true,draftId:meta.draftId,publishedAt,historyWarnings,intelligenceSnapshot,ageGenderV2Snapshot,tempCleanup,publishPayload:{beforeBytes:publishPayload.beforeBytes,bytes:publishPayload.bytes,savedBytes:publishPayload.savedBytes,targetBytes:9500000,phase:publishPayload.phase},personPublishPayload});
     }
     return res.status(400).json({ok:false,error:'UNKNOWN_NOW_ACTION'});
   }catch(error){console.error('[NOW_DATA_ADMIN]',error);return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_ADMIN_FAILED',detail:String(error?.message||'')});}

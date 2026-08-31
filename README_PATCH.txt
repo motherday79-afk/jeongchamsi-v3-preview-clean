@@ -1,52 +1,11 @@
-정참시 관리자 비교하기 + 정치 인텔리전스
-CLARITY + POSITION MAP FINAL PATCH
-2026-08-31
+JCV3 CLEAN V1 · ADMIN PREMIUM INTELLIGENCE V3
+Base: current CLEAN V1 + ADMIN PREMIUM INTELLIGENCE V2 state
 
-기준본
-- JCV3_ADMIN_INTELLIGENCE_READABILITY_HOTFIX_20260831.zip
+Changes
+1. Admin compare first-selection visibility bug fixed.
+2. Admin compare result rebuilt as JCS Intelligence Comparison Report.
+3. AGE × GENDER detail replaced with one-glance diverging balance bars + HISTORY delta.
+4. Competitor movement estimate made more aggressive using real signal energy, gap, volatility, rank movement and affinity. Genuine neutral input can still remain 0.
+5. UI cache revisions bumped.
 
-이번 승인 반영
-1. 관리자 문체 전면 정리
-   - 초등학생식 풀어쓰기 제거
-   - 짧고 단정한 관리자용 분석 문체로 통일
-   - 한국어가 먼저 읽히고 영문은 보조 표기로 유지
-   - 메뉴·섹션 제목·카드 제목·설명·판정·버튼 문구를 같은 문체 기준으로 정리
-
-2. 정치 인텔리전스 핵심 문구
-   - "검색·뉴스·정참시 HISTORY와 공개 데이터를 종합해 현재 정치 흐름, 위험 요인, 기회 요인, 대응 방향을 분석합니다."
-   - 현재 정치 흐름 → 정치 흐름 지수
-   - 가장 큰 위험/기회 → 핵심 위험/핵심 기회
-   - 이게 무슨 뜻인가 → 의미
-   - 그래서 무엇을 볼 것인가 → 우선 대응
-   - 7개 리포트 메뉴를 세대·성별 / 지지 기반 / 미디어 / 이슈 / 위험·기회 / 분석 근거 / 대응 전략으로 한국어 우선 표기
-
-3. 비교하기 문구
-   - 차이가 가장 크게 나는 네 영역 → 핵심 격차 지표
-   - 누가 어디에서 앞서고 밀리는가 → 비교 대상별 우위 영역
-   - 대중 확산 → 대중 확산력
-   - 관리자 비교 소개·실행·상세 원수치 문구를 보고서형 문체로 정리
-
-4. DECISION MAP 전면 재구성
-   - 메인 제목: 정치 포지션 맵
-   - X축: 대중 확산력
-   - Y축: 정치 흐름 지수
-   - 4개 구간: 강한 우위 / 확산 기회 / 반등 가능 / 위험 구간
-   - 좌표점은 번호 중심으로 단순화해 겹침과 이미지 깨짐 영향을 최소화
-   - 지도 아래에 인물별 사진·이름·정치 흐름·대중 확산력·구간 판정을 별도 카드로 표시
-   - 사진 로딩 실패 시 기존 전역 이미지 오류 처리로 이미지가 제거되어도 이니셜·이름·수치·판정은 유지
-   - 자동 판독 요약 추가
-   - 기존 관심도+확산력 평균 X좌표를 제거하고 실제 massExpansion 값을 X축에 사용
-
-5. 가독성
-   - 기존 READABILITY FLOOR 유지
-   - 새 포지션 맵의 관리자가 읽는 텍스트는 11px 이하로 내려가지 않도록 구성
-   - 맵을 2열 절반 폭에서 1열 전체 폭으로 확장
-
-비변경 범위
-- Redis / Storage
-- Refresh / Publish
-- NOW RANK 계산
-- 원천 데이터 구조
-- JCS 계산 엔진
-- 경쟁자 이동 추정 계산식
-- 토큰 기능
+No Redis/storage/publish/refresh route changes.

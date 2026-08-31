@@ -7,8 +7,7 @@
     "firebase-admin": "^14.0.0"
   },
   "scripts": {
-    "test": "node --test tests/*.test.js",
-    "release:gate": "node scripts/jcs-release-gate.js ."
+    "test": "node --test tests/*.test.js"
   },
   "engines": {
     "node": ">=22"

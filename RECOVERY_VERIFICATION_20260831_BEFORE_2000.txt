@@ -1,0 +1,55 @@
+JCS RECOVERY VERIFICATION — 2026-08-31 BEFORE 20:00 KST
+
+Scope
+- FULL project tree recovery.
+- Cutoff target: 2026-08-31 before 20:00 KST.
+- Excluded later MUST-BUY / readability / clarity / Political Decision / Freedom rebuild line.
+
+Applied pre-cutoff chain
+1) CLEAN REBUILD R2 FINAL INTEGRATED
+2) PLAN A PERSON PAYLOAD 9.5MB HOTFIX
+3) MGET 542 BATCH READ HOTFIX
+4) ADMIN PREMIUM INTELLIGENCE UI FINAL
+5) ADMIN PREMIUM INTELLIGENCE V2 FINAL
+6) ADMIN PREMIUM INTELLIGENCE V3 FINAL
+
+Recovery gate results
+- Targeted recovery tests: 29/29 PASS
+  * golden gateway routes
+  * public politician detail/NOW compatibility
+  * 542 politician roster
+  * Premium Intelligence UI/V2/V3
+  * MGET 542 batch read
+  * per-person 9.5MB payload protection
+  * version contract
+- JavaScript syntax check: 162 files / 0 failures
+- Politician roster: 542 total
+  * Assembly 299
+  * Metropolitan 16
+  * Basic 227
+- Required core files present:
+  * package.json
+  * index.html
+  * api/gateway.js
+  * src/app.js
+  * src/data/person-provider.js
+  * server/v3/routes/admin/now-data.js
+  * server/v3/lib/storage-safe-mget.js
+  * server/v3/lib/now-publish-payload.js
+- Badge engine/catalog files present.
+- NOW top30 code present.
+- Freedom/Decision UI markers absent:
+  * PUBLIC POLITICAL PROFILE
+  * POLITICAL PULSE
+  * JCS COMMAND CENTER
+  * COMPARE SCOREBOARD
+  * JCS POLITICAL WAR ROOM
+
+Full historical test suite note
+- The full accumulated legacy suite currently reports 298/330 pass.
+- 32 failures are retained legacy/version/photo-contract expectations from different historical generations and are NOT being represented as a clean all-suite pass.
+- The recovery-critical gate above is the release criterion used for this emergency rollback package.
+
+Important
+- This ZIP is FULL, not PATCH.
+- Do not layer Freedom/Political Decision packages on top of this recovery build.
