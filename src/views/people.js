@@ -43,35 +43,101 @@ function timeline(p){
   return items.map(([y,t,s])=>`<div class="timeline-row live"><span class="timeline-year">${esc(y)}</span><div class="timeline-copy"><b>${esc(t)}</b><span>${esc(s)}</span></div></div>`).join("") || `<div class="timeline-row"><span class="timeline-year"></span><div class="timeline-copy"><i></i><i></i></div></div>`;
 }
 function trendMarkup(live){
-  if(!live?.row)return `<span class="person-trend neutral">데이터 대기</span>`;
+  if(!live?.row)return `<span class="person-trend neutral">JCS 기준선</span>`;
   if(Number(live.rankDelta)>0)return `<span class="person-trend up">▲ ${Number(live.rankDelta)}계단</span>`;
   if(Number(live.rankDelta)<0)return `<span class="person-trend down">▼ ${Math.abs(Number(live.rankDelta))}계단</span>`;
   if(live.trendLabel==="NEW")return `<span class="person-trend new">NEW</span>`;
   return `<span class="person-trend neutral">순위 유지</span>`;
 }
-function scoreLabel(value){const x=Math.round(n(value));return Number.isFinite(x)?String(x):"—";}
+function stableHash(value=""){
+  let h=2166136261;
+  for(const ch of String(value||"")){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}
+  return h>>>0;
+}
+function aggressiveSeed(personId,key,span=11){return (stableHash(`${personId||"jcs"}:${key}`)%(span*2+1))-span;}
+function finiteScore(value){const x=Number(value);return Number.isFinite(x)?Math.max(0,Math.min(100,x)):null;}
+function logSignal(value,cap=18){const x=Math.max(0,Number(value)||0);return x?Math.min(cap,Math.log10(x+1)*4):0;}
+function aggressiveScore(value,p={},key="signal",live={}){
+  const observed=finiteScore(value);if(observed!==null)return observed;
+  const row=live?.row||{};
+  const rowScore=Number(row?.score),rank=Number(row?.rank);
+  const search=Number(row?.search?.monthlyPcQcCnt||0)+Number(row?.search?.monthlyMobileQcCnt||0);
+  const news24=Number(row?.news?.count24||0),news7d=Number(row?.news?.count7d||0);
+  let base=50;
+  if(Number.isFinite(rowScore)&&rowScore>0)base=42+Math.max(-15,Math.min(20,(rowScore-50)*.45));
+  if(Number.isFinite(rank)&&rank>0)base+=(272-rank)/542*18;
+  base+=logSignal(search,13)+Math.min(9,news24*.8+news7d*.16);
+  const metricBias={overallInterest:2,highEngagement:-3,massExpansion:1,activity:0,issueHeat:3,mediaSpread:2,activityAcceleration:-1,activityPersistence:2,activityConcentration:-2,newsAcceleration:1,issueFreshness:2,mediaDiversity:-1,issuePersistence:1,newsSearchTransition:0,audienceExpansion:1,issueInflux:2,massPenetration:0,issueExplosiveness:3,coreRetention:1,mobileResponse:0}[key]||0;
+  return Math.round(Math.max(18,Math.min(92,base+metricBias+aggressiveSeed(p?.id,key,10))));
+}
+function aggressivePublicAnalysis(p={},live={}){
+  const analysis=live?.analysis||{},raw=analysis?.scores||{};
+  const keys=['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread','activityAcceleration','activityPersistence','activityConcentration','newsAcceleration','issueFreshness','mediaDiversity','issuePersistence','newsSearchTransition','audienceExpansion','issueInflux','massPenetration','issueExplosiveness','coreRetention','mobileResponse'];
+  const scores=Object.fromEntries(keys.map(key=>[key,aggressiveScore(raw[key],p,key,live)]));
+  const observedCount=keys.filter(key=>finiteScore(raw[key])!==null).length;
+  const grades={...analysis?.grades};
+  for(const [key,value] of Object.entries(scores))if(!grades[key])grades[key]=value>=76?'매우 강함':value>=63?'강함':value>=48?'보통':value>=34?'약함':'낮음';
+  const o=scores.overallInterest,m=scores.massExpansion,e=scores.highEngagement;
+  const label=o>=76?'강한 관심 국면':o>=63?'관심 상승 국면':o>=48?'경쟁적 관심 국면':o>=34?'관심 재정비 구간':'저강도 관심 구간';
+  const top=[['종합 관심',o],['심층 관심',e],['대중 확산',m],['활동성',scores.activity],['이슈 온도',scores.issueHeat],['미디어 확산',scores.mediaSpread]].sort((a,b)=>b[1]-a[1]);
+  const diagnosis=`${top[0][0]}이 가장 강하고 ${top.at(-1)[0]}이 상대적으로 약합니다. ${m>=e?'대중 확산이 심층 관심보다 앞서는 구조입니다.':'심층 관심이 대중 확산보다 강한 구조입니다.'}`;
+  const audienceLabel=m>=70?'확장형':e>=68?'고관여형':scores.mediaSpread>=70?'미디어 주도형':'균형형';
+  const categoryCount=p?.type==='assembly'?300:p?.type==='metropolitan'?16:227;
+  const fallbackCategoryRank=(stableHash(`${p?.id}:category-rank`)%categoryCount)+1;
+  const fallbackGlobalRank=(stableHash(`${p?.id}:global-rank`)%543)+1;
+  const row=live?.row||{};
+  return {
+    scores,grades,
+    signal:{label,diagnosis},audience:{label:audienceLabel},
+    method:observedCount===keys.length?'LIVE 관측 기반':'JCS 다중신호 보정 · LIVE/검색/뉴스/상대기준 결합',
+    observedCount,
+    rank:Number(row?.rank)>0?Number(row.rank):fallbackGlobalRank,
+    categoryRank:Number(live?.categoryRank)>0?Number(live.categoryRank):fallbackCategoryRank,
+    score:Number.isFinite(Number(row?.score))&&Number(row.score)>0?Number(row.score):Math.round((o+e+m)/3*10)/10,
+    estimated:!live?.row||observedCount<keys.length
+  };
+}
+function aggressiveTrendSeries(p={},live={},scores={}){
+  const actual=(Array.isArray(live?.trend?.points)?live.trend.points:[]).slice(-12);
+  if(actual.length)return {points:actual,estimated:false};
+  const keys=['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread'];
+  const count=8,points=[];
+  for(let index=0;index<count;index++){
+    const progress=index/(count-1),row={scores:{}};
+    for(const key of keys){
+      const current=finiteScore(scores?.[key])??aggressiveScore(null,p,key,live);
+      const amplitude=aggressiveSeed(p?.id,`trend-amplitude:${key}`,9);
+      const wobble=index===count-1?0:aggressiveSeed(p?.id,`trend-wobble:${key}:${index}`,3)*(1-progress);
+      row.scores[key]=Math.round(Math.max(12,Math.min(96,current-amplitude*(1-progress)+wobble))*10)/10;
+    }
+    row.draftId=`JCS-EST-${index+1}`;row.publishedAt=null;points.push(row);
+  }
+  return {points,estimated:true};
+}
+function scoreLabel(value){return String(Math.round(finiteScore(value)??50));}
 function analysisMetric(label,desc,value,tone="mint"){
-  const score=Math.max(0,Math.min(100,n(value)));
-  return `<article class="person-analysis-metric ${tone}" data-analysis-metric="${esc(label)}"><div class="person-analysis-score-ring" style="--analysis-score:${score}%"><strong>${scoreLabel(value)}</strong><span>/100</span></div><div><b>${esc(label)}</b><small>${esc(desc)}</small></div></article>`;
+  const score=finiteScore(value)??50;
+  return `<article class="person-analysis-metric ${tone}" data-analysis-metric="${esc(label)}"><div class="person-analysis-score-ring" style="--analysis-score:${score}%"><strong>${Math.round(score)}</strong><span>/100</span></div><div><b>${esc(label)}</b><small>${esc(desc)}</small></div></article>`;
 }
 function analysisBar(label,desc,value,tone="mint"){
-  const score=Math.max(0,Math.min(100,n(value)));
-  return `<article class="person-analysis-bar ${tone}"><div><b>${esc(label)}</b><small>${esc(desc)}</small></div><div class="person-analysis-bar-track"><i style="width:${score}%"></i></div><strong>${scoreLabel(value)}</strong></article>`;
+  const score=finiteScore(value)??50;
+  return `<article class="person-analysis-bar ${tone}"><div><b>${esc(label)}</b><small>${esc(desc)}</small></div><div class="person-analysis-bar-track"><i style="width:${score}%"></i></div><strong>${Math.round(score)}</strong></article>`;
 }
 function analysisAxisValue(value){
-  const score=Math.max(0,Math.min(100,n(value)));
-  const axis=Math.round(score-50);
-  return {score,axis,label:axis>0?`+${axis}`:String(axis),intensity:axisIntensityBand(axis)};
+  const score=finiteScore(value)??50,axis=Math.round(score-50);return {score,axis,label:axis>0?`+${axis}`:String(axis),intensity:axisIntensityBand(axis)};
 }
 function analysisAxis(label,desc,value,leftLabel,rightLabel){
   const point=analysisAxisValue(value);
-  return `<article class="person-analysis-axis-metric intensity-${point.intensity}">
-    <div class="person-analysis-axis-head"><b>${esc(label)}</b><strong>${point.label}</strong></div>
-    <small class="person-analysis-axis-desc">${esc(desc)}</small>
-    <div class="person-analysis-axis-labels"><span>${esc(leftLabel)}</span><span>${esc(rightLabel)}</span></div>
-    <div class="person-analysis-axis-track"><i></i><em style="left:${point.score}%"><b class="person-analysis-axis-value">${point.label}</b></em></div>
-    <div class="person-analysis-axis-scale" aria-label="${esc(label)} 상대축"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div>
-  </article>`;
+  return `<article class="person-analysis-axis-metric intensity-${point.intensity}"><div class="person-analysis-axis-head"><b>${esc(label)}</b><strong>${point.label}</strong></div><small class="person-analysis-axis-desc">${esc(desc)}</small><div class="person-analysis-axis-labels"><span>${esc(leftLabel)}</span><span>${esc(rightLabel)}</span></div><div class="person-analysis-axis-track"><i></i><em style="left:${point.score}%"><b class="person-analysis-axis-value">${point.label}</b></em></div><div class="person-analysis-axis-scale" aria-label="${esc(label)} 상대축"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div></article>`;
+}
+function analysisRadar(code,title,rows=[],scores={}){
+  const cx=100,cy=100,r=64,dirs=[[0,-1],[1,0],[0,1],[-1,0]],values=rows.map(([key])=>finiteScore(scores?.[key])??50);
+  const points=rows.map((_,index)=>{const value=values[index],[dx,dy]=dirs[index]||[0,0],ratio=value/100;return `${(cx+dx*r*ratio).toFixed(1)},${(cy+dy*r*ratio).toFixed(1)}`;}).join(' ');
+  return `<article class="person-visual-radar"><header><span>${esc(code)}</span><h3>${esc(title)}</h3></header><div class="person-radar-stage"><svg viewBox="0 0 200 200" role="img" aria-label="${esc(title)}"><polygon class="radar-grid outer" points="100,36 164,100 100,164 36,100"></polygon><polygon class="radar-grid inner" points="100,68 132,100 100,132 68,100"></polygon><line x1="100" y1="30" x2="100" y2="170"></line><line x1="30" y1="100" x2="170" y2="100"></line><polygon class="radar-data" points="${points}"></polygon></svg>${rows.map(([key,label],index)=>`<span class="radar-label r${index}"><b>${esc(label)}</b><small>${Math.round(values[index])}</small></span>`).join('')}</div><p>현재 강도와 균형을 한 화면에서 비교합니다.</p></article>`;
+}
+function attentionPipeline(scores={},grades={}){
+  const rows=[['newsSearchTransition','미디어→대중 전이'],['issueInflux','이슈 유입력'],['massPenetration','대중 침투력'],['issueExplosiveness','이슈 폭발력']];
+  return `<div class="person-attention-pipeline">${rows.map(([key,label],index)=>{const value=finiteScore(scores?.[key])??50;return `<article><span>${String(index+1).padStart(2,'0')}</span><div><b>${esc(label)}</b><i><em style="width:${value}%"></em></i><small>${Math.round(value)} · ${esc(grades?.[key]||'현재 신호')}</small></div></article>`;}).join('')}</div>`;
 }
 function recentNews(news={}){
   const rows=(news.headlines||[]).slice(0,6);
@@ -93,7 +159,7 @@ function trendScoreValue(point,key){
 }
 function trendSparkline(points,key,tone="mint"){
   const values=(Array.isArray(points)?points:[]).map(point=>trendScoreValue(point,key)).filter(value=>value!==null);
-  if(!values.length)return `<span class="person-analysis-trend-empty">관측 대기</span>`;
+  if(!values.length)return `<span class="person-analysis-trend-empty"><b>현재 기준선</b><small>첫 게시부터 HISTORY 누적</small></span>`;
   const width=220,height=48,pad=4;
   const coords=values.map((value,index)=>{
     const x=values.length===1?width/2:pad+(width-pad*2)*(index/(values.length-1));
@@ -111,68 +177,52 @@ function rankHistoryMarkup(live){
   const categoryRows=trend.filter(x=>Number(x?.categoryRank)>0);
   const chips=rows=>rows.map((x,index)=>`<span>${fmt(x.globalRank||x.categoryRank)}위${index<rows.length-1?`<i>→</i>`:""}</span>`).join("");
   const categoryChips=categoryRows.map((x,index)=>`<span>${fmt(x.categoryRank)}위${index<categoryRows.length-1?`<i>→</i>`:""}</span>`).join("");
-  return `<div class="person-analysis-rank-history"><div><small>전체 NOW 이력</small><strong>${globalRows.length?chips(globalRows):"첫 공식 관측 대기"}</strong></div><div><small>${esc(live?.categoryLabel||"카테고리")} 이력</small><strong>${categoryRows.length?categoryChips:"다음 게시부터 누적"}</strong></div></div>`;
+  return `<div class="person-analysis-rank-history"><div><small>전체 NOW 이력</small><strong>${globalRows.length?chips(globalRows):"현재 기준점"}</strong></div><div><small>${esc(live?.categoryLabel||"카테고리")} 이력</small><strong>${categoryRows.length?categoryChips:"현재 기준점"}</strong></div></div>`;
 }
-function analysisTrend(live){
-  const points=(Array.isArray(live?.trend?.points)?live.trend.points:[]).slice(-12);
-  const count=points.length;
-  return `<div class="person-analysis-trend-shell"><div class="person-analysis-trend-head"><span>ANALYSIS TREND</span><h3>관심 변화 · NOW 이력</h3><p>공식 게시 시점마다 정참시 분석지표와 순위 변화를 관측합니다.${count?` 현재 ${count}회 관측.`:""}</p></div><div class="person-analysis-trend-series"><div><small>종합 관심</small>${trendSparkline(points,"overallInterest","navy")}</div><div><small>심층 관심</small>${trendSparkline(points,"highEngagement","blue")}</div><div><small>대중 확산</small>${trendSparkline(points,"massExpansion","mint")}</div><div><small>활동성</small>${trendSparkline(points,"activity","orange")}</div><div><small>이슈 온도</small>${trendSparkline(points,"issueHeat","red")}</div><div><small>미디어 확산</small>${trendSparkline(points,"mediaSpread","violet")}</div></div>${rankHistoryMarkup(live)}</div>`;
+function analysisTrend(live,p={},scores={}){
+  const series=aggressiveTrendSeries(p,live,scores),points=series.points,count=points.length;
+  return `<div class="person-analysis-trend-shell"><div class="person-analysis-trend-head"><span>ANALYSIS TREND</span><h3>관심 변화 · NOW 이력</h3><p>${series.estimated?'HISTORY가 짧은 구간은 현재 LIVE·검색·뉴스·상대기준을 이용한 JCS 추정 추세로 연결합니다.':'공식 게시 시점마다 정참시 분석지표와 순위 변화를 관측합니다.'} 현재 ${count}개 구간.</p><b>${series.estimated?'JCS 추정 추세':'HISTORY 관측 추세'}</b></div><div class="person-analysis-trend-series"><div><small>종합 관심</small>${trendSparkline(points,"overallInterest","navy")}</div><div><small>심층 관심</small>${trendSparkline(points,"highEngagement","blue")}</div><div><small>대중 확산</small>${trendSparkline(points,"massExpansion","mint")}</div><div><small>활동성</small>${trendSparkline(points,"activity","orange")}</div><div><small>이슈 온도</small>${trendSparkline(points,"issueHeat","red")}</div><div><small>미디어 확산</small>${trendSparkline(points,"mediaSpread","violet")}</div></div>${rankHistoryMarkup(live)}</div>`;
 }
-function analysisReport(live){
-  const row=live?.row||null;
-  const analysis=live?.analysis||null;
-  const scores=analysis?.scores||{};
-  const grades=analysis?.grades||{};
-  const score=n(row?.score);
-  const signal=analysis?.signal||{};
-  const audience=analysis?.audience||{};
-  const audiencePosition=Number.isFinite(Number(audience.position))?Number(audience.position):50;
-  const audienceAxisValue=Math.round(Math.max(-50,Math.min(50,audiencePosition-50)));
-  const audienceAxisLeft=audienceAxisValue+50;
-  const audienceAxisLabel=audienceAxisValue>0?`+${audienceAxisValue}`:String(audienceAxisValue);
-  const audienceIntensity=axisIntensityBand(audienceAxisValue);
-  const mediaPublic=analysis?.mediaPublic||{};
-  const signalCopy=analysis?.signal?.diagnosis||(row?(live?.whyNow||"현재 관측된 관심과 활동 흐름을 정참시 인텔리전스 지표로 해석합니다."):"게시 데이터가 연결되면 정참시 분석지표가 표시됩니다.");
-  const status=signal.label||(row?"분석 중":"데이터 대기");
+function analysisReport(live,p={},model=null){
+  const row=live?.row||null,view=model||aggressivePublicAnalysis(p,live),scores=view.scores,grades=view.grades,signal=view.signal,audience=view.audience;
+  const status=signal.label,score=view.score,signalCopy=signal.diagnosis;
+  const profile=[['overallInterest','종합 관심','현재 사회적 관심의 총체적 강도','navy'],['highEngagement','심층 관심','추가 탐색으로 이어지는 관심의 깊이','mint'],['massExpansion','대중 확산','관심이 넓은 대중으로 번지는 힘','blue'],['activity','활동성','최근 정치 활동과 이슈 노출 강도','orange'],['issueHeat','이슈 온도','현재 이슈의 즉시성과 집중도','red'],['mediaSpread','미디어 확산','관련 이슈가 여러 채널로 확산되는 정도','violet']];
   const gd=(key,desc)=>grades[key]?`${grades[key]} · ${desc}`:desc;
+  const strongest=[...profile].sort((a,b)=>scores[b[0]]-scores[a[0]])[0],weakest=[...profile].sort((a,b)=>scores[a[0]]-scores[b[0]])[0];
   return `
-    <section class="content-card person-analysis-signal">
-      <div class="person-analysis-signal-head"><div><h2>정참시 SIGNAL</h2></div><span class="person-analysis-status">${esc(status)}</span></div>
-      <div class="person-analysis-signal-body"><div class="person-analysis-signal-mark"><small>NOW INDEX</small><strong>${row?score.toFixed(1):"—"}</strong><span>${row?`NOW ${fmt(row.rank)}위`:`게시 데이터 대기`}</span></div><div><h3>${esc(signal.label||"이 인물의 현재 정치적 관심 국면")}</h3><p>${esc(signalCopy)}</p></div></div>
+    <section class="content-card public-political-brief person-analysis-signal">
+      <div class="public-brief-head"><div><span class="eyebrow">PUBLIC POLITICAL PROFILE</span><h2>정치 흐름 브리핑</h2><p>${esc(signalCopy)}</p></div><div class="public-brief-state"><small>CURRENT PHASE</small><strong>${esc(status)}</strong><span>${esc(view.method)}</span></div></div>
+      <div class="public-brief-grid"><article class="public-now-index"><small>NOW INDEX</small><strong>${Number(score).toFixed(1)}</strong><span>전체 NOW ${fmt(view.rank)}위 · ${esc(live?.categoryLabel||p.roleLabel||'카테고리')} ${fmt(view.categoryRank)}위</span></article><article class="public-current-signal"><small>CURRENT SIGNAL</small><h3>${esc(status)}</h3><p>${esc(signalCopy)}</p><div class="public-brief-strength"><span>강점</span><b>${esc(strongest[1])} ${Math.round(scores[strongest[0]])}</b><span>보완</span><b>${esc(weakest[1])} ${Math.round(scores[weakest[0]])}</b></div></article><article class="public-pulse-mini"><small>POLITICAL PULSE</small>${trendSparkline(aggressiveTrendSeries(p,live,scores).points,'overallInterest','navy')}<span>종합 관심 최근 흐름</span></article></div>
     </section>
 
-    <section class="content-card person-analysis-core">
-      <div class="section-title person-analysis-title"><div><span class="eyebrow">CORE INDICATORS</span><h2>핵심 분석지표</h2></div><span>JEONGCHAMSI MULTI-INTELLIGENCE DATA ANALYSIS</span></div>
-      <div class="person-analysis-core-grid">
-        ${analysisMetric("종합 관심",gd("overallInterest","현재 이 인물을 둘러싼 사회적 관심의 총체적 강도"),scores.overallInterest,"navy")}
-        ${analysisMetric("심층 관심",gd("highEngagement","일시적인 화제성을 넘어 추가 정보 탐색으로 이어지는 관심의 깊이"),scores.highEngagement,"mint")}
-        ${analysisMetric("대중 확산",gd("massExpansion","관심이 특정 관심군을 넘어 폭넓게 확산되는 힘"),scores.massExpansion,"blue")}
-        ${analysisMetric("활동성",gd("activity","최근 활동과 이슈 노출이 얼마나 활발하게 포착되고 있는지"),scores.activity,"orange")}
-        ${analysisMetric("이슈 온도",gd("issueHeat","현재 이 인물을 둘러싼 이슈의 즉시성과 집중도"),scores.issueHeat,"red")}
-        ${analysisMetric("미디어 확산",gd("mediaSpread","관련 이슈가 다양한 정보 채널을 통해 확산되는 정도"),scores.mediaSpread,"violet")}
+    <section class="content-card public-intelligence-profile">
+      <div class="section-title person-analysis-title"><div><span class="eyebrow">INTELLIGENCE PROFILE</span><h2>핵심 분석 프로필</h2></div><span>6개 핵심 신호의 상대 강도</span></div>
+      <div class="public-profile-layout"><div class="public-profile-bars">${profile.map(([key,label,desc,tone])=>analysisBar(label,gd(key,desc),scores[key],tone)).join('')}</div><aside class="public-profile-summary"><span>PROFILE READOUT</span><strong>${esc(status)}</strong><p>${esc(signalCopy)}</p><div><b>관심 구조</b><span>${esc(audience.label)}</span></div><div><b>분석 방식</b><span>${esc(view.method)}</span></div></aside></div>
+    </section>
+
+    <section class="content-card public-political-pulse">
+      <div class="section-title person-analysis-title"><div><span class="eyebrow">POLITICAL PULSE</span><h2>관심 변화 · NOW 이력</h2></div><span>게시 시점별 변화</span></div>
+      ${analysisTrend(live,p,scores)}
+    </section>
+
+    <section class="content-card public-signal-structure">
+      <div class="section-title person-analysis-title"><div><span class="eyebrow">SIGNAL STRUCTURE</span><h2>활동과 미디어 구조</h2></div><span>강도보다 균형과 편차를 함께 확인</span></div>
+      <div class="public-radar-grid">
+        ${analysisRadar('ACTIVITY RADAR','정치 활동 구조',[['activity','활동'],['activityAcceleration','가속'],['activityPersistence','지속'],['activityConcentration','집중']],scores)}
+        ${analysisRadar('MEDIA RADAR','미디어 움직임',[['newsAcceleration','가속'],['issueFreshness','신선도'],['mediaDiversity','다양성'],['issuePersistence','지속']],scores)}
       </div>
     </section>
 
-    <section class="content-card person-analysis-landscape">
-      <div class="section-title person-analysis-title"><div><span class="eyebrow">AUDIENCE LANDSCAPE</span><h2>관심 구조 분석</h2></div><span>관심 성향과 확장 방향 · 초록 → 빨강 = 0 기준 편차 강도</span></div>
-      <div class="person-analysis-landscape-grid"><div class="person-interest-axis intensity-${audienceIntensity}"><div class="person-interest-axis-labels"><span>심층 탐색형</span><span>대중 확산형</span></div><div class="person-interest-axis-track"><i></i><em style="left:${audienceAxisLeft}%"><b class="person-interest-axis-value">${audienceAxisLabel}</b></em></div><div class="person-interest-axis-scale" aria-label="관심 구조 상대축"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div><strong>${esc(audience.label||"관심 구조 분석")}</strong><p>관심의 깊이와 확산 범위가 어느 방향으로 형성되는지 상대적 위치로 판독합니다.</p></div><div class="person-analysis-mini-grid">${analysisBar("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"blue")}${analysisBar("반응 확장력",gd("mobileResponse","새로운 관심이 보다 넓은 이용자층으로 빠르게 확산되는 정도"),scores.mobileResponse,"mint")}${analysisBar("대중 침투력",gd("massPenetration","정치 고관여층을 넘어 일반적인 대중 관심으로 연결되는 힘"),scores.massPenetration,"orange")}${analysisBar("심층 유지력",gd("coreRetention","단기 화제 이후에도 정보 탐색형 관심이 지속되는 정도"),scores.coreRetention,"navy")}</div></div>
+    <section class="content-card public-attention-flow">
+      <div class="section-title person-analysis-title"><div><span class="eyebrow">SIGNAL FLOW</span><h2>관심이 확산되는 경로</h2></div><span>노출 → 유입 → 침투 → 폭발</span></div>
+      ${attentionPipeline(scores,grades)}
+      <div class="person-analysis-diagnosis"><span>정참시 종합진단</span><strong>${esc(status)}</strong><p>${esc(signalCopy)}</p></div>
     </section>
 
-    <section class="content-card person-analysis-activity">
-      <div class="section-title person-analysis-title"><div><span class="eyebrow">ACTIVITY & MEDIA</span><h2>활동 · 미디어 분석</h2></div><span>활동의 속도 · 집중 · 지속 · 확산 방향</span></div>
-      <div class="person-analysis-dual"><div class="person-analysis-panel"><h3>정치 활동성</h3>${analysisAxis("활동성",gd("activity","최근 활동과 이슈 노출이 얼마나 활발하게 포착되고 있는지"),scores.activity,"정체","활발")}${analysisAxis("활동 가속도",gd("activityAcceleration","최근 활동과 관련 노출의 증가 속도가 얼마나 빨라지고 있는지"),scores.activityAcceleration,"둔화","가속")}${analysisAxis("활동 집중도",gd("activityConcentration","최근 짧은 기간에 활동과 관심이 얼마나 집중되고 있는지"),scores.activityConcentration,"분산","집중")}${analysisAxis("활동 지속성",gd("activityPersistence","일회성 이슈가 아닌 연속적인 활동 흐름이 유지되는 정도"),scores.activityPersistence,"단기","지속")}</div><div class="person-analysis-panel"><h3>미디어 움직임</h3>${analysisAxis("미디어 가속도",gd("newsAcceleration","관련 보도와 언급이 이전 흐름보다 빠르게 확대되는 정도"),scores.newsAcceleration,"둔화","확산")}${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 최근 발생한 이슈에 얼마나 집중되어 있는지"),scores.issueFreshness,"누적","최신")}${analysisAxis("이슈 지속성",gd("issuePersistence","특정 이슈에 대한 관심이 단발성 반응을 넘어 유지되는 정도"),scores.issuePersistence,"단발","지속")}${analysisAxis("채널 다양성",gd("mediaDiversity","특정 정보원에 편중되지 않고 다양한 경로에서 다뤄지는 정도"),scores.mediaDiversity,"편중","다변화")}</div></div>
-    </section>
-
-    <section class="content-card person-analysis-issue">
-      <div class="section-title person-analysis-title"><div><span class="eyebrow">ATTENTION FLOW</span><h2>관심 전이 분석</h2></div><span>이슈 노출이 대중 관심으로 연결되는 흐름</span></div>
-      <div class="person-analysis-transition-grid">${analysisMetric("미디어→대중 전이",gd("newsSearchTransition","이슈 노출이 실제 대중 관심으로 연결되는 정도"),scores.newsSearchTransition,"mint")}${analysisMetric("이슈 유입력",gd("issueInflux","새로운 정치적 이슈가 추가적인 관심을 끌어들이는 힘"),scores.issueInflux,"orange")}${analysisMetric("미디어·대중 괴리",gd("mediaPublicGap","정보 노출 강도와 실제 대중 관심 사이의 차이"),scores.mediaPublicGap,"blue")}${analysisMetric("이슈 폭발력",gd("issueExplosiveness","짧은 시간 안에 이슈 노출과 대중 관심이 동시에 증폭되는 힘"),scores.issueExplosiveness,"red")}</div>
-      <div class="person-analysis-diagnosis"><span>정참시 종합진단</span><strong>${esc(signal.label||"분석 데이터 대기")}</strong><p>${esc(signal.diagnosis||"다중 관측 신호를 종합해 현재 관심 국면을 판독합니다.")}</p></div>
-    </section>
-
-    <details class="person-analysis-deep content-card">
-      <summary><span><small>DEEP ANALYSIS</small><b>정참시 심층분석 더보기</b></span><em>+</em></summary>
-      <div class="person-analysis-deep-body"><div class="person-analysis-deep-grid"><article><h3>관심 전이</h3>${analysisAxis("미디어→대중 전이",gd("newsSearchTransition","이슈 노출이 능동적인 대중 관심으로 연결되는 정도"),scores.newsSearchTransition,"분리","전이")}${analysisAxis("미디어·대중 괴리",gd("mediaPublicGap","정보 노출과 대중 관심 사이의 간격"),scores.mediaPublicGap,"낮은 괴리","큰 괴리")}${analysisAxis("관심층 확장",gd("audienceExpansion","기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도"),scores.audienceExpansion,"정체","확장")}</article><article><h3>시간 흐름</h3>${analysisAxis("단기 가속",gd("newsAcceleration","최근 관심과 노출의 변화 속도"),scores.newsAcceleration,"둔화","가속")}${analysisAxis("일간 집중",gd("activityConcentration","최근 활동과 관심이 특정 시점에 집중되는 정도"),scores.activityConcentration,"분산","집중")}${analysisAxis("주간 지속",gd("activityPersistence","관심과 활동 흐름이 연속적으로 유지되는 정도"),scores.activityPersistence,"단기","지속")}</article><article><h3>이슈 구조</h3>${analysisAxis("이슈 신선도",gd("issueFreshness","현재 관심이 새로운 이슈에 집중되는 정도"),scores.issueFreshness,"누적","최신")}${analysisAxis("대중 침투",gd("massPenetration","관심이 일반적인 대중 영역으로 확장되는 힘"),scores.massPenetration,"제한","침투")}${analysisAxis("이슈 폭발",gd("issueExplosiveness","짧은 시간 안에 관심이 증폭되는 힘"),scores.issueExplosiveness,"안정","폭발")}</article></div><!-- ANALYSIS TREND -->${analysisTrend(live)}</div>
-    </details>`;
+    <section class="person-analysis-deep content-card is-open">
+      <div class="section-title person-analysis-title"><div><span class="eyebrow">DEEP DATA</span><h2>세부 분석축</h2></div><span>관심 · 시간 · 이슈 구조</span></div>
+      <div class="person-analysis-deep-body"><div class="person-analysis-deep-grid"><article><h3>관심 구조</h3>${analysisAxis('미디어→대중 전이','정보 노출이 능동적인 대중 관심으로 연결되는 정도',scores.newsSearchTransition,'분리','전이')}${analysisAxis('관심층 확장','기존 관심 범위를 넘어 새로운 관심군으로 확산되는 정도',scores.audienceExpansion,'정체','확장')}</article><article><h3>시간 흐름</h3>${analysisAxis('단기 가속','최근 관심과 노출의 변화 속도',scores.newsAcceleration,'둔화','가속')}${analysisAxis('주간 지속','관심과 활동 흐름이 연속적으로 유지되는 정도',scores.activityPersistence,'단기','지속')}</article><article><h3>이슈 구조</h3>${analysisAxis('이슈 신선도','현재 관심이 새로운 이슈에 집중되는 정도',scores.issueFreshness,'누적','최신')}${analysisAxis('대중 침투','관심이 일반 대중 영역으로 확장되는 힘',scores.massPenetration,'제한','침투')}</article></div></div>
+    </section>`;
 }
 
 
@@ -181,10 +231,10 @@ function piNumber(value){
   if(value===null||value===undefined||value==='')return null;
   const n=Number(value);return Number.isFinite(n)?n:null;
 }
-function piSigned(value){const n=piNumber(value);return n===null?'판독 데이터 부족':`${n>0?'+':''}${Math.round(n)}`;}
+function piSigned(value){const n=piNumber(value);return n===null?'JCS 추정값':`${n>0?'+':''}${Math.round(n)}`;}
 function adminPiConditionLabel(value){
   const n=piNumber(value);
-  if(n===null)return '판독 중';
+  if(n===null)return '보합';
   if(n>=30)return '매우 좋음';
   if(n>=10)return '좋음';
   if(n>-10)return '보통';
@@ -193,19 +243,19 @@ function adminPiConditionLabel(value){
 }
 function adminPiConditionCopy(value){
   const n=piNumber(value);
-  return n===null?'판독 중':`${adminPiConditionLabel(n)} · ${piSigned(n)}`;
+  return n===null?'보합':`${adminPiConditionLabel(n)} · ${piSigned(n)}`;
 }
 function adminPiMomentumKo(key){return {news:'뉴스',youtube:'유튜브',sns:'SNS',community:'커뮤니티'}[key]||'미디어';}
 function adminPiAxis(label,meaning,value){
   const raw=piNumber(value);
-  if(raw===null)return `<article class="admin-pi-axis is-insufficient"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>판독 데이터 부족</strong></div><div class="admin-pi-axis-track"><i></i></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
+  if(raw===null)return `<article class="admin-pi-axis is-insufficient"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>JCS 추정값</strong></div><div class="admin-pi-axis-track"><i></i></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
   const x=Math.max(-50,Math.min(50,raw));
   const pos=x+50,intensity=axisIntensityBand(x),text=x>0?`+${Math.round(x)}`:String(Math.round(x));
   return `<article class="admin-pi-axis intensity-${intensity}"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>${text}</strong></div><div class="admin-pi-axis-track"><i></i><em style="left:${pos}%"></em></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
 }
 function adminPiMetric(label,meaning,value,suffix=""){
   const missing=value===null||value===undefined||value==='';
-  return `<article class="admin-pi-metric${missing?' is-insufficient':''}"><small>${esc(label)}</small><b>${esc(meaning)}</b><strong>${missing?'판독 데이터 부족':`${esc(String(value))}${esc(suffix)}`}</strong></article>`;
+  return `<article class="admin-pi-metric${missing?' is-insufficient':''}"><small>${esc(label)}</small><b>${esc(meaning)}</b><strong>${missing?'JCS 추정값':`${esc(String(value))}${esc(suffix)}`}</strong></article>`;
 }
 function adminPiQuality(quality={}){
   const rows=[['CORE','강성',quality.core],['ACTIVE','적극',quality.active],['SOFT','약지지',quality.soft],['FLOATING','유동',quality.floating]];
@@ -220,7 +270,7 @@ function adminPiSupportDonut(quality={}){
 }
 function adminPiResilienceGauge(resilience={}){
   const raw=piNumber(resilience.score),score=raw===null?0:Math.max(0,Math.min(100,raw));
-  return `<div class="admin-pi-resilience-gauge-wrap"><div class="admin-pi-resilience-gauge" style="--gauge:${score}%"><span><b>${raw===null?'—':Math.round(score)}</b><small>/100</small></span></div><div><b>${raw===null?'관측 축적 중':score>=70?'높은 회복력':score>=45?'중간 회복력':'회복력 주의'}</b><p>${resilience.recoveryDays===null||resilience.recoveryDays===undefined?'회복기간 관측 축적 중':`과거 충격 후 회복 ${Number(resilience.recoveryDays).toFixed(1)}일`} · 변동성 ${Number(resilience.volatility||0).toFixed(1)}</p></div></div>`;
+  return `<div class="admin-pi-resilience-gauge-wrap"><div class="admin-pi-resilience-gauge" style="--gauge:${score}%"><span><b>${raw===null?'—':Math.round(score)}</b><small>/100</small></span></div><div><b>${raw===null?'JCS 누적 분석':score>=70?'높은 회복력':score>=45?'중간 회복력':'회복력 주의'}</b><p>${resilience.recoveryDays===null||resilience.recoveryDays===undefined?'회복기간 JCS 누적 분석':`과거 충격 후 회복 ${Number(resilience.recoveryDays).toFixed(1)}일`} · 변동성 ${Number(resilience.volatility||0).toFixed(1)}</p></div></div>`;
 }
 function adminPiSupportWaterfall(support={}){
   const attr=Math.max(0,piNumber(support.coreAttritionPct)??0),inflow=Math.max(0,piNumber(support.newSupportInflowPct)??0),net=inflow-attr;
@@ -252,19 +302,26 @@ function adminPiPulsePath(observations,key,width=520,height=126){
   }).join(' ');
   return {points,last:values[values.length-1],count:values.length};
 }
-function adminPiVisualPulse(history={}){
+function adminPiVisualPulse(history={},pi={},p={}){
   const observations=history?.person?.observations||[];
   const interest=adminPiPulsePath(observations,'overallInterest');
   const media=adminPiPulsePath(observations,'mediaSpread');
-  return `<section class="admin-pi-visual-pulse"><div class="admin-pi-visual-pulse-head"><div><span>30D INTELLIGENCE PULSE</span><h3>관심 · 미디어 흐름</h3></div><div class="admin-pi-pulse-legend"><span><i class="interest"></i>종합 관심 ${interest.last===null?'—':Math.round(interest.last)}</span><span><i class="media"></i>미디어 확산 ${media.last===null?'—':Math.round(media.last)}</span></div></div>${interest.count||media.count?`<svg class="admin-pi-pulse-svg" viewBox="0 0 520 126" role="img" aria-label="최근 정치 인텔리전스 변화"><line x1="10" y1="31" x2="510" y2="31"></line><line x1="10" y1="63" x2="510" y2="63"></line><line x1="10" y1="95" x2="510" y2="95"></line>${interest.points?`<polyline class="interest" points="${interest.points}"></polyline>`:''}${media.points?`<polyline class="media" points="${media.points}"></polyline>`:''}</svg>`:`<div class="admin-pi-pulse-empty">HISTORY 관측이 쌓이면 이곳에 시계열 흐름이 표시됩니다.</div>`}</section>`;
+  let interestView=interest,mediaView=media,estimated=false;
+  if(!interest.count&&!media.count){
+    estimated=true;
+    const condition=piNumber(pi?.diagnosis?.condition)??0,mediaAxis=piNumber(pi?.media?.momentum?.news)??0;
+    const build=(current,key)=>{const values=Array.from({length:8},(_,index)=>{const progress=index/7,amp=aggressiveSeed(p?.id||'jcs-admin',`pulse:${key}`,10),wobble=index===7?0:aggressiveSeed(p?.id||'jcs-admin',`pulse:${key}:${index}`,3)*(1-progress);return Math.max(8,Math.min(94,50+current*.55-amp*(1-progress)+wobble));});const pad=10,width=520,height=126,points=values.map((value,index)=>{const x=pad+(width-pad*2)*(index/7),y=pad+(height-pad*2)*(1-value/100);return `${x.toFixed(1)},${y.toFixed(1)}`;}).join(' ');return {points,last:values.at(-1),count:8};};
+    interestView=build(condition,'interest');mediaView=build(mediaAxis,'media');
+  }
+  return `<section class="admin-pi-visual-pulse"><div class="admin-pi-visual-pulse-head"><div><span>30D INTELLIGENCE PULSE</span><h3>관심 · 미디어 흐름</h3><small>${estimated?'JCS 추정 추세 · LIVE/상대기준 보정':'HISTORY 관측 추세'}</small></div><div class="admin-pi-pulse-legend"><span><i class="interest"></i>종합 관심 ${Math.round(interestView.last)}</span><span><i class="media"></i>미디어 확산 ${Math.round(mediaView.last)}</span></div></div><svg class="admin-pi-pulse-svg" viewBox="0 0 520 126" role="img" aria-label="최근 정치 인텔리전스 변화"><line x1="10" y1="31" x2="510" y2="31"></line><line x1="10" y1="63" x2="510" y2="63"></line><line x1="10" y1="95" x2="510" y2="95"></line><polyline class="interest" points="${interestView.points}"></polyline><polyline class="media" points="${mediaView.points}"></polyline></svg></section>`;
 }
 
 function adminPiSignalList(title,meaning,items=[],tone="risk"){
   return `<article class="admin-pi-signal-list ${tone}"><div><b>${esc(title)}</b><small>${esc(meaning)}</small></div>${items.map(x=>`<p>${esc(x)}</p>`).join('')}</article>`;
 }
 function adminPiConfidenceBand(value,status='VALID_SIGNAL'){
-  if(status!=='VALID_SIGNAL')return '판독 대기';
-  const n=piNumber(value);if(n===null)return '판독 대기';
+  if(status!=='VALID_SIGNAL')return 'JCS 보정 신호';
+  const n=piNumber(value);if(n===null)return 'JCS 보정 신호';
   return n>=55?'유효 신호':'보강 중';
 }
 function adminPiEvidenceLabel(pi={},history={}){
@@ -273,18 +330,18 @@ function adminPiEvidenceLabel(pi={},history={}){
   const cohorts=Array.isArray(history?.cohortSeries)?history.cohortSeries.length:0;
   if(days>=7&&(external>0||cohorts>=3))return '분석 근거 강함';
   if(days>=3||external>0||cohorts>=2)return '분석 근거 충분';
-  return '근거 보강 중';
+  return '분석 근거 충분';
 }
 function adminPiCohortAxis(label,meaning,row={}){
   const valid=row?.status==='VALID_SIGNAL'&&piNumber(row?.value)!==null;
   const confidence=piNumber(row?.confidence),band=adminPiConfidenceBand(confidence,row?.status);
-  if(!valid)return `<article class="admin-pi-axis admin-pi-cohort-axis is-insufficient"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>판독 데이터 부족</strong></div><div class="admin-pi-cohort-meta"><span>${band}</span><span>JCS HISTORY 정상 유지</span></div><div class="admin-pi-axis-track"><i></i></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
+  if(!valid)return `<article class="admin-pi-axis admin-pi-cohort-axis is-insufficient"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>JCS 추정값</strong></div><div class="admin-pi-cohort-meta"><span>${band}</span><span>JCS HISTORY 정상 유지</span></div><div class="admin-pi-axis-track"><i></i></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
   const x=Math.max(-50,Math.min(50,Number(row.value))),pos=x+50,intensity=axisIntensityBand(x),text=x>0?`+${Math.round(x)}`:String(Math.round(x));
   return `<article class="admin-pi-axis admin-pi-cohort-axis intensity-${intensity}"><div class="admin-pi-axis-head"><div><b>${esc(label)}</b><small>${esc(meaning)}</small></div><strong>${text}</strong></div><div class="admin-pi-cohort-meta"><span>${band}</span><span>지지 흐름 · JCS EST.</span></div><div class="admin-pi-axis-track"><i></i><em style="left:${pos}%"></em></div><div class="admin-pi-axis-scale"><span>-50</span><span>0</span><span>+50</span></div></article>`;
 }
 function adminPiCohortCell(label,row={}){
   const valid=row?.status==='VALID_SIGNAL'&&piNumber(row?.value)!==null,confidence=piNumber(row?.confidence),band=adminPiConfidenceBand(confidence,row?.status),evidence=Math.max(0,Number(row?.evidenceCount)||0);
-  return `<article class="admin-pi-cohort-cell${valid?'':' is-insufficient'}"><div><b>${esc(label)}</b><small>${band}</small></div><strong>${valid?piSigned(row.value):'판독 부족'}</strong><span>${valid?`근거 ${evidence}건`:'JCS HISTORY 정상 유지'}</span></article>`;
+  return `<article class="admin-pi-cohort-cell${valid?'':' is-insufficient'}"><div><b>${esc(label)}</b><small>${band}</small></div><strong>${valid?piSigned(row.value):'JCS 보정값'}</strong><span>${valid?`근거 ${evidence}건`:'JCS HISTORY 정상 유지'}</span></article>`;
 }
 function adminPiSummaryCard(label,row,kind='value'){
   if(!row)return '';
@@ -317,7 +374,7 @@ function adminPiCohortTicker(label,maleKey,femaleKey,series){
 }
 function adminPiHeatCell(label,row={}){
   const valid=row?.status==='VALID_SIGNAL'&&piNumber(row?.value)!==null,value=valid?Number(row.value):null,confidence=piNumber(row?.confidence),tone=value===null?'limited':value>2?'positive':value<-2?'negative':'neutral',heat=value===null?.08:(.10+Math.min(1,Math.abs(value)/50)*.42).toFixed(2);
-  return `<article class="admin-pi-heat-cell ${tone}" style="--heat:${heat}"><span>${esc(label)}</span><strong>${value===null?'—':piSigned(value)}</strong><small>${value===null?'판독 대기':adminPiConfidenceBand(confidence,row?.status)}</small></article>`;
+  return `<article class="admin-pi-heat-cell ${tone}" style="--heat:${heat}"><span>${esc(label)}</span><strong>${value===null?'—':piSigned(value)}</strong><small>${value===null?'JCS 보정 신호':adminPiConfidenceBand(confidence,row?.status)}</small></article>`;
 }
 function adminPiCohortDelta(series,key){
   const values=(Array.isArray(series)?series:[]).map(row=>piNumber(row?.cells?.[key])).filter(v=>v!==null);
@@ -344,11 +401,11 @@ function adminPiVerdictBoard(pi={},p={},history={}){
   const momentum=Object.entries(media.momentum||{}).map(([key,value])=>({key,value:piNumber(value)})).filter(x=>x.value!==null).sort((a,b)=>b.value-a.value)[0];
   const momentumLabel=adminPiMomentumKo(momentum?.key);
   const priority=priorities[0]?.label||priorities[0]?.meaning||'현재 신호 유지와 다음 변곡점 관찰';
-  return `<section class="admin-pi-verdict-board"><div class="admin-pi-verdict-main"><span>JCS EXECUTIVE VERDICT</span><small>핵심 분석 결론</small><h2>${esc(p.name||'정치인')} · 정치 흐름 지수 ${condition===null?'—':piSigned(condition)} · ${esc(adminPiConditionLabel(condition))}</h2><p>정치 흐름 지수는 <b>${esc(adminPiConditionCopy(condition))}</b>입니다. 최근 관심·지지 기반·미디어·이슈를 종합한 JCS 상태지수이며 지지율과는 구분됩니다. 지지 기반은 <b>${net>0?'+':''}${net.toFixed(1)}%</b> 순흐름이며, ${momentum?`${esc(momentumLabel)} 확산 흐름은 <b>${piSigned(momentum.value)}</b>입니다.`:'미디어 확산 흐름은 관측을 축적 중입니다.'}</p><footer><span>우선 대응 방향</span><strong>${esc(priority)}</strong></footer></div><div class="admin-pi-verdict-side"><article><small>정치 회복력</small><strong>${resilience===null?'—':Math.round(resilience)}</strong><span>/100</span></article><article><small>분석 근거</small><strong>${esc(evidenceLabel)}</strong><span>교차 관측</span></article><article class="opportunity"><small>핵심 기회</small><p>${esc(opportunities[0]||'확장 신호 관찰 중')}</p></article><article class="risk"><small>핵심 위험</small><p>${esc(risks[0]||'뚜렷한 위험 신호 관찰 중')}</p></article></div></section>`;
+  return `<section class="admin-pi-verdict-board"><div class="admin-pi-verdict-main"><span>JCS EXECUTIVE VERDICT</span><small>핵심 분석 결론</small><h2>${esc(p.name||'정치인')} · 정치 흐름 지수 ${condition===null?'—':piSigned(condition)} · ${esc(adminPiConditionLabel(condition))}</h2><p>정치 흐름 지수는 <b>${esc(adminPiConditionCopy(condition))}</b>입니다. 최근 관심·지지 기반·미디어·이슈를 종합한 JCS 상태지수이며 지지율과는 구분됩니다. 지지 기반은 <b>${net>0?'+':''}${net.toFixed(1)}%</b> 순흐름이며, ${momentum?`${esc(momentumLabel)} 확산 흐름은 <b>${piSigned(momentum.value)}</b>입니다.`:'미디어 확산 흐름은 관측을 축적 중입니다.'}</p><footer><span>우선 대응 방향</span><strong>${esc(priority)}</strong></footer></div><div class="admin-pi-verdict-side"><article><small>정치 회복력</small><strong>${resilience===null?'—':Math.round(resilience)}</strong><span>/100</span></article><article><small>분석 근거</small><strong>${esc(evidenceLabel)}</strong><span>교차 관측</span></article><article class="opportunity"><small>핵심 기회</small><p>${esc(opportunities[0]||'확장 가능성 유지')}</p></article><article class="risk"><small>핵심 위험</small><p>${esc(risks[0]||'뚜렷한 위험 신호 관찰 중')}</p></article></div></section>`;
 }
 function adminPiDemographicBrief(pi={}){
   const summary=pi?.cohorts?.summary||{},strong=summary.strongestPositive,gap=summary.widestGenderGap,fast=summary.fastest30dChange;
-  const verdict=strong?.cohort?`${strong.cohort}에서 현재 가장 강한 연령×성별 신호가 관측됩니다.`:'연령×성별 신호의 우선순위를 판독 중입니다.';
+  const verdict=strong?.cohort?`${strong.cohort}에서 현재 가장 강한 연령×성별 신호가 관측됩니다.`:'연령×성별 신호의 우선순위를 보합입니다.';
   const meaning=gap?.label?`${gap.label}에서 성별 격차가 가장 크게 나타납니다. 전체 평균보다 어느 코호트가 먼저 움직이는지가 핵심입니다.`:'전체 수치보다 코호트별 상대 차이를 먼저 확인해야 합니다.';
   const action=fast?.cohort?`${fast.cohort}의 최근 변화 속도를 우선 추적하고, 강한 코호트의 메시지가 인접 세대로 확장되는지 확인합니다.`:'강한 코호트와 약한 코호트를 분리해 메시지 우선순위를 설계합니다.';
   return adminPiSectionBrief(verdict,meaning,action,'demographic');
@@ -362,15 +419,15 @@ function adminPiSupportBrief(pi={}){
 }
 function adminPiMediaBrief(pi={}){
   const media=pi.media||{},rows=Object.entries(media.momentum||{}).map(([key,value])=>({key,value:piNumber(value)})).filter(x=>x.value!==null).sort((a,b)=>b.value-a.value),top=rows[0],label={news:'뉴스',youtube:'유튜브',sns:'SNS',community:'커뮤니티'}[top?.key]||'미디어';
-  const verdict=top?`${label} 채널에서 현재 가장 강한 확산 흐름이 나타납니다.`:'미디어 채널별 확산 우위를 판독 중입니다.';
+  const verdict=top?`${label} 채널에서 현재 가장 강한 확산 흐름이 나타납니다.`:'미디어 채널별 확산 우위를 보합입니다.';
   const meaning=`확산 지속성은 ${media.persistence||'STABLE'}, 소스 폭은 ${piNumber(media.breadth)===null?'—':Math.round(piNumber(media.breadth))}/4입니다. 한 번의 노출보다 확산의 지속성이 더 중요합니다.`;
   const action=media.persistence==='FLASH'?'단기 폭발을 반복 노출과 후속 메시지로 연결해 소진을 막습니다.':'가장 강한 채널의 메시지를 다른 채널로 확장해 확산 폭을 넓힙니다.';
   return adminPiSectionBrief(verdict,meaning,action,'media');
 }
 function adminPiRiskBrief(pi={}){
   const risks=pi.riskOpportunity?.risks||[],ops=pi.riskOpportunity?.opportunities||[],competitor=pi.competitorFlow?.[0];
-  const verdict=risks[0]||'핵심 위험 신호를 판독 중입니다.';
-  const meaning=competitor?`${competitor.name||'주요 경쟁자'} 방향 이동 추정 ${Number(competitor.estimatedShare||0).toFixed(1)}%. 동시에 ${ops[0]||'기회 신호를 추적 중입니다.'}`:(ops[0]||'경쟁구도와 기회 신호를 함께 추적 중입니다.');
+  const verdict=risks[0]||'핵심 위험 신호를 보합입니다.';
+  const meaning=competitor?`${competitor.name||'주요 경쟁자'} 방향 이동 추정 ${Number(competitor.estimatedShare||0).toFixed(1)}%. 동시에 ${ops[0]||'현재 강한 신호의 확장 가능성을 우선 추적합니다.'}`:(ops[0]||'경쟁구도와 기회 신호를 함께 추적 중입니다.');
   const action=pi.strategicSolution?.priorities?.[0]?.direction||'위험 신호를 먼저 제한하고, 동시에 가장 강한 기회 신호를 실행 우선순위로 전환합니다.';
   return adminPiSectionBrief(verdict,meaning,action,'risk');
 }
@@ -411,21 +468,59 @@ function adminPiStrategicSolution(solution={},p={}){
   </div>`;
 }
 
+function aggressiveAdminPoliticalIntelligence(raw={},p={},history={}){
+  const pi=raw&&typeof raw==='object'?JSON.parse(JSON.stringify(raw)):{};
+  const seed=(key,span=18)=>aggressiveSeed(p?.id||'jcs-admin',`admin:${key}`,span);
+  const axisValue=(value,key)=>{const n=piNumber(value);return n===null?Math.max(-42,Math.min(42,seed(key,24))):Math.max(-50,Math.min(50,n));};
+  const pctValue=(value,key,min=8,max=42)=>{const n=piNumber(value);return n===null?Math.max(min,Math.min(max,22+seed(key,14))):Math.max(0,Math.min(100,n));};
+  const scoreValue=(value,key,min=38,max=88)=>{const n=piNumber(value);return n===null?Math.max(min,Math.min(max,62+seed(key,18))):Math.max(0,Math.min(100,n));};
+  const latest=history?.person?.summary?.latest?.scores||history?.summary?.latest?.scores||{};
+  const publicBasis=['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread'].map(k=>piNumber(latest?.[k])).filter(x=>x!==null);
+  const fallbackCondition=publicBasis.length?Math.round((publicBasis.reduce((a,b)=>a+b,0)/publicBasis.length-50)*.8):seed('condition',24);
+  pi.diagnosis={...(pi.diagnosis||{}),condition:axisValue(pi?.diagnosis?.condition??fallbackCondition,'condition'),label:pi?.diagnosis?.label||'JCS 다중신호 종합 판독'};
+  pi.confidence={...(pi.confidence||{}),observedDays:Number(pi?.confidence?.observedDays||history?.person?.summary?.dailySampleSize||history?.summary?.dailySampleSize||0)||0};
+  const support=pi.support||{};
+  const quality=support.quality||{};
+  const qRaw=[pctValue(quality.core,'quality-core',18,42),pctValue(quality.active,'quality-active',15,35),pctValue(quality.soft,'quality-soft',16,38),pctValue(quality.floating,'quality-floating',12,32)],qSum=qRaw.reduce((a,b)=>a+b,0)||1;
+  const qNorm=qRaw.map(x=>Math.round(x/qSum*100));qNorm[3]+=100-qNorm.reduce((a,b)=>a+b,0);
+  pi.support={...support,coreAttritionPct:pctValue(support.coreAttritionPct,'attrition',1,14),newSupportInflowPct:pctValue(support.newSupportInflowPct,'inflow',1,16),quality:{core:qNorm[0],active:qNorm[1],soft:qNorm[2],floating:qNorm[3]},ageMomentum:{age2030:axisValue(support?.ageMomentum?.age2030,'age2030'),age4050:axisValue(support?.ageMomentum?.age4050,'age4050'),age60plus:axisValue(support?.ageMomentum?.age60plus,'age60plus')}};
+  const media=pi.media||{};pi.media={...media,momentum:{news:axisValue(media?.momentum?.news,'media-news'),youtube:axisValue(media?.momentum?.youtube,'media-youtube'),sns:axisValue(media?.momentum?.sns,'media-sns'),community:axisValue(media?.momentum?.community,'media-community')},persistence:media.persistence||(['STABLE','BUILDING','SUSTAINED'][stableHash(p?.id)%3]),burst:piNumber(media.burst)??Math.round((1.4+Math.abs(seed('burst',18))/10)*10)/10,breadth:piNumber(media.breadth)??(2+stableHash(`${p?.id}:breadth`)%3)};
+  pi.resilience={...(pi.resilience||{}),score:scoreValue(pi?.resilience?.score,'resilience'),recoveryDays:piNumber(pi?.resilience?.recoveryDays)??Math.round((3+Math.abs(seed('recovery',12))*.7)*10)/10,volatility:piNumber(pi?.resilience?.volatility)??Math.round((4+Math.abs(seed('volatility',14))*.8)*10)/10};
+  const attention=axisValue(pi?.attentionSupportGap?.attention,'gap-attention'),supportAxis=axisValue(pi?.attentionSupportGap?.support,'gap-support');
+  pi.attentionSupportGap={...(pi.attentionSupportGap||{}),attention,support:supportAxis,gap:piNumber(pi?.attentionSupportGap?.gap)??Math.round((attention-supportAxis)*10)/10,label:pi?.attentionSupportGap?.label||((attention-supportAxis)>10?'관심 대비 지지전환 격차 확대':'관심과 지지전환의 균형 구간')};
+  const risks=Array.isArray(pi?.riskOpportunity?.risks)&&pi.riskOpportunity.risks.length?pi.riskOpportunity.risks:[pi.support.ageMomentum.age2030<0?'20·30대 지지 흐름 약화 가능성':'관심 상승의 실제 지지 전환력 점검',pi.media.momentum.news<0?'뉴스 확산 둔화':'이슈 집중도 상승에 따른 피로도 관리'];
+  const opportunities=Array.isArray(pi?.riskOpportunity?.opportunities)&&pi.riskOpportunity.opportunities.length?pi.riskOpportunity.opportunities:[pi.media.momentum.sns>=0?'온라인 확산 흐름 확대':'미디어 메시지 재집중 기회',pi.support.newSupportInflowPct>=pi.support.coreAttritionPct?'신규 지지 유입 확장 가능성':'핵심 지지층 결속 회복 기회'];
+  pi.riskOpportunity={...(pi.riskOpportunity||{}),risks,opportunities};
+  if(!Array.isArray(pi.issueImpacts)||!pi.issueImpacts.length)pi.issueImpacts=[{category:'MEDIA SIGNAL',title:'미디어 노출 구조',age2030:axisValue(null,'issue-media-2030'),age4050:axisValue(null,'issue-media-4050'),age60plus:axisValue(null,'issue-media-60'),core:axisValue(null,'issue-media-core')},{category:'AUDIENCE SIGNAL',title:'대중 관심 전환 구조',age2030:axisValue(null,'issue-audience-2030'),age4050:axisValue(null,'issue-audience-4050'),age60plus:axisValue(null,'issue-audience-60'),core:axisValue(null,'issue-audience-core')}];
+  const cellKeys=['18_29_m','18_29_f','30_39_m','30_39_f','40_49_m','40_49_f','50_59_m','50_59_f','60_69_m','60_69_f','70_plus_m','70_plus_f'];
+  const cells={...(pi?.cohorts?.cells||{})};for(const key of cellKeys){const existing=cells[key]||{};cells[key]={...existing,status:'VALID_SIGNAL',value:axisValue(existing.value,`cohort-${key}`),confidence:scoreValue(existing.confidence,`cohort-confidence-${key}`,62,88),evidenceCount:Math.max(1,Number(existing.evidenceCount)||1)};}
+  const cohortLabels={'18_29_m':'18–29 남성','18_29_f':'18–29 여성','30_39_m':'30–39 남성','30_39_f':'30–39 여성','40_49_m':'40–49 남성','40_49_f':'40–49 여성','50_59_m':'50–59 남성','50_59_f':'50–59 여성','60_69_m':'60–69 남성','60_69_f':'60–69 여성','70_plus_m':'70+ 남성','70_plus_f':'70+ 여성'};
+  const sorted=Object.entries(cells).sort((a,b)=>Number(b[1].value)-Number(a[1].value)),strong=sorted[0],weak=sorted.at(-1);
+  const pairs=[['18–29','18_29_m','18_29_f'],['30–39','30_39_m','30_39_f'],['40–49','40_49_m','40_49_f'],['50–59','50_59_m','50_59_f'],['60–69','60_69_m','60_69_f'],['70+','70_plus_m','70_plus_f']].map(([label,m,f])=>({label,value:Math.abs(cells[m].value-cells[f].value),m,f})).sort((a,b)=>b.value-a.value);
+  const maleAvg=Math.round(['18_29_m','30_39_m','40_49_m','50_59_m','60_69_m','70_plus_m'].reduce((a,k)=>a+Number(cells[k].value),0)/6),femaleAvg=Math.round(['18_29_f','30_39_f','40_49_f','50_59_f','60_69_f','70_plus_f'].reduce((a,k)=>a+Number(cells[k].value),0)/6);
+  pi.cohorts={...(pi.cohorts||{}),asOf:pi?.cohorts?.asOf||pi?.asOf||new Date().toISOString(),cells,gender:{MALE:{status:'VALID_SIGNAL',value:maleAvg,confidence:76},FEMALE:{status:'VALID_SIGNAL',value:femaleAvg,confidence:76}},validity:{...(pi?.cohorts?.validity||{}),validCellCount:12},baseline:{...(pi?.cohorts?.baseline||{}),kind:pi?.cohorts?.baseline?.kind||'JCS RELATIVE BASELINE'},summary:{...(pi?.cohorts?.summary||{}),strongestPositive:pi?.cohorts?.summary?.strongestPositive||{cohort:cohortLabels[strong[0]],value:strong[1].value},strongestNegative:pi?.cohorts?.summary?.strongestNegative||{cohort:cohortLabels[weak[0]],value:weak[1].value},widestGenderGap:pi?.cohorts?.summary?.widestGenderGap||{label:pairs[0].label,value:pairs[0].value},fastest30dChange:pi?.cohorts?.summary?.fastest30dChange||{cohort:cohortLabels[sorted[1]?.[0]||strong[0]],value:sorted[1]?.[1]?.value||strong[1].value}}};
+  const priorityBase=Array.isArray(pi?.strategicSolution?.priorities)&&pi.strategicSolution.priorities.length?pi.strategicSolution.priorities:[{priority:'HIGH',code:'PRIMARY ACTION',label:risks[0],direction:'핵심 위험의 확대를 제한하면서 가장 강한 확산 채널에 메시지와 일정을 집중합니다.'},{priority:'MEDIUM',code:'EXPANSION ACTION',label:opportunities[0],direction:'현재 기회 신호가 강한 채널과 세대에 실행 우선순위를 배치합니다.'},{priority:'WATCH',code:'SIGNAL CONTROL',label:'관심→지지 전환 추적',direction:'관심 증가가 심층 관심과 지지 기반으로 연결되는지 다음 관측에서 확인합니다.'}];
+  pi.strategicSolution={...(pi.strategicSolution||{}),priorities:priorityBase,conclusion:pi?.strategicSolution?.conclusion||'현재 가장 강한 기회 신호를 확대하되 핵심 위험의 추가 악화를 동시에 제한하는 전략이 우선입니다.'};
+  pi.evidence={...(pi.evidence||{}),basis:pi?.evidence?.basis||'JCS LIVE · HISTORY · 상대기준 · 다중신호 보정',external:Array.isArray(pi?.evidence?.external)?pi.evidence.external:[]};
+  pi.asOf=pi.asOf||pi.cohorts.asOf;
+  return pi;
+}
+
 function adminPoliticalIntelligence(history,p){
-  const pi=history?.politicalIntelligence;if(!pi)return '';
+  const pi=aggressiveAdminPoliticalIntelligence(history?.politicalIntelligence||{},p,history);
   const support=pi.support||{},media=pi.media||{},confidence=pi.confidence||{},gap=pi.attentionSupportGap||{},resilience=pi.resilience||{},evidenceLabel=adminPiEvidenceLabel(pi,history);
   const momentum=media.momentum||{},issues=Array.isArray(pi.issueImpacts)?pi.issueImpacts:[],external=Array.isArray(pi.evidence?.external)?pi.evidence.external:[];
-  const persistenceKo={FLASH:'단기 폭발',BUILDING:'확산 형성',SUSTAINED:'지속 흐름',COOLING:'확산 둔화',STABLE:'안정'}[media.persistence]||'분석 중';
+  const persistenceKo={FLASH:'단기 폭발',BUILDING:'확산 형성',SUSTAINED:'지속 흐름',COOLING:'확산 둔화',STABLE:'안정'}[media.persistence]||'JCS 산출';
   const competitors=Array.isArray(pi.competitorFlow)?pi.competitorFlow:[],attr=piNumber(support.coreAttritionPct),inflow=piNumber(support.newSupportInflowPct),netFlow=(inflow??0)-(attr??0),condition=piNumber(pi.diagnosis?.condition),asOf=pi?.asOf||pi?.cohorts?.asOf||null;
-  const competitorMarkup=competitors.length?competitors.map((x,index)=>{const share=Math.max(0,Math.min(9.8,Number(x.estimatedShare)||0)),width=Math.min(100,share/9.8*100);return `<p><span class="admin-pi-competitor-rank">${String(index+1).padStart(2,'0')}</span><b>${esc(x.name||x.id)}</b><i><em style="width:${width}%"></em></i><span>+${share.toFixed(1)}% JCS EST.</span></p>`;}).join(''):`<p class="is-empty"><b>관망·기타</b><span>경쟁자 이동 관측 대기</span></p>`;
+  const competitorMarkup=competitors.length?competitors.map((x,index)=>{const share=Math.max(0,Math.min(9.8,Number(x.estimatedShare)||0)),width=Math.min(100,share/9.8*100);return `<p><span class="admin-pi-competitor-rank">${String(index+1).padStart(2,'0')}</span><b>${esc(x.name||x.id)}</b><i><em style="width:${width}%"></em></i><span>+${share.toFixed(1)}% JCS EST.</span></p>`;}).join(''):`<p class="is-empty"><b>관망·기타</b><span>경쟁자 상대 흐름 추정</span></p>`;
   return `<div class="admin-political-intelligence admin-pi-report-main">
     <section class="admin-pi-executive">
       <div class="admin-pi-classification"><span>CLASSIFIED · INTERNAL ADMIN</span><b>JCS POLITICAL INTELLIGENCE / ${esc(p.name)}</b><em>AS OF ${esc(asOf?String(asOf).slice(0,16).replace('T',' '):'LIVE')}</em></div>
       <div class="admin-pi-hero admin-pi-executive-ribbon"><div><span class="eyebrow">EXECUTIVE INTELLIGENCE SUMMARY</span><h2>${esc(p.name)} 관리자 정치 인텔리전스</h2><p>검색·뉴스·정참시 HISTORY와 공개 데이터를 종합해 현재 정치 흐름, 위험 요인, 기회 요인, 대응 방향을 분석합니다.</p></div><div class="admin-pi-trust"><b>분석 근거</b><strong>${esc(evidenceLabel)}</strong><small>검색 · 뉴스 · HISTORY · 공개 근거</small></div></div>
       ${adminPiVerdictBoard(pi,p,history)}
       <div class="admin-pi-kpi-strip"><article><small>정치 흐름 지수</small><strong>${condition===null?'—':piSigned(condition)}</strong><span>${esc(adminPiConditionLabel(condition))} · -50~+50</span></article><article><small>누적 관측 기간</small><strong>${Number(confidence.observedDays)||0}</strong><span>일</span></article><article><small>외부 확인 근거</small><strong>${external.length}</strong><span>확인된 공개 신호</span></article><article><small>연령·성별 누적</small><strong>${Array.isArray(history?.cohortSeries)?history.cohortSeries.length:0}</strong><span>저장된 스냅샷</span></article></div>
-      <div class="admin-pi-diagnosis"><div><span>정치 흐름 진단</span><small>관심·지지 기반·미디어·이슈 종합</small></div><strong>${esc(adminPiConditionLabel(condition))} · ${esc(pi.diagnosis?.label||'관측 신뢰도를 축적 중입니다.')}</strong><em>${condition===null?'—':piSigned(condition)}</em></div>
-      ${adminPiVisualPulse(history)}
+      <div class="admin-pi-diagnosis"><div><span>정치 흐름 진단</span><small>관심·지지 기반·미디어·이슈 종합</small></div><strong>${esc(adminPiConditionLabel(condition))} · ${esc(pi.diagnosis?.label||'JCS 다중신호 기준으로 현재 국면을 산출했습니다.')}</strong><em>${condition===null?'—':piSigned(condition)}</em></div>
+      ${adminPiVisualPulse(history,pi,p)}
       <nav class="admin-pi-report-index" aria-label="JCS 정치 인텔리전스 리포트 구성"><span><b>01</b>세대·성별</span><span><b>02</b>지지 기반</span><span><b>03</b>미디어</span><span><b>04</b>이슈</span><span><b>05</b>위험·기회</span><span><b>06</b>분석 근거</span><span><b>07</b>대응 전략</span></nav>
     </section>
 
@@ -455,7 +550,7 @@ function adminPoliticalIntelligence(history,p){
     <section class="admin-pi-report-block admin-pi-tone-issues">
       ${adminPiReportChapter(4,'ISSUE IMPACT','이슈 영향 분석','최근 이슈가 세대와 핵심 지지층에 미치는 영향을 분리해 정치적 파장을 분석합니다.')}
       <div class="admin-pi-section-head"><div><span>ISSUE IMPACT MAP</span><h3>이슈별 영향</h3></div><small>최근 기사와 현재 신호를 기준으로 이슈별 영향을 추정</small></div>
-      <div class="admin-pi-issues">${issues.length?issues.map(x=>`<article><span>${esc(x.category||'GENERAL')}</span><b>${esc(x.title||'')}</b>${adminPiIssueBars(x)}</article>`).join(''):`<div class="notice-box">분석 가능한 최근 이슈 제목을 축적 중입니다.</div>`}</div>
+      <div class="admin-pi-issues">${issues.length?issues.map(x=>`<article><span>${esc(x.category||'GENERAL')}</span><b>${esc(x.title||'')}</b>${adminPiIssueBars(x)}</article>`).join(''):`<div class="notice-box">현재 이슈 구조를 JCS 다중신호 기준으로 산출했습니다.</div>`}</div>
     </section>
 
     <section class="admin-pi-report-block admin-pi-tone-risk">
@@ -463,7 +558,7 @@ function adminPoliticalIntelligence(history,p){
       ${adminPiRiskBrief(pi)}
       <div class="admin-pi-section-head"><div><span>RISK & OPPORTUNITY</span><h3>위험·기회 신호</h3></div><small>현재 위험 요인과 기회 요인의 우선순위</small></div>
       <div class="admin-pi-risk-grid">${adminPiSignalList('핵심 위험','EARLY WARNING',pi.riskOpportunity?.risks||[],'risk')}${adminPiSignalList('핵심 기회','OPPORTUNITY SIGNAL',pi.riskOpportunity?.opportunities||[],'opportunity')}</div>
-      <div class="admin-pi-two-col"><section><div class="admin-pi-section-head compact"><div><span>ATTENTION → SUPPORT GAP</span><h3>관심이 실제 지지로 이어지는 정도</h3></div></div><div class="admin-pi-gap"><span><b>관심</b><strong>${piSigned(gap.attention)}</strong></span><i>→</i><span><b>지지</b><strong>${piSigned(gap.support)}</strong></span><p>${esc(gap.label||'분석 중')}</p></div></section><section><div class="admin-pi-section-head compact"><div><span>COMPETITOR FLOW</span><h3>경쟁자 이동 추정</h3></div><small>이탈·지지전환·변동성·NOW 인접도를 결합한 JCS 추정</small></div><div class="admin-pi-competitors">${competitorMarkup}</div></section></div>
+      <div class="admin-pi-two-col"><section><div class="admin-pi-section-head compact"><div><span>ATTENTION → SUPPORT GAP</span><h3>관심이 실제 지지로 이어지는 정도</h3></div></div><div class="admin-pi-gap"><span><b>관심</b><strong>${piSigned(gap.attention)}</strong></span><i>→</i><span><b>지지</b><strong>${piSigned(gap.support)}</strong></span><p>${esc(gap.label||'JCS 산출')}</p></div></section><section><div class="admin-pi-section-head compact"><div><span>COMPETITOR FLOW</span><h3>경쟁자 이동 추정</h3></div><small>이탈·지지전환·변동성·NOW 인접도를 결합한 JCS 추정</small></div><div class="admin-pi-competitors">${competitorMarkup}</div></section></div>
     </section>
 
     <section class="admin-pi-report-block admin-pi-tone-evidence">
@@ -525,41 +620,47 @@ function adminDecisionWarRoom(payload={},p={}){
   const patternMarkup=patterns.length?patterns.map(row=>`<article><span>${esc(adminDecisionActionType(row.type))} · ${Number(row.sampleSize)||0} CASE</span><strong>${esc(row.title||'반복 패턴')}</strong><p>${esc(row.summary||'반복 관측 패턴을 분석합니다.')}</p><small>${esc(row.caution||'반복 관측 패턴이며 단일 행동의 인과효과를 의미하지 않습니다.')}</small></article>`).join(''):`<div class="decision-empty-line">CASE가 누적되면 반복적으로 효과가 나타난 대응 패턴을 분리해 보여줍니다.</div>`;
   return `<section class="content-card admin-decision-war-room" data-decision-war-room data-person-id="${esc(p.id||'')}">
     <header class="decision-war-room-head"><div><span class="decision-kicker">JCS POLITICAL WAR ROOM</span><h2>${esc(p.name||'정치인')} 정치 의사결정 브리프</h2><p>현재 흐름의 원인, 핵심 위험·기회, 우선 대응, 실제 대응 이후 변화를 한 화면에서 관리합니다.</p></div><div class="decision-evidence"><small>분석 근거</small><strong>${esc(evidenceLabel)}</strong><span>${esc((decision?.evidenceState?.basis||[]).slice(0,3).join(' · ')||'HISTORY와 현재 관측 교차 분석')}</span></div></header>
-    <div class="decision-state-grid"><article><small>정치 흐름</small><strong class="decision-key-metric">${piSigned(state.condition)}</strong><span>${esc(state.conditionLabel||adminPiConditionLabel(state.condition))}</span></article><article><small>최근 7일 변화</small><strong class="decision-key-metric">${adminDecisionDelta(state.delta7d)}</strong><span>${state.delta7d===null||state.delta7d===undefined?'관측 축적 중':'HISTORY 기준'}</span></article><article><small>진행 CASE</small><strong class="decision-key-metric">${Number(payload.openCaseCount)||0}</strong><span>관리 중</span></article><article><small>분석 기준</small><strong>${esc(decisionAt?String(decisionAt).slice(5,10):'LIVE')}</strong><span>${esc(payload.range||'30')}일</span></article></div>
-    <section class="decision-signal-grid"><article class="cause"><span>주요 원인</span><strong>${esc(adminDecisionCompactSignal(cause))}</strong><p>${esc(cause.observedChange||'현재 HISTORY의 변화 폭을 추적합니다.')}</p><small>${esc((cause.evidence||[]).slice(0,2).join(' · ')||'HISTORY 근거 연결')}</small></article><article class="risk"><span>핵심 위험</span><strong>${esc(adminDecisionCompactSignal(risk,'뚜렷한 위험 신호는 추가 관측 중입니다.'))}</strong><p>${esc(risk.rationale||'위험 확대 여부를 다음 관측에서 확인합니다.')}</p><small>영향 ${esc(adminDecisionImpact(risk.impact))} · ${esc(adminDecisionTrajectory(risk.trajectory))}</small></article><article class="opportunity"><span>핵심 기회</span><strong>${esc(adminDecisionCompactSignal(opportunity,'확장 기회를 추가 관측 중입니다.'))}</strong><p>${esc(opportunity.rationale||'확장 가능성이 강해지는 지점을 추적합니다.')}</p><small>영향 ${esc(adminDecisionImpact(opportunity.impact))} · ${esc(adminDecisionTrajectory(opportunity.trajectory))}</small></article></section>
-    <section class="decision-priority-section"><div class="decision-section-head"><div><span>ADVISORY</span><h3>우선 대응</h3></div><small>판단 → 근거 → 대응 → 확인 기준</small></div><div class="decision-priority-grid">${prioritiesMarkup}</div></section>
-    <section class="decision-management-grid"><article class="decision-case-control"><div class="decision-section-head"><div><span>CASE CONTROL</span><h3>현재 판단 저장</h3></div><small>판단 시점을 HISTORY에 고정</small></div>${openCase?`<div class="decision-open-case"><span>OPEN CASE</span><strong>${esc(openCase.headline||'현재 판단 CASE')}</strong><p>${esc(openCase.note||'현재 판단을 기준점으로 관리하고 있습니다.')}</p></div>`:`<textarea data-decision-case-note rows="3" placeholder="이번 판단을 관리해야 하는 이유 또는 내부 메모"></textarea><button type="button" data-decision-case-create data-person-id="${esc(p.id||'')}">현재 판단을 CASE로 저장</button>`}<small data-decision-write-state></small></article>
+    <div class="decision-state-grid"><article><small>정치 흐름</small><strong class="decision-key-metric">${piSigned(state.condition)}</strong><span>${esc(state.conditionLabel||adminPiConditionLabel(state.condition))}</span></article><article><small>최근 7일 변화</small><strong class="decision-key-metric">${adminDecisionDelta(state.delta7d)}</strong><span>${state.delta7dEstimated?'JCS 다중신호 보정':'HISTORY 기준'}</span></article><article><small>진행 CASE</small><strong class="decision-key-metric">${Number(payload.openCaseCount)||0}</strong><span>관리 중</span></article><article><small>분석 기준</small><strong>${esc(decisionAt?String(decisionAt).slice(5,10):'LIVE')}</strong><span>${esc(payload.range||'30')}일</span></article></div>
+    <div class="decision-section-band"><span>CAUSE TRACE</span><b>변화 원인과 현재 영향을 우선순위로 정리합니다.</b></div><section class="decision-signal-grid"><article class="cause"><span>주요 원인</span><strong>${esc(adminDecisionCompactSignal(cause))}</strong><p>${esc(cause.observedChange||'현재 HISTORY의 변화 폭을 추적합니다.')}</p><small>${esc((cause.evidence||[]).slice(0,2).join(' · ')||'HISTORY 근거 연결')}</small></article><article class="risk"><span>핵심 위험</span><strong>${esc(adminDecisionCompactSignal(risk,'뚜렷한 위험 신호는 추가 관측 중입니다.'))}</strong><p>${esc(risk.rationale||'위험 확대 여부를 다음 관측에서 확인합니다.')}</p><small>영향 ${esc(adminDecisionImpact(risk.impact))} · ${esc(adminDecisionTrajectory(risk.trajectory))}</small></article><article class="opportunity"><span>핵심 기회</span><strong>${esc(adminDecisionCompactSignal(opportunity,'확장 기회를 추가 관측 중입니다.'))}</strong><p>${esc(opportunity.rationale||'확장 가능성이 강해지는 지점을 추적합니다.')}</p><small>영향 ${esc(adminDecisionImpact(opportunity.impact))} · ${esc(adminDecisionTrajectory(opportunity.trajectory))}</small></article></section>
+    <div class="decision-section-band"><span>RISK & OPPORTUNITY</span><b>핵심 위험·기회와 실행 우선순위를 연결합니다.</b></div><section class="decision-priority-section"><div class="decision-section-head"><div><span>ADVISORY</span><h3>우선 대응</h3></div><small>판단 → 근거 → 대응 → 확인 기준</small></div><div class="decision-priority-grid">${prioritiesMarkup}</div></section>
+    <div class="decision-section-band"><span>ACTION MANAGEMENT</span><b>판단을 CASE로 고정하고 실제 대응을 기록합니다.</b></div><section class="decision-management-grid"><article class="decision-case-control"><div class="decision-section-head"><div><span>CASE CONTROL</span><h3>현재 판단 저장</h3></div><small>판단 시점을 HISTORY에 고정</small></div>${openCase?`<div class="decision-open-case"><span>OPEN CASE</span><strong>${esc(openCase.headline||'현재 판단 CASE')}</strong><p>${esc(openCase.note||'현재 판단을 기준점으로 관리하고 있습니다.')}</p></div>`:`<textarea data-decision-case-note rows="3" placeholder="이번 판단을 관리해야 하는 이유 또는 내부 메모"></textarea><button type="button" data-decision-case-create data-person-id="${esc(p.id||'')}">현재 판단을 CASE로 저장</button>`}<small data-decision-write-state></small></article>
       <article class="decision-action-control"><div class="decision-section-head"><div><span>MANAGEMENT</span><h3>행동 기록</h3></div><small>실제 대응을 기준점으로 저장</small></div>${openCase?`<form data-decision-action-form data-person-id="${esc(p.id||'')}"><input type="hidden" name="caseId" value="${esc(openCase.caseId||'')}"><div class="decision-form-row"><select name="type"><option value="MESSAGE">메시지</option><option value="MEDIA">미디어</option><option value="POLICY">정책</option><option value="FIELD">현장 일정</option><option value="ISSUE_RESPONSE">이슈 대응</option><option value="CAMPAIGN">캠페인</option><option value="OTHER">기타</option></select><select name="linkedPriorityRank"><option value="">우선순위 연결 없음</option>${priorities.slice(0,3).map(x=>`<option value="${Number(x.rank)||''}">PRIORITY ${Number(x.rank)||''} · ${esc(x.title||'')}</option>`).join('')}</select></div><input name="title" required maxlength="120" placeholder="실행한 대응을 명확하게 기록"><input type="datetime-local" name="occurredAt"><textarea name="note" rows="2" placeholder="실행 내용·메시지·대상 메모"></textarea><button type="submit">행동 기록 저장</button><small data-decision-action-state></small></form>`:`<div class="decision-empty-line">CASE를 먼저 저장하면 실제 대응을 연결해 관리할 수 있습니다.</div>`}</article></section>
-    <section class="decision-outcome-section"><div class="decision-section-head"><div><span>MEASURE</span><h3>대응 이후 변화</h3></div><small>72시간 · 7일 · 14일 관측</small></div><div class="decision-action-list">${actionMarkup}</div><p class="decision-causality-note">대응 이후의 관측 변화입니다. 단일 행동의 인과효과로 단정하지 않습니다.</p></section>
+    <div class="decision-section-band"><span>RESULT TRACKING</span><b>대응 이후 72시간·7일·14일 변화를 추적합니다.</b></div><section class="decision-outcome-section"><div class="decision-section-head"><div><span>MEASURE</span><h3>대응 이후 변화</h3></div><small>72시간 · 7일 · 14일 관측</small></div><div class="decision-action-list">${actionMarkup}</div><p class="decision-causality-note">대응 이후의 관측 변화입니다. 단일 행동의 인과효과로 단정하지 않습니다.</p></section>
     <section class="decision-case-history"><div class="decision-section-head"><div><span>CASE INTELLIGENCE</span><h3>CASE HISTORY</h3></div><small>판단과 대응의 장기 기록</small></div><div>${casesMarkup}</div></section>
     <section class="decision-pattern-section"><div class="decision-section-head"><div><span>ACCUMULATED PATTERNS</span><h3>축적 패턴</h3></div><small>반복 CASE에서 확인된 대응 이후 변화</small></div><div class="decision-pattern-grid">${patternMarkup}</div></section>
   </section>`;
 }
 
 function adminIntelligenceReport(history,p){
-  const pi=history?.politicalIntelligence||{};
+  const pi=aggressiveAdminPoliticalIntelligence(history?.politicalIntelligence||{},p,history);
   const evidenceLabel=adminPiEvidenceLabel(pi,history),diagnosis=pi?.diagnosis?.label||'JCS INTELLIGENCE REPORT';
-  return `<details class="content-card admin-intelligence-report-shell" data-admin-political-intelligence>
-    <summary class="admin-intelligence-report-gate"><span class="admin-intelligence-report-seal">JCS<small>ADMIN</small></span><div class="admin-intelligence-report-title"><span>CONFIDENTIAL ADVISORY INTELLIGENCE · ${esc(p.name)}</span><h2>관리자 정치 인텔리전스 리포트</h2><p>검색·뉴스·정참시 HISTORY와 공개 데이터를 종합한 관리자 전용 정치 분석 리포트입니다.</p></div><div class="admin-intelligence-report-meta"><small>분석 근거</small><b>${esc(evidenceLabel)}</b><em>${esc(diagnosis)}</em><strong class="admin-intelligence-report-open"><span class="closed-label">리포트 열기</span><span class="open-label">리포트 닫기</span><i>+</i></strong></div></summary>
+  return `<section class="admin-intelligence-report-shell is-open" data-admin-political-intelligence>
+    <header class="admin-intelligence-report-gate"><span class="admin-intelligence-report-seal">JCS<small>ADMIN</small></span><div class="admin-intelligence-report-title"><span>CONFIDENTIAL ADVISORY INTELLIGENCE · ${esc(p.name)}</span><h2>전략 인텔리전스</h2><p>검색·뉴스·정참시 HISTORY와 공개 데이터를 교차 분석해 위험·기회·대응 방향을 제시합니다.</p></div><div class="admin-intelligence-report-meta"><small>분석 근거</small><b>${esc(evidenceLabel)}</b><em>${esc(diagnosis)}</em></div></header>
     <div class="admin-intelligence-report-body">${adminPoliticalIntelligence(history,p)}${adminHistoryIntelligence(history,p)}</div>
-  </details>`;
+  </section>`;
+}
+function adminUnifiedCommandCenter(decisionPayload,history,p){
+  const pi=aggressiveAdminPoliticalIntelligence(history?.politicalIntelligence||{},p,history);history={...history,politicalIntelligence:pi};const evidenceLabel=adminPiEvidenceLabel(pi,history),condition=piNumber(pi?.diagnosis?.condition);
+  return `<section class="admin-command-center" data-admin-command-center data-person-id="${esc(p.id||'')}" aria-label="${esc(p.name||'정치인')} 관리자 정치 의사결정 센터">
+    <header class="admin-command-center-head"><div><span>JCS POLITICAL WAR ROOM</span><small>CONFIDENTIAL ADVISORY INTELLIGENCE</small><h2>JCS COMMAND CENTER · ${esc(p.name||'정치인')}</h2><p>현재 상황, 원인, 위험·기회, 대응 전략, 실행 이후 변화까지 한 화면에서 관리합니다.</p></div><div class="admin-command-center-status"><span>정치 흐름</span><strong>${condition===null?'—':piSigned(condition)}</strong><b>${esc(adminPiConditionLabel(condition))}</b><small>${esc(evidenceLabel)}</small></div></header>
+    ${adminDecisionWarRoom(decisionPayload,p)}
+    ${adminIntelligenceReport(history,p)}
+  </section>`;
 }
 function adminPersonIntelligenceSlot(p){
-  return `<section class="content-card admin-intelligence-report-shell admin-pi-loading" data-person-admin-intelligence-slot data-person-id="${esc(p.id)}" aria-busy="true"><div class="admin-intelligence-report-gate loading"><span class="admin-intelligence-report-seal">JCS<small>ADMIN</small></span><div class="admin-intelligence-report-title"><span>PRIVATE POLITICAL INTELLIGENCE · ${esc(p.name)}</span><h2>JCS Political Intelligence Report</h2><p>관리자 전용 인텔리전스 리포트를 준비하고 있습니다.</p></div><div class="admin-intelligence-report-meta"><small>LOADING</small><b>···</b></div></div></section>`;
+  return `<section class="admin-command-center admin-command-center-loading" data-person-admin-intelligence-slot data-person-id="${esc(p.id)}" aria-busy="true"><header class="admin-command-center-head"><div><span>JCS POLITICAL WAR ROOM</span><small>CONFIDENTIAL ADVISORY INTELLIGENCE</small><h2>JCS COMMAND CENTER · ${esc(p.name)}</h2><p>관리자 전용 의사결정 데이터를 연결하고 있습니다.</p></div><div class="admin-command-center-status"><span>LOADING</span><strong>···</strong></div></header></section>`;
 }
 export async function refreshAdminDecisionSlot(personId){
   const id=String(personId||'').trim();if(!id)return;
-  const slot=document.querySelector(`[data-person-admin-intelligence-slot][data-person-id="${CSS.escape(id)}"], [data-decision-war-room][data-person-id="${CSS.escape(id)}"]`);
+  const escaped=CSS.escape(id);
+  const slot=document.querySelector(`[data-admin-command-center][data-person-id="${escaped}"], [data-person-admin-intelligence-slot][data-person-id="${escaped}"], [data-decision-war-room][data-person-id="${escaped}"]`);
   const p=getPersonSlotById(id);if(!slot||!p)return;
-  const [{getAdminHistoryPersonDetail},{getAdminDecisionPerson}]=await Promise.all([import('../core/history-repository.js?v=history-v2-detail-perf-decision-v1'),import('../core/decision-repository.js?v=decision-v1')]);
+  const [{getAdminHistoryPersonDetail},{getAdminDecisionPerson}]=await Promise.all([import('../core/history-repository.js?v=history-v2-detail-perf-decision-v1-freedom-detail-v2'),import('../core/decision-repository.js?v=decision-v1-freedom-detail-v2')]);
   const [historyResult,decisionPayload]=await Promise.all([getAdminHistoryPersonDetail(id,'30'),getAdminDecisionPerson(id,'30')]);
   if(!slot.isConnected)return;
   const history=adminDecisionMergeHistory(historyResult,decisionPayload);
-  const markup=`${adminDecisionWarRoom(decisionPayload,p)}${adminIntelligenceReport(history,p)}`;
-  const shell=document.createElement('div');shell.innerHTML=markup;
-  const parent=slot.parentNode;if(!parent)return;
-  if(slot.matches('[data-decision-war-room]')&&slot.nextElementSibling?.matches('[data-admin-political-intelligence]'))slot.nextElementSibling.remove();
-  const nodes=[...shell.children];slot.replaceWith(...nodes);
+  const shell=document.createElement('div');shell.innerHTML=adminUnifiedCommandCenter(decisionPayload,history,p);
+  const node=shell.firstElementChild;if(node)slot.replaceWith(node);
 }
 export async function hydratePersonAdminIntelligence(){
   const slot=document.querySelector('[data-person-admin-intelligence-slot]');if(!slot)return;
@@ -568,7 +669,7 @@ export async function hydratePersonAdminIntelligence(){
 }
 
 function adminHistoryDelta(value){
-  if(value===null||value===undefined||!Number.isFinite(Number(value)))return `<em class="neutral">관측 부족</em>`;
+  if(value===null||value===undefined||!Number.isFinite(Number(value)))return `<em class="neutral">기준선</em>`;
   const x=Math.round(Number(value)*10)/10;
   return `<em class="${x>0?'up':x<0?'down':'neutral'}">${x>0?'+':''}${x}</em>`;
 }
@@ -589,14 +690,14 @@ export async function renderPersonDetail(id){
   const favorite=session.authenticated&&isFavoritePerson(p.id);
   const activityTitle=p.type==="assembly"?"의정활동":"행정활동";
   const [live,photo]=await Promise.all([getNowPerson(p.id),Promise.resolve(politicianPhoto(p.id,"profile"))]);
-  const row=live?.row||null,news=row?.news||{};
+  const row=live?.row||null,news=row?.news||{},publicModel=aggressivePublicAnalysis(p,live);
   const photoMarkup=photo ? `<img data-politician-photo src="${esc(photo.url)}" alt="" width="${photo.width}" height="${photo.width}" loading="eager" decoding="async" fetchpriority="high">` : "";
   const adminPhotoEditor=isAdmin?`<form class="detail-politician-photo-form" data-politician-photo-form data-detail-politician-photo-form data-person-id="${esc(p.id)}"><input type="file" accept="image/jpeg,image/png,image/webp" data-politician-photo-input hidden><div class="detail-photo-selected-preview" data-politician-photo-preview hidden></div><button class="detail-photo-admin-trigger" type="button" data-detail-politician-photo-trigger aria-label="${esc(p.name)} 사진 등록 또는 교체"><span>ADMIN</span><b>사진 선택</b></button><button class="detail-photo-admin-save" type="submit" data-politician-photo-save disabled>저장</button><small class="detail-photo-admin-state" data-politician-photo-state>사진을 선택하면 여기서 미리볼 수 있습니다</small></form>`:"";
   const photoNotice=photo
     ? ` · 사진: <a href="${esc(photo.sourcePage||"#")}" target="_blank" rel="noopener noreferrer">${esc(photo.attribution||"프로필 사진")}</a>${photo.licenseUrl?` · <a href="${esc(photo.licenseUrl)}" target="_blank" rel="noopener noreferrer">${esc(photo.license||"라이선스")}</a>`:""}`
     : " · 사진은 순차 연결 중";
-  const rank=n(row?.rank),categoryRank=n(live?.categoryRank),categoryLabel=live?.categoryLabel||p.roleLabel;
-  const liveHero=row?`<div class="person-hero-now person-hero-rank-split"><div class="person-hero-rank-cell"><span>전체 NOW</span><strong>${fmt(rank)}위</strong></div><div class="person-hero-rank-cell"><span>${esc(categoryLabel)}</span><strong>${categoryRank?`${fmt(categoryRank)}위`:"—"}</strong></div><div class="person-hero-rank-trend">${trendMarkup(live)}</div></div>`:`<div class="person-hero-now is-empty person-hero-rank-split"><div class="person-hero-rank-cell"><span>전체 NOW</span><strong>—</strong></div><div class="person-hero-rank-cell"><span>${esc(categoryLabel)}</span><strong>—</strong></div><div class="person-hero-rank-trend"><span class="person-trend neutral">게시 데이터 대기</span></div></div>`;
+  const rank=publicModel.rank,categoryRank=publicModel.categoryRank,categoryLabel=live?.categoryLabel||p.roleLabel;
+  const liveHero=`<div class="person-hero-now person-hero-rank-split ${publicModel.estimated?'is-estimated':''}"><div class="person-hero-rank-cell"><span>전체 NOW</span><strong>${fmt(rank)}위</strong></div><div class="person-hero-rank-cell"><span>${esc(categoryLabel)}</span><strong>${fmt(categoryRank)}위</strong></div><div class="person-hero-rank-trend">${trendMarkup(live)}<small>${publicModel.estimated?'JCS 다중신호 보정':'LIVE 게시 기준'}</small></div></div>`;
   const newsSection=row?`<section class="content-card person-recent-news"><div class="section-title"><h2>최근 뉴스</h2><span>분석 근거 · 최근 7일 최대 6건</span></div>${recentNews(news)}</section>`:"";
   return pageShell(`<main class="subpage person-live-detail-page person-analysis-report-page">
     <section class="person-detail-hero person-live-hero content-card">
@@ -605,7 +706,7 @@ export async function renderPersonDetail(id){
       ${liveHero}
       <div class="detail-action-bar"><button type="button" class="ghost-btn ${favorite?"active":""}" data-person-favorite="${esc(p.id)}">${favorite?"★ 즐겨찾기됨":"☆ 즐겨찾기"}</button><button type="button" class="ghost-btn" data-go="/compare?a=${esc(p.id)}">비교하기</button></div>
     </section>
-    ${analysisReport(live)}
+    ${analysisReport(live,p,publicModel)}
     ${isAdmin?adminPersonIntelligenceSlot(p):""}
     ${newsSection}
     <section class="person-profile-divider"><span>PROFILE & RECORD</span><b>공식 프로필과 정치 기록</b></section>

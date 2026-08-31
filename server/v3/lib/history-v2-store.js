@@ -1,6 +1,8 @@
 const redis=require('../../../lib/v3/redis');
 const rosterLib=require('./politician-live-roster');
-const signals=require('./now-public-signals');
+let signals;
+try{signals=require('./now-public-signals');}
+catch{signals={derivePersonView(){throw new Error('NOW_PUBLIC_SIGNALS_REQUIRED');}};}
 const {getPoliticalIntelligenceEvidence}=require('../data/political-intelligence-evidence');
 const {derivePoliticalIntelligenceV1}=require('./political-intelligence-v1');
 const {readPoliticalIntelligenceSnapshotPersonV1,readLatestPoliticalIntelligenceSnapshotPersonV1}=require('./political-intelligence-store');

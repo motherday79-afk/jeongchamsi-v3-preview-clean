@@ -21,7 +21,8 @@ test('admin person detail renders a decision war room before the deep intelligen
 
 test('manager-facing evidence labels are qualitative and no confidence percentage is displayed',()=>{
   const people=read('src/views/people.js');
-  hasAll(people,['분석 근거 강함','분석 근거 충분','근거 보강 중','유효 신호','보강 중','판독 대기']);
+  hasAll(people,['분석 근거 강함','분석 근거 충분','유효 신호','보강 중','JCS 보정 신호']);
+  assert.doesNotMatch(people,/판독 대기|근거 보강 중/);
   assert.doesNotMatch(people,/분석 신뢰도[^\n]{0,180}%/);
   assert.doesNotMatch(people,/신뢰도\s*\$\{[^\n]{0,120}%/);
   assert.doesNotMatch(people,/CONF\s*\$\{[^\n]{0,120}%/);

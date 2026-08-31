@@ -1,0 +1,40 @@
+JCS FREEDOM REBUILD · CHANGED / RESTORED FILES
+2026-09-01
+
+MODIFIED
+- css/pages.css
+- index.html
+- server/v3/lib/decision-intelligence-v1.js
+- server/v3/lib/history-v2-store.js
+- server/v3/lib/political-intelligence-store.js
+- server/v3/routes/admin/decision.js
+- server/v3/routes/admin/now-data.js
+- src/app.js
+- src/views/features.js
+- src/views/people.js
+- tests/decision-war-room-ui-20260901.test.js
+
+ADDED · REBUILD
+- server/v3/lib/politician-live-roster.js
+- server/v3/lib/safe-public-publish.js
+- server/v3/lib/storage-safe-mget.js
+- tests/decision-aggressive-fill-20260901.test.js
+- tests/freedom-rebuild-20260901.test.js
+- tests/now-public-safe-publish-20260901.test.js
+- tests/storage-mget-person-batch-20260901.test.js
+
+RESTORED FROM CANONICAL PRIOR PATCHES
+- lib/v3/redis.js
+- server/v3/lib/age-gender-baseline-v2.js
+- server/v3/data/age-gender-baseline-v2.json
+- server/v3/data/age-gender-baseline-v2-manifest.json
+- server/v3/lib/political-intelligence-v2.js
+- server/v3/lib/political-intelligence-v2-store.js
+
+INTEGRATION HARDENING
+- HISTORY V2 roster source restored from the packaged 542-person baseline registry.
+- Protected now-public-signals dependency is loaded defensively so compact HISTORY summary tests do not require the full public serving module.
+- CSS !important declarations removed; release stylesheet now parses cleanly with zero !important declarations.
+
+CACHE REVISION
+- decision-v1-freedom-detail-v2

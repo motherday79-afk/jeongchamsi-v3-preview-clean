@@ -15,7 +15,7 @@ const VIEW_PREFETCH_TTL = 20_000;
 
 async function refreshDecisionAdminPerson(personId="") {
   try {
-    const view = await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1");
+    const view = await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2");
     if (typeof view.refreshAdminDecisionSlot === "function") return view.refreshAdminDecisionSlot(personId);
   } catch {}
   return render(currentRoute(), { resetScroll:false });
@@ -75,7 +75,7 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
     const view = await import("./views/boards.js?v=jcs-share-v1");
     const domain = p[0] === "column" ? "columns" : p[0];
@@ -88,7 +88,7 @@ async function resolveView(state) {
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1");
+  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -217,7 +217,7 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
   if (app.querySelector("[data-now-rank-carousel]")) requestAnimationFrame(hydrateHomeNowRank);
   if (app.querySelector("[data-person-admin-intelligence-slot]")) {
     requestAnimationFrame(() => {
-      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1")
+      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2")
         .then(mod => mod.hydratePersonAdminIntelligence?.())
         .catch(() => {});
     });
@@ -401,7 +401,7 @@ document.addEventListener("click", async event => {
   if (nowMore) {
     if (nowMore.disabled) return;
     nowMore.disabled = true;
-    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1");
+    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1-freedom-detail-v2");
     const r = await tools.appendNowRankMore(nowMore);
     if (!r?.ok) {
       nowMore.disabled = false;

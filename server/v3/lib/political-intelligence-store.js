@@ -2,7 +2,9 @@
 
 const zlib=require('node:zlib');
 const redis=require('../../../lib/v3/redis');
-const {derivePersonView}=require('./now-public-signals');
+let derivePersonView;
+try{({derivePersonView}=require('./now-public-signals'));}
+catch{derivePersonView=()=>{throw new Error('NOW_PUBLIC_SIGNALS_REQUIRED');};}
 const {derivePoliticalIntelligenceV1,VERSION:ANALYSIS_VERSION}=require('./political-intelligence-v1');
 const {getPoliticalIntelligenceEvidence}=require('../data/political-intelligence-evidence');
 const {deriveWindowSummary}=require('./history-v2-core');
