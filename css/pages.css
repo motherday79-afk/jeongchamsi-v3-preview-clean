@@ -3134,3 +3134,83 @@ html.jcv3-touch-ui .jcv3-view-mode-switch{display:flex}
 .admin-compare-position-map .admin-compare-map-summary>span{font-size:11px!important;font-weight:900;letter-spacing:.08em;color:#d9c99f}
 .admin-compare-position-map .admin-compare-map-summary>p{margin:0!important;font-size:13px!important;line-height:1.55!important;color:#f4f7f8}
 @media(max-width:680px){.admin-compare-position-map{padding:18px!important}.admin-compare-position-map .admin-compare-map-board{height:360px}.admin-compare-position-map .admin-compare-map-zone{padding:12px}.admin-compare-position-map .admin-compare-map-zone b{font-size:12px!important}.admin-compare-position-map .admin-compare-map-zone span{font-size:11px!important}.admin-compare-position-map .admin-compare-map-people{grid-template-columns:1fr}.admin-compare-position-map .admin-compare-map-people>article{grid-template-columns:46px minmax(0,1fr) auto}.admin-compare-position-map .admin-compare-map-avatar{width:46px;height:46px}.admin-compare-position-map .admin-compare-map-summary{grid-template-columns:1fr;gap:5px}.admin-compare-position-map .axis-y-high{left:8px}.admin-compare-position-map .axis-y-low{left:8px}.admin-compare-position-map .axis-x-low{bottom:8px;transform:translateX(-102px)}.admin-compare-position-map .axis-x-high{bottom:8px;transform:translateX(10px)}}
+
+/* JCS POLITICAL DECISION SYSTEM · WAR ROOM */
+.admin-decision-war-room{font-size:14px;line-height:1.62;padding:0;overflow:hidden;border:1px solid #dbe2e5;background:#f8fafb}
+.admin-decision-war-room .decision-kicker{font-size:12px;font-weight:900;letter-spacing:.11em;color:#6d7f87}
+.admin-decision-war-room .decision-key-metric{font-size:22px;line-height:1.05;letter-spacing:-.03em;color:#203640}
+.admin-decision-war-room .decision-war-room-head{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:22px;align-items:end;padding:26px 28px 22px;background:#fff;border-bottom:1px solid #e0e6e8}
+.admin-decision-war-room .decision-war-room-head h2{margin:5px 0 7px;font-size:25px;line-height:1.2;letter-spacing:-.035em;color:#1d323b}
+.admin-decision-war-room .decision-war-room-head p{margin:0;max-width:780px;font-size:14px;line-height:1.65;color:#62747c}
+.admin-decision-war-room .decision-evidence{padding:14px 16px;border-radius:14px;background:#253d48;color:#fff}
+.admin-decision-war-room .decision-evidence small{display:block;font-size:12px;font-weight:850;color:#c9d3d7}
+.admin-decision-war-room .decision-evidence strong{display:block;margin-top:3px;font-size:16px;color:#fff}
+.admin-decision-war-room .decision-evidence span{display:block;margin-top:4px;font-size:13px;line-height:1.45;color:#dfe6e9}
+.admin-decision-war-room .decision-state-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:#e0e6e8;border-bottom:1px solid #e0e6e8}
+.admin-decision-war-room .decision-state-grid article{min-height:112px;padding:18px 20px;background:#fff}
+.admin-decision-war-room .decision-state-grid small{display:block;font-size:12px;font-weight:800;color:#7a8a91}
+.admin-decision-war-room .decision-state-grid strong{display:block;margin-top:8px;font-size:20px;color:#203640}
+.admin-decision-war-room .decision-state-grid span{display:block;margin-top:5px;font-size:13px;color:#687a82}
+.admin-decision-war-room .decision-signal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:18px 20px}
+.admin-decision-war-room .decision-signal-grid article{min-height:176px;padding:18px;border:1px solid #dfe6e8;border-radius:16px;background:#fff}
+.admin-decision-war-room .decision-signal-grid article>span{font-size:12px;font-weight:900;letter-spacing:.05em;color:#73858d}
+.admin-decision-war-room .decision-signal-grid article>strong{display:block;margin-top:8px;font-size:17px;line-height:1.4;color:#243943}
+.admin-decision-war-room .decision-signal-grid article>p{margin:9px 0 0;font-size:14px;line-height:1.55;color:#536870}
+.admin-decision-war-room .decision-signal-grid article>small{display:block;margin-top:10px;font-size:13px;line-height:1.45;color:#7a898f}
+.admin-decision-war-room .decision-signal-grid .risk{border-top:3px solid #8b625b}.admin-decision-war-room .decision-signal-grid .opportunity{border-top:3px solid #517767}.admin-decision-war-room .decision-signal-grid .cause{border-top:3px solid #506f7e}
+.admin-decision-war-room .decision-priority-section,.admin-decision-war-room .decision-outcome-section,.admin-decision-war-room .decision-case-history,.admin-decision-war-room .decision-pattern-section{padding:22px 20px;border-top:1px solid #dfe6e8}
+.admin-decision-war-room .decision-section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:13px}
+.admin-decision-war-room .decision-section-head span{font-size:12px;font-weight:900;letter-spacing:.09em;color:#75878f}
+.admin-decision-war-room .decision-section-head h3{margin:2px 0 0;font-size:19px;letter-spacing:-.025em;color:#213741}
+.admin-decision-war-room .decision-section-head>small{font-size:13px;color:#819097;text-align:right}
+.admin-decision-war-room .decision-priority-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.admin-decision-war-room .decision-priority{border:1px solid #dce4e6;border-radius:16px;background:#fff;overflow:hidden}
+.admin-decision-war-room .decision-priority header{display:grid;grid-template-columns:34px auto minmax(0,1fr);gap:8px;align-items:center;padding:14px 15px;border-bottom:1px solid #e7ebed}
+.admin-decision-war-room .decision-priority header span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#263f4a;color:#fff;font-size:12px;font-weight:900}
+.admin-decision-war-room .decision-priority header b{font-size:12px;padding:4px 7px;border-radius:999px;background:#edf2f3;color:#50666f}
+.admin-decision-war-room .decision-priority header strong{font-size:14px;line-height:1.4;color:#263a43}
+.admin-decision-war-room .decision-priority dl{margin:0;padding:5px 15px 14px}
+.admin-decision-war-room .decision-priority dl>div{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:9px 0;border-bottom:1px solid #edf0f1}
+.admin-decision-war-room .decision-priority dl>div:last-child{border-bottom:0}
+.admin-decision-war-room .decision-priority dt{font-size:12px;font-weight:900;color:#73858d}
+.admin-decision-war-room .decision-priority dd{margin:0;font-size:13px;line-height:1.5;color:#3e555f}
+.admin-decision-war-room .decision-priority dd span{display:block;font-size:13px;letter-spacing:0;color:#3e555f}
+.admin-decision-war-room .decision-management-grid{display:grid;grid-template-columns:1fr 1.35fr;gap:12px;padding:22px 20px;border-top:1px solid #dfe6e8}
+.admin-decision-war-room .decision-case-control,.admin-decision-war-room .decision-action-control{padding:18px;border:1px solid #dce4e6;border-radius:16px;background:#fff}
+.admin-decision-war-room textarea,.admin-decision-war-room input,.admin-decision-war-room select{box-sizing:border-box;width:100%;min-height:42px;border:1px solid #ccd7db;border-radius:10px;background:#fff;padding:9px 11px;font:inherit;font-size:13px;color:#263b44}
+.admin-decision-war-room textarea{resize:vertical;min-height:72px}
+.admin-decision-war-room button{min-height:40px;border:0;border-radius:10px;background:#263f4a;color:#fff;padding:9px 13px;font-size:13px;font-weight:850;cursor:pointer}
+.admin-decision-war-room .decision-case-control>button,.admin-decision-war-room .decision-action-control form>button{width:100%;margin-top:9px}
+.admin-decision-war-room .decision-form-row{display:grid;grid-template-columns:1fr 1.3fr;gap:8px;margin-bottom:8px}
+.admin-decision-war-room .decision-action-control form>input,.admin-decision-war-room .decision-action-control form>textarea{margin-top:8px}
+.admin-decision-war-room [data-decision-write-state],.admin-decision-war-room [data-decision-action-state],.admin-decision-war-room [data-decision-action-note-state]{display:block;margin-top:7px;font-size:13px;color:#6c7f87}
+.admin-decision-war-room .decision-open-case{padding:14px;border-radius:12px;background:#eef3f4}
+.admin-decision-war-room .decision-open-case span{font-size:12px;font-weight:900;color:#597079}.admin-decision-war-room .decision-open-case strong{display:block;margin-top:4px;font-size:15px;color:#283e47}.admin-decision-war-room .decision-open-case p{margin:5px 0 0;font-size:13px;color:#60737b}
+.admin-decision-war-room .decision-action-list{display:grid;gap:9px}
+.admin-decision-war-room .decision-action-row{padding:15px;border:1px solid #dfe5e7;border-radius:14px;background:#fff}
+.admin-decision-war-room .decision-action-row>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.admin-decision-war-room .decision-action-row>header div>span{display:block;font-size:12px;font-weight:900;color:#6f8189}.admin-decision-war-room .decision-action-row>header strong{display:block;margin-top:2px;font-size:15px;color:#263c45}.admin-decision-war-room .decision-action-row>header small{display:block;margin-top:3px;font-size:12px;color:#89969b}.admin-decision-war-room .decision-action-row>header>b{font-size:12px;padding:5px 8px;border-radius:999px;background:#edf2f3;color:#49616a;white-space:nowrap}
+.admin-decision-war-room .decision-outcome-metrics{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.admin-decision-war-room .decision-outcome-metrics span{padding:6px 8px;border-radius:8px;background:#f1f4f5;font-size:12px;color:#687a82}.admin-decision-war-room .decision-outcome-metrics b{color:#263d47}.admin-decision-war-room .decision-action-row>p{margin:9px 0;font-size:13px;color:#50656d}
+.admin-decision-war-room .decision-action-row form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}.admin-decision-war-room .decision-action-row form button{min-height:36px}.admin-decision-war-room .decision-action-row form small{grid-column:1/-1;margin:0}
+.admin-decision-war-room .decision-causality-note{margin:12px 0 0;font-size:13px;color:#7b898f}
+.admin-decision-war-room .decision-case-history>div:last-child{display:grid;gap:8px}.admin-decision-war-room .decision-case-history article{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 14px;border:1px solid #dfe5e7;border-radius:12px;background:#fff}.admin-decision-war-room .decision-case-history article span{font-size:12px;font-weight:900;color:#667a82}.admin-decision-war-room .decision-case-history article strong{display:block;margin-top:2px;font-size:14px;color:#2a4049}.admin-decision-war-room .decision-case-history article small{display:block;margin-top:2px;font-size:12px;color:#89969b}.admin-decision-war-room .decision-case-history article button{min-height:34px;background:#eef2f3;color:#405963}
+.admin-decision-war-room .decision-pattern-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-decision-war-room .decision-pattern-grid article{padding:15px;border-radius:14px;background:#253d48;color:#fff}.admin-decision-war-room .decision-pattern-grid article>span{font-size:12px;font-weight:900;color:#cbd6da}.admin-decision-war-room .decision-pattern-grid article>strong{display:block;margin-top:4px;font-size:15px}.admin-decision-war-room .decision-pattern-grid article>p{margin:7px 0;font-size:13px;color:#e2e8ea}.admin-decision-war-room .decision-pattern-grid article>small{font-size:12px;color:#b9c7cc}
+.admin-decision-war-room .decision-empty-line,.admin-decision-war-room .decision-war-room-empty{padding:16px;border-radius:12px;background:#eef2f3;font-size:13px;color:#64777f}
+.admin-decision-war-room .decision-war-room-empty{margin:20px}.admin-decision-war-room .decision-war-room-empty h2{margin:5px 0;font-size:21px;color:#253b45}.admin-decision-war-room .decision-war-room-empty p{margin:0}
+@media(max-width:900px){.admin-decision-war-room .decision-war-room-head{grid-template-columns:1fr}.admin-decision-war-room .decision-state-grid{grid-template-columns:repeat(2,1fr)}.admin-decision-war-room .decision-signal-grid,.admin-decision-war-room .decision-priority-grid{grid-template-columns:1fr}.admin-decision-war-room .decision-management-grid{grid-template-columns:1fr}.admin-decision-war-room .decision-pattern-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.admin-decision-war-room .decision-war-room-head{padding:20px 17px}.admin-decision-war-room .decision-war-room-head h2{font-size:22px}.admin-decision-war-room .decision-state-grid{grid-template-columns:1fr 1fr}.admin-decision-war-room .decision-state-grid article{padding:15px}.admin-decision-war-room .decision-signal-grid,.admin-decision-war-room .decision-priority-section,.admin-decision-war-room .decision-outcome-section,.admin-decision-war-room .decision-case-history,.admin-decision-war-room .decision-pattern-section,.admin-decision-war-room .decision-management-grid{padding-left:14px;padding-right:14px}.admin-decision-war-room .decision-form-row{grid-template-columns:1fr}.admin-decision-war-room .decision-section-head{align-items:flex-start;flex-direction:column}.admin-decision-war-room .decision-section-head>small{text-align:left}.admin-decision-war-room .decision-action-row form{grid-template-columns:1fr}.admin-decision-war-room .decision-case-history article{align-items:flex-start;flex-direction:column}}
+
+/* JCS POLITICAL DECISION SYSTEM · COMPARATIVE BRIEF */
+.admin-compare-decision-brief{padding:24px!important}
+.admin-compare-decision-brief .admin-compare-cause-trace{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin:13px 0;padding:13px 15px;border-radius:13px;background:#263f4a;color:#fff}
+.admin-compare-decision-brief .admin-compare-cause-trace>span{font-size:12px;font-weight:900;letter-spacing:.07em;color:#d6e0e3;white-space:nowrap}
+.admin-compare-decision-brief .admin-compare-cause-trace>p{margin:0!important;font-size:13px!important;line-height:1.55!important;color:#f1f5f6}
+.admin-compare-decision-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:11px}
+.admin-compare-decision-card{border:1px solid #dce4e6;border-radius:16px;background:#fff;overflow:hidden}
+.admin-compare-decision-card>header{display:grid;grid-template-columns:32px 52px minmax(0,1fr);gap:10px;align-items:center;padding:13px 14px;border-bottom:1px solid #e7ecee}
+.admin-compare-decision-card>header>span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#263f4a;color:#fff;font-size:12px;font-weight:900}
+.admin-compare-decision-avatar{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;overflow:hidden;background:#eef2f3}.admin-compare-decision-avatar img{width:100%;height:100%;object-fit:cover}
+.admin-compare-decision-card h3{margin:0;font-size:16px;color:#243a44}.admin-compare-decision-card header small{font-size:12px;color:#71848c}
+.admin-compare-decision-card dl{margin:0;padding:4px 14px 13px}.admin-compare-decision-card dl>div{display:grid;grid-template-columns:72px minmax(0,1fr);gap:9px;padding:10px 0;border-bottom:1px solid #edf1f2}.admin-compare-decision-card dl>div:last-child{border-bottom:0}
+.admin-compare-decision-card dt{font-size:12px;font-weight:900;color:#72858d}.admin-compare-decision-card dd{margin:0;min-width:0}.admin-compare-decision-card dd strong{display:block;font-size:14px;line-height:1.4;color:#283f48}.admin-compare-decision-card dd span{display:block;margin-top:3px;font-size:13px;line-height:1.45;color:#60737b}
+.admin-compare-decision-card dl>div.advantage{border-left:3px solid #5d7f70;padding-left:8px}.admin-compare-decision-card dl>div.risk{border-left:3px solid #90665e;padding-left:8px}.admin-compare-decision-card dl>div.priority{border-left:3px solid #506f7e;padding-left:8px}
+@media(max-width:680px){.admin-compare-decision-brief{padding:18px!important}.admin-compare-decision-brief .admin-compare-cause-trace{grid-template-columns:1fr;gap:4px}.admin-compare-decision-grid{grid-template-columns:1fr}}

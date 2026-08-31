@@ -32,6 +32,6 @@ test('admin compare and intelligence ship a scoped readability override',()=>{
 test('admin report language prioritizes Korean explanations for manager-facing concepts',()=>{
   const people=read('src/views/people.js');
   const compare=read('src/views/features.js');
-  for(const token of ['분석 신뢰도','정치 회복력','핵심 기회','핵심 위험','핵심 결론','의미','우선 대응']) assert.ok(people.includes(token),`missing ${token}`);
+  for(const token of ['분석 근거','정치 회복력','핵심 기회','핵심 위험','핵심 결론','의미','우선 대응']) assert.ok(people.includes(token),`missing ${token}`);
   for(const token of ['핵심 격차 지표','비교 대상별 우위 영역','정치 포지션 맵','대중 확산력']) assert.ok(compare.includes(token),`missing ${token}`);
 });

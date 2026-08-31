@@ -8,7 +8,6 @@ const {
   readPersonHistoryV2,
   readPoliticalIntelligenceV2
 }=require('../../lib/history-v2-store');
-const {readPoliticalIntelligenceCohortSeriesV2}=require('../../lib/political-intelligence-v2-store');
 
 module.exports=async function historyAdmin(req,res){
   res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -36,12 +35,9 @@ module.exports=async function historyAdmin(req,res){
       }
       if(view==='detail'&&personId){
         const person=await readPersonHistoryV2(personId,{days:range==='all'?'all':Number(range)||30,limit:320});
-        const [politicalIntelligence,cohortSeries]=await Promise.all([
-          readPoliticalIntelligenceV2(personId,person),
-          readPoliticalIntelligenceCohortSeriesV2(personId,{limit:8}).catch(()=>[])
-        ]);
-        const compactPerson={...person,observations:(person.observations||[]).slice(-12),daily:[],events:[]};
-        return res.status(200).json({ok:true,personId,person:compactPerson,politicalIntelligence,cohortSeries});
+        const politicalIntelligence=await readPoliticalIntelligenceV2(personId,person);
+        const compactPerson={...person,observations:(person.observations||[]).slice(-3),daily:[],events:[]};
+        return res.status(200).json({ok:true,personId,person:compactPerson,politicalIntelligence});
       }
       const overview=await historyOverviewV2();
       const person=personId?await readPersonHistoryV2(personId,{days:range==='all'?'all':Number(range)||30,limit:730}):null;

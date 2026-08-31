@@ -1,0 +1,38 @@
+JCS POLITICAL DECISION SYSTEM V1
+FINAL VERIFICATION · 2026-09-01
+
+[집중 검증]
+- Decision System + 승인된 관리자 UI 계약: 36/36 PASS
+- FAIL 0
+
+[문법 검사]
+PASS
+- src/app.js
+- src/views/people.js
+- src/views/features.js
+- src/core/decision-repository.js
+- server/v3/lib/decision-intelligence-v1.js
+- server/v3/lib/decision-case-store.js
+- server/v3/lib/decision-outcome-v1.js
+- server/v3/routes/admin/decision.js
+- api/gateway.js
+
+[전체 보유 테스트]
+- 62 tests
+- 57 PASS
+- 5 FAIL
+
+남은 5개는 이번 Decision System 구현에서 새로 발생한 회귀가 아니라 현재 합성 기준본의 과거 결손/계약 충돌이다.
+1) age-gender-baseline-v2 파일 부재로 인한 suite failure 2건
+2) 실제 ../../../lib/v3/redis wrapper 부재 1건
+3) 과거 HISTORY CSS에 존재하던 !important와 구 테스트 계약 충돌 2건
+
+[Decision 핵심 확인]
+- 관리자 인증 없는 Decision GET/POST 차단
+- CASE 생성 시 클라이언트가 분석값 임의 저장 불가: 서버 분석값 사용
+- ACTION 등록 시 baseline을 클라이언트가 조작하지 못하고 서버 HISTORY 기준 사용
+- CASE/ACTION 저장 인덱스 rollback 검증
+- NOW storage key 중복 조회 방지 검증
+- 분석 근거 퍼센트 대신 질적 판정 사용
+- WAR ROOM / 비교 의사결정 브리프 렌더 계약 검증
+- 배포 cache bust decision-v1 반영 검증
