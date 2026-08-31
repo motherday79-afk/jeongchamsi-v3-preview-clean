@@ -1,0 +1,39 @@
+정참시 관리자 비교하기 + 정치 인텔리전스 READABILITY HOTFIX
+2026-08-31
+
+기준본
+- JCV3_MUST_BUY_PREMIUM_INTELLIGENCE_FINAL_EXPERIENCE_20260831.zip
+
+핵심 수정
+1. 정치 컨디션 → 현재 정치 흐름
+2. -50~+50 숫자 단독 표기 대신 판정어 병기
+   - +30 이상: 매우 좋음
+   - +10 이상: 좋음
+   - -10 초과 ~ +10 미만: 보통
+   - -30 초과 ~ -10 이하: 주의
+   - -30 이하: 매우 나쁨
+3. 관리자에게 직접 보이는 모멘텀/컨피던스/리커버리 등은 한국어 우선 표기
+4. 관리자 비교하기 + 정치 인텔리전스 폰트 가독성 상향
+   - small 텍스트 12px readability floor
+   - 일반 설명문 13px floor
+   - 핵심 설명 14~15px
+   - 다자 비교 핵심 라벨 11~12px 이상 보강
+5. CSS/JS cache bust: readability-v1
+
+검증
+- node --check src/views/features.js : PASS
+- node --check src/views/people.js : PASS
+- node --check src/app.js : PASS
+- node --test tests/*.test.js : 6/6 PASS
+- CSS brace balance : PASS
+- tinycss2 CSS parse errors : 0
+- ZIP integrity test : package 후 별도 확인
+
+비변경
+- Redis / Storage
+- Refresh / Publish
+- NOW RANK 계산
+- 원천 데이터 구조
+- JCS 계산 엔진
+- 경쟁자 이동 추정 계산식
+- 토큰 기능
