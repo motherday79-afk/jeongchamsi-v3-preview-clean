@@ -16,7 +16,7 @@ import { getFastNowPerson, getFastAdminCompare, prefetchNowPerson } from "../cor
 import {
   CORE_COMPARE_METRICS, AUDIENCE_COMPARE_METRICS, ACTIVITY_COMPARE_METRICS, FLOW_COMPARE_METRICS,
   scoreFor, buildDifferences, buildCompareInsight, relativeCompareAxisValue, axisIntensityBand, trendScoreDelta, trendRankDelta
-} from "./compare-intelligence.js?v=03686";
+} from "./compare-intelligence.js?v=03686-full-recovery-r3";
 import {
   normalizeNationalEvaluation,
   votesForEvaluationSlot,

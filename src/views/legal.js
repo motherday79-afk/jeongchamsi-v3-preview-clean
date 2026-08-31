@@ -1,4 +1,4 @@
-import { pageShell, esc } from "./layout.js";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 
 const DOCS = Object.freeze({
   guide: {

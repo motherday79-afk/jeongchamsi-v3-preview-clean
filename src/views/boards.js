@@ -2,7 +2,6 @@ import { getDomain, getAuthorProfiles } from "../core/repository.js";
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 import { getUserSession, isPostLiked } from "../core/user.js";
 import { authorIdentity, authorOwnerIds } from "./author-identity.js?v=alpha6.0.36.23-copy-scroll-hotfix";
-import { renderContentShare } from "./content-share.js?v=jcs-share-v1";
 
 const CONFIG = Object.freeze({
   columns: { title: "COLUMN", eyebrow: "COLUMN", route: "column", description: "정치를 조금 더 깊게 읽는 정참시의 칼럼 공간입니다", image: true, memberWrite: false },
@@ -109,7 +108,6 @@ export async function renderBoardDetail(domain, id) {
       ${cover ? `<div class="article-cover" style="background-image:url('${cover}')"></div>` : ""}
       ${item.summary ? `<div class="article-lead">${esc(item.summary)}</div>` : ""}
       <div class="article-body">${bodyHtml(item.body)}</div>
-      ${renderContentShare({ title:item.title, path:`/${config.route}/${id}` })}
       <div class="article-actions"><button type="button" class="ghost-btn ${liked ? "active" : ""}" data-post-like="${esc(domain)}" data-post-id="${esc(id)}">${liked ? "♥ 좋아요 취소" : "♡ 좋아요"}</button>${canManage ? `<button type="button" class="ghost-btn" data-go="/${config.route}/write?id=${encodeURIComponent(id)}">수정</button><button type="button" class="danger-btn" data-user-post-delete="${esc(domain)}" data-id="${esc(id)}">삭제</button>` : ""}<button type="button" class="primary-btn" data-go="/${config.route}">${config.title} 목록으로</button></div>
     </article>
     <section class="content-card comment-section"><div class="section-title"><h2>댓글</h2><span>${comments.length}개</span></div>${session.authenticated ? `<form class="comment-form" data-comment-form="${esc(domain)}" data-post-id="${esc(id)}"><textarea name="comment" rows="3" maxlength="1000" placeholder="정치에 대한 의견을 남겨보세요" required></textarea><div class="admin-form-actions"><button class="primary-btn" type="submit">댓글 등록</button><span class="save-state" data-comment-state></span></div></form>` : `<div class="member-login-prompt"><span>댓글과 좋아요는 로그인 후 사용할 수 있습니다</span><button class="primary-btn" type="button" data-go="/login">로그인</button></div>`}${comments.length ? `<div class="comment-list">${comments.map(c => `<article><div><b>${authorIdentity(c.author, c.ownerId, authorProfiles)}</b><span>${formatDate(c.createdAt)}</span></div><p>${esc(c.text)}</p></article>`).join("")}</div>` : `<div class="empty-inline" style="margin-top:12px">아직 작성한 댓글이 없습니다</div>`}</section>

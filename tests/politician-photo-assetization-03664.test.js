@@ -36,22 +36,21 @@ test('photo route supports admin-only small-batch auto assetization into Vercel 
 
 test('photo URLs use a new resolver cache key so old same-name mistakes cannot survive CDN cache', () => {
   const index = read('src/data/politician-photo-index.js');
-  assert.match(index, /politician-photo\?id=\$\{encodeURIComponent\(key\)\}&w=\$\{spec\.width\}&v=03681/);
+  assert.match(index, /politician-photo\?id=\$\{encodeURIComponent\(key\)\}&w=\$\{spec\.width\}&v=03664/);
 });
 
 test('existing photo assets are locked out of automatic replacement and manual saves are marked manual', () => {
   assert.match(route, /if \(existing\.has\(person\.id\)\)/);
-  assert.match(route, /sourceType:"manual"/);
-  assert.match(admin, /action:"manual-upsert"/);
+  assert.match(admin, /sourceType:"manual"/);
   assert.match(schema, /sourceType/);
   assert.match(schema, /verified/);
 });
 
-test('people admin retires automatic collection UI while preserving photo asset diagnostics', () => {
+test('people admin exposes current photo collection progress and app wires the active stage3 action', () => {
+  assert.match(admin, /data-politician-photo-harvest/);
+  assert.match(admin, /3단계 직접소스 수집 시작/);
   assert.match(admin, /정참시 자산/);
-  assert.match(admin, /사진 노출 진단/);
-  assert.doesNotMatch(admin, /data-politician-photo-harvest/);
-  assert.doesNotMatch(admin, /discoverPoliticianPhotosStage3/);
-  assert.doesNotMatch(app, /data-politician-photo-harvest/);
-  assert.doesNotMatch(app, /discoverPoliticianPhotosStage3/);
+  assert.match(admin, /discoverPoliticianPhotosStage3/);
+  assert.match(app, /data-politician-photo-harvest/);
+  assert.match(app, /discoverPoliticianPhotosStage3/);
 });

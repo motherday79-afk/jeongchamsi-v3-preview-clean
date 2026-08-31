@@ -91,16 +91,18 @@ test('stage3 review status reports NAVER connectivity and strong vs visual-revie
   assert.match(route, /directNoCandidate/);
 });
 
-test('stage3 collection backend remains available while its retired admin launcher and review workflow stay absent', () => {
-  const route = read('server/v3/routes/politician-photo.js');
+test('stage3 admin replaces the visible stage2 launcher with direct-source discovery and keeps review apply workflow', () => {
   const admin = read('src/views/admin.js');
   const app = read('src/app.js');
-  assert.match(route, /direct-discover-batch/);
-  assert.doesNotMatch(admin, /3단계 직접소스 수집 시작/);
-  assert.doesNotMatch(admin, /discoverPoliticianPhotosStage3/);
-  assert.doesNotMatch(admin, /후보 검수함/);
-  assert.doesNotMatch(app, /discoverPoliticianPhotosStage3/);
-  assert.doesNotMatch(app, /data-politician-photo-candidate-apply/);
+  assert.match(admin, /3단계 직접소스 수집 시작/);
+  assert.match(admin, /직접소스 후보/);
+  assert.match(admin, /NAVER WEB\/IMAGE/);
+  assert.match(admin, /discoverPoliticianPhotosStage3/);
+  assert.match(admin, /육안확인/);
+  assert.match(admin, /강한검증/);
+  assert.match(app, /discoverPoliticianPhotosStage3/);
+  assert.match(app, /3단계 직접소스/);
+  assert.match(app, /data-politician-photo-candidate-apply/);
 });
 
 test('stage3 build markers identify 0.36.68 direct-source photo collection build', () => {
@@ -113,12 +115,12 @@ test('stage3 build markers identify 0.36.68 direct-source photo collection build
   assert.match(index, /alpha6\.0\.36\.68-photo-stage3/);
 });
 
-test('stage3 status remains server-side only after admin collection UI retirement', () => {
+test('stage3 status distinguishes legacy stage2 results from direct-source progress', () => {
   const route = read('server/v3/routes/politician-photo.js');
   const admin = read('src/views/admin.js');
   assert.match(route, /stage3Processed/);
   assert.match(route, /stage3Unchecked/);
-  assert.doesNotMatch(admin, /stage3Unchecked/);
+  assert.match(admin, /stage3Unchecked/);
 });
 
 test('stage3 upgrades official http search results to https instead of dropping them', () => {

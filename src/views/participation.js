@@ -1,7 +1,7 @@
-import { pageShell, esc } from "./layout.js";
+import { pageShell, esc } from "./layout.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 import { getUserSession } from "../core/user.js";
 import { getPoliticianRequests, getPartnerApplications } from "../core/repository.js";
-import { badgeGemSvg } from "../data/badge-catalog.js";
+import { badgeGemSvg } from "../data/badge-catalog.js?v=alpha6.0.36.23-copy-scroll-hotfix";
 
 function dateLabel(v = "") {
   if (!v) return "";

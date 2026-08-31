@@ -3,7 +3,7 @@ import { getPersonSlotById } from "../data/person-provider.js";
 import { politicianPhoto } from "../data/politician-photo-index.js";
 import { getNowPerson } from "../core/repository.js";
 import { getUserSession, isFavoritePerson, recordRecentPerson } from "../core/user.js";
-import { axisIntensityBand } from "./compare-intelligence.js?v=03686";
+import { axisIntensityBand } from "./compare-intelligence.js?v=03686-full-recovery-r3";
 
 const empty=()=>`<span class="info-empty" aria-label="추가 데이터 준비중"></span>`;
 const v=x=>x?esc(x):empty();

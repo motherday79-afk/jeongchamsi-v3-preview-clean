@@ -110,7 +110,7 @@ test('NAVER news keeps only the correct politician context, dedupes, and summari
   const oldFetch=global.fetch;
   global.fetch=async()=>({ok:true,status:200,text:async()=>JSON.stringify(payload)});
   try{
-    await withEnv({NAVER_NEWS_CLIENT_ID:'id',NAVER_NEWS_CLIENT_SECRET:'secret'},async()=>{
+    await withEnv({NAVER_API_HUB_CLIENT_ID:'id',NAVER_API_HUB_CLIENT_SECRET:'secret'},async()=>{
       const r=await collectNaverNews(person,{nowMs:now});
       assert.equal(r.count6,1);
       assert.equal(r.count24,2);
@@ -131,18 +131,18 @@ test('live data combines current roster identity with only NAVER Search Ads and 
   global.fetch=async url=>{
     const u=String(url);
     if(u.includes('api.searchad.naver.com')) return {ok:true,status:200,text:async()=>JSON.stringify({keywordList:[{relKeyword:'김민석',monthlyPcQcCnt:5000,monthlyMobileQcCnt:15000}]})};
-    if(u.includes('openapi.naver.com/v1/search/news.json')) return {ok:true,status:200,text:async()=>JSON.stringify({total:1,items:[{title:'김민석 국회의원 현안',description:'더불어민주당 국회',originallink:'https://news.example/1',link:'https://n.news/1',pubDate:new Date(now-3600000).toUTCString()}]})};
+    if(u.includes('naverapihub.apigw.ntruss.com')) return {ok:true,status:200,text:async()=>JSON.stringify({total:1,items:[{title:'김민석 국회의원 현안',description:'더불어민주당 국회',originallink:'https://news.example/1',link:'https://n.news/1',pubDate:new Date(now-3600000).toUTCString()}]})};
     throw new Error(`unexpected source ${u}`);
   };
   try{
-    await withEnv({NAVER_AD_ACCESS_LICENSE:'a',NAVER_AD_SECRET_KEY:'b',NAVER_AD_CUSTOMER_ID:'c',NAVER_NEWS_CLIENT_ID:'id',NAVER_NEWS_CLIENT_SECRET:'secret'},async()=>{
+    await withEnv({NAVER_AD_ACCESS_LICENSE:'a',NAVER_AD_SECRET_KEY:'b',NAVER_AD_CUSTOMER_ID:'c',NAVER_API_HUB_CLIENT_ID:'id',NAVER_API_HUB_CLIENT_SECRET:'secret'},async()=>{
       const r=await getLiveDataById('assembly-001',{nowMs:now});
       assert.equal(r.ok,true);
       assert.equal(r.person.id,'assembly-001');
       assert.equal(r.search.monthlyPcQcCnt,5000);
       assert.equal(r.search.monthlyMobileQcCnt,15000);
       assert.equal(r.news.count6,1);
-      assert.deepEqual(r.providers,['naver-search-ads','naver-news-search-api']);
+      assert.deepEqual(r.providers,['naver-search-ads','naver-news']);
     });
   }finally{global.fetch=oldFetch;}
 });

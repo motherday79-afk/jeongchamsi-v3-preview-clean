@@ -30,21 +30,24 @@ test('politician photo upload generates three bandwidth-sized variants', () => {
   assert.match(image, /128\s*\*\s*1024/);
 });
 
-test('people admin is diagnostics-only while detail pages own photo registration', () => {
-  assert.match(admin, /국회의원 사진 노출 진단/);
-  assert.match(admin, /광역단체장 사진 노출 진단/);
-  assert.match(admin, /기초단체장 사진 노출 진단/);
-  assert.doesNotMatch(admin, /data-politician-photo-select/);
-  assert.doesNotMatch(admin, /class=\"politician-photo-workspace\"/);
-  assert.doesNotMatch(admin, /data-politician-photo-reset/);
+test('people admin exposes search, preview, upload, reset and explicit size guidance', () => {
+  assert.match(admin, /data-politician-photo-form/);
+  assert.match(admin, /data-politician-photo-input/);
+  assert.match(admin, /data-politician-photo-reset/);
+  assert.match(admin, /800×1067/);
+  assert.match(admin, /1\.5MB/);
+  assert.match(admin, /약 100KB/);
+  assert.match(admin, /MINI 12KB/);
+  assert.match(admin, /CARD 24KB/);
+  assert.match(admin, /PROFILE 64KB/);
 });
 
-test('app wires politician detail photo preview and save without the retired central reset flow', () => {
+test('app wires politician photo preview, save and reset without a generic admin-form timing workaround', () => {
   assert.match(app, /data-politician-photo-input/);
   assert.match(app, /data-politician-photo-form/);
+  assert.match(app, /data-politician-photo-reset/);
   assert.match(app, /savePoliticianPhotoForm/);
-  assert.doesNotMatch(app, /data-politician-photo-reset/);
-  assert.doesNotMatch(app, /resetPoliticianPhoto/);
+  assert.match(app, /resetPoliticianPhoto/);
 });
 
 test('public politician photo route prefers admin upload before Wikimedia fallback', () => {
@@ -76,6 +79,5 @@ test('politician photo replacements clean old Blob variants instead of accumulat
 test('new admin photo CSS does not reintroduce important overrides', () => {
   assert.doesNotMatch(css, /!important/);
   assert.match(css, /\.politician-photo-admin/);
-  assert.match(css, /\.person-detail-photo\.admin-photo-editable/);
-  assert.doesNotMatch(css, /\.politician-photo-guide\{/);
+  assert.match(css, /\.politician-photo-guide/);
 });

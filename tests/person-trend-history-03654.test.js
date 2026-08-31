@@ -52,7 +52,7 @@ test('trend merge seeds previous public snapshot, de-duplicates publish id, and 
 
 test('publish route batch-reads prior person entries before writing official trend snapshots',()=>{
   const admin=fs.readFileSync('server/v3/routes/admin/now-data.js','utf8');
-  assert.match(admin,/mgetJSONInBatches\(personEntries\.map\(\(\[key\]\)=>key\),mgetJSON,25\)/);
+  assert.match(admin,/mgetJSON\(personEntries\.map\(\(\[key\]\)=>key\)\)/);
   assert.match(admin,/mergePersonTrend/);
   assert.match(admin,/action==='publish'/);
 });

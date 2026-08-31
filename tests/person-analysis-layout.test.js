@@ -29,8 +29,8 @@ test('deep analysis is progressively disclosed without extra javascript',()=>{
   assert.match(people,/<details class="person-analysis-deep/);
   assert.match(people,/<summary>/);
   assert.match(people,/정참시 심층분석/);
-  assert.match(people,/미디어→대중 전이/);
-  assert.match(people,/미디어·대중 괴리/);
+  assert.match(people,/뉴스→검색 전이/);
+  assert.match(people,/미디어\/대중 괴리/);
   assert.match(people,/관심층 확장/);
 });
 
