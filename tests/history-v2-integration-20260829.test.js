@@ -24,14 +24,12 @@ test('admin HISTORY backfill action uses V2 partial migration',()=>{
   assert.match(s,/backfillLegacyPageV2/);
 });
 
-test('NOW publish writes live serving stores with batched MSET before attempting V2 HISTORY capture',()=>{
+test('NOW publish writes live serving stores before attempting V2 HISTORY capture',()=>{
   const s=read('server/v3/routes/admin/now-data.js');
-  const liveWrite=s.indexOf('await msetJSON([');
-  const currentEntry=s.indexOf('[CURRENT,current]');
+  const liveWrite=s.indexOf('setJSON(CURRENT,current)');
   const v2Capture=s.indexOf('await recordPublishedSnapshotV2');
-  assert.ok(liveWrite>=0,'batched live write must exist');
-  assert.ok(currentEntry>liveWrite,'CURRENT must be included in the batched live write');
-  assert.ok(v2Capture>currentEntry,'V2 capture must occur after live serving data is stored');
+  assert.ok(liveWrite>=0,'live current write must exist');
+  assert.ok(v2Capture>liveWrite,'V2 capture must occur after live current write');
 });
 
 test('NOW publish catches V2 HISTORY failure instead of failing public publication',()=>{

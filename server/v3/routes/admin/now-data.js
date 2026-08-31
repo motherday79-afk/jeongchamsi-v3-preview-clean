@@ -12,6 +12,8 @@ const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = requir
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
+const { createSafePublicPublisher } = require('../../lib/safe-public-publish');
+const { mgetJSONInBatches } = require('../../lib/storage-safe-mget');
 
 const META='nowDataDraftMeta',CURRENT='nowDataCurrent',HISTORY='nowDataHistory',PUBLIC_HOME='nowDataPublicHome',PUBLIC_ADMIN='nowDataPublicAdmin';
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
@@ -57,10 +59,6 @@ async function migrateLegacyMeta(meta){
   delete next.ranked;
   await msetJSON([[rankedDomain(meta.draftId),ranked],[META,next]]);
   return next;
-}
-async function writePersonEntries(entries=[]){
-  const chunks=[];for(let i=0;i<entries.length;i+=40)chunks.push(entries.slice(i,i+40));
-  for(let i=0;i<chunks.length;i+=4)await Promise.all(chunks.slice(i,i+4).map(chunk=>msetJSON(chunk)));
 }
 async function saveBatchAndStatus(meta,index,stored){
   const summary=aggregateBatchSummaries([stored],stored.ids?.length||stored.results?.length||0);
@@ -154,7 +152,7 @@ module.exports=async function nowDataAdmin(req,res){
         const previousHistory=compactHistory((await getJSON(HISTORY))||{items:[]});
         const previewCurrent={schemaVersion:1,draftId:meta.draftId,publishedAt:finalizedAt,snapshotKind:'REFRESH_FINALIZE',weights:meta.weights,ranked,batchCount:meta.batchCount,batches:meta.batches,providers:['naver-search-ads',meta.newsProvider||'news-auto-fallback']};
         const previewEntries=buildPersonPublicEntries(previewCurrent,previousHistory,Date.parse(finalizedAt));
-        const previousPersonEntries=await mgetJSON(previewEntries.map(([key])=>key));
+        const previousPersonEntries=await mgetJSONInBatches(previewEntries.map(([key])=>key),mgetJSON,25);
         const trendedPreviewEntries=previewEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
         const evidenceBundle=(await getJSON(evidenceDomain(meta.draftId)))||{version:'JCS_EXTERNAL_EVIDENCE_V1',collectedAt:finalizedAt,records:[],sources:[],warnings:[{sourceId:'refresh',error:'EXTERNAL_EVIDENCE_NOT_COLLECTED'}],matchedPeople:0,recordCount:0};
         meta={...meta,pipeline:{stage:'cohort',detail:'AGE_GENDER_COHORT_ANALYSIS',updatedAt:new Date().toISOString()}};await setJSON(META,meta);
@@ -181,16 +179,17 @@ module.exports=async function nowDataAdmin(req,res){
       const publicHome=buildHomePublicSnapshot(current,previousHistory,Date.parse(publishedAt));
       const publicAdmin=buildAdminPublicSnapshot(current);
       const personEntries=buildPersonPublicEntries(current,previousHistory,Date.parse(publishedAt));
-      const previousPersonEntries=await mgetJSON(personEntries.map(([key])=>key));
+      const previousPersonEntries=await mgetJSONInBatches(personEntries.map(([key])=>key),mgetJSON,25);
       const trendedPersonEntries=personEntries.map(([key,view],index)=>[key,mergePersonTrend(view,previousPersonEntries[index]||null,60)]);
       const categorySnapshots=buildCategoryPublicSnapshots(current);
       const history={items:[{draftId:meta.draftId,publishedAt,weights:meta.weights,top30:publicAdmin.top30},...(previousHistory.items||[]).filter(x=>x.draftId!==meta.draftId)].slice(0,30)};
       const nextMeta={...meta,status:'published',publishedAt,top30:publicAdmin.top30};delete nextMeta.ranked;
-      await msetJSON([
-        [CURRENT,current],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],[META,nextMeta],
-        ...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])
-      ]);
-      await writePersonEntries(trendedPersonEntries);
+      const safePublisher=createSafePublicPublisher({getJSON,setJSON},{concurrency:4,maxEntryBytes:9_000_000});
+      await safePublisher.publish({
+        personEntries:trendedPersonEntries,
+        controlEntries:[[CURRENT,current],[HISTORY,history],[PUBLIC_HOME,publicHome],[PUBLIC_ADMIN,publicAdmin],...Object.entries(categorySnapshots).map(([type,value])=>[categoryDomain(type),value])],
+        commitEntry:[META,nextMeta]
+      });
       const historyWarnings=[];
       // HISTORY V1 remains readable as a legacy layer. New formal publish snapshots are recorded only in V2.
       try{await recordPublishedSnapshotV2(current,previousHistory);}catch(historyError){console.error('[HISTORY_V2_NON_BLOCKING]',historyError);historyWarnings.push('HISTORY_V2_CAPTURE_FAILED');}

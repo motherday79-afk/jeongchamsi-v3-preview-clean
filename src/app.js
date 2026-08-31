@@ -9,8 +9,40 @@ const app = document.querySelector("#app");
 let renderEpoch = 0;
 let liveBarRotationTimer = 0;
 let liveBarCelebrationTimer = 0;
+let nowRankRotationTimer = 0;
 const viewPrefetchCache = new Map();
 const VIEW_PREFETCH_TTL = 20_000;
+
+async function refreshDecisionAdminPerson(personId="") {
+  try {
+    const view = await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1");
+    if (typeof view.refreshAdminDecisionSlot === "function") return view.refreshAdminDecisionSlot(personId);
+  } catch {}
+  return render(currentRoute(), { resetScroll:false });
+}
+function stopNowRankRotation(){
+  if(nowRankRotationTimer){ clearInterval(nowRankRotationTimer); nowRankRotationTimer=0; }
+}
+function hydrateHomeNowRank(){
+  stopNowRankRotation();
+  const carousel=app.querySelector('[data-now-rank-carousel]');
+  if(!carousel)return;
+  const pages=[...carousel.querySelectorAll('[data-now-rank-page]')];
+  if(pages.length<1)return;
+  let index=Math.max(0,Math.min(pages.length-1,Number(carousel.dataset.page||0)));
+  const status=carousel.querySelector('[data-now-rank-status]');
+  const show=next=>{
+    index=(next+pages.length)%pages.length;
+    carousel.dataset.page=String(index);
+    pages.forEach((page,i)=>{page.hidden=i!==index;page.classList.toggle('is-active',i===index);});
+    if(status)status.textContent=`${index+1} / ${pages.length}`;
+  };
+  carousel.querySelector('[data-now-rank-prev]')?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();show(index-1);});
+  carousel.querySelector('[data-now-rank-next]')?.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();show(index+1);});
+  show(index);
+  if(pages.length>1)nowRankRotationTimer=setInterval(()=>show(index+1),4000);
+}
+
 function prefetchStateFromPath(path="") {
   try { const url=new URL(path,window.location.origin); return { pathname:url.pathname, search:url.search }; } catch { return null; }
 }
@@ -32,7 +64,7 @@ function nowFailureText(label, r) {
 }
 async function resolveView(state) {
   const p = parse(state.pathname);
-  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
+  if (!p.length) return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1-jcs-plan-a-r1")).renderHome();
   if (["login", "join", "mypage"].includes(p[0])) {
     const view = await import("./views/user.js");
     if (p[0] === "login") return view.renderLogin();
@@ -43,7 +75,7 @@ async function resolveView(state) {
     if (p[1] === "posts") return view.renderMyPosts(state.search);
     return view.renderMyPage();
   }
-  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible")).renderPersonDetail(p[1] || "");
+  if (p[0] === "person") return (await import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-ui-visible-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1")).renderPersonDetail(p[1] || "");
   if (["column", "community", "news"].includes(p[0])) {
     const view = await import("./views/boards.js?v=jcs-share-v1");
     const domain = p[0] === "column" ? "columns" : p[0];
@@ -56,7 +88,7 @@ async function resolveView(state) {
   if (p[0] === "about") return (await import("./views/brand.js")).renderAbout();
   if (p[0] === "support") return (await import("./views/brand.js")).renderSupport();
   if (["guide","privacy","policy"].includes(p[0])) return (await import("./views/legal.js")).renderLegal(p[0]);
-  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
+  const view = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1");
   if (p[0] === "president") return view.renderPresident();
   if (p[0] === "now") return view.renderNow(state.search);
   if (p[0] === "poll") return view.renderPolls(state.search);
@@ -69,7 +101,7 @@ async function resolveView(state) {
   if (p[0] === "generation-president") return view.renderGeneration(state.search);
   if (p[0] === "national-evaluation") return view.renderNationalEvaluation();
   if (p[0] === "search") return view.renderSearch(new URLSearchParams(state.search).get("q") || "");
-  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1")).renderHome();
+  return (await import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1-jcs-plan-a-r1")).renderHome();
 }
 
 function currentScrollPoint() {
@@ -167,6 +199,7 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
   if (epoch !== renderEpoch) return;
 
   document.documentElement.classList.add("jcv3-route-swapping");
+  stopNowRankRotation();
   app.innerHTML = html;
   document.body.classList.remove("drawer-open");
 
@@ -181,12 +214,10 @@ async function render(state = currentRoute(), { resetScroll = true, scrollTarget
 
   syncCurrentScroll();
   hydrateLiveCommunityBar();
-  if (app.querySelector("[data-now-rank-carousel]")) {
-    requestAnimationFrame(() => import("./views/home.js?v=03683-history-v2-main-perf-app-return-jcs-clean-rebuild-r1").then(mod=>mod.hydrateHomeNowRank?.()).catch(()=>{}));
-  }
+  if (app.querySelector("[data-now-rank-carousel]")) requestAnimationFrame(hydrateHomeNowRank);
   if (app.querySelector("[data-person-admin-intelligence-slot]")) {
     requestAnimationFrame(() => {
-      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2")
+      import("./views/people.js?v=03686-history-v2-observation-count-jcs-political-intelligence-source-layer-v2-strategic-solution-v1-validity-perf-v1-signal-confidence-v1-age-gender-v2-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1")
         .then(mod => mod.hydratePersonAdminIntelligence?.())
         .catch(() => {});
     });
@@ -248,6 +279,30 @@ document.addEventListener("focusin",event=>warmNavigationIntent(event.target));
 document.addEventListener("click", async event => {
   const insideMore = event.target.closest(".service-more");
   if (!insideMore) closeServiceMore();
+
+
+  const decisionCaseCreate = event.target.closest("[data-decision-case-create]");
+  if (decisionCaseCreate) {
+    const personId=String(decisionCaseCreate.dataset.personId||"");
+    const shell=decisionCaseCreate.closest("[data-decision-war-room]");
+    const note=shell?.querySelector("[data-decision-case-note]")?.value||"";
+    const state=shell?.querySelector("[data-decision-write-state]");
+    decisionCaseCreate.disabled=true;if(state)state.textContent="CASE 저장 중";
+    const repo=await import("./core/decision-repository.js?v=decision-v1");
+    const r=await repo.createAdminDecisionCase(personId,note);
+    if(!r.ok){decisionCaseCreate.disabled=false;if(state)state.textContent=`CASE 저장 실패 · ${r.error||""}`;return;}
+    if(state)state.textContent="현재 판단을 CASE로 저장했습니다.";
+    await refreshDecisionAdminPerson(personId);return;
+  }
+  const decisionCaseClose = event.target.closest("[data-decision-case-close]");
+  if (decisionCaseClose) {
+    const personId=String(decisionCaseClose.dataset.personId||"");
+    decisionCaseClose.disabled=true;
+    const repo=await import("./core/decision-repository.js?v=decision-v1");
+    const r=await repo.closeAdminDecisionCase(decisionCaseClose.dataset.decisionCaseClose||"");
+    if(!r.ok){decisionCaseClose.disabled=false;alert(`CASE 종료 실패 · ${r.error||""}`);return;}
+    await refreshDecisionAdminPerson(personId);return;
+  }
 
   const detailPhotoTrigger = event.target.closest("[data-detail-politician-photo-trigger]");
   if (detailPhotoTrigger) {
@@ -346,7 +401,7 @@ document.addEventListener("click", async event => {
   if (nowMore) {
     if (nowMore.disabled) return;
     nowMore.disabled = true;
-    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1");
+    const tools = await import("./views/features.js?v=03686-jcs-share-v1-admin-multi-compare-inforeghini-jcs-clean-rebuild-r1-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1");
     const r = await tools.appendNowRankMore(nowMore);
     if (!r?.ok) {
       nowMore.disabled = false;
@@ -695,9 +750,11 @@ document.addEventListener("change", async event => {
   const adminCompareAdd = event.target.closest('[data-admin-compare-add]');
   if (adminCompareAdd && adminCompareAdd.value) {
     const state=currentRoute(),params=new URLSearchParams(state.search||"");
-    const ids=[...new Set([...params.getAll('p'),String(adminCompareAdd.value)].filter(Boolean))].slice(0,5);
+    const existing=params.getAll('p').filter(Boolean);
+    if(!existing.length)existing.push(params.get('a'),params.get('b'));
+    const ids=[...new Set([...existing,String(adminCompareAdd.value)].filter(Boolean))].slice(0,5);
     const query=new URLSearchParams();ids.forEach(id=>query.append('p',id));
-    import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini").then(({prefetchCompareSelection})=>prefetchCompareSelection(ids)).catch(()=>{});
+    import("./core/instant-prefetch.js?v=admin-multi-compare-inforeghini-admin-premium-intelligence-v2-v3-jcs-premium-final-experience-v1-clarity-v1-decision-v1").then(({prefetchCompareSelection})=>prefetchCompareSelection(ids)).catch(()=>{});
     return route(`/compare?${query.toString()}`);
   }
   const compareSelect = event.target.closest('[data-compare-form] select');
@@ -713,6 +770,20 @@ document.addEventListener("change", async event => {
 
 document.addEventListener("submit", async event => {
   const form = event.target;
+  if (form.matches("[data-decision-action-form]")) {
+    event.preventDefault();const fd=new FormData(form);const state=form.querySelector("[data-decision-action-state]");
+    const repo=await import("./core/decision-repository.js?v=decision-v1");
+    const r=await repo.addAdminDecisionAction({caseId:fd.get("caseId"),occurredAt:fd.get("occurredAt"),type:fd.get("type"),title:fd.get("title"),note:fd.get("note"),linkedPriorityRank:fd.get("linkedPriorityRank")});
+    if(!r.ok){if(state)state.textContent=`행동 기록 실패 · ${r.error||""}`;return;}
+    if(state)state.textContent="행동 기록 저장 완료";await refreshDecisionAdminPerson(form.dataset.personId||"");return;
+  }
+  if (form.matches("[data-decision-action-note-form]")) {
+    event.preventDefault();const fd=new FormData(form);const state=form.querySelector("[data-decision-action-note-state]");
+    const repo=await import("./core/decision-repository.js?v=decision-v1");
+    const r=await repo.updateAdminDecisionActionNote(form.dataset.actionId||"",fd.get("note")||"");
+    if(!r.ok){if(state)state.textContent=`메모 저장 실패 · ${r.error||""}`;return;}
+    if(state)state.textContent="메모 저장 완료";await refreshDecisionAdminPerson(form.dataset.personId||"");return;
+  }
   if (form.matches("[data-search-form]")) { event.preventDefault(); const fd = new FormData(form); return route(`/search?q=${encodeURIComponent(String(fd.get("q") || ""))}`); }
   if (form.matches("[data-user-login]")) { event.preventDefault(); const fd = new FormData(form); const r = await loginUser(fd.get("id"), fd.get("password")); const e = form.querySelector("[data-user-auth-error]"); if (!r.ok) { if (e) e.textContent = r.error || "로그인 실패"; return; } await initializeUserState(); if (!getUserSession().authenticated) { if (e) e.textContent = "로그인 세션을 저장하지 못했습니다. 다시 시도해 주세요"; return; } route("/mypage", { replace: true }); return; }
   if (form.matches("[data-user-join]")) { event.preventDefault(); const fd = new FormData(form); if (fd.get("password") !== fd.get("passwordConfirm")) { const e=form.querySelector("[data-user-auth-error]"); if(e)e.textContent="비밀번호 확인이 일치하지 않습니다"; return; } const r = await registerUser(Object.fromEntries(fd.entries())); const e=form.querySelector("[data-user-auth-error]"); if(!r.ok){if(e)e.textContent=r.error||"회원가입 실패";return;} route("/mypage",{replace:true}); return; }

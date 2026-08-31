@@ -27,9 +27,8 @@ test('why Jeongchamsi uses the approved actor and JCS recipe copy',()=>{
   const repo=read('src/core/repository.js');
   const admin=read('src/views/admin.js');
   for(const source of [brand,repo,admin]){
-    assert.match(source,/세계적으로 유명한 배우들도 끊임없이 훈련합니다/);
-    assert.match(source,/막대한 양의 데이터를 빠짐없이 수집하고/);
-    assert.match(source,/JCS만의 독자적인 시스템을 통해 분석하고/);
+    assert.match(source,/훌륭한 배우도 끊임없이 훈련합니다/);
+    assert.match(source,/JCS의 레시피로 분석하고/);
     assert.match(source,/목적지를 정하는 것은 여러분입니다/);
     assert.match(source,/가장 정확한 길을 찾는 것은 정참시가 하겠습니다/);
   }

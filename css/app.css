@@ -847,3 +847,14 @@ img{display:block;max-width:100%}
 .generation-result .generation-bar{margin-top:0}
 .generation-result small{display:block;margin-top:8px;font-size:11px;line-height:1.35;color:var(--text-2)}
 .generation-empty .generation-result small{margin-top:8px}
+
+
+/* 2026-08-30 NOW RANK TOP30 CAROUSEL */
+.now-rank-carousel{position:relative;padding:0 30px}
+.now-rank-pages{position:relative}
+.now-rank-page[hidden]{display:none!important}
+.now-rank-arrow{position:absolute;top:50%;z-index:4;width:32px;height:54px;margin-top:-27px;border:1px solid #dfe5e2;border-radius:11px;background:rgba(255,255,255,.96);color:#45514c;font-size:28px;line-height:1;box-shadow:0 6px 18px rgba(22,46,38,.08);cursor:pointer}
+.now-rank-arrow:hover{border-color:#bfcac6;background:#f9fbfa}
+.now-rank-arrow.is-prev{left:-8px}.now-rank-arrow.is-next{right:-8px}
+#now .now-rank-carousel .rank-top-grid-10 .rank-top-card{min-height:142px;padding:13px 9px}
+#now .now-rank-carousel .rank-top-avatar{width:61px;height:61px;margin:9px auto 8px}

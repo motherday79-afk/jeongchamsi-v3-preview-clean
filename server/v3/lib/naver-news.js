@@ -1,6 +1,7 @@
 const {URL}=require('url');
 
 function credentials(){const id=String(process.env.NAVER_API_HUB_CLIENT_ID||'').trim(),secret=String(process.env.NAVER_API_HUB_CLIENT_SECRET||'').trim();return {configured:Boolean(id&&secret),id,secret};}
+function availability(){const c=credentials();return {available:c.configured,provider:'naver-news'};}
 function cleanHtml(s=''){return String(s).replace(/<[^>]+>/g,' ').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim();}
 function sourceDomain(link=''){try{return new URL(link).hostname.replace(/^www\./,'')}catch(_){return '';}}
 function normalizeTitle(s=''){return cleanHtml(s).toLowerCase().replace(/\[[^\]]+\]/g,' ').replace(/[^0-9a-z가-힣]+/g,' ').replace(/\s+/g,' ').trim();}
@@ -34,4 +35,4 @@ async function collectNaverNews(person,{nowMs=Date.now()}={}){
   if(!r.ok)throw new Error(`NAVER News HTTP ${r.status}: ${text.slice(0,160)}`);
   return summarize(parseItems(json),person,nowMs,json.total,query);
 }
-module.exports={credentials,cleanHtml,buildNewsQuery,mentionsPerson,parseItems,summarize,collectNaverNews};
+module.exports={credentials,availability,cleanHtml,buildNewsQuery,mentionsPerson,parseItems,summarize,collectNaverNews};

@@ -52,7 +52,7 @@ module.exports = async function gateway(req, res) {
   } catch (error) {
     console.error("[JCV3_GATEWAY_LOAD]", path, error);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    return res.status(500).json({ ok:false, error:"API_MODULE_LOAD_FAILED", path, stage:"gateway-load", detail:String(error?.message||"") });
+    return res.status(500).json({ ok:false, error:"API_MODULE_LOAD_FAILED", path });
   }
 
   try {
@@ -60,6 +60,6 @@ module.exports = async function gateway(req, res) {
   } catch (error) {
     console.error("[JCV3_GATEWAY_HANDLER]", path, error);
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    return res.status(500).json({ ok:false, error:error?.code || "API_HANDLER_FAILED", path, stage:"gateway-handler", detail:String(error?.message||"") });
+    return res.status(500).json({ ok:false, error:error?.code || "API_HANDLER_FAILED", path });
   }
 };

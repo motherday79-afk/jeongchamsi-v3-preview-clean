@@ -1,0 +1,33 @@
+JCS GOLDEN RECOVERY + RELEASE GATE / 2026-09-01
+
+PURPOSE
+- Restore a coherent pre-Freedom JCS Season 3 presentation baseline.
+- Preserve the resolved NOW / Upstash 10MB safety architecture.
+- Fix the admin NOW module contract: naver-news availability() export.
+- Add a permanent one-command release gate so the same class of broken package cannot be shipped silently.
+
+RECOVERY CONTRACT
+- Recent Freedom UI markers absent: PUBLIC POLITICAL PROFILE / POLITICAL PULSE / JCS COMMAND CENTER / COMPARE SCOREBOARD.
+- Pre-Freedom admin intelligence retained: JCS POLITICAL WAR ROOM / CONFIDENTIAL ADVISORY INTELLIGENCE.
+- Politician roster: 543 slots = 542 real politicians + assembly-300 vacancy.
+- Real roster split: Assembly 299 + Metropolitan 16 + Basic 227 = 542.
+- Known-person checks: 김민석 / 정청래 / 서미화 / 김은혜 present.
+
+NOW / STORAGE CONTRACT
+- naver-news exports availability() and admin NOW route can load.
+- redis exports getJSON / setJSON / mgetJSON / scanDomains / deleteDomains.
+- previous person payload reads use bounded mgetJSONInBatches(..., 25).
+- public person writes use safe publisher with independent writes and commit metadata last.
+- one entry is preflight-limited below Upstash 10MB.
+
+PERMANENT FORWARD STEP
+- scripts/jcs-release-gate.js
+- npm run release:gate
+- tests/release-gate-20260901.test.js
+- Gate checks required files, politician count, local import resolution, named import/export contracts, runtime route module loads, NOW batching/safe-publish contract, and UI baseline markers.
+- The regression test deliberately removes naver-news availability and proves the gate rejects that broken tree.
+
+LIVE ENVIRONMENT LIMITATION
+- The connected Vercel project available to this session is hwaseong-inside (화성인사이드), not 정참시.
+- Therefore this release is not falsely claimed as live-production HTTP tested on the actual JCS Vercel project.
+- The final ZIP is instead clean-extracted into an empty directory and the same gate/tests/syntax/hash checks are rerun on that exact archive content.

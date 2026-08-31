@@ -13,27 +13,6 @@ function impactLabel(strength){const n=Math.abs(num(strength)||0);return n>=26?'
 function trajectoryFrom(value){const n=num(value)||0;return n>=5?'IMPROVING':n<=-5?'WORSENING':'STABLE';}
 function safeDays(history={}){return Math.max(0,Number(history?.summary?.dailySampleSize??history?.daily?.length??0)||0);}
 function externalCount(pi={}){return Array.isArray(pi?.evidence?.external)?pi.evidence.external.length:Number(pi?.confidence?.externalEvidenceCount)||0;}
-function stableHash(value=''){let h=2166136261;for(const ch of String(value||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
-function aggressiveOffset(personId='',key='',span=13){const h=stableHash(`${personId}:${key}`);return (h%(span*2+1))-span;}
-function aggressiveDelta(personId='',key='',observed=null,span=14){
-  const direct=(observed===null||observed===undefined||observed==='')?null:num(observed);if(direct!==null)return {value:round(direct,1),estimated:false};
-  let value=aggressiveOffset(personId||'jcs',`delta:${key}`,span);
-  if(value===0)value=(stableHash(`${personId}:${key}:sign`)%2)?3:-3;
-  return {value:round(value,1),estimated:true};
-}
-function aggressiveRank(personId='',observed=null){
-  const direct=num(observed);if(direct!==null&&direct>0)return {value:Math.round(direct),estimated:false};
-  return {value:(stableHash(`${personId||'jcs'}:global-rank`)%543)+1,estimated:true};
-}
-function aggressiveCondition({personId='',politicalIntelligence:pi={},history={},currentRow={}}={}){
-  const direct=num(pi?.diagnosis?.condition);if(direct!==null)return clamp(direct,-50,50);
-  const scores=currentRow?.analysis?.scores||currentRow?.scores||{};const observed=['overallInterest','highEngagement','massExpansion','activity','issueHeat','mediaSpread'].map(k=>num(scores[k])).filter(v=>v!==null);
-  if(observed.length)return clamp(round((avg(observed)-50)*.82+aggressiveOffset(personId,'condition',6),1),-50,50);
-  const rank=num(currentRow?.rank),scoreValue=num(currentRow?.score);
-  if(scoreValue!==null)return clamp(round((scoreValue-50)*.7+aggressiveOffset(personId,'condition',7),1),-50,50);
-  if(rank!==null)return clamp(round(20-rank*.07+aggressiveOffset(personId,'condition',9),1),-50,50);
-  return clamp(aggressiveOffset(personId||'jcs','condition',22),-35,35);
-}
 
 function deriveEvidenceState({politicalIntelligence:pi={},history={},currentRow={}}={}){
   const basis=[];
@@ -47,12 +26,11 @@ function deriveEvidenceState({politicalIntelligence:pi={},history={},currentRow=
   if(days>0)basis.push(`HISTORY ${days}일`);
   if(external>0)basis.push(`외부 공개 근거 ${external}건`);
   if(events>0)basis.push(`정치 이벤트 ${events}건`);
-  let level='SUFFICIENT',label='분석 근거 충분';
+  let level='BUILDING',label='근거 보강 중';
   const liveAxes=(searchReady?1:0)+(newsReady?1:0);
   if(days>=7&&liveAxes>=2&&(external>0||events>0)){level='STRONG';label='분석 근거 강함';}
   else if((days>=3&&liveAxes>=1)||basis.length>=2){level='SUFFICIENT';label='분석 근거 충분';}
-  if(!basis.length)basis.push('JCS 다중신호 보정 모델','정치인별 상대 기준선');
-  return {level,label,basis};
+  return {level,label,basis:basis.length?basis:['현재 관측 연결 확인 필요']};
 }
 
 function observationComposite(row={}){
@@ -71,11 +49,7 @@ function windowDelta(observations=[],days=7,asOf=null){
 }
 function summaryDelta(history={}){
   const d=history?.summary?.coreDeltas||{};
-  const values=['overallInterest','highEngagement','massExpansion','issueHeat','mediaSpread']
-    .map(k=>d[k])
-    .filter(v=>v!==null&&v!==undefined&&v!=='');
-  if(!values.length)return null;
-  return round(avg(values),1);
+  return round(avg(['overallInterest','highEngagement','massExpansion','issueHeat','mediaSpread'].map(k=>d[k])),1);
 }
 
 function firstLast(observations=[],getter){
@@ -115,15 +89,6 @@ function deriveCauseTrace({politicalIntelligence:pi={},history={},currentRow={}}
   }
   const rankDelta=num(history?.summary?.rankDelta?.global);
   if(rankDelta!==null&&Math.abs(rankDelta)>=1)causes.push({type:'RANK',title:rankDelta>0?'전체 NOW 순위 상승':'전체 NOW 순위 하락',observedChange:`전체 순위 ${rankDelta>0?'+':''}${rankDelta}계단`,timeRange:'최근 관측 구간',evidence:[`HISTORY 전체 순위 변화 ${rankDelta>0?'+':''}${rankDelta}`],direction:rankDelta>0?'UP':'DOWN',strength:round(Math.abs(rankDelta)*1.4,1)});
-  const personId=String(arguments?.[0]?.personId||currentRow?.id||currentRow?.personId||'jcs');
-  if(!causes.length){
-    const a=aggressiveOffset(personId,'cause-search',14),b=aggressiveOffset(personId,'cause-media',14),c=aggressiveOffset(personId,'cause-audience',14);
-    causes.push(
-      {type:'SEARCH',title:a>=0?'검색 관심의 상대 우위':'검색 관심의 상대 약세',observedChange:`JCS 상대지수 ${signed(a)}`,timeRange:'현재 기준',evidence:['JCS 다중신호 보정','정치인별 상대 기준선'],direction:a>=0?'UP':'DOWN',strength:Math.abs(a)+9},
-      {type:'MEDIA',title:b>=0?'미디어 노출 확장':'미디어 확산 둔화',observedChange:`JCS 상대지수 ${signed(b)}`,timeRange:'현재 기준',evidence:['뉴스·노출 구조 보정','JCS 상대 기준선'],direction:b>=0?'UP':'DOWN',strength:Math.abs(b)+8},
-      {type:'AUDIENCE',title:c>=0?'대중 확산 가능성 우세':'대중 확산 전환 압력',observedChange:`JCS 상대지수 ${signed(c)}`,timeRange:'현재 기준',evidence:['관심·확산 구조 보정','JCS 상대 기준선'],direction:c>=0?'UP':'DOWN',strength:Math.abs(c)+7}
-    );
-  }
   return causes.filter(x=>x.strength>0).sort((a,b)=>b.strength-a.strength).slice(0,6).map((x,i)=>({...x,rank:i+1}));
 }
 
@@ -135,14 +100,12 @@ function deriveRisks({politicalIntelligence:pi={},history={}}={}){
   const source=Array.isArray(pi?.riskOpportunity?.risks)?pi.riskOpportunity.risks:[];
   source.filter(Boolean).forEach((title,i)=>{const t=normalizeRiskText(title);const weakness=/2030/.test(t)?Math.abs(Math.min(0,num(age.age2030)||0)):/4050/.test(t)?Math.abs(Math.min(0,num(age.age4050)||0)):/60\+/.test(t)?Math.abs(Math.min(0,num(age.age60plus)||0)):Math.max(Math.abs(num(d.issueHeat)||0),Math.abs(num(d.highEngagement)||0),8);rows.push({title:t,impact:impactLabel(weakness),trajectory:trajectoryFrom(-weakness),persistenceDays:persistenceDays(history),evidenceState:weakness>=12?'SUFFICIENT':'BUILDING',rationale:/2030/.test(t)?`2030 흐름 ${signed(age.age2030)}`:/4050/.test(t)?`4050 흐름 ${signed(age.age4050)}`:/60\+/.test(t)?`60+ 흐름 ${signed(age.age60plus)}`:`이슈 ${signed(d.issueHeat)} · 심층 관심 ${signed(d.highEngagement)}`,strength:weakness+i*-0.1});});
   if(num(pi?.attentionSupportGap?.gap)>=12)rows.push({title:'관심이 지지 기반으로 충분히 전환되지 않음',impact:'HIGH',trajectory:'WORSENING',persistenceDays:persistenceDays(history),evidenceState:'SUFFICIENT',rationale:`관심 대비 지지전환 격차 ${signed(pi.attentionSupportGap.gap)}`,strength:Math.abs(num(pi.attentionSupportGap.gap)||0)+5});
-  if(!rows.length){const seed=aggressiveOffset(String(arguments?.[0]?.personId||pi?.personId||'jcs'),'risk',15);rows.push({title:seed>=0?'현재 관심의 지지 전환력 점검':'대중 확산 약화 가능성 관리',impact:Math.abs(seed)>=10?'MEDIUM':'LOW',trajectory:seed>=0?'STABLE':'WORSENING',persistenceDays:persistenceDays(history),evidenceState:'SUFFICIENT',rationale:`JCS 위험 상대지수 ${signed(-Math.abs(seed||7))}`,strength:Math.abs(seed)+7});}
   return rows.sort((a,b)=>(b.strength||0)-(a.strength||0)).slice(0,3).map(({strength,...x},i)=>({rank:i+1,...x}));
 }
 function deriveOpportunities({politicalIntelligence:pi={},history={}}={}){
   const rows=[];const d=history?.summary?.coreDeltas||{};const source=Array.isArray(pi?.riskOpportunity?.opportunities)?pi.riskOpportunity.opportunities:[];
   source.filter(Boolean).forEach((title,i)=>{const t=normalizeRiskText(title);const strength=Math.max(8,num(d.massExpansion)||0,num(d.mediaSpread)||0,num(d.overallInterest)||0);rows.push({title:t,impact:impactLabel(strength),trajectory:trajectoryFrom(strength),persistenceDays:persistenceDays(history),evidenceState:strength>=12?'SUFFICIENT':'BUILDING',rationale:`대중 확산 ${signed(d.massExpansion)} · 미디어 ${signed(d.mediaSpread)} · 관심 ${signed(d.overallInterest)}`,strength:Math.abs(strength)+i*-0.1});});
   if((num(d.mediaSpread)||0)>=10&&(num(d.overallInterest)||0)>=5)rows.push({title:'미디어 상승세를 대중 관심 확대로 연결할 구간',impact:'HIGH',trajectory:'IMPROVING',persistenceDays:persistenceDays(history),evidenceState:'STRONG',rationale:`미디어 ${signed(d.mediaSpread)} · 종합 관심 ${signed(d.overallInterest)}`,strength:(num(d.mediaSpread)||0)+(num(d.overallInterest)||0)});
-  if(!rows.length){const seed=aggressiveOffset(String(arguments?.[0]?.personId||pi?.personId||'jcs'),'opportunity',16);rows.push({title:seed>=0?'현재 관심을 대중 확산으로 확대할 구간':'미디어·정책 메시지 재집중 기회',impact:Math.abs(seed)>=10?'MEDIUM':'LOW',trajectory:seed>=0?'IMPROVING':'STABLE',persistenceDays:persistenceDays(history),evidenceState:'SUFFICIENT',rationale:`JCS 기회 상대지수 ${signed(Math.abs(seed||8))}`,strength:Math.abs(seed)+8});}
   return rows.sort((a,b)=>(b.strength||0)-(a.strength||0)).slice(0,3).map(({strength,...x},i)=>({rank:i+1,...x}));
 }
 
@@ -162,20 +125,16 @@ function derivePriorities({politicalIntelligence:pi={},history={},risks=[],oppor
 function deriveDecisionIntelligenceV1(input={}){
   const pi=input.politicalIntelligence||{},history=input.history||{};
   const evidenceState=deriveEvidenceState(input);
-  const personId=String(input.personId||input.currentRow?.id||input.currentRow?.personId||pi?.personId||'jcs');
-  const causeTrace=deriveCauseTrace({...input,personId});
-  const risks=deriveRisks({politicalIntelligence:{...pi,personId},history,personId});
-  const opportunities=deriveOpportunities({politicalIntelligence:{...pi,personId},history,personId});
+  const causeTrace=deriveCauseTrace(input);
+  const risks=deriveRisks({politicalIntelligence:pi,history});
+  const opportunities=deriveOpportunities({politicalIntelligence:pi,history});
   const priorities=derivePriorities({politicalIntelligence:pi,history,risks,opportunities});
-  const condition=aggressiveCondition({...input,personId});
-  const observed7d=windowDelta(history?.observations||[],7,input.asOf||pi?.asOf),observed30d=summaryDelta(history);
-  const delta7d=aggressiveDelta(personId,'7d',observed7d,12),delta30d=aggressiveDelta(personId,'30d',observed30d,18);
-  const rank=aggressiveRank(personId,history?.summary?.latest?.globalRank??input.currentRow?.rank);
+  const condition=num(pi?.diagnosis?.condition);
   return {
     version:VERSION,asOf:input.asOf||pi?.asOf||history?.summary?.latest?.publishedAt||null,evidenceState,
-    currentState:{condition,conditionLabel:conditionLabel(condition),delta7d:delta7d.value,delta30d:delta30d.value,globalRank:rank.value,delta7dEstimated:delta7d.estimated,delta30dEstimated:delta30d.estimated,globalRankEstimated:rank.estimated},
+    currentState:{condition,conditionLabel:conditionLabel(condition),delta7d:windowDelta(history?.observations||[],7,input.asOf||pi?.asOf),delta30d:summaryDelta(history),globalRank:num(history?.summary?.latest?.globalRank)},
     causeTrace,risks,opportunities,priorities
   };
 }
 
-module.exports={VERSION,deriveDecisionIntelligenceV1,deriveEvidenceState,deriveCauseTrace,deriveRisks,deriveOpportunities,derivePriorities,_internals:{windowDelta,summaryDelta,conditionLabel,percentChange,deltaPair,stableHash,aggressiveOffset,aggressiveDelta,aggressiveRank,aggressiveCondition}};
+module.exports={VERSION,deriveDecisionIntelligenceV1,deriveEvidenceState,deriveCauseTrace,deriveRisks,deriveOpportunities,derivePriorities,_internals:{windowDelta,summaryDelta,conditionLabel,percentChange,deltaPair}};

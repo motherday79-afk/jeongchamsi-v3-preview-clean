@@ -1,4 +1,4 @@
-JCS HISTORY V2 · POLITICAL INTELLIGENCE · SEARCH + INTRADAY/DAILY NORMALIZATION
+JCS HISTORY V2 · POLITICAL INTELLIGENCE
 Date: 2026-08-29
 Package mode: changed files only
 Target: current working JCS V3 source after gateway-restore hotfix
@@ -33,7 +33,6 @@ TESTS — ADDED
 - tests/history-v2-golden-baseline-20260829.test.js
 - tests/history-v2-integration-20260829.test.js
 - tests/history-v2-store-20260829.test.js
-- tests/history-v2-search-daily-20260829.test.js
 
 DOCS — ADDED
 - docs/HISTORY_V2_TECHNICAL_20260829.md
@@ -44,12 +43,3 @@ DELETIONS
 
 NEW DATABASE / ENVIRONMENT VARIABLES
 - none
-
-REVISION — SEARCH + MULTI-OBSERVATION
-- Admin HISTORY politician selection changed from visible select-list UX to search → result → immediate selection.
-- Search matches name, party, jurisdiction/region, office and politician category.
-- Multiple FULL snapshots on the same Korea calendar day remain distinct immutable observations.
-- 7-day metrics use RAW_INTRADAY observations.
-- 30/90/365/all metrics use DAILY_AVERAGE normalization while preserving all raw observations.
-- Asia/Seoul Daily Summary exposes observation count, six-core OHLC/average and rank best/worst/average.
-- 365-day reads reserve ~3-hour-cadence capacity and batch large MGET reads.
