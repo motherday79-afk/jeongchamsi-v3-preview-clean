@@ -556,13 +556,48 @@ function adminCompareSignalStats(people,entries){
   const widest=[...rows].sort((a,b)=>b.spread-a.spread)[0]||null;
   return {rows,leaderboard,widest};
 }
+function adminCompareRowLeader(row,people){
+  if(!row||!Array.isArray(row.values))return {name:'—',value:null,index:-1,spread:0};
+  const valid=row.values.map((value,index)=>({value:Number(value),index})).filter(x=>Number.isFinite(x.value)).sort((a,b)=>b.value-a.value);
+  const top=valid[0]||null,second=valid[1]||null;
+  return {name:top?people[top.index]?.name||'—':'—',value:top?.value??null,index:top?.index??-1,spread:top&&second?top.value-second.value:0};
+}
 function adminCompareExecutive(people,entries){
-  const stats=adminCompareSignalStats(people,entries),top=stats.leaderboard[0],widest=stats.widest;
-  const leadName=top?.person?.name||'—',leadWins=top?.wins||0,wideLeader=widest?.leaders?.length===1?people[widest.leaders[0]]?.name:'근접';
-  return `<section class="admin-compare-executive">
-    <div class="admin-compare-executive-copy"><span>EXECUTIVE COMPARISON SUMMARY</span><h2>${esc(leadName)} · ${leadWins}개 핵심 신호 선두</h2><p>선택한 ${people.length}명을 동일한 JCS 축에서 비교했습니다. 가장 큰 관측 격차는 <b>${esc(widest?.label||'—')}</b>${wideLeader?` · ${esc(wideLeader)} 우세`:''}입니다.</p><small>정치적 우열이나 지지율이 아니라 현재 관측된 JCS 신호의 상대적 위치입니다.</small></div>
+  const stats=adminCompareSignalStats(people,entries),top=stats.leaderboard[0],runner=stats.leaderboard[1],widest=stats.widest;
+  const leadName=top?.person?.name||'—',leadWins=top?.wins||0,runnerName=runner?.person?.name||'—',wideLeader=widest?.leaders?.length===1?people[widest.leaders[0]]?.name:'근접';
+  const conditions=entries.map((entry,index)=>({index,value:Number(adminComparePi(entry)?.diagnosis?.condition)})).filter(x=>Number.isFinite(x.value)).sort((a,b)=>b.value-a.value);
+  const conditionLead=conditions[0]?people[conditions[0].index]?.name:'—';
+  return `<section class="admin-compare-executive admin-compare-decision-room" data-legacy-contract="EXECUTIVE COMPARISON SUMMARY">
+    <div class="admin-compare-verdict-copy"><span>JCS EXECUTIVE VERDICT</span><small>결론부터 보겠습니다.</small><h2>${esc(leadName)}가 현재 비교군에서 가장 많은 핵심 신호를 선점하고 있습니다.</h2><p><b>${esc(leadName)}</b>가 ${ADMIN_COMPARE_SIGNAL_METRICS.length}개 관측축 가운데 <strong>${leadWins}개</strong>에서 선두입니다. ${runner?`다음은 <b>${esc(runnerName)}</b>. `:''}가장 크게 벌어진 축은 <b>${esc(widest?.label||'—')}</b>${wideLeader?`이며 <b>${esc(wideLeader)}</b>가 앞섭니다.`:'.'}</p><div class="admin-compare-verdict-note"><span>CURRENT CONDITION LEADER</span><b>${esc(conditionLead||'—')}</b><em>정치적 지지율이 아니라 현재 JCS 관측 신호의 상대 판독입니다.</em></div></div>
     <div class="admin-compare-leaderboard"><div class="admin-compare-leaderboard-head"><span>SIGNAL LEADERS</span><b>${ADMIN_COMPARE_SIGNAL_METRICS.length} METRICS</b></div>${stats.leaderboard.map((row,index)=>`<article><span>0${index+1}</span>${personPhotoMarkup(row.person,"admin-compare-leader-avatar",{eager:index<2,size:72})}<div><b>${esc(row.person.name)}</b><small>${esc([row.person.party,row.person.jurisdiction].filter(Boolean).join(' · '))}</small></div><strong>${row.wins}<em>LEADS</em></strong></article>`).join('')}</div>
   </section>`;
+}
+function adminCompareBattlefield(people,entries){
+  const stats=adminCompareSignalStats(people,entries);
+  const picks=[['EXPANSION','확장력','대중 확산'],['ENGAGEMENT','결집력','심층 관심'],['RESILIENCE','회복력','정치 회복력'],['MEDIA','확산력','미디어 확산']];
+  return `<section class="content-card admin-compare-battlefield"><div class="admin-compare-section-kicker"><span>BATTLEFIELD SNAPSHOT</span><h2>지금 승부가 갈리는 네 개의 전장</h2><p>숫자를 전부 읽기 전에, 현재 비교군에서 실제 격차가 발생하는 지점을 먼저 봅니다.</p></div><div class="admin-compare-battlefield-grid">${picks.map(([code,title,label],index)=>{const row=stats.rows.find(x=>x.code===code),leader=adminCompareRowLeader(row,people);return `<article><header><span>0${index+1}</span><small>${esc(code)}</small></header><h3>${esc(title)}</h3><strong>${esc(leader.name)}</strong><p>${esc(label)} 기준 선두 · ${leader.value===null?'—':adminCompareNumber(leader.value)}</p><footer><span>2위와의 격차</span><b>${adminCompareNumber(leader.spread)}</b></footer></article>`;}).join('')}</div></section>`;
+}
+function adminCompareAdvantageLanes(people,entries){
+  const stats=adminCompareSignalStats(people,entries);
+  const lanes=[
+    ['PUBLIC MOMENTUM','대중 모멘텀',['ATTENTION','EXPANSION','ACTIVITY']],
+    ['SUPPORT DEFENSE','지지 기반 방어',['ENGAGEMENT','RESILIENCE','INFLOW']],
+    ['MEDIA PRESSURE','미디어 압력',['MEDIA','NEWS','SNS']],
+    ['ISSUE CONTROL','이슈 장악',['ISSUE']]
+  ];
+  return `<section class="content-card admin-compare-advantage-lanes"><div class="admin-compare-section-kicker"><span>ADVANTAGE LANES</span><h2>어디에서 이기고, 어디에서 밀리는가</h2><p>각 영역의 선두 횟수를 묶어 비교하면 인물별 강점의 성격이 더 선명해집니다.</p></div><div class="admin-compare-lane-list">${lanes.map(([code,label,codes])=>{const counts=people.map((person,index)=>({person,index,wins:0}));stats.rows.filter(row=>codes.includes(row.code)).forEach(row=>{if(row.leaders.length===1)counts[row.leaders[0]].wins+=1;});const sorted=[...counts].sort((a,b)=>b.wins-a.wins||a.index-b.index),max=Math.max(1,codes.length),leader=sorted[0];return `<article><div class="admin-compare-lane-label"><small>${esc(code)}</small><b>${esc(label)}</b><span>${esc(leader?.person?.name||'—')} 우위</span></div><div class="admin-compare-lane-bars">${counts.map(row=>`<p><span>${esc(row.person?.name||'—')}</span><i><em style="width:${Math.max(4,row.wins/max*100)}%"></em></i><strong>${row.wins}/${max}</strong></p>`).join('')}</div></article>`;}).join('')}</div></section>`;
+}
+function adminCompareDecisionMap(people,entries){
+  const points=people.map((person,index)=>{
+    const latest=entries[index]?.person?.summary?.latest?.scores||{},condition=Number(adminComparePi(entries[index])?.diagnosis?.condition);
+    const attention=Number(latest.overallInterest),expansion=Number(latest.massExpansion),x=Number.isFinite(attention)&&Number.isFinite(expansion)?Math.max(4,Math.min(96,(attention+expansion)/2)):50,y=Number.isFinite(condition)?Math.max(4,Math.min(96,condition+50)):50;
+    return {person,index,x,y,condition:Number.isFinite(condition)?condition:null};
+  });
+  return `<section class="content-card admin-compare-decision-map"><div class="admin-compare-section-kicker"><span>DECISION MAP</span><h2>확장력 × 정치 컨디션 포지션</h2><p>오른쪽일수록 대중 확장 신호가 강하고, 위쪽일수록 현재 정치 컨디션이 높습니다.</p></div><div class="admin-compare-map-board"><span class="axis-y">POLITICAL CONDITION ↑</span><span class="axis-x">PUBLIC EXPANSION →</span><i class="mid-x"></i><i class="mid-y"></i>${points.map(row=>`<article style="--map-x:${row.x}%;--map-y:${row.y}%"><span>0${row.index+1}</span>${personPhotoMarkup(row.person,"admin-compare-map-avatar",{eager:false,size:64})}<b>${esc(row.person.name)}</b><small>${row.condition===null?'—':adminCompareNumber(row.condition)}</small></article>`).join('')}</div></section>`;
+}
+function adminComparePersonVerdicts(people,entries){
+  const stats=adminCompareSignalStats(people,entries);
+  return `<section class="content-card admin-compare-person-verdicts"><div class="admin-compare-section-kicker"><span>PERSON-BY-PERSON READOUT</span><h2>한 사람씩 짚어보면</h2><p>관리자가 설명할 때 바로 사용할 수 있도록 각 인물의 상대 강점과 경계축을 분리했습니다.</p></div><div class="admin-compare-person-verdict-grid">${people.map((person,index)=>{const ranked=stats.rows.map(row=>{const value=Number(row.values[index]),valid=Number.isFinite(value);const relative=!valid?0:row.spread===0?50:(value-row.min)/Math.max(1,row.spread)*100;return {row,value,relative};}).filter(x=>Number.isFinite(x.value)).sort((a,b)=>b.relative-a.relative),strong=ranked[0],watch=ranked[ranked.length-1],pi=adminComparePi(entries[index]),confidence=Number(pi?.confidence?.score);return `<article><header><span>0${index+1}</span>${personPhotoMarkup(person,"admin-compare-verdict-avatar",{eager:index<2,size:88})}<div><h3>${esc(person.name)}</h3><small>${esc([person.party,person.jurisdiction].filter(Boolean).join(' · '))}</small></div></header><div class="admin-compare-person-verdict"><small>STRONGEST RELATIVE SIGNAL</small><b>${esc(strong?.row?.label||'—')}</b><strong>${adminCompareNumber(strong?.value)}</strong></div><div class="admin-compare-person-note"><span>WHY IT MATTERS</span><p>${strong?`비교군 안에서 <b>${esc(strong.row.label)}</b>의 상대 위치가 가장 강합니다. 이 인물의 현재 우위를 설명할 때 먼저 짚을 축입니다.`:'비교 가능한 신호를 축적 중입니다.'}</p></div><div class="admin-compare-person-note watch"><span>WHAT TO WATCH</span><p>${watch?`반대로 <b>${esc(watch.row.label)}</b>은 비교군에서 상대적으로 약한 축입니다. 우위 신호가 유지되는지와 함께 이 격차의 확대 여부를 확인해야 합니다.`:'경계축을 축적 중입니다.'}</p></div><footer><span>${esc(pi?.diagnosis?.label||'JCS INTELLIGENCE')}</span><b>CONF ${Number.isFinite(confidence)?Math.round(confidence):'—'}%</b></footer></article>`;}).join('')}</div></section>`;
 }
 function adminCompareSignalMatrix(people,entries){
   const stats=adminCompareSignalStats(people,entries);
@@ -619,7 +654,7 @@ async function renderAdminCompare(search=""){
     const data=await getFastAdminCompare(people.map(p=>p.id),"30");
     const byId=new Map((data?.people||[]).map(x=>[String(x.personId),x]));
     const entries=people.map(p=>byId.get(String(p.id))||{});
-    result=`<div class="admin-multi-compare admin-compare-report-shell"><section class="admin-compare-result-head admin-compare-report-cover"><div><span>CLASSIFIED · JCS ADMIN INTELLIGENCE</span><h2>JCS INTELLIGENCE COMPARISON REPORT</h2><p>${people.length}명의 정치적 신호를 동일 기준으로 판독한 관리자 전용 비교 리포트</p></div><button class="ghost-btn" type="button" data-go="/compare?${ids.map(id=>`p=${encodeURIComponent(id)}`).join('&')}">대상 다시 선택</button></section>${adminCompareExecutive(people,entries)}${adminCompareSignalMatrix(people,entries)}${adminComparePositionStrip(people,entries)}<section class="admin-compare-grid admin-compare-profile-deck">${people.map((p,i)=>adminComparePersonCard(p,entries[i],i)).join("")}</section><details class="content-card admin-compare-deep-data"><summary><span>DEEP DATA TABLES</span><b>AGE × GENDER · HISTORY · CORE INTELLIGENCE 원수치 펼치기</b><i>+</i></summary><div>${adminCompareMetricTable(people,entries)}${adminCompareCohortTable(people,entries)}${adminCompareHistoryTable(people,entries)}</div></details></div>`;
+    result=`<div class="admin-multi-compare admin-compare-report-shell"><section class="admin-compare-result-head admin-compare-report-cover" data-legacy-title="JCS INTELLIGENCE COMPARISON REPORT"><div><span>CONFIDENTIAL COMPARATIVE INTELLIGENCE</span><h2>JCS DECISION ROOM</h2><p>${people.length}명의 정치적 상태를 한 화면에서 판단하기 위한 관리자 전용 의사결정 리포트</p><div class="admin-compare-cover-people">${people.map((p,i)=>`<span><b>0${i+1}</b>${esc(p.name)}</span>`).join('')}</div></div><button class="ghost-btn" type="button" data-go="/compare?${ids.map(id=>`p=${encodeURIComponent(id)}`).join('&')}">대상 다시 선택</button></section>${adminCompareExecutive(people,entries)}${adminCompareBattlefield(people,entries)}<div class="admin-compare-analysis-pair">${adminCompareDecisionMap(people,entries)}${adminCompareAdvantageLanes(people,entries)}</div>${adminComparePersonVerdicts(people,entries)}${adminCompareSignalMatrix(people,entries)}<section class="admin-compare-grid admin-compare-profile-deck">${people.map((p,i)=>adminComparePersonCard(p,entries[i],i)).join("")}</section><details class="content-card admin-compare-deep-data"><summary><span>DEEP DATA TABLES</span><b>AGE × GENDER · HISTORY · CORE INTELLIGENCE 원수치 펼치기</b><i>+</i></summary><div>${adminCompareMetricTable(people,entries)}${adminCompareCohortTable(people,entries)}${adminCompareHistoryTable(people,entries)}</div></details></div>`;
   } else if(people.length>=2){
     result=`<section class="content-card admin-compare-ready-state"><div class="admin-compare-ready-icon">JCS</div><div><span>READY TO COMPARE</span><h2>${people.length}명의 비교 대상이 준비되었습니다</h2><p>선택을 확인한 뒤 위의 <b>비교하기</b> 버튼을 누르면 AGE × GENDER · HISTORY · CORE INTELLIGENCE 분석을 한 번에 불러옵니다.</p></div></section>`;
   } else {
