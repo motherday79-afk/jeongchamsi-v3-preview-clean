@@ -221,7 +221,7 @@ function academyRows(slots = []) {
 
 
 let nowRankRotationTimer = 0;
-export function hydrateHomeNowRank(){
+export function hydrateHomeNowCarousel(){
   const carousel=document.querySelector('[data-now-rank-carousel]');
   if(!carousel)return;
   const pages=[...carousel.querySelectorAll('[data-now-rank-page]')];
@@ -412,7 +412,7 @@ export async function renderHome() {
 
         <section class="module" id="compare"><div class="module-header"><div><span class="eyebrow">COMPARE · SAMPLE</span><h2>정치인 비교분석</h2></div><button class="more-btn" type="button" data-go="/compare">비교하기</button></div><div class="compare-sample-badge">예시 화면 · 실제 정치인 아님</div><div class="compare-layout"><div class="compare-person"><span class="compare-avatar sample-a"></span><b>가상후보 A</b><small>정책·민생형</small></div><div class="compare-metrics"><div><b>활동도</b><i><em style="width:72%"></em></i><strong>72</strong></div><div><b>관심도</b><i><em style="width:61%"></em></i><strong>61</strong></div><div><b>언급량</b><i><em style="width:48%"></em></i><strong>48</strong></div><div><b>참여도</b><i><em style="width:67%"></em></i><strong>67</strong></div></div><div class="compare-person"><span class="compare-avatar sample-b"></span><b>가상후보 B</b><small>개혁·소통형</small></div></div><div class="compare-summary"><b>비교 결과 예시</b><span>정참시의 AI 인텔리전트 데이터 무브먼트로 22개의 항목을 비교분석 합니다</span></div></section>
 
-        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow live-heading-inline">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="now-rank-carousel" data-now-rank-carousel data-page-count="${rankPageCount}" data-page="0"><button class="now-rank-nav now-rank-prev" type="button" data-now-rank-prev aria-label="이전 NOW 순위" ${rankPageCount<=1?"disabled":""}>‹</button><div class="now-rank-pages">${rankPages}</div><button class="now-rank-nav now-rank-next" type="button" data-now-rank-next aria-label="다음 NOW 순위" ${rankPageCount<=1?"disabled":""}>›</button><div class="now-rank-status" data-now-rank-status>${rankPageCount?`1 / ${rankPageCount}`:""}</div></div></section>
+        <section class="module now-module" id="now"><div class="module-header"><div><span class="eyebrow live-heading-inline">NOW RANK <span class="main-live-pulse" aria-label="LIVE"><i></i></span></span><h2>지금 가장 주목받는 정치인</h2></div><button class="more-btn" type="button" data-go="/now">전체보기</button></div><div class="now-rank-carousel" data-now-rank-carousel data-page-count="${rankPageCount}" data-page="0"><button class="now-rank-nav now-rank-prev" type="button" data-now-rank-nav="prev" data-now-rank-prev aria-label="이전 NOW 순위" ${rankPageCount<=1?"disabled":""}>‹</button><div class="now-rank-pages">${rankPages}</div><button class="now-rank-nav now-rank-next" type="button" data-now-rank-nav="next" data-now-rank-next aria-label="다음 NOW 순위" ${rankPageCount<=1?"disabled":""}>›</button><div class="now-rank-status" data-now-rank-status>${rankPageCount?`1 / ${rankPageCount}`:""}</div></div></section>
 
         <section class="module" id="column"><div class="module-header"><div><span class="eyebrow">COLUMN</span><h2>오늘 정치에서 읽어야 할 것</h2></div><button class="more-btn" type="button" data-go="/column">전체보기</button></div><div class="column-grid">${columnCards.map(item => columnMini(item, homeAuthorProfiles)).join("")}</div></section>
 

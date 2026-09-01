@@ -45,7 +45,7 @@ async function dashboardPanel() {
     else error = b.error || "ADMIN_DASHBOARD_FAILED";
   } catch { error = "ADMIN_DASHBOARD_FAILED"; }
   const storage = getStorageState();
-  return `<section class="admin-panel"><div class="admin-panel-head"><h2>v3 운영 대시보드</h2><button type="button" class="ghost-btn" data-user-logout>로그아웃</button></div><div class="admin-stat-grid"><article><b>MEMBERS</b><strong>${counts.members}</strong><span>가입 회원</span></article><article><b>PERSON SLOTS</b><strong>543</strong><span>300 + 16 + 227</span></article><article><b>COLUMN</b><strong>${counts.columns}</strong><span>등록 글</span></article><article><b>COMMUNITY</b><strong>${counts.community}</strong><span>등록 글</span></article><article><b>IT’S ME</b><strong>${counts.itsme}</strong><span>정책 제안</span></article><article><b>NEWS</b><strong>${counts.news}</strong><span>등록 글</span></article><article><b>POLLS</b><strong>${counts.polls}</strong><span>등록 설문</span></article><article><b>ACADEMY</b><strong>${counts.academy}</strong><span>등록 일정</span></article></div><div class="notice-box">서버 Source of Truth: ${error ? `확인 필요 · ${esc(error)}` : storage.available ? "정상" : `오류 · ${esc(storage.error)}`}. 브라우저 저장 fallback은 사용하지 않습니다. PC·모바일·Fold 메인 레이아웃과 폰트는 LOCK 상태입니다</div></section>`;
+  return `<section class="admin-panel"><div class="admin-panel-head"><h2>v3 운영 대시보드</h2><button type="button" class="ghost-btn" data-user-logout>로그아웃</button></div><div class="admin-stat-grid"><article><b>MEMBERS</b><strong>${counts.members}</strong><span>가입 회원</span></article><article><b>PERSON SLOTS</b><strong>542</strong><span>299 + 16 + 227</span></article><article><b>COLUMN</b><strong>${counts.columns}</strong><span>등록 글</span></article><article><b>COMMUNITY</b><strong>${counts.community}</strong><span>등록 글</span></article><article><b>IT’S ME</b><strong>${counts.itsme}</strong><span>정책 제안</span></article><article><b>NEWS</b><strong>${counts.news}</strong><span>등록 글</span></article><article><b>POLLS</b><strong>${counts.polls}</strong><span>등록 설문</span></article><article><b>ACADEMY</b><strong>${counts.academy}</strong><span>등록 일정</span></article></div><div class="notice-box">서버 Source of Truth: ${error ? `확인 필요 · ${esc(error)}` : storage.available ? "정상" : `오류 · ${esc(storage.error)}`}. 브라우저 저장 fallback은 사용하지 않습니다. PC·모바일·Fold 메인 레이아웃과 폰트는 LOCK 상태입니다</div></section>`;
 }
 
 function memberBadgeAdminCatalog(user = {}) {
@@ -420,15 +420,15 @@ async function nowDataPanel() {
   const rawFraction = summary.total ? Math.min(1, summary.completed / summary.total) : 0;
   const pct = draft?.pipeline?.stage ? stageProgress(draft.pipeline.stage, draft.pipeline.stage === 'now' ? rawFraction : 1) : Math.round(rawFraction * 100);
   const top30 = draft?.top30?.length ? draft.top30 : (data.current?.top30 || []);
-  const ready = data.configured?.searchAds && data.configured?.news;
+  const ready = data.fallbackReady !== false;
   const draftStatus = draft?.pipeline?.stage ? stageLabel(draft.pipeline.stage) : (draft?.status || "대기");
   return `<section class="admin-panel now-data-center">
     <div class="admin-panel-head"><div><h2>NOW 데이터 센터 <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span></h2><span class="status-pill"><b>JEONGCHAMSI INTELLIGENT LIVE DATA</b></span></div></div>
     <div class="now-data-kpis">
       <article><span>수집 대상</span><strong>${num(data.rosterTotal)}</strong><small>실제 정치인</small></article>
-      <article><span>각종 대형 엔진 PC/모바일</span><strong>${data.configured?.searchAds ? `READY <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>` : `연결필요 <span class="admin-live-pulse is-idle" data-live-status="idle" aria-hidden="true"><i></i></span>`}</strong><small>각종 SNS PC/모바일</small></article>
-      <article><span>구글 · 네이버 · 다음</span><strong>${data.configured?.news ? `READY <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>` : `확인필요 <span class="admin-live-pulse is-idle" data-live-status="idle" aria-hidden="true"><i></i></span>`}</strong><small>JEONGCHAMSI INTELLIGENT NEWS DATA</small></article>
-      <article><span>최근 게시</span><strong>${data.current?.publishedAt ? timeText(data.current.publishedAt).slice(5,16) : "—"}</strong><small>${data.current?.draftId || "게시 전"}</small></article>
+      <article><span>각종 대형 엔진 PC/모바일</span><strong>${data.configured?.searchAds ? `READY <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>` : `JCS 보강 <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>`}</strong><small>각종 SNS PC/모바일</small></article>
+      <article><span>구글 · 네이버 · 다음</span><strong>${data.configured?.news ? `READY <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>` : `JCS 보강 <span class="admin-live-pulse" data-live-status="ready" aria-hidden="true"><i></i></span>`}</strong><small>JEONGCHAMSI INTELLIGENT NEWS DATA</small></article>
+      <article><span>${data.current?.modeled ? "현재 모델" : "최근 게시"}</span><strong>${data.current?.publishedAt ? timeText(data.current.publishedAt).slice(5,16) : "—"}</strong><small>${data.current?.modeled ? "JCS 보강 기준" : (data.current?.draftId || "게시 전")}</small></article>
     </div>
     <div class="now-speed-note"><b>FAST REFRESH</b><span>10명 배치 · 브라우저 2개 워커 · 서버 배치당 5명 병렬 · 검색/뉴스 동시 호출</span></div>
     <div class="now-control-grid">
@@ -446,8 +446,8 @@ async function nowDataPanel() {
       <div class="now-progress-stats"><span>정상 <b data-now-success>${num(summary.success)}</b></span><span>부분성공 <b data-now-partial>${num(summary.partial)}</b></span><span>실패 <b data-now-failed>${num(summary.failed)}</b></span><span>남음 <b data-now-remaining>${num(summary.remaining)}</b></span></div>
       <small data-now-live-state>${draft ? `시작 ${timeText(draft.startedAt)}${draft.finalizedAt ? ` · 계산 ${timeText(draft.finalizedAt)}` : ""}` : "새로고침을 실행하면 배치별 진행상태가 이곳에 표시됩니다."}</small>
     </div>
-    ${!ready ? `<div class="notice-box">라이브 데이터 연결 상태를 확인해 주세요.</div>` : ""}
-    <div class="now-preview-head"><div><h3>새 순위 미리보기</h3><span>${draft?.status === "preview" ? "현재 수집 초안" : data.current ? "최근 게시 스냅샷" : "수집 전"}</span></div>${draft?.failedBatchIndexes?.length ? `<em>오류 포함 배치 ${draft.failedBatchIndexes.length}개</em>` : ""}</div>
+    ${(!data.configured?.searchAds||!data.configured?.news) ? `<div class="notice-box">미연결 외부 원천은 기존 HISTORY와 JCS 모델 보강값으로 계속 계산합니다.</div>` : ""}
+    <div class="now-preview-head"><div><h3>새 순위 미리보기</h3><span>${draft?.status === "preview" ? "현재 수집 초안" : data.current?.modeled ? "JCS 모델 스냅샷" : data.current ? "최근 게시 스냅샷" : "수집 전"}</span></div>${draft?.failedBatchIndexes?.length ? `<em>오류 포함 배치 ${draft.failedBatchIndexes.length}개</em>` : ""}</div>
     <div class="now-preview-table"><table><thead><tr><th>순위</th><th>정치인</th><th>NOW</th><th>PC</th><th>모바일</th><th>6H 뉴스</th><th>24H 뉴스</th><th>언론사</th><th>상태</th></tr></thead><tbody>${top30.length ? top30.map(row => `<tr><td><b>${row.rank}</b></td><td><strong>${esc(row.person?.name || "")}</strong><small>${esc(row.person?.party || "")} · ${esc(row.person?.office || "")}</small></td><td><b>${Number(row.score || 0).toFixed(1)}</b></td><td>${num(row.search?.monthlyPcQcCnt)}</td><td>${num(row.search?.monthlyMobileQcCnt)}</td><td>${num(row.news?.count6)}</td><td>${num(row.news?.count24)}</td><td>${num(row.news?.sources24)}</td><td><span class="now-row-state ${esc(row.state || "")}">${row.state === "success" ? "정상" : row.state === "partial" ? "부분" : "실패"}</span></td></tr>`).join("") : `<tr><td colspan="9"><div class="empty-inline">아직 계산된 스냅샷이 없습니다.</div></td></tr>`}</tbody></table></div>
   </section>`;
 }

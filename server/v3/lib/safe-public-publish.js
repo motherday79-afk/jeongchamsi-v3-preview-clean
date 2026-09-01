@@ -36,7 +36,7 @@ function createSafePublicPublisher(deps={},options={}){
     const restoreEntries=entries.map(([key])=>[key,backups.has(key)?backups.get(key):null]);
     try{await writeIndividually(restoreEntries);return null;}catch(error){return error;}
   }
-  async function publish({personEntries=[],controlEntries=[],commitEntry=null}={}){
+  async function publish({personEntries=[],controlEntries=[],commitEntry=null,beforeCommit=null}={}){
     const commit=Array.isArray(commitEntry)&&commitEntry.length===2?[commitEntry]:[];
     preflight(personEntries);preflight(controlEntries);preflight(commit);
     const [personBackups,controlBackups]=await Promise.all([readBackups(personEntries),readBackups(controlEntries)]);
@@ -45,7 +45,9 @@ function createSafePublicPublisher(deps={},options={}){
       // Large per-politician payloads are deliberately one SET per key. Never aggregate them into MSET/pipeline request bodies.
       await writeIndividually(personEntries,writtenPerson);
       await writeIndividually(controlEntries,writtenControl);
-      // The publish marker is written last. A failed payload write can never advertise a completed publish.
+      // HISTORY/verification hooks run after payload writes but before the public commit marker.
+      if(typeof beforeCommit==='function')await beforeCommit();
+      // The publish marker is written last. A failed payload or required-history write can never advertise a completed publish.
       if(commit.length)await writeIndividually(commit);
       return {ok:true,personCount:personEntries.length,controlCount:controlEntries.length};
     }catch(error){

@@ -1,5 +1,5 @@
 import { pageShell, esc } from "./layout.js?v=alpha6.0.36.24-showcase-hero-now";
-import { getUserSession, getUserActivity, getRecentPeople } from "../core/user.js";
+import { getUserSession, getUserActivity, getRecentPeople, getBadgeStatus } from "../core/user.js";
 import { getDomain } from "../core/repository.js";
 import { getPersonSlotById } from "../data/person-provider.js?v=alpha6.0.20-function-detail";
 import { REGION_DATA } from "../data/regions.js";
@@ -19,11 +19,11 @@ function formatDate(v) {
   try { return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(v)); }
   catch { return ""; }
 }
-function badgeList(activity, authoredCount, commentCount, itsmeCount = 0, role = "member") {
+function badgeList(activity, authoredCount, commentCount, itsmeCount = 0, role = "member", serverEarned = []) {
   const pollCount = Object.keys(activity.pollVotes || {}).length;
   const generationCount = Object.keys(activity.generationVotes || {}).length;
   const evaluationCount = Object.keys(activity.nationalEvaluationVotes || {}).length;
-  const earned = new Set(activity.grantedBadges || []);
+  const earned = new Set([...(activity.grantedBadges || []), ...(Array.isArray(serverEarned) ? serverEarned : [])]);
   if (pollCount + generationCount + evaluationCount + commentCount + authoredCount > 0) earned.add("first-participation");
   if (pollCount > 0) earned.add("citizen-choice");
   if (itsmeCount > 0) earned.add("policy-proposer");
@@ -96,7 +96,9 @@ export async function renderMyActivity(search = "") {
   const tab = new URLSearchParams(search || "").get("tab") || "summary";
   const activity = getUserActivity();
   const counts = await myContentCounts(session.user.id);
-  const badges = badgeList(activity, counts.authoredCount, counts.myComments.length, counts.itsmePosts.length, session.user.role);
+  const badgeStatus = tab === "badges" ? await getBadgeStatus().catch(() => ({ ok:false, status:null })) : { ok:false, status:null };
+  const serverEarned = badgeStatus?.ok && Array.isArray(badgeStatus.status?.earnedBadges) ? badgeStatus.status.earnedBadges : [];
+  const badges = badgeList(activity, counts.authoredCount, counts.myComments.length, counts.itsmePosts.length, session.user.role, serverEarned);
   let detail = "";
 
   if (tab === "likes") {

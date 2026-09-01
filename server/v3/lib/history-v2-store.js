@@ -15,6 +15,11 @@ const BACKFILL_PAGE_SIZE_V2=25;
 function isoMs(value){const t=Date.parse(value||'');return Number.isFinite(t)?t:Date.now();}
 function safeDays(value){if(String(value)==='all')return 'all';const n=Number(value);return [7,30,90,365].includes(n)?n:30;}
 function cleanId(value=''){return String(value||'').trim().replace(/[^A-Za-z0-9._-]/g,'_').slice(0,180);}
+function compatibleFrozenIntelligence(value){
+  if(!value||typeof value!=='object')return false;
+  const version=String(value.version||'');
+  return Boolean(value.validity&&value.validity.state)&&/^JCS_POLITICAL_INTELLIGENCE_V1_(?:2|3)/.test(version);
+}
 function observationReadLimit(days,requested){const base=days==='all'?4000:{7:96,30:320,90:960,365:3200}[Number(days)]||320;const req=Math.max(0,Number(requested)||0);return Math.min(4000,Math.max(base,req));}
 function compactRoster(people=[]){return people.map(p=>({id:String(p.id||''),name:String(p.name||''),type:String(p.type||''),party:String(p.party||''),jurisdiction:String(p.jurisdiction||''),office:String(p.office||'')})).filter(x=>x.id);}
 function snapshotHeader(current={},observations=[]){
@@ -113,7 +118,13 @@ function createHistoryV2Store(overrides={}){
     const members=await deps.command(['ZREVRANGE',v2ObservationIndexKey(id),0,max-1]);
     const publishIds=Array.isArray(members)?members:[],rows=await mgetRawJSONChunks(publishIds.map(x=>v2ObservationKey(id,x)));
     const cutoff=days==='all'?0:Date.now()-Number(days)*86400000;
-    const observations=rows.filter(Boolean).filter(row=>!cutoff||(Date.parse(row.publishedAt)||0)>=cutoff).sort((a,b)=>(Date.parse(a.publishedAt)||0)-(Date.parse(b.publishedAt)||0));
+    let observations=rows.filter(Boolean).filter(row=>!cutoff||(Date.parse(row.publishedAt)||0)>=cutoff).sort((a,b)=>(Date.parse(a.publishedAt)||0)-(Date.parse(b.publishedAt)||0));
+    // Recovery bridge: if formal V2 history has not yet been captured, use the already-published per-person trend/history instead of returning an empty intelligence surface.
+    if(!observations.length){
+      const [publicView,legacyHistory]=await Promise.all([deps.getJSON(`nowDataPersonPublic:${id}`),deps.getJSON('nowDataHistory')]);
+      const legacy=mergeLegacyObservations(id,publicView?.trend?.points||[],legacyHistory?.items||[]);
+      observations=legacy.map(buildLegacyPartialObservation).filter(Boolean).filter(row=>!cutoff||(Date.parse(row.publishedAt)||0)>=cutoff).sort((a,b)=>(Date.parse(a.publishedAt)||0)-(Date.parse(b.publishedAt)||0));
+    }
     const daily=buildDailySummaries(observations),rawSummary=deriveWindowSummary(observations);
     const intraday=days===7,trendRows=intraday?observations:dailySummaryObservations(daily);
     const summary=deriveWindowSummary(trendRows);
@@ -125,14 +136,16 @@ function createHistoryV2Store(overrides={}){
 
   async function readPoliticalIntelligenceV2(personId,personHistory=null){
     const id=String(personId||'').trim();if(!id)return null;
+    try{const latestFrozen=await deps.readLatestPoliticalIntelligenceSnapshotPersonV1(id);if(compatibleFrozenIntelligence(latestFrozen))return latestFrozen;}catch{}
     const current=await deps.getJSON('nowDataCurrent');
-    if(!current?.draftId||!Array.isArray(current?.ranked)||!current.ranked.length)return null;
-    try{const latestFrozen=await deps.readLatestPoliticalIntelligenceSnapshotPersonV1(id);if(latestFrozen)return latestFrozen;}catch{}
-    try{const frozen=await deps.readPoliticalIntelligenceSnapshotPersonV1(current.draftId,id);if(frozen)return frozen;}catch{}
+    if(current?.draftId){try{const frozen=await deps.readPoliticalIntelligenceSnapshotPersonV1(current.draftId,id);if(compatibleFrozenIntelligence(frozen))return frozen;}catch{}}
     const legacyHistory=(await deps.getJSON('nowDataHistory'))||{items:[]};
-    const view=deps.derivePersonView(current,legacyHistory,id);if(!view?.row)return null;
+    let view=null,asOf=null;
+    if(current?.draftId&&Array.isArray(current?.ranked)&&current.ranked.length){view=deps.derivePersonView(current,legacyHistory,id);asOf=current?.publishedAt||null;}
+    if(!view?.row){view=await deps.getJSON(`nowDataPersonPublic:${id}`);asOf=view?.publishedAt||asOf;}
+    if(!view?.row)return null;
     const history=personHistory||await readPersonHistoryV2(id,{days:30,limit:365});
-    const asOf=current?.publishedAt||new Date().toISOString();
+    asOf=asOf||new Date().toISOString();
     const evidence=deps.getPoliticalIntelligenceEvidence(id,{asOf,person:view.row.person||null});
     return deps.derivePoliticalIntelligenceV1({view,history,evidence,asOf});
   }

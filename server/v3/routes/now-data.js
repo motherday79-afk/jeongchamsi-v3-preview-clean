@@ -1,19 +1,14 @@
 const {getJSON,setJSON}=require('../../../lib/v3/redis');
 const {derivePersonView}=require('../lib/now-public-signals');
 const {buildHomePublicSnapshot,buildCategoryPublicSnapshots,mergePersonTrend}=require('../lib/now-public-snapshot');
+const {buildBootstrapCurrent}=require('../lib/now-bootstrap');
 
 const CATEGORY_TYPES=new Set(['assembly','metropolitan','basic']);
 const categoryDomain=type=>`nowDataPublicCategory:${type}`;
 
-async function ensureCategory(type,publicHome){
-  let category=await getJSON(categoryDomain(type));
-  const currentDraft=String(publicHome?.draftId||'');
-  if(category&&String(category.draftId||'')===currentDraft)return category;
+async function publishedCurrent(){
   const current=await getJSON('nowDataCurrent');
-  if(!current?.ranked?.length)return category||null;
-  const groups=buildCategoryPublicSnapshots(current);
-  await Promise.all(Object.entries(groups).map(([key,value])=>setJSON(categoryDomain(key),value)));
-  return groups[type]||null;
+  return Array.isArray(current?.ranked)&&current.ranked.length?current:null;
 }
 
 module.exports=async function nowDataPublic(req,res){
@@ -25,38 +20,48 @@ module.exports=async function nowDataPublic(req,res){
     const type=String(req.query?.type||'').trim();
     const wantsCategory=CATEGORY_TYPES.has(type)&&!id;
     const offset=Math.max(0,Number(req.query?.offset)||0);
-    const requestedLimit=Math.max(1,Number(req.query?.limit)||30);
-    const limit=Math.min(300,requestedLimit);
+    const limit=Math.min(300,Math.max(1,Number(req.query?.limit)||30));
     const personDomain=id?`nowDataPersonPublic:${id}`:'';
-    let [publicHome,person]=await Promise.all([
+    let [publicHome,person,current,history]=await Promise.all([
       getJSON('nowDataPublicHome'),
-      id?getJSON(personDomain):Promise.resolve(null)
+      id?getJSON(personDomain):Promise.resolve(null),
+      publishedCurrent(),
+      getJSON('nowDataHistory')
     ]);
+    history=history||{items:[]};
+    const usingBootstrap=!current;
+    if(!current)current=buildBootstrapCurrent();
 
-    // One-time compatibility migration from the pre-0.36.46 full snapshot.
-    if(!publicHome||(id&&(!person||!person?.analysis||!person?.categoryRank||!person?.trend))){
-      const [current,history]=await Promise.all([getJSON('nowDataCurrent'),getJSON('nowDataHistory')]);
-      if(current?.ranked?.length){
-        if(!publicHome){publicHome=buildHomePublicSnapshot(current,history);await setJSON('nowDataPublicHome',publicHome);}
-        if(id&&(!person||!person?.analysis||!person?.categoryRank||!person?.trend)){const nextPerson=derivePersonView(current,history,id);person=mergePersonTrend(nextPerson,person||null,60);await setJSON(personDomain,person);}
-      }
+    if(!publicHome||!Array.isArray(publicHome?.top30)||!publicHome.top30.length){
+      publicHome=buildHomePublicSnapshot(current,history);
+      // Persist compatibility repair only when it is based on an actual published current snapshot.
+      if(!usingBootstrap)await setJSON('nowDataPublicHome',publicHome);
     }
 
-    const current=publicHome?.draftId?{draftId:publicHome.draftId,publishedAt:publicHome.publishedAt,weights:publicHome.weights||{}}:null;
-    const signals=publicHome?.signals||{source:'none',publishedAt:null,keywords:[],rising:[]};
+    if(id&&(!person||!person?.analysis||!person?.categoryRank||!person?.trend)){
+      const nextPerson=derivePersonView(current,history,id);
+      person=mergePersonTrend(nextPerson,person||null,60);
+      if(!usingBootstrap&&person?.row)await setJSON(personDomain,person);
+    }
+
+    const meta={draftId:publicHome?.draftId||current?.draftId||null,publishedAt:publicHome?.publishedAt||current?.publishedAt||null,weights:publicHome?.weights||current?.weights||{},modeled:Boolean(usingBootstrap||publicHome?.modeled)};
+    const signals=publicHome?.signals||{source:usingBootstrap?'jcs-modeled-bootstrap':'none',publishedAt:meta.publishedAt,keywords:[],rising:[]};
 
     if(wantsCategory){
-      const stored=await ensureCategory(type,publicHome);
+      let stored=!usingBootstrap?await getJSON(categoryDomain(type)):null;
+      const currentDraft=String(current?.draftId||'');
+      if(!stored||String(stored.draftId||'')!==currentDraft){
+        const groups=buildCategoryPublicSnapshots(current);
+        stored=groups[type]||null;
+        if(!usingBootstrap)await Promise.all(Object.entries(groups).map(([key,value])=>setJSON(categoryDomain(key),value)));
+      }
       const rows=Array.isArray(stored?.rows)?stored.rows:[];
       const total=Number(stored?.total)||rows.length;
       const slice=rows.slice(offset,offset+limit);
-      return res.status(200).json({
-        ok:true,current,signals,
-        category:{type,total,offset,limit,hasMore:offset+slice.length<total,rows:slice}
-      });
+      return res.status(200).json({ok:true,current:meta,signals,category:{type,total,offset,limit,hasMore:offset+slice.length<total,rows:slice,modeled:Boolean(usingBootstrap)}});
     }
 
-    return res.status(200).json({ok:true,current,signals,person:id?(person||null):null});
+    return res.status(200).json({ok:true,current:meta,signals,person:id?(person||null):null});
   }catch(error){
     console.error('[NOW_DATA_PUBLIC]',error);
     return res.status(error?.code==='STORAGE_MISSING'?503:500).json({ok:false,error:error?.code||'NOW_DATA_PUBLIC_FAILED'});

@@ -21,10 +21,10 @@ function compactHistory(history={}){
 }
 function buildHomePublicSnapshot(current,history,nowMs=Date.now()){
   const ranked=Array.isArray(current?.ranked)?current.ranked:[];
-  if(!ranked.length)return {draftId:null,publishedAt:null,weights:{},total:0,top10:[],signals:{source:'none',publishedAt:null,keywords:[],rising:[]}};
+  if(!ranked.length)return {draftId:null,publishedAt:null,weights:{},total:0,top30:[],top10:[],modeled:false,signals:{source:'none',publishedAt:null,keywords:[],rising:[]}};
   return {
-    draftId:current.draftId||null,publishedAt:current.publishedAt||null,weights:current.weights||{},total:ranked.length,
-    top10:ranked.slice(0,10).map(compactPreviewRow),signals:derivePublicSignals(current,history,nowMs)
+    draftId:current.draftId||null,publishedAt:current.publishedAt||null,weights:current.weights||{},total:ranked.length,modeled:Boolean(current.modeled),
+    top30:ranked.slice(0,30).map(compactPreviewRow),top10:ranked.slice(0,10).map(compactPreviewRow),signals:derivePublicSignals(current,history,nowMs)
   };
 }
 
@@ -69,7 +69,7 @@ function mergePersonTrend(view={},previousView=null,limit=60){
 
 function buildAdminPublicSnapshot(current){
   const ranked=Array.isArray(current?.ranked)?current.ranked:[];
-  return current?{draftId:current.draftId||null,publishedAt:current.publishedAt||null,weights:current.weights||{},total:ranked.length,top30:ranked.slice(0,30).map(compactPreviewRow)}:null;
+  return current?{draftId:current.draftId||null,publishedAt:current.publishedAt||null,weights:current.weights||{},total:ranked.length,top30:ranked.slice(0,30).map(compactPreviewRow),modeled:Boolean(current?.modeled)}:null;
 }
 
 function compactCategoryRow(row={},categoryRank=0){

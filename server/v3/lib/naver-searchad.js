@@ -36,7 +36,7 @@ async function queryKeyword(keyword){
 }
 async function collectSearchPulse(person){
   const c=credentials();
-  if(!c.configured)return {provider:'naver-search-ads-keywordstool',configured:false,state:'MISSING',detail:'NAVER Search Ads credentials not configured',monthlyPcQcCnt:0,monthlyMobileQcCnt:0,monthlyTotalQcCnt:0};
+  if(!c.configured)return {provider:'naver-search-ads',configured:false,state:'MISSING',detail:'NAVER Search Ads credentials not configured',monthlyPcQcCnt:0,monthlyMobileQcCnt:0,monthlyTotalQcCnt:0};
   const local=person.entityType==='metropolitan'||person.entityType==='basic';
   const primary=local?`${person.name}${String(person.office||'').replace(/\s+/g,'')}`:person.name;
   let first=await queryKeyword(primary),row=first,usedFallback=false;
@@ -44,7 +44,7 @@ async function collectSearchPulse(person){
   const rawTotal=row.found?Math.max(0,Number(row.monthlyTotalQcCnt)||0):0;
   const ambiguous=Boolean(person.ambiguousName),confidenceFactor=usedFallback?0.72:1;
   return {
-    provider:'naver-search-ads-keywordstool',configured:true,state:ambiguous?'AMBIGUOUS':(rawTotal>0?'OBSERVED':'ZERO'),
+    provider:'naver-search-ads',configured:true,state:ambiguous?'AMBIGUOUS':(rawTotal>0?'OBSERVED':'ZERO'),
     queryTerm:usedFallback?person.name:primary,matchedKeyword:row.found?(row.matchedKeyword||(usedFallback?person.name:primary)):null,
     qualificationMode:usedFallback?'unique-name-fallback':(local?'office-qualified':'name-exact'),confidenceFactor,
     monthlyPcQcCnt:ambiguous?0:(row.found?Number(row.monthlyPcQcCnt)||0:0),monthlyMobileQcCnt:ambiguous?0:(row.found?Number(row.monthlyMobileQcCnt)||0:0),monthlyTotalQcCnt:ambiguous?0:rawTotal,

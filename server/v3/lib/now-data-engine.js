@@ -29,9 +29,9 @@ async function mapLimit(items,limit,worker){
   });
   await Promise.all(runners);return out;
 }
-async function collectBatch(ids,{concurrency=5,nowMs=Date.now()}={}){
+async function collectBatch(ids,{concurrency=5,nowMs=Date.now(),previousById={}}={}){
   const started=Date.now();
-  const results=await mapLimit(ids,concurrency,id=>retryPerson(id,{nowMs}));
+  const results=await mapLimit(ids,concurrency,id=>retryPerson(id,{nowMs,previousView:previousById?.[id]||null}));
   return {results,elapsedMs:Date.now()-started};
 }
 function newsRaw(row={}){
@@ -57,7 +57,7 @@ function scoreSnapshot(rows,{searchWeight=50,newsWeight=50}={}){
       state:resultState(row),
       searchScore,newsScore,score,
       scoreInputs:{searchRaw:searchRaw(row),newsRaw:Math.round(newsRaw(row)*100)/100},
-      weights:{search:sw,news:nw},providers:['naver-search-ads','naver-news']
+      weights:{search:sw,news:nw},providers:[row.search?.provider||'search',row.news?.provider||'news']
     };
   }).sort((a,b)=>b.score-a.score||b.newsScore-a.newsScore||b.searchScore-a.searchScore||String(a.person?.id||'').localeCompare(String(b.person?.id||'')))
     .map((row,i)=>({...row,rank:i+1}));
@@ -83,7 +83,7 @@ function compactRankRow(row={}){
       count7d:Number(row.news?.count7d)||0,sources24:Number(row.news?.sources24)||0,latest:row.news?.latest||null,
       headlines:Array.isArray(row.news?.headlines)?row.news.headlines.slice(0,12):[]
     },
-    providers:['naver-search-ads','naver-news']
+    providers:[row.search?.provider||'search',row.news?.provider||'news']
   };
 }
 module.exports={makeBatches,resultState,aggregateBatchSummaries,scoreSnapshot,collectBatch,compactRankRow};

@@ -509,7 +509,7 @@ document.addEventListener("click", async event => {
     if (!r.ok) {
       const groups = r.missingGroups || [];
       const need = [groups.includes('searchAds') ? '네이버 검색량' : '', groups.includes('news') ? '네이버 뉴스' : ''].filter(Boolean).join(' + ');
-      alert(r.error === 'NAVER_CONFIG_REQUIRED' ? `NOW 새로고침 준비 필요 · ${need || '네이버 데이터 연결'} 연결이 필요합니다.` : nowFailureText("NOW 새로고침 실패", r));
+      alert(nowFailureText("NOW 새로고침 실패", r));
     }
     await render(currentRoute(), { resetScroll:false });
     return;
