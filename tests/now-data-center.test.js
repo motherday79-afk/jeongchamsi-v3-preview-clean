@@ -21,18 +21,18 @@ test('resultState distinguishes success partial and failure', () => {
   assert.equal(resultState({ search:{state:'ERROR'}, news:{state:'ERROR'} }), 'failed');
 });
 
-test('scoreSnapshot ranks using only Naver search and Naver news signals', () => {
+test('scoreSnapshot ranks using Naver search and Google News RSS signals', () => {
   const rows = [
-    { person:{id:'a',name:'A'}, search:{monthlyTotalQcCnt:10000}, news:{count6:40,count24:80,count7d:200,sources24:25,latest:Date.now()} },
-    { person:{id:'b',name:'B'}, search:{monthlyTotalQcCnt:5000}, news:{count6:10,count24:30,count7d:100,sources24:12,latest:Date.now()} },
-    { person:{id:'c',name:'C'}, search:{monthlyTotalQcCnt:100}, news:{count6:0,count24:1,count7d:5,sources24:1,latest:Date.now()} }
+    { person:{id:'a',name:'A'}, search:{provider:'naver-search-ads',monthlyTotalQcCnt:10000}, news:{provider:'google-news-rss',count6:40,count24:80,count7d:200,sources24:25,latest:Date.now()} },
+    { person:{id:'b',name:'B'}, search:{provider:'naver-search-ads',monthlyTotalQcCnt:5000}, news:{provider:'google-news-rss',count6:10,count24:30,count7d:100,sources24:12,latest:Date.now()} },
+    { person:{id:'c',name:'C'}, search:{provider:'naver-search-ads',monthlyTotalQcCnt:100}, news:{provider:'google-news-rss',count6:0,count24:1,count7d:5,sources24:1,latest:Date.now()} }
   ];
   const ranked = scoreSnapshot(rows, {searchWeight:50, newsWeight:50});
   assert.deepEqual(ranked.map(x => x.person.id), ['a','b','c']);
   assert.equal(ranked[0].rank, 1);
   assert.ok(ranked[0].score > ranked[1].score);
   assert.ok(ranked[1].score > ranked[2].score);
-  assert.deepEqual(ranked[0].providers, ['naver-search-ads','naver-news']);
+  assert.deepEqual(ranked[0].providers, ['naver-search-ads','google-news-rss']);
 });
 
 test('aggregateBatchSummaries totals batch outcomes', () => {

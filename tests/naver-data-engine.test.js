@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 
 const rosterPath='../server/v3/lib/politician-live-roster';
 const searchPath='../server/v3/lib/naver-searchad';
-const newsPath='../server/v3/lib/naver-news';
+const newsPath='../server/v3/lib/google-news-rss';
 
 function fresh(mod){ delete require.cache[require.resolve(mod)]; return require(mod); }
 
@@ -94,55 +94,57 @@ test('ambiguous Search Ads never assigns shared name volume to an individual pol
   }finally{global.fetch=oldFetch;}
 });
 
-test('NAVER news keeps only the correct politician context, dedupes, and summarizes 6h/24h/7d',async()=>{
+test('Google News RSS keeps politician context, dedupes, and summarizes 6h/24h/7d',async()=>{
   const {getPersonById}=fresh(rosterPath);
-  const {collectNaverNews}=fresh(newsPath);
+  const {collectGoogleNews}=fresh(newsPath);
   const person=getPersonById('assembly-001');
   const now=Date.now();
   const dt=h=>new Date(now-h*3600000).toUTCString();
-  const payload={total:5,items:[
-    {title:'김민석 국회의원 정책 발표',description:'더불어민주당 서울 영등포',originallink:'https://a.example/1',link:'https://n.news/1',pubDate:dt(1)},
-    {title:'김민석 국회의원 정책 발표',description:'중복 기사',originallink:'https://a.example/1?utm=1',link:'https://n.news/dup',pubDate:dt(1)},
-    {title:'김민석 의원 국회 토론회',description:'정치 현안',originallink:'https://b.example/2',link:'https://n.news/2',pubDate:dt(12)},
-    {title:'김민석 의원 인터뷰',description:'국회 현안',originallink:'https://c.example/3',link:'https://n.news/3',pubDate:dt(72)},
-    {title:'김민석 셰프 신메뉴',description:'요리 프로그램',originallink:'https://food.example/4',link:'https://n.news/4',pubDate:dt(1)}
-  ]};
+  const xml=`<?xml version="1.0"?><rss><channel>
+    <item><title>김민석 국회의원 정책 발표 - 연합뉴스</title><link>https://news.google.com/rss/articles/1</link><pubDate>${dt(1)}</pubDate><description>더불어민주당 서울 영등포</description><source url="https://yna.co.kr">연합뉴스</source></item>
+    <item><title>김민석 국회의원 정책 발표 - 연합뉴스</title><link>https://news.google.com/rss/articles/1</link><pubDate>${dt(1)}</pubDate><description>중복 기사</description><source url="https://yna.co.kr">연합뉴스</source></item>
+    <item><title>김민석 의원 국회 토론회 - KBS</title><link>https://news.google.com/rss/articles/2</link><pubDate>${dt(12)}</pubDate><description>정치 현안</description><source url="https://kbs.co.kr">KBS</source></item>
+    <item><title>김민석 의원 인터뷰 - MBC</title><link>https://news.google.com/rss/articles/3</link><pubDate>${dt(72)}</pubDate><description>국회 현안</description><source url="https://imnews.imbc.com">MBC</source></item>
+    <item><title>김민석 셰프 신메뉴 - 푸드뉴스</title><link>https://news.google.com/rss/articles/4</link><pubDate>${dt(1)}</pubDate><description>요리 프로그램</description><source url="https://food.example">푸드뉴스</source></item>
+  </channel></rss>`;
   const oldFetch=global.fetch;
-  global.fetch=async()=>({ok:true,status:200,text:async()=>JSON.stringify(payload)});
+  global.fetch=async url=>{
+    assert.match(String(url),/^https:\/\/news\.google\.com\/rss\/search\?/);
+    return {ok:true,status:200,text:async()=>xml};
+  };
   try{
-    await withEnv({NAVER_API_HUB_CLIENT_ID:'id',NAVER_API_HUB_CLIENT_SECRET:'secret'},async()=>{
-      const r=await collectNaverNews(person,{nowMs:now});
-      assert.equal(r.count6,1);
-      assert.equal(r.count24,2);
-      assert.equal(r.count7d,3);
-      assert.equal(r.sources6,1);
-      assert.equal(r.sources24,2);
-      assert.equal(r.headlines.length,3);
-      assert.match(r.query,/김민석/);
-      assert.match(r.query,/국회의원/);
-    });
+    const r=await collectGoogleNews(person,{nowMs:now});
+    assert.equal(r.provider,'google-news-rss');
+    assert.equal(r.count6,1);
+    assert.equal(r.count24,2);
+    assert.equal(r.count7d,3);
+    assert.equal(r.sources6,1);
+    assert.equal(r.sources24,2);
+    assert.equal(r.headlines.length,3);
+    assert.match(r.query,/김민석/);
+    assert.match(r.query,/국회의원/);
   }finally{global.fetch=oldFetch;}
 });
 
-test('live data combines current roster identity with only NAVER Search Ads and NAVER News',async()=>{
+test('live data combines NAVER Search Ads with Google News RSS',async()=>{
   const {getLiveDataById}=fresh('../server/v3/lib/politician-live-data');
   const now=Date.now();
   const oldFetch=global.fetch;
   global.fetch=async url=>{
     const u=String(url);
     if(u.includes('api.searchad.naver.com')) return {ok:true,status:200,text:async()=>JSON.stringify({keywordList:[{relKeyword:'김민석',monthlyPcQcCnt:5000,monthlyMobileQcCnt:15000}]})};
-    if(u.includes('naverapihub.apigw.ntruss.com')) return {ok:true,status:200,text:async()=>JSON.stringify({total:1,items:[{title:'김민석 국회의원 현안',description:'더불어민주당 국회',originallink:'https://news.example/1',link:'https://n.news/1',pubDate:new Date(now-3600000).toUTCString()}]})};
+    if(u.includes('news.google.com/rss/search')) return {ok:true,status:200,text:async()=>`<?xml version=\"1.0\"?><rss><channel><item><title>김민석 국회의원 현안 - 연합뉴스</title><link>https://news.google.com/rss/articles/1</link><pubDate>${new Date(now-3600000).toUTCString()}</pubDate><description>더불어민주당 국회</description><source url=\"https://yna.co.kr\">연합뉴스</source></item></channel></rss>`};
     throw new Error(`unexpected source ${u}`);
   };
   try{
-    await withEnv({NAVER_AD_ACCESS_LICENSE:'a',NAVER_AD_SECRET_KEY:'b',NAVER_AD_CUSTOMER_ID:'c',NAVER_API_HUB_CLIENT_ID:'id',NAVER_API_HUB_CLIENT_SECRET:'secret'},async()=>{
+    await withEnv({NAVER_AD_ACCESS_LICENSE:'a',NAVER_AD_SECRET_KEY:'b',NAVER_AD_CUSTOMER_ID:'c'},async()=>{
       const r=await getLiveDataById('assembly-001',{nowMs:now});
       assert.equal(r.ok,true);
       assert.equal(r.person.id,'assembly-001');
       assert.equal(r.search.monthlyPcQcCnt,5000);
       assert.equal(r.search.monthlyMobileQcCnt,15000);
       assert.equal(r.news.count6,1);
-      assert.deepEqual(r.providers,['naver-search-ads','naver-news']);
+      assert.deepEqual(r.providers,['naver-search-ads','google-news-rss']);
     });
   }finally{global.fetch=oldFetch;}
 });
