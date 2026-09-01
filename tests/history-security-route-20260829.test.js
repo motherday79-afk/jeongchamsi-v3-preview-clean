@@ -5,7 +5,7 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('gateway exposes exactly one History API path named admin/history',()=>{ const s=read('api/gateway.js'); assert.equal((s.match(/admin\/history/g)||[]).length,1); });
+test('gateway exposes exactly one History API path named admin/history',()=>{ const s=read('api/gateway.js'); assert.equal((s.match(/[\"']admin\/history[\"']\s*:/g)||[]).length,1); });
 test('history route performs server-side requireAdmin authentication',()=>{ assert.match(read('server/v3/routes/admin/history.js'),/requireAdmin\(req\)/); });
 test('history route is no-store',()=>{ assert.match(read('server/v3/routes/admin/history.js'),/Cache-Control[^\n]*no-store/); });
 test('history route accepts GET overview and POST operations only',()=>{ const s=read('server/v3/routes/admin/history.js'); assert.match(s,/req\.method\s*===\s*['"]GET['"]/); assert.match(s,/req\.method\s*!==\s*['"]POST['"]/); });

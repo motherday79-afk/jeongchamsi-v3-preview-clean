@@ -1,0 +1,25 @@
+JCS ADMIN API MODULE LOAD HOTFIX — 2026-09-01
+
+SYMPTOM
+- Admin panel: 상태를 불러오지 못했습니다 · API_MODULE_LOAD_FAILED
+
+ROOT CAUSE
+1) api/gateway.js had admin/history routed through a concatenated require path, violating the gateway's own literal-require Vercel bundle rule.
+2) admin/now-data loaded the action-only official age/gender baseline collector at module initialization. A deployment trace omission in that collector chain could therefore kill the lightweight admin status GET before the handler ran.
+
+FIX
+- admin/history loader restored to a literal static require.
+- official age/gender baseline collector/store moved behind the collect-age-gender-baseline POST action so GET /api/v3/admin/now-data stays load-safe.
+- regression test added for both failure modes.
+- existing History route-count test updated to count route keys rather than loader target strings.
+
+VERIFICATION
+- New regression tests: RED 2/2 before fix, GREEN 2/2 after fix.
+- Related admin/API suite: 17/17 PASS.
+- Full suite after patch: 356 total / 313 pass / 43 fail.
+- Original baseline: 354 total / 311 pass / 43 fail.
+- New failures vs baseline: 0.
+- Changed JS syntax checks: PASS.
+
+NOTE
+- The 43 full-suite failures pre-existed in the supplied baseline and are unrelated legacy cache/UI contract tests.

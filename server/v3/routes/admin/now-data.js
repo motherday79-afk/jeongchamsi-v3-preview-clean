@@ -6,8 +6,6 @@ const { makeBatches, collectBatch, aggregateBatchSummaries, scoreSnapshot, resul
 const { compactPreviewRow, compactHistory, buildHomePublicSnapshot, buildAdminPublicSnapshot, buildPersonPublicEntries, buildCategoryPublicSnapshots, mergePersonTrend } = require('../../lib/now-public-snapshot');
 const { recordPublishedSnapshotV2 } = require('../../lib/history-v2-store');
 const { collectExternalEvidence } = require('../../lib/external-evidence-collector');
-const { collectOfficialAgeGenderBaseline } = require('../../lib/age-gender-public-baseline-collector');
-const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = require('../../lib/age-gender-baseline-v2-store');
 const { recordPoliticalIntelligenceSnapshotV1 } = require('../../lib/political-intelligence-store');
 const { recordPoliticalIntelligenceSnapshotV2 } = require('../../lib/political-intelligence-v2-store');
 const { cleanupAllNowTemp, cleanupDraftNowTemp } = require('../../lib/now-temp-cleanup');
@@ -137,6 +135,11 @@ module.exports=async function nowDataAdmin(req,res){
       return res.status(200).json({ok:true,draftId:meta.draftId,...externalEvidence});
     }
     if(action==='collect-age-gender-baseline'){
+      // Load the official baseline collector only when this expensive admin action is requested.
+      // Keeping it out of module initialization lets the status GET stay available even if a
+      // deployment trace omits an action-only collector dependency.
+      const { collectOfficialAgeGenderBaseline } = require('../../lib/age-gender-public-baseline-collector');
+      const { readAgeGenderBaselineBundleV2, writeAgeGenderBaselineBundleV2 } = require('../../lib/age-gender-baseline-v2-store');
       const previous=await readAgeGenderBaselineBundleV2({fresh:true});
       try{
         const bundle=await collectOfficialAgeGenderBaseline({people:allPeople()});
